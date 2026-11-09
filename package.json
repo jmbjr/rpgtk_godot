@@ -1,0 +1,13 @@
+{
+  "name": "rpgtk-godot-viewer",
+  "private": true,
+  "scripts": {
+    "prepare": "node scripts/stage-soundfont.mjs"
+  },
+  "dependencies": {
+    "spessasynth_lib": "4.4.7"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

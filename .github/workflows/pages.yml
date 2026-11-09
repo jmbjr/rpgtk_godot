@@ -17,6 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - run: npm ci
       - name: Check viewer modules and command catalog
         run: |
           node --check app.mjs
@@ -25,6 +26,7 @@ jobs:
           node --check records.mjs
           node --check media.mjs
           node --check midi.mjs
+          node --check scripts/stage-soundfont.mjs
           node --check vendor/webaudio-tinysynth.js
           node --check sprites.mjs
           node --check scripts/smoke.mjs
@@ -46,6 +48,7 @@ jobs:
           mkdir -p site/vendor
           cp .nojekyll index.html style.css app.mjs model.mjs artifacts.mjs records.mjs media.mjs midi.mjs sprites.mjs catalog.json site/
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
+          cp -R vendor/soundfont site/vendor/
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4
