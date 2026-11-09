@@ -1,5 +1,6 @@
 import { readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
+import { playMidi } from "./midi.mjs";
 import { artifactRecord } from "./records.mjs";
 import { enemySprite, itemSprites, standaloneTilePixels } from "./sprites.mjs";
 
@@ -37,6 +38,7 @@ let references = { incoming: new Map(), outgoing: new Map() };
 let tileSelection;
 let animationTimer;
 let mediaUrl;
+let stopMidi;
 let inspectorRevision = 0;
 const demoStartup = "Demo/Prg/start.prg";
 const sourceNames = {
@@ -150,6 +152,7 @@ function selectionLabel(path) {
 }
 
 function showArtifact() {
+  stopMidi?.();
   clearInterval(animationTimer);
   inspectorRevision++;
   if (mediaUrl) {
@@ -316,6 +319,7 @@ function renderAsset(artifact) {
   }
   if (artifact.type === "mid") {
     panel.append(el("p", `Standard MIDI File · Format ${artifact.format} · ${artifact.trackCount} tracks`));
+    renderMidiControls(panel, artifact);
     return;
   }
   if (artifact.type === "doc") {
@@ -528,6 +532,32 @@ function renderBoard(panel, board, edges) {
   }
   layers.addEventListener("change", draw);
   draw();
+}
+
+function renderMidiControls(panel, artifact) {
+  const controls = el("div", "", "midi-controls");
+  const message = el("p");
+  message.setAttribute("role", "status");
+  const play = button("Play MIDI", () => {
+    play.disabled = true;
+    stop.disabled = false;
+    message.textContent = "Loading MIDI…";
+    stopMidi = playMidi(
+      archive.file(artifact.path).async("uint8array"),
+      () => { message.textContent = "Playing MIDI."; },
+      finish,
+    );
+  });
+  const stop = button("Stop MIDI", () => stopMidi?.());
+  function finish(messageText) {
+    stopMidi = undefined;
+    play.disabled = false;
+    stop.disabled = true;
+    message.textContent = messageText;
+  }
+  stop.disabled = true;
+  controls.append(play, stop);
+  panel.append(controls, message);
 }
 
 async function showMedia(panel, path, description, audio = false) {
