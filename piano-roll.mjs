@@ -5,18 +5,37 @@ const svgNamespace = "http://www.w3.org/2000/svg";
 const noteNames = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
 const pitchName = pitch => `${noteNames[pitch % 12]}${Math.floor(pitch / 12) - 1}`;
 const channelKey = (port, channel) => `${port}:${channel}`;
+const partKey = ({ port, channel, program }) => `${channelKey(port, channel)}:${program}`;
+
+function partColor(index) {
+  // Space successive hues by the golden angle and convert HSL to a hex color.
+  const hue = ((42 + index * 137.508) % 360) / 30;
+  const channel = offset => {
+    const k = (offset + hue) % 12;
+    const value = 0.66 - 0.26 * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(value * 255).toString(16).padStart(2, "0");
+  };
+  return `#${channel(0)}${channel(8)}${channel(4)}`;
+}
 
 export function midiNoteSequence(bytes) {
   const { events, duration } = midiTimeline(bytes);
   const notes = [];
   const pending = new Map();
+  const programs = new Map();
   for (const { seconds, port, message: [status, pitch, velocity] } of events) {
     const command = status >>> 4;
-    if (command !== 8 && command !== 9) continue;
+    if (command !== 8 && command !== 9 && command !== 12) continue;
     const channel = (status & 15) + 1;
-    const key = `${channelKey(port, channel)}:${pitch}`;
+    const channelId = channelKey(port, channel);
+    if (command === 12) {
+      programs.set(channelId, pitch + 1);
+      continue;
+    }
+    const key = `${channelId}:${pitch}`;
     if (command === 9 && velocity > 0) {
-      const note = { pitch, velocity, channel, port, isDrum: channel === 10, startTime: seconds, endTime: duration };
+      const note = { pitch, velocity, channel, port, program: programs.get(channelId) ?? 1,
+        isDrum: channel === 10, startTime: seconds, endTime: duration };
       notes.push(note);
       if (!pending.has(key)) pending.set(key, []);
       pending.get(key).push(note);
@@ -40,12 +59,17 @@ export function renderMidiPianoRoll(tracks, readBytes, playbackTime) {
   const details = make("details");
   details.className = "edge-group midi-piano-roll";
   const status = make("p", "Open to load the piano roll.");
-  const filterLabel = make("label", "Part");
-  const filter = make("select");
-  filter.append(make("option", "All parts"));
-  filter.options[0].value = "";
-  filterLabel.append(filter);
-  filterLabel.hidden = true;
+  const instruments = make("fieldset");
+  instruments.className = "midi-roll-instruments";
+  instruments.hidden = true;
+  const all = make("input");
+  all.type = "checkbox";
+  all.checked = true;
+  const allLabel = make("label");
+  allLabel.append(all, "All instruments");
+  const rows = make("div");
+  rows.className = "midi-roll-parts";
+  instruments.append(make("legend", "Visible instruments"), allLabel, rows);
   const viewport = make("div");
   viewport.className = "midi-roll-viewport";
   viewport.tabIndex = 0;
@@ -55,14 +79,13 @@ export function renderMidiPianoRoll(tracks, readBytes, playbackTime) {
   const svg = document.createElementNS(svgNamespace, "svg");
   svg.setAttribute("aria-hidden", "true");
   viewport.append(svg);
-  details.append(make("summary", "Piano roll"), filterLabel, viewport, status);
+  details.append(make("summary", "Piano roll"), instruments, viewport, status);
 
   let sequence;
-  let Visualizer;
+  const parts = new Map();
   let loading = false;
   let frame;
   let playhead;
-  let notes = [];
   let rectangles = [];
   let next = 0;
   let lastTime = -Infinity;
@@ -79,6 +102,7 @@ export function renderMidiPianoRoll(tracks, readBytes, playbackTime) {
       }
     }
     lastTime = time;
+    const notes = sequence.notes;
     const x = Math.max(0, time) * pixelsPerSecond;
     playhead.setAttribute("x1", x);
     playhead.setAttribute("x2", x);
@@ -96,23 +120,72 @@ export function renderMidiPianoRoll(tracks, readBytes, playbackTime) {
         active.delete(index);
       }
     }
-    const pitches = [...new Set([...active].map(index => {
-      const note = notes[index];
-      return note.isDrum ? `Drum ${note.pitch}` : pitchName(note.pitch);
-    }))];
-    const text = `${Math.max(0, time).toFixed(1)} s · ${pitches.length ? pitches.join(", ") : "—"}`;
+    updateStatus();
+  }
+
+  function updateStatus() {
+    const pitches = new Set();
+    for (const index of active) {
+      const note = sequence.notes[index];
+      if (parts.get(partKey(note))?.toggle.checked) {
+        pitches.add(note.isDrum ? `Drum ${note.pitch}` : pitchName(note.pitch));
+      }
+    }
+    const text = `${Math.max(0, lastTime).toFixed(1)} s · ${[...pitches].join(", ") || "—"}`;
     if (status.textContent !== text) status.textContent = text;
   }
 
-  function draw() {
-    notes = filter.value ?
-      sequence.notes.filter(note => channelKey(note.port, note.channel) === filter.value) : sequence.notes;
-    new Visualizer({ notes, totalTime: sequence.totalTime }, svg, {
+  function updatePart(part) {
+    for (const rectangle of part.rectangles) {
+      rectangle.classList.toggle("part-hidden", !part.toggle.checked);
+      rectangle.style.setProperty("--part-color", part.picker.value);
+    }
+  }
+
+  function updateAllCheckbox() {
+    const shown = [...parts.values()].filter(part => part.toggle.checked).length;
+    all.checked = shown === parts.size;
+    all.indeterminate = shown > 0 && shown < parts.size;
+  }
+
+  function addPart(part, key) {
+    const port = part.port ? `Port ${part.port} · ` : "";
+    const name = part.percussion ? `${part.instrument} (kit ${part.program})` : part.instrument;
+    const label = `${name} · ${port}Ch. ${part.channel}`;
+    const row = make("div");
+    row.className = "midi-roll-part";
+    const toggle = make("input");
+    toggle.type = "checkbox";
+    toggle.checked = true;
+    const partLabel = make("label");
+    partLabel.append(toggle, make("span", label));
+    const picker = make("input");
+    picker.type = "color";
+    picker.value = partColor(parts.size);
+    picker.setAttribute("aria-label", `Color for ${label}`);
+    picker.title = `Color for ${label}`;
+    const controls = { toggle, picker, rectangles: [] };
+    parts.set(key, controls);
+    toggle.addEventListener("change", () => {
+      updatePart(controls);
+      updateAllCheckbox();
+      updateStatus();
+    });
+    picker.addEventListener("input", () => updatePart(controls));
+    row.append(partLabel, picker);
+    rows.append(row);
+  }
+
+  function draw(Visualizer) {
+    new Visualizer(sequence, svg, {
       pixelsPerTimeStep: pixelsPerSecond,
       noteHeight: 5,
-      noteRGB: "211, 178, 117",
     });
     rectangles = [...svg.querySelectorAll("rect.note")];
+    for (const [index, note] of sequence.notes.entries()) {
+      parts.get(partKey(note))?.rectangles.push(rectangles[index]);
+    }
+    for (const part of parts.values()) updatePart(part);
     playhead = document.createElementNS(svgNamespace, "line");
     playhead.setAttribute("class", "midi-roll-playhead");
     playhead.setAttribute("y1", "0");
@@ -144,28 +217,22 @@ export function renderMidiPianoRoll(tracks, readBytes, playbackTime) {
           status.textContent = "This MIDI contains no notes.";
           return;
         }
-        const parts = new Map();
+        parts.clear();
+        rows.replaceChildren();
         for (const track of tracks) {
           for (const part of track.parts) {
-            const key = channelKey(part.port, part.channel);
-            if (!parts.has(key)) parts.set(key, { ...part, names: new Set() });
-            parts.get(key).names.add(part.instrument);
+            const key = partKey(part);
+            if (!parts.has(key)) addPart(part, key);
           }
         }
-        for (const [key, part] of parts) {
-          const port = part.port ? `Port ${part.port} · ` : "";
-          const option = make("option", `${port}Ch. ${part.channel} · ${[...part.names].join(" / ")}`);
-          option.value = key;
-          filter.append(option);
-        }
+        updateAllCheckbox();
         sequence = parsed;
-        Visualizer = module.PianoRollSVGVisualizer;
-        filterLabel.hidden = false;
+        instruments.hidden = false;
         viewport.hidden = false;
-        draw();
+        draw(module.PianoRollSVGVisualizer);
       } catch (error) {
         sequence = undefined;
-        filterLabel.hidden = true;
+        instruments.hidden = true;
         viewport.hidden = true;
         status.textContent = `Piano roll unavailable. ${error.message}`;
         return;
@@ -176,7 +243,14 @@ export function renderMidiPianoRoll(tracks, readBytes, playbackTime) {
     follow();
   }
 
-  filter.addEventListener("change", draw);
+  all.addEventListener("change", () => {
+    for (const part of parts.values()) {
+      part.toggle.checked = all.checked;
+      updatePart(part);
+    }
+    updateAllCheckbox();
+    updateStatus();
+  });
   details.addEventListener("toggle", () => {
     cancelAnimationFrame(frame);
     if (details.open) void open();

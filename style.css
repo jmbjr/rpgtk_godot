@@ -171,8 +171,19 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 .midi-track-table small { display: block; color: var(--muted); font-weight: 400; }
 .midi-track-table td:nth-last-child(-n + 2) { white-space: nowrap; }
 
-.midi-piano-roll label { grid-template-columns: auto minmax(0, 1fr); align-items: center; margin-block: .5rem; }
-.midi-piano-roll select { min-width: 0; max-width: 100%; font: inherit; }
+.midi-roll-instruments { min-inline-size: 0; margin: .5rem 0; padding: .5rem; border: 1px solid var(--line); }
+.midi-roll-instruments label { display: flex; align-items: center; }
+.midi-roll-instruments input[type="checkbox"] { accent-color: var(--gold); flex: none; }
+.midi-roll-parts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: .25rem .75rem;
+  max-block-size: 10rem;
+  overflow: auto;
+  margin-top: .35rem;
+}
+.midi-roll-part { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.midi-roll-part input[type="color"] { inline-size: 1.85rem; block-size: 1.5rem; padding: .12rem; cursor: pointer; }
 .midi-roll-viewport {
   overflow: auto;
   max-block-size: 22rem;
@@ -183,5 +194,7 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
   display: block;
   background-image: repeating-linear-gradient(to right, #302b34 0 1px, transparent 1px 64px);
 }
-.midi-roll-viewport .note.active { fill: #fff0be; }
+.midi-roll-viewport .note { fill: var(--part-color, #d3b275); opacity: .72; }
+.midi-roll-viewport .note.active { opacity: 1; stroke: #f8f3e9; stroke-width: .8px; }
+.midi-roll-viewport .note.part-hidden { display: none; }
 .midi-roll-playhead { stroke: #f0a16a; stroke-width: 1.5px; pointer-events: none; }
