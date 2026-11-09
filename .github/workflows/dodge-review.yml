@@ -1,0 +1,58 @@
+name: DODGE tabletop review builds
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/dodge-review.yml'
+      - 'experiments/dodge-tiles/**'
+      - 'docs/specs/fixtures/**'
+      - 'artifacts.mjs'
+      - 'records.mjs'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tile-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: jmbjr/DODGE
+          ref: 9af5804719bc4dc421d1cd76d3587f5b678d3f81
+          path: upstream-dodge
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci --ignore-scripts
+      - run: python -m pip install -r experiments/dodge-tiles/targets/requirements.txt
+      - name: Resolve and verify both targets
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          schemas=upstream-dodge/draft/v0.2.1/schemas
+          node experiments/dodge-tiles/check.mjs "$schemas/dodge.schema.v0.2.1.json" "$RUNNER_TEMP/tile-source"
+          python experiments/dodge-tiles/targets/build.py "$schemas" "$RUNNER_TEMP/tile-source" "$RUNNER_TEMP/tile-review" --source-sha "$SOURCE_SHA"
+          cp experiments/dodge-tiles/targets/{prepare-tts.py,REVIEW.md} "$RUNNER_TEMP/tile-review/"
+      - name: Upload PDF, TTS save, assets and manifests
+        id: review
+        uses: actions/upload-artifact@v4
+        with:
+          name: toolkit-tabletop-review-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/tile-review/
+          if-no-files-found: error
+      - name: Link review bundle
+        env:
+          ARTIFACT_URL: ${{ steps.review.outputs.artifact-url }}
+        run: printf '[Download the Toolkit tabletop review bundle](%s)\n' "$ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"

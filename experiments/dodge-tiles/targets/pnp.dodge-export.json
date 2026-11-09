@@ -1,0 +1,35 @@
+{
+  "contract_version": "0.2.1",
+  "contract_id": "toolkit-tile-cards-pnp",
+  "target": "pnp",
+  "accepts": {
+    "dodge_versions": [
+      "0.2.1"
+    ],
+    "object_kinds": [
+      "token",
+      "collection"
+    ],
+    "component_forms": [
+      "card"
+    ],
+    "rule_features": []
+  },
+  "maps": [
+    {
+      "from": "scenes.tile-review",
+      "to": "one reference card per declared tileset member"
+    }
+  ],
+  "adds": [
+    "US Letter layout at actual card size",
+    "cut marks"
+  ],
+  "outputs": [
+    "tile-cards.pdf"
+  ],
+  "forbidden_in_dodge": [
+    "page coordinates",
+    "cut marks"
+  ]
+}
