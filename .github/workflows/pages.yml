@@ -21,6 +21,7 @@ jobs:
       - name: Check viewer modules and command catalog
         run: |
           node --check app.mjs
+          node --check archive.mjs
           node --check model.mjs
           node --check artifacts.mjs
           node --check records.mjs
@@ -45,12 +46,14 @@ jobs:
           assert.deepEqual(result.groups.get("builtin:dos").lines, [3]);
           assert.equal(result.rows[1].tokens[0].kind, "comment");
           JS
+      - name: Check game archive imports
+        run: node scripts/check-game-archive.mjs
       - name: Check tile format conformance
         run: node scripts/check-tile-specs.mjs
       - name: Stage public viewer files
         run: |
           mkdir -p site/vendor
-          cp .nojekyll index.html style.css app.mjs model.mjs artifacts.mjs records.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs catalog.json site/
+          cp .nojekyll index.html style.css app.mjs archive.mjs model.mjs artifacts.mjs records.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs catalog.json site/
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
           cp -R vendor/soundfont vendor/generaluser-gs vendor/piano-roll site/vendor/
       - name: Upload Pages artifact

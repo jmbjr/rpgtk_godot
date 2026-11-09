@@ -1,6 +1,21 @@
 const legacyText = new TextDecoder("windows-1252");
 
+function readTextMainFile(bytes) {
+  const lines = legacyText.decode(bytes).split(/\r\n|\n|\r/);
+  const [signature, majorText, minorText] = lines.map(line => line.trim());
+  const major = Number(majorText);
+  const minor = Number(minorText);
+  if (!["RPGTLKIT MAIN", "RPGTLKIT MAINFORM"].includes(signature.toUpperCase()) || majorText !== "2" || minorText !== "0") {
+    throw new Error("This text Main File is outside the supported Toolkit 2.0 layout.");
+  }
+  if (lines.length < 12) throw new Error("The text Main File startup fields are truncated.");
+  return { major, minor, startup: lines[4].trim(), board: lines[10].trim(), character: lines[11].trim() };
+}
+
 export function readMainFile(bytes) {
+  if (/^RPGTLKIT (?:MAIN|MAINFORM)[\r\n]/i.test(legacyText.decode(bytes.subarray(0, 24)))) {
+    return readTextMainFile(bytes);
+  }
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   let cursor = 0;
   function string() {

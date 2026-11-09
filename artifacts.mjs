@@ -523,7 +523,7 @@ export function buildReferences(artifacts, mainFile) {
   }
   if (mainFile) {
     for (const [evidence, binding] of mainFile.bindings) {
-      if (binding.path) add(mainFile.name, { value: binding.path, evidence, path: binding.path, external: true });
+      if (binding.path) add(mainFile.name, { value: binding.path, evidence, path: binding.path, external: mainFile.external ?? true });
     }
   }
   return { incoming, outgoing };
