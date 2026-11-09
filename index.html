@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Inspect RPG Toolkit 2 game files and trace RPGCode commands in your browser.">
+  <title>RPG Toolkit 2 · Game Explorer</title>
+  <link rel="stylesheet" href="./style.css">
+  <script defer src="./vendor/jszip.min.js"></script>
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <div class="page">
+    <header class="site-header"><strong>RPG Toolkit 2</strong><span>Game Explorer</span></header>
+    <main>
+      <header class="intro">
+        <p class="eyebrow">Toolkit 2 · Source viewer</p>
+        <h1>Game Explorer</h1>
+        <p>Open a game archive and follow its RPGCode from source to command reference.</p>
+      </header>
+
+      <section class="panel import-panel" aria-labelledby="import-heading">
+        <h2 id="import-heading">Open a game</h2>
+        <div class="pickers">
+          <label>Game archive <span>ZIP</span><input id="archive" type="file" accept=".zip,application/zip"></label>
+          <label>Main File <span>Optional · GAM</span><input id="main-file" type="file" accept=".gam"></label>
+        </div>
+        <div class="statuses">
+          <p id="archive-status" role="status">Choose a game ZIP to list its programs.</p>
+          <p id="main-status" role="status">A Main File can identify the configured startup script.</p>
+        </div>
+        <dl id="bindings" class="bindings" hidden></dl>
+      </section>
+
+      <section class="workspace" aria-label="Program workspace" id="workspace" hidden>
+        <aside class="panel programs">
+          <div class="section-head"><h2>Programs</h2><span id="file-count"></span></div>
+          <div id="file-list" class="file-list"></div>
+        </aside>
+        <section class="panel source-panel" aria-labelledby="source-title">
+          <div class="section-head"><h2 id="source-title">Source</h2><span id="selection"></span></div>
+          <p id="source-path" class="technical"></p>
+          <div id="source" class="source" tabindex="0" aria-label="Program source"></div>
+        </section>
+        <section class="panel graph-panel" aria-labelledby="graph-title">
+          <div class="section-head"><h2 id="graph-title">Capability graph</h2><span id="counts"></span></div>
+          <div id="graph"></div>
+          <div id="reference" class="reference" aria-live="polite"></div>
+        </section>
+      </section>
+    </main>
+    <footer>Files are opened locally in your browser. The explorer shows static source relationships.</footer>
+  </div>
+</body>
+</html>
