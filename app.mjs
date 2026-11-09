@@ -38,6 +38,7 @@ let references = { incoming: new Map(), outgoing: new Map() };
 let tileSelection;
 let animationTimer;
 let stopAnimationPlayback;
+let stopWavePlayback;
 let mediaUrl;
 let midiPlayback;
 let midiTone = { ...defaultMidiTone };
@@ -176,6 +177,8 @@ function showArtifact() {
   midiPlayback?.stop();
   stopAnimationPlayback?.();
   stopAnimationPlayback = undefined;
+  stopWavePlayback?.();
+  stopWavePlayback = undefined;
   clearInterval(animationTimer);
   inspectorRevision++;
   if (mediaUrl) {
@@ -355,7 +358,7 @@ function renderAsset(artifact) {
   }
   if (artifact.type === "wav") {
     panel.append(el("p", `${artifact.channels} channel(s) · ${artifact.sampleRateHz} Hz · ${artifact.bitsPerSample} bits`));
-    showMedia(panel, artifact.path, basename(artifact.path), true);
+    void renderWaveControls(panel, artifact.path);
     return;
   }
   if (artifact.type === "mid") {
@@ -460,13 +463,20 @@ function renderSpecialMove(panel, move, edges) {
   ]));
 }
 
-function setAnimationIcon(control, label, outline) {
+const playbackIcons = {
+  previous: "M5 5h2v14H5zM19 5v14L8 12z",
+  next: "M17 5h2v14h-2zM5 5l11 7-11 7z",
+  play: "M7 5l12 7-12 7z",
+  pause: "M6 5h4v14H6zm8 0h4v14h-4z",
+};
+
+function setPlaybackIcon(control, iconName, label) {
   const namespace = "http://www.w3.org/2000/svg";
   const icon = document.createElementNS(namespace, "svg");
   icon.setAttribute("viewBox", "0 0 24 24");
   icon.setAttribute("aria-hidden", "true");
   const path = document.createElementNS(namespace, "path");
-  path.setAttribute("d", outline);
+  path.setAttribute("d", playbackIcons[iconName]);
   icon.append(path);
   control.setAttribute("aria-label", label);
   control.title = label;
@@ -620,17 +630,16 @@ function renderAnimation(panel, artifact, edges) {
     }, Math.max(16, artifact.pauseSeconds * 1000 || 100));
   }
   const previous = button("", () => moveFrame(-1));
-  setAnimationIcon(previous, "Previous frame", "M5 5h2v14H5zM19 5v14L8 12z");
+  setPlaybackIcon(previous, "previous", "Previous frame");
   const next = button("", () => moveFrame(1));
-  setAnimationIcon(next, "Next frame", "M17 5h2v14h-2zM5 5l11 7-11 7z");
+  setPlaybackIcon(next, "next", "Next frame");
   const play = button("", () => {
     const playing = playback && !playback.finished;
     stop();
     if (!playing) void start();
   });
   function updatePlayButton(playing) {
-    setAnimationIcon(play, playing ? "Pause animation" : "Play animation",
-      playing ? "M6 5h4v14H6zm8 0h4v14h-4z" : "M7 5l12 7-12 7z");
+    setPlaybackIcon(play, playing ? "pause" : "play", playing ? "Pause animation" : "Play animation");
   }
   updatePlayButton(false);
   stopAnimationPlayback = stop;
@@ -895,32 +904,56 @@ function renderMidiTracks(tracks) {
 }
 
 function renderMidiControls(panel, artifact) {
-  const controls = el("div", "", "midi-controls");
+  const controls = el("div", "", "audio-controls");
   const message = el("p");
   message.setAttribute("role", "status");
-  const play = button("Play MIDI", () => {
+  let playing = false;
+  let playingMessage;
+
+  function updatePlay() {
+    setPlaybackIcon(play, playing ? "pause" : "play", playing ? "Pause MIDI" : "Play MIDI");
+  }
+  const play = button("", () => {
+    if (midiPlayback) {
+      playing = !playing;
+      midiPlayback.setPaused(!playing);
+      message.textContent = playing ? playingMessage : "MIDI paused.";
+      updatePlay();
+      return;
+    }
+
     play.disabled = true;
-    stop.disabled = false;
+    reset.disabled = false;
     const bank = midiSoundSource === "generaluser" ? generalUserGs :
       midiSoundSource === "local" ? midiSoundBank : undefined;
+    playingMessage = bank ? `Playing with ${bank.name}.` : "Playing MIDI with the built-in synth.";
     message.textContent = bank ? `Loading MIDI with ${bank.name}…` : "Loading MIDI…";
     midiPlayback = playMidi(
       archive.file(artifact.path).async("uint8array"),
       midiTone,
       bank,
-      () => { message.textContent = bank ? `Playing with ${bank.name}.` : "Playing MIDI with the built-in synth."; },
+      () => {
+        playing = true;
+        play.disabled = false;
+        message.textContent = playingMessage;
+        updatePlay();
+      },
       finish,
     );
   });
-  const stop = button("Stop MIDI", () => midiPlayback?.stop());
+  const reset = button("", () => midiPlayback?.stop("MIDI reset to beginning."));
+  setPlaybackIcon(reset, "previous", "Reset MIDI to beginning");
   function finish(messageText) {
     midiPlayback = undefined;
+    playing = false;
     play.disabled = false;
-    stop.disabled = true;
+    reset.disabled = true;
     message.textContent = messageText;
+    updatePlay();
   }
-  stop.disabled = true;
-  controls.append(play, stop);
+  updatePlay();
+  reset.disabled = true;
+  controls.append(play, reset);
   panel.append(controls, message, renderMidiTracks(artifact.tracks), renderMidiSoundBank(), renderMidiTone());
 }
 
@@ -1029,21 +1062,70 @@ function renderMidiTone() {
   return group;
 }
 
-async function showMedia(panel, path, description, audio = false) {
+async function renderWaveControls(panel, path) {
+  const revision = inspectorRevision;
+  const controls = el("div", "", "audio-controls");
+  const message = el("p");
+  message.setAttribute("role", "status");
+  const audio = el("audio");
+  audio.hidden = true;
+  const play = button("", () => {
+    if (!audio.paused) {
+      audio.pause();
+      return;
+    }
+    message.textContent = "";
+    void audio.play().catch(error => {
+      if (revision === inspectorRevision && error.name !== "AbortError") {
+        message.textContent = "Unable to play WAV.";
+      }
+    });
+  });
+  const reset = button("", () => {
+    audio.pause();
+    audio.currentTime = 0;
+    message.textContent = "";
+  });
+  const updatePlay = () => {
+    const playing = !audio.paused && !audio.ended;
+    setPlaybackIcon(play, playing ? "pause" : "play", playing ? "Pause WAV" : "Play WAV");
+  };
+  updatePlay();
+  setPlaybackIcon(reset, "previous", "Reset WAV to beginning");
+  play.disabled = true;
+  reset.disabled = true;
+  for (const event of ["play", "pause", "ended"]) audio.addEventListener(event, updatePlay);
+  audio.addEventListener("error", () => {
+    if (revision !== inspectorRevision) return;
+    play.disabled = true;
+    reset.disabled = true;
+    message.textContent = "Unable to load WAV.";
+  });
+  stopWavePlayback = () => audio.pause();
+  controls.append(play, reset);
+  panel.append(controls, message, audio);
+  try {
+    const blob = await archive.file(path).async("blob");
+    if (revision !== inspectorRevision) return;
+    mediaUrl = URL.createObjectURL(new Blob([blob], { type: "audio/wav" }));
+    audio.src = mediaUrl;
+    play.disabled = false;
+    reset.disabled = false;
+  } catch {
+    if (revision === inspectorRevision) message.textContent = "Unable to load WAV.";
+  }
+}
+
+async function showMedia(panel, path, description) {
   const revision = inspectorRevision;
   try {
     const blob = await archive.file(path).async("blob");
     if (revision !== inspectorRevision) return;
     if (mediaUrl) URL.revokeObjectURL(mediaUrl);
-    mediaUrl = URL.createObjectURL(audio ? new Blob([blob], { type: "audio/wav" }) : blob);
-    const media = el(audio ? "audio" : "img", "", audio ? "artifact-audio" : "artifact-image");
+    mediaUrl = URL.createObjectURL(blob);
+    const media = el("img", "", "artifact-image");
     media.src = mediaUrl;
-    if (audio) {
-      media.controls = true;
-      media.setAttribute("aria-label", description);
-    } else {
-      media.alt = description;
-    }
+    media.alt = description;
     panel.prepend(media);
   } catch {
     if (revision === inspectorRevision) panel.append(el("p", "Media preview unavailable."));

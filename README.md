@@ -61,8 +61,9 @@ Then check the browser workflow.
    or play its walk. Open `keystone.itm` to check the standalone-tile sprite.
    The two Evil Thing definitions report their missing GPH source files.
 9. Open **Media** → `VIP - Title2.mid`, the track referenced by the demo
-   startup program. Choose **Play MIDI** and adjust **MIDI tone** while
-   it plays. Try **Bypass EQ** to compare the unfiltered sound, then toggle
+   startup program. Use **Play MIDI** and adjust **MIDI tone** while it
+   plays. Use the same button to pause and resume, and **Reset MIDI to
+   beginning** to rewind. The WAV inspector has matching controls. Try **Bypass EQ** to compare the unfiltered sound, then toggle
    it off to return to the chosen settings. Stop, replay, and switch to
    another file to confirm playback stops and the settings carry over.
    **Reset EQ** restores flat playback. Expand **MIDI tracks** to see each

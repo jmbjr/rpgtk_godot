@@ -88,6 +88,7 @@ export function playMidi(bytes, initialTone, soundBank, onPlaying, onFinish) {
   let timer;
   let dispose;
   let stopped = false;
+  let paused = false;
 
   function stop(message = "MIDI stopped.") {
     if (stopped) return;
@@ -118,6 +119,7 @@ export function playMidi(bytes, initialTone, soundBank, onPlaying, onFinish) {
     let next = 0;
 
     function schedule() {
+      if (paused || context.state !== "running") return;
       try {
         const now = context.currentTime;
         while (next < events.length && startTime + events[next].seconds <= now + 0.08) {
@@ -160,7 +162,11 @@ export function playMidi(bytes, initialTone, soundBank, onPlaying, onFinish) {
       onPlaying();
     });
     sequencer.eventHandler.addEvent("songEnded", "viewer", () => {
-      if (!stopped) timer = setTimeout(() => stop("MIDI finished."), 600);
+      if (stopped) return;
+      const endTime = context.currentTime + 0.6;
+      timer = setInterval(() => {
+        if (!paused && context.currentTime >= endTime) stop("MIDI finished.");
+      }, 25);
     });
     sequencer.eventHandler.addEvent("midiError", "viewer", () => {
       stop("Unable to play MIDI with the selected sound bank.");
@@ -174,6 +180,12 @@ export function playMidi(bytes, initialTone, soundBank, onPlaying, onFinish) {
   void start().catch(error => stop(`Unable to play MIDI. ${error.message}`));
   return {
     stop,
+    setPaused(value) {
+      if (stopped || paused === value) return;
+      paused = value;
+      const change = paused ? context.suspend() : context.resume();
+      void change.catch(error => stop(`Unable to control MIDI playback. ${error.message}`));
+    },
     setTone(settings) {
       if (!stopped) eq?.update(settings);
     },
