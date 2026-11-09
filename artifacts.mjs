@@ -1,4 +1,4 @@
-import { decodeProgram, indexProgram } from "./model.mjs";
+import { decodeProgram, indexProgram, readMainFile } from "./model.mjs";
 
 const text = new TextDecoder("windows-1252");
 export const extension = path => path.match(/\.([^.\/]+)$/)?.[1].toLowerCase() ?? "";
@@ -28,9 +28,13 @@ function cursor(bytes) {
 }
 
 function header(reader, signature, minors) {
-  if (reader.string() !== signature || reader.short() !== 2 || !minors.includes(reader.short())) {
+  const actual = reader.string();
+  const major = reader.short();
+  const minor = reader.short();
+  if (actual !== signature || major !== 2 || !minors.includes(minor)) {
     throw new Error("This legacy file format is outside the supported demo layouts.");
   }
+  return minor;
 }
 
 const reference = (value, evidence, line) => ({ value, evidence, line });
@@ -154,7 +158,7 @@ function readBoard(bytes) {
     add(reader.string(), `Item activation program ${position}`);
     add(reader.string(), `Item multitask program ${position}`);
   }
-  return { width, height, layers, layerTitles, runs, background, ambient, refs };
+  return { width, height, layers, layerTitles, lookup, runs, background, ambient, refs };
 }
 
 export function boardTilesets(edges, graph, artifacts) {
@@ -229,7 +233,191 @@ function readProgram(bytes, catalog) {
   return { program, refs };
 }
 
-const readers = { prg: readProgram, tst: readTileset, tan: readAnimation, tem: readCharacter, brd: readBoard };
+function textReader(bytes, signature) {
+  const lines = decodeProgram(bytes).split(/\r\n|\n|\r/);
+  if (lines.at(-1) === "") lines.pop();
+  let position = 0;
+  function string() {
+    if (position >= lines.length) throw new Error("The file is truncated.");
+    return lines[position++].trim();
+  }
+  function number() {
+    const value = Number(string());
+    if (!Number.isFinite(value)) throw new Error("Invalid numeric field.");
+    return value;
+  }
+  if (string().toUpperCase() !== signature || number() !== 2 || number() !== 0) {
+    throw new Error("This text file is outside the supported Toolkit 2.0 layout.");
+  }
+  return { string, number, remaining: () => lines.length - position };
+}
+
+function fields(reader, names) {
+  const refs = [];
+  const values = Object.fromEntries(names.map(name => {
+    const value = reader.string();
+    if (value && value.toLowerCase() !== "none") refs.push(reference(value, name));
+    return [name, value];
+  }));
+  return { values, refs };
+}
+
+function readBackground(bytes) {
+  const reader = textReader(bytes, "RPGTLKIT BKG");
+  const width = 19;
+  const height = 11;
+  const tiles = Array.from({ length: width * height }, () => reader.string());
+  const { values: audio, refs } = fields(reader, ["Music", "Select sound", "Choose sound", "Ready sound", "Invalid action sound"]);
+  reader.string(); // Reserved field.
+  const shading = tiles.map(() => [reader.number(), reader.number(), reader.number()]);
+  tiles.forEach((tile, i) => {
+    if (tile) refs.push(reference(tile, `Background tile (${Math.floor(i / height) + 1}, ${i % height + 1})`));
+  });
+  return { width, height, order: "column-major", tiles, audio, shading, refs };
+}
+
+function readEnemy(bytes) {
+  const reader = textReader(bytes, "RPGTLKIT ENEMY");
+  const name = reader.string();
+  const stats = Object.fromEntries(["HP", "Special power", "Fight", "Defense"].map(label => [label, reader.number()]));
+  const canFlee = Boolean(reader.number());
+  const sneakChance = reader.number();
+  const sneakUp = reader.number();
+  const width = reader.number();
+  const height = reader.number();
+  const tiles = Array.from({ length: 19 * 7 }, () => reader.string());
+  const specialMoves = [];
+  const weaknesses = [];
+  const refs = [];
+  for (let i = 0; i <= 100; i++) {
+    specialMoves.push(reader.string());
+    weaknesses.push(reader.string());
+  }
+  const ai = reader.number();
+  const usesScript = Boolean(reader.number());
+  const script = reader.string();
+  const xp = reader.number();
+  const gold = reader.number();
+  const { values: programs, refs: programRefs } = fields(reader, ["Victory program", "Escape program"]);
+  refs.push(...programRefs);
+  if (script) refs.push(reference(script, "Enemy AI program"));
+  const animations = {};
+  // Some demo enemies end after the four legacy sound slots.
+  const sounds = fields(reader, ["Attack sound", "Defense sound", "Special move sound", "Defeat sound"]);
+  if (![0, 4].includes(reader.remaining())) throw new Error("Invalid legacy enemy animation tail.");
+  refs.push(...sounds.refs);
+  for (const action of ["Attack", "Defense", "Special move", "Defeat"]) {
+    if (!reader.remaining()) break;
+    const value = reader.string();
+    animations[action] = value;
+    if (value) refs.push(reference(value, `${action} animation`));
+  }
+  for (const [label, values] of [["Enemy tile", tiles], ["Special move", specialMoves], ["Weakness", weaknesses]]) {
+    values.forEach((value, i) => { if (value) refs.push(reference(value, `${label} · slot ${i + 1}`)); });
+  }
+  return { name, stats, canFlee, sneakChance, sneakUp, width, height, tileStride: 7, tiles, specialMoves, weaknesses, ai, usesScript, script, xp, gold, programs, sounds: sounds.values, animations, refs };
+}
+
+function readSpecialMove(bytes) {
+  const reader = textReader(bytes, "RPGTLKIT SPLMOVE");
+  const name = reader.string();
+  const fightPower = reader.number();
+  const cost = reader.number();
+  const program = reader.string();
+  const targetSpecialPower = reader.number();
+  const battle = Boolean(reader.number());
+  const menu = Boolean(reader.number());
+  const { values: assets, refs } = fields(reader, ["Status effect", "Animation"]);
+  if (program) refs.push(reference(program, "Special move program"));
+  const description = reader.string();
+  return { name, fightPower, cost, program, targetSpecialPower, battle, menu, assets, description, refs };
+}
+
+function readLegacyAnimation(bytes) {
+  const reader = textReader(bytes, "RPGTLKIT ANIM");
+  const width = reader.number();
+  const height = reader.number();
+  const storedFrameCount = reader.number();
+  const refs = [];
+  const frames = Array.from({ length: 51 }, (_, index) => {
+    const image = reader.string();
+    const transparentColor = reader.number();
+    const sound = reader.string();
+    if (image) refs.push(reference(image, `Frame ${index + 1} image`));
+    if (sound) refs.push(reference(sound, `Frame ${index + 1} sound`));
+    return { image, transparentColor, sound };
+  });
+  const pauseSeconds = reader.number();
+  return { width, height, storedFrameCount, frames, pauseSeconds, refs };
+}
+
+function readFont(bytes) {
+  const reader = textReader(bytes, "RPGTLKIT FONT");
+  const glyphs = Array.from({ length: 256 }, () => Array.from({ length: 8 }, () => {
+    const value = reader.number();
+    if (!Number.isInteger(value) || value < 0 || value > 255) throw new Error("Invalid glyph row byte.");
+    return value;
+  }));
+  return { width: 8, height: 8, glyphs };
+}
+
+function readStandaloneTile(bytes) {
+  const reader = textReader(bytes, "RPGTLKIT TILE");
+  const detail = reader.number();
+  const compressed = reader.number();
+  if (![1, 2].includes(detail) || ![0, 1].includes(compressed)) throw new Error("Unsupported standalone tile encoding.");
+  const size = detail === 1 ? 32 : 16;
+  const pixels = [];
+  while (pixels.length < size * size) {
+    const count = compressed ? reader.number() : 1;
+    const color = reader.number();
+    if (!Number.isInteger(count) || count < 1 || pixels.length + count > size * size) throw new Error("Invalid standalone tile run.");
+    for (let i = 0; i < count; i++) pixels.push(color);
+  }
+  return { width: size, height: size, detail, compressed: Boolean(compressed), order: "column-major", encoding: "Toolkit COLORREF; -1 is transparent", pixels };
+}
+
+function readItem(bytes) {
+  const reader = cursor(bytes);
+  const version = header(reader, "RPGTLKIT ITEM", [2, 3]);
+  const number = version === 3 ? reader.long : reader.short;
+  const name = reader.string();
+  const description = reader.string();
+  const modes = Object.fromEntries(["equip", "menu", "board", "battle"].map(mode => [mode, Boolean(reader.byte())]));
+  const usableBy = reader.byte();
+  const characters = Array.from({ length: 51 }, () => reader.string());
+  const buyPrice = number();
+  const sellPrice = number();
+  const keyItem = Boolean(reader.byte());
+  const armorSlots = Array.from({ length: 8 }, () => reader.byte());
+  const accessory = reader.string();
+  const modifiers = { hp: number(), defense: number(), fight: number(), specialPower: number() };
+  const equip = fields(reader, ["Equip program", "Remove program"]);
+  const menu = { hp: number(), specialPower: number(), ...fields(reader, ["Menu-use program"]) };
+  const battle = { hp: number(), specialPower: number(), ...fields(reader, ["Battle-use program", "Item animation"]) };
+  const board = fields(reader, ["On-board program", "Pickup program"]);
+  const sizeType = reader.byte();
+  const refs = [...equip.refs, ...menu.refs, ...battle.refs, ...board.refs];
+  const walking = Array.from({ length: 16 }, (_, index) => {
+    const frame = fields(reader, [`Walking frame ${index + 1} top`, `Walking frame ${index + 1} bottom`]);
+    refs.push(...frame.refs);
+    return Object.values(frame.values);
+  });
+  const rest = fields(reader, ["Rest graphic top", "Rest graphic bottom"]);
+  refs.push(...rest.refs);
+  return { version, name, description, modes, usableBy, characters, buyPrice, sellPrice, keyItem, armorSlots, accessory, modifiers,
+    programs: { ...equip.values, ...menu.values, "Battle-use program": battle.values["Battle-use program"], ...board.values },
+    animation: battle.values["Item animation"],
+    menu: { hp: menu.hp, specialPower: menu.specialPower },
+    battle: { hp: battle.hp, specialPower: battle.specialPower },
+    sizeType, walking, rest: Object.values(rest.values), refs };
+}
+
+const readers = {
+  gam: readMainFile, prg: readProgram, tst: readTileset, tan: readAnimation, tem: readCharacter, brd: readBoard,
+  bkg: readBackground, ene: readEnemy, spc: readSpecialMove, anm: readLegacyAnimation,
+  fnt: readFont, gph: readStandaloneTile, itm: readItem,
+};
 
 export async function readArtifacts(zip, catalog) {
   const files = Object.values(zip.files).filter(entry => !entry.dir);
@@ -239,12 +427,14 @@ export async function readArtifacts(zip, catalog) {
     const path = file.name;
     const type = extension(path);
     const read = readers[type];
-    const artifact = { path, type };
+    const artifact = { path, type, decodeStatus: read ? "decoded" :
+      /^(gif|jpe?g|png|bmp|wav|mid)$/.test(type) ? "media" : type === "doc" ? "document" : "unidentified" };
     if (read) {
       try {
         Object.assign(artifact, read(await file.async("uint8array"), catalog));
       } catch (error) {
         artifact.error = error.message;
+        artifact.decodeStatus = "error";
       }
     }
     artifacts.set(path, artifact);
@@ -272,9 +462,10 @@ export function buildReferences(artifacts, mainFile) {
       .filter(path => !name.includes("/") || path.toLowerCase() === name || path.toLowerCase().endsWith(`/${name}`));
     const to = ref.path ?? (candidates.length === 1 ? candidates[0] : undefined);
     const target = artifacts.get(to);
-    const invalidTile = tile !== undefined && target?.count !== undefined && (tile < 1 || tile > target.count);
+    const invalidTile = tile !== undefined && target && (target.count === undefined || tile < 1 || tile > target.count);
     const edge = { ...ref, from, to: invalidTile ? undefined : to, tile,
-      status: invalidTile ? "Tile index out of range" : to ? "Resolved" : candidates.length > 1 ? "Ambiguous" : "Missing" };
+      status: invalidTile ? (target.count === undefined ? "Tileset unavailable" : "Tile index out of range") :
+        to ? "Resolved" : candidates.length > 1 ? "Ambiguous" : "Missing" };
     if (!outgoing.has(from)) outgoing.set(from, []);
     outgoing.get(from).push(edge);
     if (!edge.to) return;

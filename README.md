@@ -74,3 +74,45 @@ python3 scripts/build_catalog.py path/to/RPGTK_2x_Feature_Baseline.md \
 
 The bundled ZIP reader is JSZip 3.10.1 under its MIT option.
 See [license](vendor/JSZip-LICENSE.md).
+
+## Decoded JSON records
+
+**View decoded JSON** opens a versioned record for the selected file.
+The separately supplied Main File has its own section beside the project
+bindings. The panel is collapsed initially and builds JSON when opened.
+
+Every record has `schemaVersion`, `$id`, `path`, `format`, `decode`, `data`,
+and `references`. IDs use `rpgtk:/` plus the URL-encoded archive path.
+A separately supplied Main File uses `rpgtk-main:/`. These IDs are stable
+within a project. A consumer can use the ID as a lookup key for a record.
+The optional fragment is a JSON Pointer into that record. For example,
+`rpgtk:/Demo/Tiles/default.tst#/data/tiles/9` points to one-based tile 10.
+The board has a tile lookup table whose entries carry these references.
+A board run uses a zero-based cell offset in layer, row, column order
+and refers to a zero-based index in that lookup table.
+
+Reference records preserve the original value, evidence, resolution status,
+and the source line when available. Resolved references include a target.
+The coverage status distinguishes decoded data, partial interpretation,
+decoder errors, media, accompanying documents, and unidentified entries.
+
+| Format | Main fields in `data` |
+| --- | --- |
+| GAM | Format version, project path, title, language, startup, board, character |
+| PRG | Source lines, indexed symbols and their occurrences, built-in call count |
+| TST | Dimensions, tile count, transparency key, numbered tiles with base64 RGB24 pixels in column order |
+| TAN | Stored speed and ordered frame references |
+| TEM | Name, stats, portrait and walking frames, with additional decoded asset references |
+| BRD | Dimensions, layer titles, shading, background color, tile lookup and placement runs |
+| ITM | Name, description, use modes, prices, modifiers, programs, walking and rest graphics |
+| ENE | Stats, graphic tile slots, AI, special moves, weaknesses, rewards, sounds and animations |
+| BKG | Dimensions, column-ordered tile names, matching RGB shading, audio fields |
+| SPC | Name, power, cost, use flags, program, animation and description |
+| ANM | Dimensions, stored frame count, frame slots, transparent colors, sounds and pause |
+| GPH | Dimensions, encoding, compression flag and expanded column-ordered color values |
+| FNT | 256 glyphs, each with eight stored row bytes |
+
+The demo contains 116 Toolkit files in the ZIP and one separate GAM. The
+record also accounts for 35 standard media files, the accompanying DOC,
+and the unidentified `Boards/temp.___`. Full legacy engine behavior and
+decoding of fields outside the covered variants are separate work.

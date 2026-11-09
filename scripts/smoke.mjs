@@ -89,3 +89,35 @@ const boards = [...artifacts.values()].filter(artifact => artifact.type === "brd
 assert.equal(boards.length, 17);
 assert.ok(boards.every(artifact => artifact.runs.length > 0));
 console.log("Board smoke passed: 17 tile maps, compressed runs, placed programs, incoming board links, and animation-backed tilesets.");
+
+const { artifactRecord } = await import("../records.mjs");
+const counts = new Map();
+for (const artifact of artifacts.values()) counts.set(artifact.decodeStatus, (counts.get(artifact.decodeStatus) ?? 0) + 1);
+assert.deepEqual(Object.fromEntries(counts), { media: 35, decoded: 116, unidentified: 1, document: 1 });
+assert.equal(artifacts.get("Demo/Font/BASE.FNT").glyphs.length, 256);
+assert.equal(artifacts.get("Demo/Tiles/key.gph").pixels.length, 1024);
+assert.equal(artifacts.get("Demo/Misc/explode.anm").frames[1].sound, "bang.wav");
+assert.equal(artifacts.get("Demo/Enemy/larva.ene").stats.HP, 2000);
+assert.equal(artifacts.get("Demo/Bkrounds/grass.bkg").tiles.length, 209);
+assert.equal(artifacts.get("Demo/SpcMove/attackall.spc").program, "spc_attackall.prg");
+assert.equal(artifacts.get("Demo/Item/kid1.itm").walking.length, 16);
+assert.ok(connections.incoming.get(animation).some(edge => edge.from === castle));
+
+const boardRecord = artifactRecord(board, connections);
+const tileRecord = artifactRecord(artifacts.get("Demo/Tiles/default.tst"), connections);
+assert.equal(boardRecord.schemaVersion, 1);
+assert.equal(boardRecord.decode.status, "partial");
+const lookup = boardRecord.data.tileLookup.find(entry => entry.value === "default.tst10");
+assert.ok(boardRecord.data.runs.some(run => boardRecord.data.tileLookup[run.lookupIndex] === lookup));
+assert.equal(lookup.value, "default.tst10");
+assert.equal(lookup.reference.target.$ref, `${tileRecord.$id}#/data/tiles/9`);
+assert.equal(tileRecord.data.tiles[9].number, 10);
+assert.equal(Buffer.from(tileRecord.data.tiles[9].rgb, "base64").length, 3072);
+const mainRecord = artifactRecord({ ...gam, path: "Demo.gam", type: "gam", decodeStatus: "decoded" }, connections, {
+  external: true,
+  bindings: [["Opening board", { path: openingBoard, value: gam.board, status: "resolved" }]],
+});
+assert.equal(mainRecord.$id, "rpgtk-main:/Demo.gam");
+assert.equal(mainRecord.references.outgoing[0].target.$ref, boardRecord.$id);
+assert.equal(artifactRecord(artifacts.get("Demo/Boards/temp.___"), connections).decode.status, "unidentified");
+console.log("JSON smoke passed: all 153 files classified, 116 Toolkit records decoded, and exact tile and Main File references.");

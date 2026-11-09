@@ -1,5 +1,6 @@
 import { readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
+import { artifactRecord } from "./records.mjs";
 
 const byId = id => document.getElementById(id);
 const el = (tag, value = "", className = "") => {
@@ -56,6 +57,16 @@ function selectDefault() {
   tileSelection = undefined;
   const bindings = renderBindings(startup);
   references = buildReferences(artifacts, mainFile && { name: mainFile.filename, bindings });
+  const mainData = byId("main-data");
+  mainData.replaceChildren();
+  if (mainFile) {
+    const { filename, ...data } = mainFile;
+    mainData.append(jsonPanel(() => artifactRecord(
+      { ...data, path: filename, type: "gam", decodeStatus: "decoded" },
+      references,
+      { external: true, bindings },
+    )));
+  }
   renderBrowser();
   showArtifact();
 }
@@ -67,9 +78,9 @@ function renderBindings(startup) {
   if (!mainFile) return [];
   const root = startup.path ? directory(directory(startup.path).slice(0, -1)) : null;
   const bindings = [
-    ["Configured startup", startup],
-    ["Opening board", resolveAsset(paths, "Boards", mainFile.board, root)],
-    ["Initial character", resolveAsset(paths, "Chrs", mainFile.character, root)],
+    ["Configured startup", { ...startup, value: mainFile.startup }],
+    ["Opening board", { ...resolveAsset(paths, "Boards", mainFile.board, root), value: mainFile.board }],
+    ["Initial character", { ...resolveAsset(paths, "Chrs", mainFile.character, root), value: mainFile.character }],
   ];
   const facts = [
     ["Game title", mainFile.title],
@@ -392,6 +403,20 @@ function renderConnections(path) {
   const title = tileSelection ? `Used by · Tile ${tileSelection}` : "Used by";
   renderEdges(container, title, uses, true);
   renderEdges(container, "References", outgoing, false);
+  container.append(jsonPanel(() => artifactRecord(artifacts.get(path), references)));
+}
+
+function jsonPanel(record) {
+  const details = el("details", "", "reference data-panel");
+  const summary = el("summary", "View decoded JSON");
+  const code = el("pre", "", "json-source");
+  code.tabIndex = 0;
+  code.setAttribute("aria-label", "Decoded artifact JSON");
+  details.append(summary, code);
+  details.addEventListener("toggle", () => {
+    if (details.open && !code.textContent) code.textContent = JSON.stringify(record(), null, 2);
+  });
+  return details;
 }
 
 function renderEdges(container, title, edges, reverse) {
