@@ -39,3 +39,32 @@ await assert.rejects(JSZip.loadAsync("bad"));
 assert.equal(resolveAsset(["one/Prg/start.prg", "two/Prg/START.PRG"], "Prg", "start.prg").status, "ambiguous");
 
 console.log("Demo smoke passed: 51 programs, 65 calls across 28 built-ins, and all three Main File bindings.");
+
+const { readArtifacts, buildReferences, tilePixels } = await import("../artifacts.mjs");
+const { artifacts, folders } = await readArtifacts(zip, catalog);
+assert.equal(artifacts.size, 153);
+assert.ok(folders.includes("Demo/Tiles/"));
+assert.ok(folders.includes("Demo/StatusE/"));
+assert.deepEqual([...artifacts.values()].filter(artifact => artifact.error), []);
+assert.equal([...artifacts.values()].filter(artifact => artifact.type === "tst").reduce((sum, set) => sum + set.count, 0), 356);
+assert.equal([...artifacts.values()].filter(artifact => artifact.type === "tan").length, 8);
+
+const connections = buildReferences(artifacts, { name: "Demo.gam", bindings: [
+  ["Initial character", { path: "Demo/Chrs/frap.tem" }],
+] });
+const water = "Demo/Tiles/water.tst";
+const animation = "Demo/Tiles/water2.tan";
+const frames = connections.outgoing.get(animation);
+assert.deepEqual(frames.map(edge => [edge.to, edge.tile]), Array.from({ length: 8 }, (_, i) => [water, i + 33]));
+assert.ok(connections.incoming.get(water).some(edge => edge.from === animation && edge.tile === 33));
+assert.ok(connections.incoming.get(animation).some(edge => edge.from === "Demo/Boards/castle_out.brd"));
+const pixels = tilePixels(artifacts.get(water), 33);
+assert.equal(pixels.length, 4096);
+assert.ok(pixels.some((value, index) => index % 4 === 3 && value === 255));
+assert.equal(tilePixels(artifacts.get(water), 41), null);
+assert.ok(connections.incoming.get("Demo/Tiles/default.tst").some(edge => edge.from === "Demo/Boards/house1.brd" && edge.tile === 10));
+assert.ok(connections.incoming.get("Demo/Chrs/tano.tem").some(edge => edge.from === "Demo/Prg/getTano.prg" && edge.line === 10));
+assert.equal(artifacts.get("Demo/Chrs/frap.tem").stats.Level, 1);
+assert.ok(connections.incoming.get("Demo/Chrs/frap.tem").some(edge => edge.from === "Demo.gam" && edge.external));
+
+console.log("Artifact smoke passed: folder inventory, tileset counts, animation links, board references, and character uses.");
