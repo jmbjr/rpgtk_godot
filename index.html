@@ -26,6 +26,12 @@
           <label>Game archive <span>ZIP</span><input id="archive" type="file" accept=".zip,application/zip"></label>
           <label>Main File <span>Optional · GAM</span><input id="main-file" type="file" accept=".gam"></label>
         </div>
+        <form id="archive-url-form" class="archive-url-form">
+          <label for="archive-url">Game ZIP URL</label>
+          <input id="archive-url" type="url" required placeholder="https://example.com/game.zip">
+          <button type="submit">Open URL</button>
+        </form>
+        <a id="archive-download" target="_blank" rel="noopener noreferrer" hidden>Download ZIP for local import</a>
         <div class="statuses">
           <p id="archive-status" role="status">Choose a game ZIP to browse its folders and files.</p>
           <p id="main-status" role="status">A Main File can identify the configured startup script.</p>

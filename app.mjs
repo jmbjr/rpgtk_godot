@@ -1,3 +1,4 @@
+import { openGameArchive } from "./archive.mjs";
 import { readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
 import { defaultMidiTone, playMidi } from "./midi.mjs";
@@ -29,6 +30,9 @@ let archive = null;
 let paths = [];
 let programs = [];
 let mainFile = null;
+let uploadedMainFile = null;
+let archiveMainFile = null;
+let archiveDownload;
 let selected = null;
 let archiveRequest = 0;
 let mainRequest = 0;
@@ -76,16 +80,21 @@ const roles = [
 ];
 
 function selectDefault() {
+  mainFile = uploadedMainFile ?? archiveMainFile;
   const startup = mainFile ? resolveAsset(programs, "Prg", mainFile.startup) : null;
   const demo = !mainFile && programs.includes(demoStartup) ? demoStartup : null;
   selected = startup?.path ?? demo;
   selectedFolder = selected ? directory(selected) : (programs[0] ? directory(programs[0]) : folders[0]);
   tileSelection = undefined;
   const bindings = renderBindings(startup);
-  references = buildReferences(artifacts, mainFile && { name: mainFile.filename, bindings });
+  references = buildReferences(artifacts, mainFile && {
+    name: mainFile.filename, bindings, external: mainFile === uploadedMainFile,
+  });
   const mainData = byId("main-data");
   mainData.replaceChildren();
-  if (mainFile) {
+  if (mainFile === archiveMainFile && archiveMainFile) {
+    mainData.append(jsonPanel(() => artifactRecord(artifacts.get(archiveMainFile.filename), references)));
+  } else if (mainFile) {
     const { filename, ...data } = mainFile;
     mainData.append(jsonPanel(() => artifactRecord(
       { ...data, path: filename, type: "gam", decodeStatus: "decoded" },
@@ -109,7 +118,7 @@ function renderBindings(startup) {
     ["Initial character", { ...resolveAsset(paths, "Chrs", mainFile.character, root), value: mainFile.character }],
   ];
   const facts = [
-    ["Game title", mainFile.title],
+    ["Game title", mainFile.title ?? "—"],
     ...bindings.map(([label, binding], i) => [label, bindingValue([mainFile.startup, mainFile.board, mainFile.character][i], binding)]),
   ];
   for (const [label, value] of facts) {
@@ -1307,14 +1316,12 @@ function showReference(group) {
   reference.append(jumps);
 }
 
-byId("archive").addEventListener("change", async event => {
-  const file = event.target.files[0];
-  if (!file) return;
+async function loadArchive(name, readBytes) {
   const request = ++archiveRequest;
-  status("archive-status", `Opening ${file.name}…`);
+  status("archive-status", `Opening ${name}…`);
   try {
     const [zip, commands] = await Promise.all([
-      globalThis.JSZip.loadAsync(await file.arrayBuffer()),
+      openGameArchive(await readBytes(), bytes => globalThis.JSZip.loadAsync(bytes)),
       catalog ? Promise.resolve(catalog) : fetch("./catalog.json").then(response => {
         if (!response.ok) throw new Error("Unable to load the command catalog.");
         return response.json();
@@ -1329,11 +1336,65 @@ byId("archive").addEventListener("change", async event => {
     folders = indexed.folders;
     paths = [...artifacts.keys()].sort();
     programs = paths.filter(path => artifacts.get(path).type === "prg");
-    status("archive-status", `${file.name} · ${paths.length} files · ${programs.length} RPGCode programs`);
+    const mains = [...artifacts.values()].filter(artifact => artifact.type === "gam" && !artifact.error);
+    archiveMainFile = mains.length === 1 ? { ...mains[0], filename: mains[0].path } : null;
+    if (!uploadedMainFile) {
+      status("main-status", archiveMainFile ? mainFileLabel(archiveMainFile) : "A Main File can identify the configured startup script.");
+    }
+    status("archive-status", `${name} · ${paths.length} files · ${programs.length} RPGCode programs`);
     selectDefault();
   } catch (error) {
-    if (request === archiveRequest) status("archive-status", `Unable to open ${file.name}. ${error.message}`, true);
+    if (request === archiveRequest) status("archive-status", `Unable to open ${name}. ${error.message}`, true);
   }
+}
+
+function mainFileLabel(file) {
+  const format = file.minor === 0 ? "Text" : "Binary";
+  return `${file.filename} · ${format} format ${file.major}.${file.minor}`;
+}
+
+byId("archive").addEventListener("change", event => {
+  const file = event.target.files[0];
+  if (!file) return;
+  archiveDownload?.abort();
+  byId("archive-download").hidden = true;
+  void loadArchive(file.name, () => file.arrayBuffer());
+});
+
+byId("archive-url-form").addEventListener("submit", event => {
+  event.preventDefault();
+  const download = byId("archive-download");
+  let url;
+  try {
+    url = new URL(byId("archive-url").value.trim());
+    if (url.protocol !== "https:" || url.username || url.password) throw new Error();
+  } catch {
+    archiveDownload?.abort();
+    archiveRequest++;
+    status("archive-status", "Enter a public HTTPS URL for a game ZIP.", true);
+    download.hidden = true;
+    return;
+  }
+  archiveDownload?.abort();
+  const controller = new AbortController();
+  archiveDownload = controller;
+  download.hidden = true;
+  const name = basename(url.pathname) || "game ZIP";
+  void loadArchive(name, async () => {
+    try {
+      const response = await fetch(url, { credentials: "omit", referrerPolicy: "no-referrer", signal: controller.signal });
+      if (!response.ok) throw new Error(`The server returned HTTP ${response.status}.`);
+      return await response.arrayBuffer();
+    } catch (error) {
+      if (controller.signal.aborted) throw error;
+      download.href = url.href;
+      download.hidden = false;
+      if (error instanceof TypeError) {
+        throw new Error("The browser could not read this URL. The host may block cross-origin downloads. Download the ZIP and open it locally.");
+      }
+      throw error;
+    }
+  });
 });
 
 byId("main-file").addEventListener("change", async event => {
@@ -1343,11 +1404,11 @@ byId("main-file").addEventListener("change", async event => {
   try {
     const result = readMainFile(new Uint8Array(await file.arrayBuffer()));
     if (request !== mainRequest) return;
-    mainFile = { ...result, filename: file.name };
-    status("main-status", `${file.name} · Binary format ${result.major}.${result.minor}`);
+    uploadedMainFile = { ...result, filename: file.name };
+    status("main-status", mainFileLabel(uploadedMainFile));
   } catch (error) {
     if (request !== mainRequest) return;
-    mainFile = null;
+    uploadedMainFile = null;
     status("main-status", `Unable to read ${file.name}. ${error.message}`, true);
   }
   selectDefault();

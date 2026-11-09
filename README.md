@@ -29,6 +29,24 @@ Format sources at the reviewed Toolkit 3 revision include the
 [character reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vb/tkCommon/modules/CommonPlayer.bas#L527-L686),
 and [board reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/common/board.cpp#L575-L851).
 
+## Open a game ZIP from a URL
+
+Paste a public HTTPS ZIP address into **Game ZIP URL** and choose **Open URL**.
+The ZIP host must allow cross-origin browser reads from the viewer. If the
+browser cannot read it, use **Download ZIP for local import** and then choose
+the downloaded file in **Game archive**.
+
+The viewer also recognizes the Toolkit installer layout with `setup.inf`
+and `zip.zip`, and reads the ZIP payload identified by the `CMP1` footer
+in the packaged game executable. It reads that payload as bytes. Windows
+path separators are normalized for archive browsing and references.
+
+A uniquely decoded archive Main File can configure startup. An explicitly
+selected Main File takes priority. The viewer recognizes the Toolkit 2.0
+text Main File startup fields as well as the 2.2 binary layout. Older text
+asset formats such as the boards, characters and items in DustBall remain
+outside the corresponding binary decoders.
+
 ## Smoke test
 
 With Node.js 22 or later, run the fixture checks directly.
