@@ -69,7 +69,8 @@ Then check the browser workflow.
    **Reset EQ** restores flat playback. Expand **MIDI tracks** to see each
    file track's instruments, channel, note counts and ranges. Open
    `VIP - Title1.mid` to see several instruments in one track. Expand
-   **Piano roll** while it plays and choose the clarinet on channel 7.
+   **Piano roll** while it plays, turn **All instruments** off, and turn on
+   the clarinet on channel 7. Try changing its color with the picker.
    Check that the playhead and note highlights follow playback, pause,
    and reset. Track and tempo data are also under **View decoded JSON**.
 10. Open `temple.bkg` under **Bkrounds**. Compare the pool, pillars and
@@ -108,8 +109,10 @@ by S. Christian Collins, pinned to upstream commit
 ## Follow MIDI notes
 
 **Piano roll** loads Magenta's SVG visualizer on demand. Each bar shows a
-MIDI key hold from note-on to note-off. Filter by MIDI port and channel to
-follow a part. The playhead uses the active player's clock, including
+MIDI key hold from note-on to note-off. Toggle all parts or individual
+instrument parts, and use each color picker to recolor its notes. A part
+is identified by MIDI port, channel, and program. These controls affect
+the display. The playhead uses the active player's clock, including
 GeneralUser GS and the built-in synth.
 
 ## Refresh the command catalog

@@ -166,6 +166,7 @@ assert.equal(titleNotes.notes.length, titleOne.tracks[0].noteOnEvents);
 const clarinet = titleNotes.notes.filter(note => note.channel === 7);
 assert.equal(clarinet.length, 269);
 assert.equal(clarinet[0].pitch, 66);
+assert.ok(clarinet.every(note => note.program === 72));
 assert.ok(clarinet[0].startTime > 5 && clarinet[0].endTime > clarinet[0].startTime);
 const openingParts = titleOne.tracks[0].parts.slice(0, 3);
 assert.deepEqual(openingParts.map(({ channel, instrument, noteCount, lowestNote, highestNote }) =>
@@ -191,6 +192,8 @@ assert.deepEqual(shared[1].parts.map(part => [part.instrument, part.noteCount, p
   ["Clarinet", 1, 60], ["Orchestral Harp", 1, 64], ["Percussion", 1, 35],
 ]);
 assert.equal(readMidi(midiBytes(2, programTrack, noteTrack)).tracks[1].parts[0].instrument, "Acoustic Grand Piano");
+const changedPrograms = midiNoteSequence(midiBytes(1, programTrack, noteTrack));
+assert.deepEqual(changedPrograms.notes.map(({ channel, program }) => [channel, program]), [[1, 72], [1, 47], [10, 1]]);
 const paired = midiNoteSequence(midiBytes(1,
   [0, 0x90, 60, 90, 24, 0x90, 60, 80],
   [48, 0x80, 60, 0, 48, 0x90, 60, 0],
