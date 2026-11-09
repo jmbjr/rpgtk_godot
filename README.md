@@ -11,7 +11,7 @@ Choose the game ZIP and optionally its separate Main File. The viewer reads
 both files in browser memory. It indexes RPGCode source and resolves the
 startup fields of binary Main File format 2.2. Browse the archive by folder.
 Programs retain the command reference and source line jumps. Tilesets,
-animated tiles, characters, and boards have file-specific previews. Select a
+animated tiles, characters, enemies, items, and boards have file-specific previews. Select a
 reference to jump to its source file, line, or numbered tile.
 
 The connection index covers literal references in supported RPGCode
@@ -53,7 +53,12 @@ Then check the browser workflow.
    to the incoming warp and Main File reference. Under **Tilesets used**,
    confirm `default.tst`. Open `castle_out.brd` and look for `water.tst`
    through `water2.tan`.
-8. Repeat on the GitHub Pages deployment. Test an unreadable ZIP and a
+8. Open `larva.ene` under **Enemy**. The composite is four by two tiles.
+   Expand **Source tiles** and follow a tile to its numbered tileset entry.
+   Open `kid1.itm` under **Item** and use the direction and frame controls
+   or play its walk. Open `keystone.itm` to check the standalone-tile sprite.
+   The two Evil Thing definitions report their missing GPH source files.
+9. Repeat on the GitHub Pages deployment. Test an unreadable ZIP and a
    truncated Main File, then select valid files again to verify recovery.
 
 The demo files are supplied separately. The graph shows static source use.

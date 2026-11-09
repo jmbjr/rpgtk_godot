@@ -1,6 +1,7 @@
 import { readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
 import { artifactRecord } from "./records.mjs";
+import { enemySprite, itemSprites, standaloneTilePixels } from "./sprites.mjs";
 
 const byId = id => document.getElementById(id);
 const el = (tag, value = "", className = "") => {
@@ -247,6 +248,34 @@ function renderAsset(artifact) {
     preview(0);
     return;
   }
+  if (artifact.type === "ene") {
+    panel.append(el("h3", artifact.name), el("p", "Enemy graphic · BAT-03 Enemy definition"));
+    const sprite = enemySprite(artifact, artifacts, references);
+    if (!sprite?.parts.length) {
+      panel.append(el("p", "No enemy graphic is available."));
+      return;
+    }
+    if (sprite.missing.length === sprite.parts.length) {
+      panel.append(el("p", "The archive is missing the tiles for this enemy graphic."));
+    } else {
+      const canvas = spriteCanvas(`${artifact.name} assembled graphic`);
+      drawSprite(canvas, sprite);
+      panel.append(canvas);
+    }
+    panel.append(spriteLinks(sprite));
+    return;
+  }
+  if (artifact.type === "itm") {
+    renderItemSprites(panel, artifact);
+    return;
+  }
+  if (artifact.type === "gph") {
+    const canvas = spriteCanvas(basename(artifact.path));
+    const pixels = standaloneTilePixels(artifact);
+    if (pixels) drawSprite(canvas, { width: 32, height: 32, pixels });
+    panel.append(el("p", `${artifact.width} × ${artifact.height} pixels · ART-01 Tile drawing`), canvas);
+    return;
+  }
   if (artifact.type === "tem") {
     panel.append(el("h3", artifact.name), el("p", "ACT-01 Player definition · ACT-03 Player art and audio"));
     const stats = el("dl", "", "bindings");
@@ -298,6 +327,111 @@ function renderAsset(artifact) {
     return;
   }
   panel.append(el("p", `${artifact.type.toUpperCase() || "Unknown format"} · Archive entry`));
+}
+
+function spriteCanvas(label) {
+  const canvas = el("canvas", "", "sprite-preview");
+  canvas.setAttribute("role", "img");
+  canvas.setAttribute("aria-label", label);
+  return canvas;
+}
+
+function drawSprite(canvas, sprite) {
+  canvas.width = sprite.width;
+  canvas.height = sprite.height;
+  canvas.style.width = `${sprite.width * 2}px`;
+  canvas.getContext("2d").putImageData(new ImageData(sprite.pixels, sprite.width, sprite.height), 0, 0);
+}
+
+function spriteLinks(sprite) {
+  const details = el("details", "", "edge-group");
+  details.append(el("summary", `Source tiles · ${sprite.parts.length}`));
+  const list = el("ul", "", "edge-list");
+  for (const { x, y, value, edge } of sprite.parts) {
+    const row = el("li");
+    const label = `(${x + 1}, ${y + 1}) · ${value}`;
+    row.append(edge?.to ?
+      button(label, () => selectArtifact(edge.to, edge.tile)) :
+      el("span", `${label} · ${edge?.status ?? "Unresolved"}`));
+    list.append(row);
+  }
+  details.append(list);
+  if (sprite.missing.length) {
+    details.open = true;
+    details.append(el("p", `${sprite.missing.length} tile parts could not be rendered.`));
+  }
+  return details;
+}
+
+function renderItemSprites(panel, artifact) {
+  panel.append(el("h3", artifact.name), el("p", "Item graphics · ITM-01 Item roles"));
+  const sprites = itemSprites(artifact, artifacts, references);
+  const sequences = sprites.walking.filter(sequence => sequence.frames.some(Boolean));
+  if (sprites.rest) {
+    const rest = spriteCanvas(`${artifact.name} resting sprite`);
+    drawSprite(rest, sprites.rest);
+    panel.append(el("h3", "Resting sprite"), rest, spriteLinks(sprites.rest));
+  }
+  if (!sequences.length) {
+    if (!sprites.rest) panel.append(el("p", "This item has no assigned graphic."));
+    return;
+  }
+
+  panel.append(el("h3", "Walking sprite"));
+  const directionLabel = el("label", "Direction", "board-controls");
+  const directions = el("select");
+  for (const { direction } of sequences) directions.append(el("option", direction));
+  directionLabel.append(directions);
+  const canvas = spriteCanvas(`${artifact.name} walking sprite`);
+  drawSprite(canvas, sequences[0].frames.find(Boolean));
+  const controls = el("div", "", "sprite-controls");
+  const frameStatus = el("span", "", "technical");
+  const links = el("div");
+  let frame = 0;
+
+  const sequence = () => sequences[directions.selectedIndex].frames;
+  function display() {
+    const sprite = sequence()[frame];
+    if (sprite) {
+      drawSprite(canvas, sprite);
+      links.replaceChildren(spriteLinks(sprite));
+    } else {
+      canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+      links.replaceChildren(el("p", "This frame has no assigned graphic."));
+    }
+    frameStatus.textContent = `${directions.value} · Frame ${frame + 1} of ${sequence().length}`;
+  }
+  function stop() {
+    clearInterval(animationTimer);
+    play.setAttribute("aria-pressed", "false");
+    play.textContent = "Play walk";
+  }
+  function step(change) {
+    frame = (frame + change + sequence().length) % sequence().length;
+    display();
+  }
+  const play = button("Play walk", () => {
+    if (play.getAttribute("aria-pressed") === "true") {
+      stop();
+      return;
+    }
+    play.setAttribute("aria-pressed", "true");
+    play.textContent = "Pause walk";
+    animationTimer = setInterval(() => step(1), 167);
+  });
+  play.setAttribute("aria-pressed", "false");
+  directions.addEventListener("change", () => {
+    stop();
+    frame = 0;
+    display();
+  });
+  controls.append(
+    button("Previous frame", () => { stop(); step(-1); }),
+    play,
+    button("Next frame", () => { stop(); step(1); }),
+  );
+  panel.append(directionLabel, canvas, frameStatus, controls, links);
+  display();
 }
 
 function renderBoard(panel, board, edges) {
