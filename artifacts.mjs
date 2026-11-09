@@ -335,6 +335,24 @@ function readSpecialMove(bytes) {
   return { name, fightPower, cost, program, targetSpecialPower, battle, board, storedUseFlags, assets, description, refs };
 }
 
+function readStatusEffect(bytes) {
+  const reader = cursor(bytes);
+  const version = header(reader, "RPGTLKIT STATUSE", [2]);
+  const name = reader.string();
+  const rounds = reader.short();
+  const speed = Boolean(reader.short());
+  const slow = Boolean(reader.short());
+  const disable = Boolean(reader.short());
+  const removeHp = Boolean(reader.short());
+  const hpAmount = reader.short();
+  const removeSmp = Boolean(reader.short());
+  const smpAmount = reader.short();
+  const runProgram = Boolean(reader.short());
+  const program = reader.string();
+  const refs = program ? [reference(program, "Status effect program")] : [];
+  return { version, name, rounds, speed, slow, disable, removeHp, hpAmount, removeSmp, smpAmount, runProgram, program, refs };
+}
+
 function readLegacyAnimation(bytes) {
   const reader = textReader(bytes, "RPGTLKIT ANIM");
   const width = reader.number();
@@ -438,7 +456,7 @@ function readTemporaryBoardText(bytes) {
 
 const readers = {
   gam: readMainFile, prg: readProgram, tst: readTileset, tan: readAnimation, tem: readCharacter, brd: readBoard,
-  bkg: readBackground, ene: readEnemy, spc: readSpecialMove, anm: readLegacyAnimation,
+  bkg: readBackground, ene: readEnemy, spc: readSpecialMove, ste: readStatusEffect, anm: readLegacyAnimation,
   fnt: readFont, gph: readStandaloneTile, itm: readItem,
   gif: readGif, jpg: readJpeg, jpeg: readJpeg, wav: readWave, mid: readMidi,
   doc: readCompoundDocument, ___: readTemporaryBoardText,

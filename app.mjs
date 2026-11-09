@@ -246,6 +246,10 @@ function renderAsset(artifact) {
     renderSpecialMove(panel, artifact, edges);
     return;
   }
+  if (artifact.type === "ste") {
+    renderStatusEffect(panel, artifact, edges);
+    return;
+  }
   if (artifact.type === "tst") {
     panel.append(el("p", `${artifact.count} tiles · 32 × 32 pixels · ART-05 Tilesets`));
     const grid = el("div", "", "tile-grid");
@@ -462,6 +466,24 @@ function renderSpecialMove(panel, move, edges) {
     ["Status effect", link(assets["Status effect"], "Status effect")],
     ["Effect animation", link(assets.Animation, "Animation")],
   ]));
+}
+
+function renderStatusEffect(panel, effect, edges) {
+  const { name, rounds, speed, slow, disable, removeHp, hpAmount, removeSmp, smpAmount, runProgram, program } = effect;
+  const yesNo = enabled => enabled ? "Yes" : "No";
+  const programEdge = edges.find(edge => edge.evidence === "Status effect program");
+  panel.append(el("h3", name), el("p", "Status effect"), assetFields([
+    ["Duration", rounds === 0 ? "Until end of fight" : `${rounds} ${rounds === 1 ? "round" : "rounds"}`],
+    ["Speed target charge time", yesNo(speed)],
+    ["Slow target charge time", yesNo(slow)],
+    ["Disable target", yesNo(disable)],
+    ["Remove HP", yesNo(removeHp)],
+    ["HP amount", String(hpAmount)],
+    ["Remove SMP", yesNo(removeSmp)],
+    ["SMP amount", String(smpAmount)],
+    ["Run RPGCode program", yesNo(runProgram)],
+    ["RPGCode program", linkedAsset(program, programEdge)],
+  ]), el("p", "Negative amounts restore HP or SMP."));
 }
 
 const playbackIcons = {

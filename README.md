@@ -85,6 +85,10 @@ Then check the browser workflow.
 11. Repeat on the GitHub Pages deployment. Test an unreadable ZIP and a
     truncated Main File, then select valid files again to verify recovery.
 
+For a ZIP containing a Toolkit 2.2 binary status effect, open the `.ste`
+under **StatusE** and compare the duration and effects with the editor.
+Follow the RPGCode link if the program is in the archive.
+
 The demo files are supplied separately. The graph shows static source use.
 It does not evaluate RPGCode or infer reachability for other programs.
 
@@ -164,6 +168,7 @@ decoder errors, media, accompanying documents, and unidentified entries.
 | ENE | Stats, graphic tile slots, AI, special moves, weaknesses, rewards, sounds and animations |
 | BKG | Dimensions, column-ordered tile names, matching RGB shading, audio fields |
 | SPC | Name, power, cost, raw use flags, editor-style battle and board flags, program, animation and description |
+| STE | Toolkit 2.2 binary status effect name, rounds, effect flags, signed HP/SMP amounts and RPGCode reference |
 | ANM | Dimensions, stored frame count, frame slots, transparent colors, sounds and pause |
 | GPH | Dimensions, encoding, compression flag and expanded column-ordered color values |
 | FNT | 256 glyphs, each with eight stored row bytes |
