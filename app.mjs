@@ -844,6 +844,56 @@ function renderBoard(panel, board, edges) {
   draw();
 }
 
+function renderMidiTracks(tracks) {
+  const details = el("details", "", "edge-group");
+  details.append(el("summary", `MIDI tracks · ${tracks.length}`));
+  const scroller = el("div", "", "midi-track-scroll");
+  scroller.tabIndex = 0;
+  scroller.setAttribute("role", "region");
+  scroller.setAttribute("aria-label", "MIDI track and note summary");
+  const table = el("table", "", "midi-track-table");
+  const head = el("thead");
+  const columns = el("tr");
+  for (const name of ["Track", "Instrument", "Notes", "Range"]) {
+    const heading = el("th", name);
+    heading.scope = "col";
+    columns.append(heading);
+  }
+  head.append(columns);
+  table.append(head);
+  const pitchNames = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
+  const pitchName = note => `${pitchNames[note % 12]}${Math.floor(note / 12) - 1}`;
+  for (const track of tracks) {
+    const group = el("tbody");
+    const name = [...new Set(track.names.filter(Boolean))].join(" / ");
+    const heading = el("th", name ? `${track.number} · ${name}` : `Track ${track.number}`);
+    heading.scope = "rowgroup";
+    heading.rowSpan = Math.max(1, track.parts.length);
+    if (track.instruments.length) heading.append(el("small", track.instruments.join(" / ")));
+    if (!track.parts.length) {
+      const row = el("tr");
+      row.append(heading, el("td", "No notes"), el("td", "0"), el("td", "—"));
+      group.append(row);
+    }
+    for (const [index, part] of track.parts.entries()) {
+      const row = el("tr");
+      if (index === 0) row.append(heading);
+      const instrument = el("td", part.instrument);
+      const channel = `Ch. ${part.channel}${part.port ? ` · Port ${part.port}` : ""}`;
+      instrument.append(el("small", `${channel} · ${part.percussion ? "Kit" : "Program"} ${part.program}`));
+      const noteLabel = part.percussion ? String : pitchName;
+      const low = noteLabel(part.lowestNote);
+      const high = noteLabel(part.highestNote);
+      row.append(instrument, el("td", part.noteCount.toLocaleString()), el("td", low === high ? low : `${low}–${high}`));
+      group.append(row);
+    }
+    table.append(group);
+  }
+  scroller.append(table);
+  details.append(scroller, el("p", "Instrument labels use General MIDI. Percussion ranges show MIDI key numbers."));
+  return details;
+}
+
 function renderMidiControls(panel, artifact) {
   const controls = el("div", "", "midi-controls");
   const message = el("p");
@@ -871,7 +921,7 @@ function renderMidiControls(panel, artifact) {
   }
   stop.disabled = true;
   controls.append(play, stop);
-  panel.append(controls, message, renderMidiSoundBank(), renderMidiTone());
+  panel.append(controls, message, renderMidiTracks(artifact.tracks), renderMidiSoundBank(), renderMidiTone());
 }
 
 function renderMidiSoundBank() {

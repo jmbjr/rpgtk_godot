@@ -158,6 +158,32 @@ for (const [read, artifact] of [[readGif, gif], [readJpeg, jpeg], [readWave, wav
   const bytes = await zip.file(artifact.path).async("uint8array");
   assert.throws(() => read(bytes.subarray(0, 8)));
 }
+const titleOne = artifacts.get("Demo/Media/VIP - Title1.mid");
+assert.equal(titleOne.tracks.length, 1);
+const openingParts = titleOne.tracks[0].parts.slice(0, 3);
+assert.deepEqual(openingParts.map(({ channel, instrument, noteCount, lowestNote, highestNote }) =>
+  [channel, instrument, noteCount, lowestNote, highestNote]), [
+  [1, "String Ensemble 2", 164, 55, 84],
+  [2, "Orchestral Harp", 862, 39, 87],
+  [7, "Clarinet", 269, 60, 84],
+]);
+for (const { type, tracks } of artifacts.values()) {
+  if (type === "mid") {
+    assert.ok(tracks.every(track => track.noteOnEvents === track.parts.reduce((sum, part) => sum + part.noteCount, 0)));
+  }
+}
+const midiBytes = (format, ...tracks) => Uint8Array.from([
+  77, 84, 104, 100, 0, 0, 0, 6, 0, format, 0, tracks.length, 0, 96,
+  ...tracks.flatMap(track => [77, 84, 114, 107, 0, 0, 0, track.length + 4, ...track, 0, 255, 47, 0]),
+]);
+const programTrack = [0, 0xc0, 71, 10, 0xc0, 46];
+const noteTrack = [0, 0x90, 60, 80, 1, 61, 0, 10, 64, 80, 0, 0x99, 35, 90];
+const shared = readMidi(midiBytes(1, programTrack, noteTrack)).tracks;
+assert.equal(shared[0].parts.length, 0);
+assert.deepEqual(shared[1].parts.map(part => [part.instrument, part.noteCount, part.lowestNote]), [
+  ["Clarinet", 1, 60], ["Orchestral Harp", 1, 64], ["Percussion", 1, 35],
+]);
+assert.equal(readMidi(midiBytes(2, programTrack, noteTrack)).tracks[1].parts[0].instrument, "Acoustic Grand Piano");
 console.log("Media smoke passed: image headers, WAV timing, MIDI tracks, compound directory, and observed temporary text records.");
 
 const { animationFrames, battleBackground, enemySprite, itemSprites, keyFrameColor, standaloneTilePixels } = await import("../sprites.mjs");
