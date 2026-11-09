@@ -35,12 +35,56 @@ export function midiTimeline(bytes) {
   return { events, duration: secondsAt(endTick) };
 }
 
+export const defaultMidiTone = Object.freeze({
+  bass: 0,
+  mid: 0,
+  midFrequency: 1500,
+  treble: 0,
+  trebleFrequency: 3000,
+  bypass: false,
+});
+
+function createMidiEq(context) {
+  const bass = context.createBiquadFilter();
+  const mid = context.createBiquadFilter();
+  const treble = context.createBiquadFilter();
+  bass.type = "lowshelf";
+  bass.frequency.value = 250;
+  mid.type = "peaking";
+  mid.Q.value = 1;
+  treble.type = "highshelf";
+  bass.connect(mid);
+  mid.connect(treble);
+  treble.connect(context.destination);
+
+  function update(settings, immediate = false) {
+    const now = context.currentTime;
+    const gains = [
+      [bass.gain, settings.bass],
+      [mid.gain, settings.mid],
+      [treble.gain, settings.treble],
+    ];
+    const parameters = [
+      ...gains.map(([parameter, value]) => [parameter, settings.bypass ? 0 : value]),
+      [mid.frequency, settings.midFrequency],
+      [treble.frequency, settings.trebleFrequency],
+    ];
+    for (const [parameter, value] of parameters) {
+      if (immediate) parameter.value = value;
+      else parameter.setTargetAtTime(value, now, 0.02);
+    }
+  }
+
+  return { input: bass, update };
+}
+
 // TinySynth owns a page-lifetime maintenance timer. Reuse the synth, but
 // give each run its own audio context so Stop also silences queued percussion.
 let synth;
 
-export function playMidi(bytes, onPlaying, onFinish) {
+export function playMidi(bytes, initialTone, onPlaying, onFinish) {
   let context;
+  let eq;
   let timer;
   let stopped = false;
 
@@ -61,13 +105,9 @@ export function playMidi(bytes, onPlaying, onFinish) {
     synth ??= new globalThis.WebAudioTinySynth({ internalcontext: 0 });
     context = new AudioContext();
 
-    // Ease the oscillator synth's bright upper harmonics and percussion.
-    const tone = context.createBiquadFilter();
-    tone.type = "highshelf";
-    tone.frequency.value = 3000;
-    tone.gain.value = -6;
-    tone.connect(context.destination);
-    synth.setAudioContext(context, tone);
+    eq = createMidiEq(context);
+    eq.update(initialTone, true);
+    synth.setAudioContext(context, eq.input);
     const [data] = await Promise.all([bytes, context.resume()]);
     if (stopped) return;
     const { events, duration } = midiTimeline(data);
@@ -95,5 +135,10 @@ export function playMidi(bytes, onPlaying, onFinish) {
   // Handle a file-read failure even if the browser cannot initialize audio.
   void bytes.catch(() => {});
   void start().catch(error => stop(`Unable to play MIDI. ${error.message}`));
-  return stop;
+  return {
+    stop,
+    setTone(settings) {
+      if (!stopped) eq?.update(settings);
+    },
+  };
 }

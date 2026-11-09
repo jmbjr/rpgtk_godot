@@ -32,7 +32,7 @@ p { color: var(--muted); }
 .pickers, .statuses, .bindings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: .8rem; }
 label { display: grid; grid-template-columns: 1fr auto; gap: .45rem; font-weight: 650; }
 label span, .section-head span { color: var(--muted); font-size: .78rem; }
-input { grid-column: 1 / -1; width: 100%; min-width: 0; padding: .4rem; border: 1px solid var(--line); border-radius: 4px; font: inherit; }
+.pickers input { grid-column: 1 / -1; width: 100%; min-width: 0; padding: .4rem; border: 1px solid var(--line); border-radius: 4px; font: inherit; }
 input::file-selector-button, button { font: inherit; color: var(--gold); border: 1px solid var(--line); background: #242028; border-radius: 4px; cursor: pointer; padding: .35rem .55rem; }
 button:hover, button[aria-pressed="true"] { background: #352b29; border-color: #9b8c75; }
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
@@ -123,3 +123,18 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
   image-rendering: pixelated;
 }
 .sprite-controls, .midi-controls { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .45rem; }
+
+.midi-eq { min-inline-size: 0; margin: .65rem 0; padding: .55rem .65rem; border: 1px solid var(--line); border-radius: .4rem; }
+.midi-eq > label {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, auto) minmax(2.5rem, 1fr) 8ch;
+  align-items: center;
+  gap: .45rem;
+  margin-block: .25rem;
+  font-size: .875rem;
+}
+.midi-eq input { accent-color: var(--gold); }
+.midi-eq input[type="range"] { width: 100%; margin: 0; }
+.midi-eq-value { justify-self: end; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.midi-eq-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .9rem; margin-top: .5rem; }
+.midi-eq-actions label { display: inline-flex; align-items: center; gap: .3rem; }
