@@ -1,4 +1,5 @@
-import { decodeProgram, indexProgram, readMainFile, resolveAsset } from "./model.mjs";
+import { readMainFile, resolveAsset } from "./model.mjs";
+import { basename, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
 
 const byId = id => document.getElementById(id);
 const el = (tag, value = "", className = "") => {
@@ -27,7 +28,14 @@ let mainFile = null;
 let selected = null;
 let archiveRequest = 0;
 let mainRequest = 0;
-let programRequest = 0;
+let artifacts = new Map();
+let folders = [];
+let selectedFolder = null;
+let references = { incoming: new Map(), outgoing: new Map() };
+let tileSelection;
+let animationTimer;
+let portraitUrl;
+let inspectorRevision = 0;
 const demoStartup = "Demo/Prg/start.prg";
 const sourceNames = {
   R13: "RPGCODE.REF · Toolkit 2.13",
@@ -44,28 +52,35 @@ function selectDefault() {
   const startup = mainFile ? resolveAsset(programs, "Prg", mainFile.startup) : null;
   const demo = !mainFile && programs.includes(demoStartup) ? demoStartup : null;
   selected = startup?.path ?? demo;
-  renderBindings(startup);
-  renderPrograms();
-  showProgram();
+  selectedFolder = selected ? directory(selected) : (programs[0] ? directory(programs[0]) : folders[0]);
+  tileSelection = undefined;
+  const bindings = renderBindings(startup);
+  references = buildReferences(artifacts, mainFile && { name: mainFile.filename, bindings });
+  renderBrowser();
+  showArtifact();
 }
 
-function renderBindings(startup = mainFile && resolveAsset(programs, "Prg", mainFile.startup)) {
-  const bindings = byId("bindings");
-  bindings.hidden = !mainFile;
-  bindings.replaceChildren();
-  if (!mainFile) return;
-  const root = startup.path ? startup.path.slice(0, startup.path.toLowerCase().lastIndexOf("prg/")) : null;
+function renderBindings(startup) {
+  const panel = byId("bindings");
+  panel.hidden = !mainFile;
+  panel.replaceChildren();
+  if (!mainFile) return [];
+  const root = startup.path ? directory(directory(startup.path).slice(0, -1)) : null;
+  const bindings = [
+    ["Configured startup", startup],
+    ["Opening board", resolveAsset(paths, "Boards", mainFile.board, root)],
+    ["Initial character", resolveAsset(paths, "Chrs", mainFile.character, root)],
+  ];
   const facts = [
     ["Game title", mainFile.title],
-    ["Configured startup", bindingValue(mainFile.startup, startup)],
-    ["Opening board", bindingValue(mainFile.board, resolveAsset(paths, "Boards", mainFile.board, root))],
-    ["Initial character", bindingValue(mainFile.character, resolveAsset(paths, "Chrs", mainFile.character, root))],
+    ...bindings.map(([label, binding], i) => [label, bindingValue([mainFile.startup, mainFile.board, mainFile.character][i], binding)]),
   ];
   for (const [label, value] of facts) {
     const fact = el("div");
     fact.append(el("dt", label), el("dd", value, "technical"));
-    bindings.append(fact);
+    panel.append(fact);
   }
+  return bindings;
 }
 
 function bindingValue(name, result) {
@@ -75,47 +90,252 @@ function bindingValue(name, result) {
   return `${name} · ${label}`;
 }
 
-function renderPrograms() {
+function renderBrowser() {
   byId("workspace").hidden = !archive;
-  byId("file-count").textContent = String(programs.length);
-  byId("file-list").replaceChildren(...programs.map(path => {
-    const node = button(path, () => {
-      selected = path;
-      for (const item of byId("file-list").children) item.setAttribute("aria-pressed", String(item === node));
-      showProgram();
+  byId("folder-list").replaceChildren(...folders.map(folder => {
+    const depth = Math.max(0, folder.split("/").length - 2);
+    const node = button(folder ? basename(folder.slice(0, -1)) : "Archive root", () => {
+      selectedFolder = folder;
+      const first = paths.find(path => directory(path) === folder);
+      selectArtifact(first ?? null);
+      [...byId("folder-list").children].find(item => item.dataset.folder === folder)?.focus({ preventScroll: true });
     });
+    node.style.paddingInlineStart = `${0.55 + depth * 0.65}rem`;
+    node.title = folder || "Archive root";
+    node.dataset.folder = folder;
+    node.setAttribute("aria-pressed", String(folder === selectedFolder));
+    return node;
+  }));
+  const files = paths.filter(path => directory(path) === selectedFolder);
+  byId("file-count").textContent = `${files.length} in ${selectedFolder ? basename(selectedFolder.slice(0, -1)) : "archive root"}`;
+  byId("file-list").replaceChildren(...files.map(path => {
+    const node = button(basename(path), () => {
+      selectArtifact(path);
+      byId("file-list").querySelector('[aria-pressed="true"]')?.focus({ preventScroll: true });
+    });
+    node.title = path;
     node.setAttribute("aria-pressed", String(path === selected));
     return node;
   }));
+  if (!files.length) byId("file-list").append(el("p", "No files in this folder."));
+}
+
+function selectArtifact(path, tile, line) {
+  if (path && !artifacts.has(path)) return;
+  selected = path;
+  if (path) selectedFolder = directory(path);
+  tileSelection = tile;
+  renderBrowser();
+  showArtifact();
+  if (line) jumpToLine(line);
 }
 
 function selectionLabel(path) {
   if (!path) return "";
   if (mainFile && resolveAsset(programs, "Prg", mainFile.startup).path === path) return "Configured startup";
   if (!mainFile && path === demoStartup) return "Demo default";
-  return "Selected program";
+  return "Selected file";
 }
 
-async function showProgram() {
-  const request = ++programRequest;
-  const path = selected;
+function showArtifact() {
+  clearInterval(animationTimer);
+  inspectorRevision++;
+  if (portraitUrl) {
+    URL.revokeObjectURL(portraitUrl);
+    portraitUrl = undefined;
+  }
+  const artifact = artifacts.get(selected);
   const source = byId("source");
-  byId("source-path").textContent = path ?? "";
-  byId("selection").textContent = selectionLabel(path);
+  byId("source-path").textContent = selected ?? "";
+  byId("selection").textContent = selectionLabel(selected);
+  byId("file-title").textContent = artifact?.program ? "Source" : "File details";
+  byId("graph-title").textContent = artifact?.program ? "Capability graph" : "Artifact inspector";
   byId("graph").replaceChildren();
   byId("reference").replaceChildren();
+  byId("connections").replaceChildren();
   byId("counts").textContent = "";
-  source.replaceChildren(el("p", path ? "Reading program…" : programs.length ? "Choose a program from the list." : "No RPGCode programs were found."));
-  if (!path) return;
-  try {
-    const bytes = await archive.file(path).async("uint8array");
-    if (request !== programRequest) return;
-    const result = indexProgram(decodeProgram(bytes), catalog);
-    renderSource(result);
-    renderGraph(result);
-  } catch (error) {
-    if (request === programRequest) source.replaceChildren(el("p", `Unable to read this program. ${error.message}`));
+  source.replaceChildren(el("p", artifact ? "Details for this file appear in the inspector." : "Choose a file to inspect."));
+  if (!artifact) return;
+  if (artifact.program) {
+    renderSource(artifact.program);
+    renderGraph(artifact.program);
+  } else {
+    renderAsset(artifact);
   }
+  renderConnections(artifact.path);
+}
+
+function paintTile(canvas, edge, y = 0) {
+  const set = artifacts.get(edge?.to);
+  const rgba = set?.bytes ? tilePixels(set, edge.tile) : null;
+  if (rgba) canvas.getContext("2d").putImageData(new ImageData(rgba, 32, 32), 0, y);
+}
+
+function tileCanvas(height = 32) {
+  const canvas = el("canvas", "", "tile-image");
+  canvas.width = 32;
+  canvas.height = height;
+  canvas.setAttribute("aria-hidden", "true");
+  return canvas;
+}
+
+function renderAsset(artifact) {
+  const panel = byId("graph");
+  const edges = references.outgoing.get(artifact.path) ?? [];
+  if (artifact.error) {
+    panel.append(el("p", artifact.error));
+    return;
+  }
+  if (artifact.type === "tst") {
+    panel.append(el("p", `${artifact.count} tiles · 32 × 32 pixels · ART-05 Tilesets`));
+    const grid = el("div", "", "tile-grid");
+    for (let tile = 1; tile <= artifact.count; tile++) {
+      const node = button(String(tile), () => {
+        tileSelection = tileSelection === tile ? undefined : tile;
+        for (const cell of grid.children) cell.setAttribute("aria-pressed", String(Number(cell.dataset.tile) === tileSelection));
+        renderConnections(artifact.path);
+      });
+      node.dataset.tile = tile;
+      node.setAttribute("aria-label", `Tile ${tile}`);
+      node.setAttribute("aria-pressed", String(tile === tileSelection));
+      const canvas = tileCanvas();
+      paintTile(canvas, { to: artifact.path, tile });
+      node.prepend(canvas);
+      grid.append(node);
+    }
+    panel.append(grid);
+    grid.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: "nearest" });
+    return;
+  }
+  if (artifact.type === "tan") {
+    panel.append(el("p", `${edges.length} frames · Stored speed ${artifact.speed} · ART-07 Animated tiles`));
+    if (!edges.length) return;
+    const canvas = tileCanvas();
+    canvas.classList.add("large-tile");
+    const label = el("p", "", "technical");
+    let frame = 0;
+    function preview(index) {
+      frame = index;
+      canvas.getContext("2d").clearRect(0, 0, 32, 32);
+      paintTile(canvas, edges[frame]);
+      label.textContent = `Frame ${frame + 1} · ${edges[frame].value}`;
+    }
+    const play = button("Play preview", () => {
+      if (play.getAttribute("aria-pressed") === "true") {
+        clearInterval(animationTimer);
+        play.setAttribute("aria-pressed", "false");
+        play.textContent = "Play preview";
+      } else {
+        animationTimer = setInterval(() => preview((frame + 1) % edges.length), Math.max(80, 1000 / Math.max(1, artifact.speed)));
+        play.setAttribute("aria-pressed", "true");
+        play.textContent = "Pause preview";
+      }
+    });
+    play.setAttribute("aria-pressed", "false");
+    panel.append(canvas, label, play);
+    preview(0);
+    return;
+  }
+  if (artifact.type === "tem") {
+    panel.append(el("h3", artifact.name), el("p", "ACT-01 Player definition · ACT-03 Player art and audio"));
+    const stats = el("dl", "", "bindings");
+    for (const [name, value] of Object.entries(artifact.stats)) {
+      const fact = el("div");
+      fact.append(el("dt", name), el("dd", String(value)));
+      stats.append(fact);
+    }
+    const portrait = edges.find(edge => edge.evidence === "Character portrait")?.to;
+    if (portrait) showImage(panel, portrait, `${artifact.name} portrait`);
+    panel.append(stats);
+    const sprites = el("div", "", "sprite-strip");
+    for (const frame of artifact.walking.filter(frame => frame.frame === 1)) {
+      const canvas = tileCanvas(64);
+      const caption = el("div", frame.direction);
+      for (const [index, part] of frame.parts.entries()) {
+        paintTile(canvas, edges.find(edge => edge.evidence === part.evidence), index * 32);
+      }
+      caption.prepend(canvas);
+      sprites.append(caption);
+    }
+    panel.append(sprites);
+    return;
+  }
+  if (artifact.type === "brd") {
+    panel.append(el("p", `${artifact.width} × ${artifact.height} · ${artifact.layers} layers · MAP-01 Boards`));
+    panel.append(el("p", "The links below come from the board’s tile lookup table."));
+    return;
+  }
+  if (/^(gif|jpg|jpeg|png|bmp)$/.test(artifact.type)) {
+    showImage(panel, artifact.path, basename(artifact.path));
+    return;
+  }
+  panel.append(el("p", `${artifact.type.toUpperCase() || "Unknown format"} · Archive entry`));
+}
+
+async function showImage(panel, path, description) {
+  const revision = inspectorRevision;
+  try {
+    const blob = await archive.file(path).async("blob");
+    if (revision !== inspectorRevision) return;
+    if (portraitUrl) URL.revokeObjectURL(portraitUrl);
+    portraitUrl = URL.createObjectURL(blob);
+    const image = el("img", "", "artifact-image");
+    image.src = portraitUrl;
+    image.alt = description;
+    panel.prepend(image);
+  } catch {
+    if (revision === inspectorRevision) panel.append(el("p", "Image preview unavailable."));
+  }
+}
+
+function renderConnections(path) {
+  const container = byId("connections");
+  container.replaceChildren();
+  const incoming = references.incoming.get(path) ?? [];
+  const outgoing = references.outgoing.get(path) ?? [];
+  const uses = tileSelection ? incoming.filter(edge => edge.tile === tileSelection) : incoming;
+  const title = tileSelection ? `Used by · Tile ${tileSelection}` : "Used by";
+  renderEdges(container, title, uses, true);
+  renderEdges(container, "References", outgoing, false);
+}
+
+function renderEdges(container, title, edges, reverse) {
+  const section = el("section", "", "reference");
+  section.append(el("h3", title));
+  if (!edges.length) section.append(el("p", "No matching references in the indexed fields."));
+  const groups = new Map();
+  for (const edge of edges) {
+    const key = reverse ? edge.from : edge.to ?? edge.value;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(edge);
+  }
+  for (const [name, group] of groups) {
+    const details = el("details", "", "edge-group");
+    details.open = edges.length <= 12;
+    details.append(el("summary", `${name} · ${group.length}`, "technical"));
+    const list = el("ul", "", "edge-list");
+    for (const edge of group) {
+      const target = reverse ? edge.from : edge.to;
+      const label = `${edge.evidence}${edge.line ? ` · line ${edge.line}` : ""} · ${edge.value}`;
+      const item = el("li");
+      item.append(artifacts.has(target) && !(reverse && edge.external) ?
+        button(label, () => selectArtifact(target, reverse ? undefined : edge.tile, reverse ? edge.line : undefined)) :
+        el("span", edge.to ? label : `${label} · ${edge.status}`));
+      list.append(item);
+    }
+    details.append(list);
+    section.append(details);
+  }
+  container.append(section);
+}
+
+function jumpToLine(line) {
+  byId("source").querySelector(".active-line")?.classList.remove("active-line");
+  const target = byId(`line-${line}`);
+  if (!target) return;
+  target.classList.add("active-line");
+  target.focus({ preventScroll: true });
+  target.scrollIntoView({ block: "center", inline: "nearest" });
 }
 
 function renderSource(result) {
@@ -187,13 +407,7 @@ function showReference(group) {
   }
   const jumps = el("div", "", "jump-list");
   for (const line of new Set(group.lines)) {
-    jumps.append(button(`Line ${line}`, () => {
-      byId("source").querySelector(".active-line")?.classList.remove("active-line");
-      const target = byId(`line-${line}`);
-      target.classList.add("active-line");
-      target.focus({ preventScroll: true });
-      target.scrollIntoView({ block: "center", inline: "nearest" });
-    }, "line-jump"));
+    jumps.append(button(`Line ${line}`, () => jumpToLine(line), "line-jump"));
   }
   reference.append(jumps);
 }
@@ -212,11 +426,15 @@ byId("archive").addEventListener("change", async event => {
       }),
     ]);
     if (request !== archiveRequest) return;
+    const indexed = await readArtifacts(zip, commands);
+    if (request !== archiveRequest) return;
     archive = zip;
     catalog = commands;
-    paths = Object.values(zip.files).filter(entry => !entry.dir).map(entry => entry.name).sort();
-    programs = paths.filter(path => /\.prg$/i.test(path));
-    status("archive-status", `${file.name} · ${programs.length} RPGCode programs`);
+    artifacts = indexed.artifacts;
+    folders = indexed.folders;
+    paths = [...artifacts.keys()].sort();
+    programs = paths.filter(path => artifacts.get(path).type === "prg");
+    status("archive-status", `${file.name} · ${paths.length} files · ${programs.length} RPGCode programs`);
     selectDefault();
   } catch (error) {
     if (request === archiveRequest) status("archive-status", `Unable to open ${file.name}. ${error.message}`, true);
@@ -230,7 +448,7 @@ byId("main-file").addEventListener("change", async event => {
   try {
     const result = readMainFile(new Uint8Array(await file.arrayBuffer()));
     if (request !== mainRequest) return;
-    mainFile = result;
+    mainFile = { ...result, filename: file.name };
     status("main-status", `${file.name} · Binary format ${result.major}.${result.minor}`);
   } catch (error) {
     if (request !== mainRequest) return;
