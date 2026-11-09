@@ -59,9 +59,12 @@ Then check the browser workflow.
    or play its walk. Open `keystone.itm` to check the standalone-tile sprite.
    The two Evil Thing definitions report their missing GPH source files.
 9. Open **Media** → `VIP - Title2.mid`, the track referenced by the demo
-   startup program. Choose **Play MIDI**, then **Stop MIDI**. Replay and
-   switch to another file to confirm it stops. Check the track and tempo
-   data under **View decoded JSON**.
+   startup program. Choose **Play MIDI** and adjust **MIDI tone** while
+   it plays. Try **Bypass EQ** to compare the unfiltered sound, then toggle
+   it off to return to the chosen settings. Stop, replay, and switch to
+   another file to confirm playback stops and the settings carry over.
+   **Reset EQ** restores flat playback. Check the track and tempo data
+   under **View decoded JSON**.
 10. Repeat on the GitHub Pages deployment. Test an unreadable ZIP and a
     truncated Main File, then select valid files again to verify recovery.
 
@@ -131,8 +134,10 @@ All 153 archive entries and the separate GAM have structured records. Media
 decoders expose container and track or frame metadata. The browser renders
 images and plays WAV and MIDI audio. The MIDI preview supports Standard MIDI
 File formats 0 and 1. It uses a General MIDI-style Web Audio synth, so timbres
-can differ from the original Windows setup. The viewer softens the synth's
-high frequencies with a treble shelf. It previews channel messages and timing. System Exclusive messages are skipped. The DOC record describes
+can differ from the original Windows setup. The viewer starts with flat EQ
+and provides live bass, mid, and treble controls. Settings carry over between
+tracks during the current page session. The player previews channel messages
+and timing. System Exclusive messages are skipped. The DOC record describes
 its compound container.
 `Boards/temp.___` uses a fixture-specific text reader and is marked partial
 because its producer and field semantics are unverified. Legacy engine

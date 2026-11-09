@@ -1,6 +1,6 @@
 import { readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
-import { playMidi } from "./midi.mjs";
+import { defaultMidiTone, playMidi } from "./midi.mjs";
 import { artifactRecord } from "./records.mjs";
 import { enemySprite, itemSprites, standaloneTilePixels } from "./sprites.mjs";
 
@@ -38,7 +38,8 @@ let references = { incoming: new Map(), outgoing: new Map() };
 let tileSelection;
 let animationTimer;
 let mediaUrl;
-let stopMidi;
+let midiPlayback;
+let midiTone = { ...defaultMidiTone };
 let inspectorRevision = 0;
 const demoStartup = "Demo/Prg/start.prg";
 const sourceNames = {
@@ -152,7 +153,7 @@ function selectionLabel(path) {
 }
 
 function showArtifact() {
-  stopMidi?.();
+  midiPlayback?.stop();
   clearInterval(animationTimer);
   inspectorRevision++;
   if (mediaUrl) {
@@ -542,22 +543,78 @@ function renderMidiControls(panel, artifact) {
     play.disabled = true;
     stop.disabled = false;
     message.textContent = "Loading MIDI…";
-    stopMidi = playMidi(
+    midiPlayback = playMidi(
       archive.file(artifact.path).async("uint8array"),
+      midiTone,
       () => { message.textContent = "Playing MIDI."; },
       finish,
     );
   });
-  const stop = button("Stop MIDI", () => stopMidi?.());
+  const stop = button("Stop MIDI", () => midiPlayback?.stop());
   function finish(messageText) {
-    stopMidi = undefined;
+    midiPlayback = undefined;
     play.disabled = false;
     stop.disabled = true;
     message.textContent = messageText;
   }
   stop.disabled = true;
   controls.append(play, stop);
-  panel.append(controls, message);
+  panel.append(controls, message, renderMidiTone());
+}
+
+function renderMidiTone() {
+  const group = el("fieldset", "", "midi-eq");
+  group.append(el("legend", "MIDI tone"));
+  const sliders = [
+    ["bass", "Bass (250 Hz)", -18, 6, 1, "dB"],
+    ["mid", "Mid gain", -18, 6, 1, "dB"],
+    ["midFrequency", "Mid frequency", 200, 8000, 100, "Hz"],
+    ["treble", "Treble gain", -18, 6, 1, "dB"],
+    ["trebleFrequency", "Treble frequency", 1000, 12000, 100, "Hz"],
+  ].map(([key, name, min, max, step, unit]) => {
+    const label = el("label");
+    const reading = el("span", "", "midi-eq-value");
+    reading.setAttribute("aria-hidden", "true");
+    const input = el("input");
+    input.type = "range";
+    input.min = min;
+    input.max = max;
+    input.step = step;
+    function display() {
+      const value = midiTone[key];
+      input.value = value;
+      reading.textContent = `${value} ${unit}`;
+      input.setAttribute("aria-valuetext", reading.textContent);
+    }
+    input.addEventListener("input", () => {
+      midiTone[key] = input.valueAsNumber;
+      display();
+      midiPlayback?.setTone(midiTone);
+    });
+    label.append(el("span", name), input, reading);
+    group.append(label);
+    display();
+    return display;
+  });
+
+  const actions = el("div", "", "midi-eq-actions");
+  const bypassLabel = el("label");
+  const bypass = el("input");
+  bypass.type = "checkbox";
+  bypass.checked = midiTone.bypass;
+  bypass.addEventListener("change", () => {
+    midiTone.bypass = bypass.checked;
+    midiPlayback?.setTone(midiTone);
+  });
+  bypassLabel.append(bypass, " Bypass EQ");
+  actions.append(bypassLabel, button("Reset EQ", () => {
+    midiTone = { ...defaultMidiTone };
+    for (const display of sliders) display();
+    bypass.checked = midiTone.bypass;
+    midiPlayback?.setTone(midiTone);
+  }));
+  group.append(actions);
+  return group;
 }
 
 async function showMedia(panel, path, description, audio = false) {
