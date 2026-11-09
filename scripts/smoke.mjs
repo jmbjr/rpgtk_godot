@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { midiTimeline } from "../midi.mjs";
 import JSZip from "../vendor/jszip.min.js";
 import { decodeProgram, indexProgram, readMainFile, resolveAsset } from "../model.mjs";
 
@@ -135,6 +136,14 @@ const midi = artifacts.get("Demo/Media/VIP - Dungeon2.mid");
 assert.equal(midi.trackCount, 18);
 assert.equal(midi.timeDivision.ticksPerQuarter, 120);
 assert.ok(midi.tracks.some(track => track.tempos.length));
+const titleMusic = connections.outgoing.get(startup.path).find(edge => edge.to?.endsWith("VIP - Title2.mid"));
+assert.ok(titleMusic);
+const titleTimeline = midiTimeline(await zip.file(titleMusic.to).async("uint8array"));
+assert.ok(titleTimeline.duration > 1);
+assert.ok(titleTimeline.events.some(event => (event.message[0] & 0xf0) === 0x90 && event.message[2] > 0));
+assert.ok(titleTimeline.events.every((event, index, events) =>
+  Number.isFinite(event.seconds) && (!index || event.seconds >= events[index - 1].seconds)));
+
 const doc = artifacts.get("Demo/Media/VIP - RPGToolkit Fo Sho Music Pak  EULA.doc");
 assert.equal(doc.sectorSize, 512);
 assert.ok(doc.directory.some(entry => entry.name === "WordDocument"));

@@ -122,4 +122,4 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
   background: repeating-conic-gradient(#252228 0 25%, #19171b 0 50%) 0 0 / 16px 16px;
   image-rendering: pixelated;
 }
-.sprite-controls { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .45rem; }
+.sprite-controls, .midi-controls { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .45rem; }

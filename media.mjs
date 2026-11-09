@@ -128,7 +128,7 @@ export function readWave(bytes) {
   return { ...format, audioBytes, sampleFrames, durationSeconds: pcm ? sampleFrames / format.sampleRateHz : null, chunks };
 }
 
-function midiTrack(bytes) {
+function midiTrack(bytes, onMessage) {
   let offset = 0;
   let tick = 0;
   let running = 0;
@@ -174,6 +174,7 @@ function midiTrack(bytes) {
       const args = payload(command === 0xc || command === 0xd ? 1 : 2);
       requireBytes(args.every(value => value < 128), "Invalid MIDI channel event data.");
       if (command === 9 && args[1] > 0) noteOnEvents++;
+      onMessage?.(tick, status, args);
       continue;
     }
     running = 0;
@@ -196,6 +197,10 @@ function midiTrack(bytes) {
 }
 
 export function readMidi(bytes) {
+  return readMidiWithMessages(bytes);
+}
+
+export function readMidiWithMessages(bytes, onMessage) {
   const data = view(bytes);
   requireBytes(bytes.length >= 14 && tag(bytes, 0) === "MThd", "Invalid MIDI header.");
   const headerLength = data.getUint32(4);
@@ -213,7 +218,7 @@ export function readMidi(bytes) {
     const end = offset + 8 + size;
     requireBytes(end <= bytes.length, "Truncated MIDI track.");
     if (tag(bytes, offset) === "MTrk") {
-      tracks.push({ number: tracks.length + 1, size, ...midiTrack(bytes.subarray(offset + 8, end)) });
+      tracks.push({ number: tracks.length + 1, size, ...midiTrack(bytes.subarray(offset + 8, end), onMessage) });
     }
     offset = end;
   }
