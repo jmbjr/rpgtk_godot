@@ -40,7 +40,7 @@ assert.equal(resolveAsset(["one/Prg/start.prg", "two/Prg/START.PRG"], "Prg", "st
 
 console.log("Demo smoke passed: 51 programs, 65 calls across 28 built-ins, and all three Main File bindings.");
 
-const { readArtifacts, buildReferences, tilePixels } = await import("../artifacts.mjs");
+const { readArtifacts, buildReferences, boardTilesets, tilePixels } = await import("../artifacts.mjs");
 const { artifacts, folders } = await readArtifacts(zip, catalog);
 assert.equal(artifacts.size, 153);
 assert.ok(folders.includes("Demo/Tiles/"));
@@ -68,3 +68,24 @@ assert.equal(artifacts.get("Demo/Chrs/frap.tem").stats.Level, 1);
 assert.ok(connections.incoming.get("Demo/Chrs/frap.tem").some(edge => edge.from === "Demo.gam" && edge.external));
 
 console.log("Artifact smoke passed: folder inventory, tileset counts, animation links, board references, and character uses.");
+
+const openingBoard = "Demo/Boards/house1.brd";
+const castle = "Demo/Boards/castle_out.brd";
+const board = artifacts.get(openingBoard);
+assert.deepEqual([board.width, board.height, board.layers], [19, 11, 8]);
+assert.ok(board.runs.some(run => run.length > 1));
+assert.ok(board.runs.every(run => run.offset + run.length <= 19 * 11 * 8));
+assert.ok(connections.incoming.get(openingBoard).some(edge => edge.from === "Demo/Prg/warp00000002.prg" && edge.line === 2));
+assert.ok(connections.outgoing.get(openingBoard).some(edge =>
+  edge.to === "Demo/Prg/chest2.prg" && edge.evidence === "Board program (14, 4, layer 1)"));
+const castleSets = boardTilesets(connections.outgoing.get(castle), connections, artifacts);
+assert.deepEqual([...castleSets.keys()].sort(), ["Demo/Tiles/char.tst", "Demo/Tiles/default.tst", water]);
+assert.ok(castleSets.get(water).animations.has(animation));
+const withOpeningBoard = buildReferences(artifacts, { name: "Demo.gam", bindings: [
+  ["Opening board", { path: openingBoard }],
+] });
+assert.ok(withOpeningBoard.incoming.get(openingBoard).some(edge => edge.from === "Demo.gam" && edge.external));
+const boards = [...artifacts.values()].filter(artifact => artifact.type === "brd");
+assert.equal(boards.length, 17);
+assert.ok(boards.every(artifact => artifact.runs.length > 0));
+console.log("Board smoke passed: 17 tile maps, compressed runs, placed programs, incoming board links, and animation-backed tilesets.");

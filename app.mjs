@@ -1,5 +1,5 @@
 import { readMainFile, resolveAsset } from "./model.mjs";
-import { basename, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
+import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
 
 const byId = id => document.getElementById(id);
 const el = (tag, value = "", className = "") => {
@@ -148,7 +148,7 @@ function showArtifact() {
   const source = byId("source");
   byId("source-path").textContent = selected ?? "";
   byId("selection").textContent = selectionLabel(selected);
-  byId("file-title").textContent = artifact?.program ? "Source" : "File details";
+  byId("file-title").textContent = artifact?.program ? "Source" : artifact?.runs ? "Board preview" : "File details";
   byId("graph-title").textContent = artifact?.program ? "Capability graph" : "Artifact inspector";
   byId("graph").replaceChildren();
   byId("reference").replaceChildren();
@@ -260,9 +260,8 @@ function renderAsset(artifact) {
     panel.append(sprites);
     return;
   }
-  if (artifact.type === "brd") {
-    panel.append(el("p", `${artifact.width} × ${artifact.height} · ${artifact.layers} layers · MAP-01 Boards`));
-    panel.append(el("p", "The links below come from the board’s tile lookup table."));
+  if (artifact.runs) {
+    renderBoard(panel, artifact, edges);
     return;
   }
   if (/^(gif|jpg|jpeg|png|bmp)$/.test(artifact.type)) {
@@ -270,6 +269,102 @@ function renderAsset(artifact) {
     return;
   }
   panel.append(el("p", `${artifact.type.toUpperCase() || "Unknown format"} · Archive entry`));
+}
+
+function renderBoard(panel, board, edges) {
+  panel.append(el("p", `${board.width} × ${board.height} tiles · ${board.layers} layers · MAP-01 Boards`));
+  const sets = boardTilesets(edges, references, artifacts);
+  panel.append(el("h3", "Tilesets used"));
+  if (!sets.size) panel.append(el("p", "No resolved tilesets in the decoded board references."));
+  const list = el("ul", "", "edge-list");
+  for (const [path, set] of sets) {
+    const description = [
+      set.direct.size ? `${set.direct.size} direct tile references` : "",
+      ...[...set.animations].map(animation => `via ${basename(animation)}`),
+    ].filter(Boolean).join(" · ");
+    const row = el("li");
+    row.append(button(basename(path), () => selectArtifact(path)), el("span", ` ${description}`));
+    list.append(row);
+  }
+  panel.append(list);
+  const preview = byId("source");
+  const tileSize = Math.min(32, Math.floor(4096 / Math.max(board.width, board.height)));
+  if (tileSize < 1) {
+    preview.replaceChildren(el("p", "This board exceeds the preview canvas size."));
+    return;
+  }
+  const controls = el("label", "Layers", "board-controls");
+  const layers = el("select");
+  for (let i = 0; i <= board.layers; i++) {
+    const option = el("option", i ? board.layerTitles[i] || `Layer ${i}` : "All layers");
+    option.value = String(i);
+    layers.append(option);
+  }
+  controls.append(layers);
+  const stage = el("div", "", "board-stage");
+  const canvas = el("canvas", "", "board-map");
+  canvas.width = board.width * tileSize;
+  canvas.height = board.height * tileSize;
+  canvas.setAttribute("role", "img");
+  canvas.setAttribute("aria-label", `Tile map for ${basename(board.path)}`);
+  const context = canvas.getContext("2d");
+  context.imageSmoothingEnabled = false;
+  const color = board.background;
+  if (color >= 0) stage.style.backgroundColor = `rgb(${color & 255}, ${(color >>> 8) & 255}, ${(color >>> 16) & 255})`;
+  stage.append(canvas);
+  const notes = el("p", "", "board-note");
+  preview.replaceChildren(controls, stage, notes);
+  const background = edges.find(edge => edge.evidence === "Board background image")?.to;
+  if (background) showImage(stage, background, "Board background");
+
+  const indexed = new Map(edges.filter(edge => edge.index !== undefined).map(edge => [edge.index, edge]));
+  const area = board.width * board.height;
+  const cache = new Map();
+  function stamp(index, shade) {
+    const key = `${index}:${shade.join(",")}`;
+    if (!cache.has(key)) {
+      let tile = indexed.get(index);
+      if (artifacts.get(tile?.to)?.type === "tan") tile = references.outgoing.get(tile.to)?.[0];
+      const tileset = artifacts.get(tile?.to);
+      const rgba = tileset?.bytes ? tilePixels(tileset, tile.tile) : null;
+      let image = null;
+      if (rgba) {
+        for (let p = 0; p < rgba.length; p += 4) {
+          for (let channel = 0; channel < 3; channel++) rgba[p + channel] += shade[channel] + board.ambient[channel];
+        }
+        image = tileCanvas();
+        image.getContext("2d").putImageData(new ImageData(rgba, 32, 32), 0, 0);
+      }
+      cache.set(key, image);
+    }
+    return cache.get(key);
+  }
+  function draw() {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    const layer = Number(layers.value);
+    const from = layer ? (layer - 1) * area : 0;
+    const to = layer ? layer * area : area * board.layers;
+    const missing = new Set();
+    for (const { offset, length, index, shade } of board.runs) {
+      const start = Math.max(from, offset);
+      const end = Math.min(to, offset + length);
+      if (start >= end) continue;
+      const image = stamp(index, shade);
+      if (!image) {
+        missing.add(index);
+        continue;
+      }
+      for (let cell = start; cell < end; cell++) {
+        const x = cell % board.width;
+        const y = Math.floor((cell % area) / board.width);
+        context.drawImage(image, x * tileSize, y * tileSize, tileSize, tileSize);
+      }
+    }
+    notes.textContent = "Static tile preview · animated tiles show their first frame."
+      + (missing.size ? ` ${missing.size} tile references could not be rendered.` : "");
+  }
+  layers.addEventListener("change", draw);
+  draw();
 }
 
 async function showImage(panel, path, description) {
