@@ -45,6 +45,8 @@ jobs:
           assert.deepEqual(result.groups.get("builtin:dos").lines, [3]);
           assert.equal(result.rows[1].tokens[0].kind, "comment");
           JS
+      - name: Check tile format conformance
+        run: node scripts/check-tile-specs.mjs
       - name: Stage public viewer files
         run: |
           mkdir -p site/vendor

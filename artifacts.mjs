@@ -391,6 +391,7 @@ function readStandaloneTile(bytes) {
   while (pixels.length < size * size) {
     const count = compressed ? reader.number() : 1;
     const color = reader.number();
+    if (!Number.isInteger(color) || color < -1 || color > 0xffffff) throw new Error("Invalid standalone tile color.");
     if (!Number.isInteger(count) || count < 1 || pixels.length + count > size * size) throw new Error("Invalid standalone tile run.");
     for (let i = 0; i < count; i++) pixels.push(color);
   }

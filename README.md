@@ -119,6 +119,13 @@ is identified by MIDI port, channel, and program. These controls affect
 the display. The playhead uses the active player's clock, including
 GeneralUser GS and the built-in synth.
 
+## Format specifications
+
+The [format spec index](docs/specs/README.md) describes supported legacy
+layouts and decoded JSON. The GPH and TST inspectors link to the relevant
+spec. Run `node scripts/check-tile-specs.mjs` after `npm ci` to check the
+synthetic tile fixtures and expected records.
+
 ## Refresh the command catalog
 
 Run the generator with the reviewed feature baseline and the two REF files,

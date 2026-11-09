@@ -223,9 +223,17 @@ function tileCanvas(height = 32) {
   return canvas;
 }
 
+function tileSpecLink(format, section = "") {
+  const label = section ? "Tile addressing spec" : format === "gph" ? "Standalone tile format spec" : "Tileset format spec";
+  const link = el("a", label);
+  link.href = `https://github.com/jmbjr/rpgtk_godot/blob/main/docs/specs/${format}.md${section}`;
+  return link;
+}
+
 function renderAsset(artifact) {
   const panel = byId("graph");
   const edges = references.outgoing.get(artifact.path) ?? [];
+  if (artifact.type === "gph" || artifact.type === "tst") panel.append(tileSpecLink(artifact.type));
   if (artifact.error) {
     panel.append(el("p", artifact.error));
     return;
@@ -1167,6 +1175,7 @@ function renderConnections(path) {
   const outgoing = references.outgoing.get(path) ?? [];
   const uses = tileSelection ? incoming.filter(edge => edge.tile === tileSelection) : incoming;
   const title = tileSelection ? `Used by · Tile ${tileSelection}` : "Used by";
+  if (tileSelection) container.append(tileSpecLink("tst", "#tile-addressing"));
   renderEdges(container, title, uses, true);
   renderEdges(container, "References", outgoing, false);
   container.append(jsonPanel(() => artifactRecord(artifacts.get(path), references)));
