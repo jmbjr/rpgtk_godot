@@ -82,34 +82,37 @@ function createMidiEq(context) {
 // give each run its own audio context so Stop also silences queued percussion.
 let synth;
 
-export function playMidi(bytes, initialTone, onPlaying, onFinish) {
+export function playMidi(bytes, initialTone, soundBank, onPlaying, onFinish) {
   let context;
   let eq;
   let timer;
+  let dispose;
   let stopped = false;
 
   function stop(message = "MIDI stopped.") {
     if (stopped) return;
     stopped = true;
     clearInterval(timer);
-    if (context) {
-      synth.stopMIDI();
-      void context.close().catch(() => {});
-    }
+    dispose?.();
+    if (context) void context.close().catch(() => {});
     onFinish(message);
   }
 
   async function start() {
     const AudioContext = globalThis.AudioContext ?? globalThis.webkitAudioContext;
     if (!AudioContext) throw new Error("Web Audio is unavailable in this browser.");
-    synth ??= new globalThis.WebAudioTinySynth({ internalcontext: 0 });
     context = new AudioContext();
-
     eq = createMidiEq(context);
     eq.update(initialTone, true);
-    synth.setAudioContext(context, eq.input);
     const [data] = await Promise.all([bytes, context.resume()]);
     if (stopped) return;
+    if (soundBank) {
+      await startSoundBank(data);
+      return;
+    }
+    synth ??= new globalThis.WebAudioTinySynth({ internalcontext: 0 });
+    dispose = () => synth.stopMIDI();
+    synth.setAudioContext(context, eq.input);
     const { events, duration } = midiTimeline(data);
     const startTime = context.currentTime + 0.05;
     let next = 0;
@@ -130,6 +133,40 @@ export function playMidi(bytes, initialTone, onPlaying, onFinish) {
     onPlaying();
     timer = setInterval(schedule, 25);
     schedule();
+  }
+
+  async function startSoundBank(data) {
+    if (!context.audioWorklet) throw new Error("Sound banks require AudioWorklet on HTTPS or localhost.");
+    const [{ WorkletSynthesizer, Sequencer }, bank] = await Promise.all([
+      import("./vendor/soundfont/spessasynth.mjs"),
+      soundBank.arrayBuffer(),
+      context.audioWorklet.addModule(new URL("./vendor/soundfont/spessasynth_processor.min.js", import.meta.url)),
+    ]);
+    if (stopped) return;
+
+    const sampledSynth = new WorkletSynthesizer(context);
+    dispose = () => sampledSynth.destroy();
+    sampledSynth.connect(eq.input);
+    await sampledSynth.isReady;
+    if (stopped) return;
+    await sampledSynth.soundBankManager.addSoundBank(bank, "local");
+    if (stopped) return;
+
+    const sequencer = new Sequencer(sampledSynth, { skipToFirstNoteOn: false });
+    sequencer.loopCount = 0;
+    sequencer.eventHandler.addEvent("songChange", "viewer", () => {
+      if (stopped) return;
+      sequencer.play();
+      onPlaying();
+    });
+    sequencer.eventHandler.addEvent("songEnded", "viewer", () => {
+      if (!stopped) timer = setTimeout(() => stop("MIDI finished."), 600);
+    });
+    sequencer.eventHandler.addEvent("midiError", "viewer", () => {
+      stop("Unable to play MIDI with the selected sound bank.");
+    });
+    const binary = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+    sequencer.loadNewSongList([{ binary }]);
   }
 
   // Handle a file-read failure even if the browser cannot initialize audio.

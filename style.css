@@ -124,7 +124,7 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 }
 .sprite-controls, .midi-controls { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .45rem; }
 
-.midi-eq { min-inline-size: 0; margin: .65rem 0; padding: .55rem .65rem; border: 1px solid var(--line); border-radius: .4rem; }
+.midi-eq, .midi-bank { min-inline-size: 0; margin: .65rem 0; padding: .55rem .65rem; border: 1px solid var(--line); border-radius: .4rem; }
 .midi-eq > label {
   display: grid;
   grid-template-columns: minmax(6.5rem, auto) minmax(2.5rem, 1fr) 8ch;
@@ -138,3 +138,6 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 .midi-eq-value { justify-self: end; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .midi-eq-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .9rem; margin-top: .5rem; }
 .midi-eq-actions label { display: inline-flex; align-items: center; gap: .3rem; }
+.midi-bank label { display: grid; grid-template-columns: minmax(0, 1fr); font-size: .875rem; }
+.midi-bank label + label { margin-top: .55rem; }
+.midi-bank input, .midi-bank select { min-width: 0; width: 100%; font: inherit; }

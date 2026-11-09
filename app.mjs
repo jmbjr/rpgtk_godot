@@ -40,6 +40,8 @@ let animationTimer;
 let mediaUrl;
 let midiPlayback;
 let midiTone = { ...defaultMidiTone };
+let midiSoundBank;
+let useMidiSoundBank = false;
 let inspectorRevision = 0;
 const demoStartup = "Demo/Prg/start.prg";
 const sourceNames = {
@@ -542,11 +544,13 @@ function renderMidiControls(panel, artifact) {
   const play = button("Play MIDI", () => {
     play.disabled = true;
     stop.disabled = false;
-    message.textContent = "Loading MIDI…";
+    const bank = useMidiSoundBank ? midiSoundBank : undefined;
+    message.textContent = bank ? `Loading MIDI with ${bank.name}…` : "Loading MIDI…";
     midiPlayback = playMidi(
       archive.file(artifact.path).async("uint8array"),
       midiTone,
-      () => { message.textContent = "Playing MIDI."; },
+      bank,
+      () => { message.textContent = bank ? `Playing with ${bank.name}.` : "Playing MIDI with the built-in synth."; },
       finish,
     );
   });
@@ -559,7 +563,49 @@ function renderMidiControls(panel, artifact) {
   }
   stop.disabled = true;
   controls.append(play, stop);
-  panel.append(controls, message, renderMidiTone());
+  panel.append(controls, message, renderMidiSoundBank(), renderMidiTone());
+}
+
+function renderMidiSoundBank() {
+  const group = el("fieldset", "", "midi-bank");
+  group.append(el("legend", "MIDI sound source"));
+
+  const picker = el("input");
+  picker.type = "file";
+  picker.accept = ".sf2,.dls";
+  const pickerLabel = el("label", "Choose a local sound bank (.sf2 or .dls)");
+  pickerLabel.append(picker);
+  const source = el("select");
+  const builtIn = el("option", "Built-in synth");
+  builtIn.value = "builtin";
+  const sampled = el("option");
+  sampled.value = "sampled";
+  source.append(builtIn, sampled);
+  const sourceLabel = el("label", "Playback synth");
+  sourceLabel.append(source);
+
+  function display() {
+    sampled.textContent = midiSoundBank?.name ?? "Local sound bank";
+    sampled.disabled = !midiSoundBank;
+    source.value = useMidiSoundBank ? "sampled" : "builtin";
+  }
+
+  picker.addEventListener("change", () => {
+    const file = picker.files[0];
+    if (!file) return;
+    midiPlayback?.stop();
+    midiSoundBank = file;
+    useMidiSoundBank = true;
+    display();
+    picker.value = "";
+  });
+  source.addEventListener("change", () => {
+    midiPlayback?.stop();
+    useMidiSoundBank = source.value === "sampled";
+  });
+  display();
+  group.append(pickerLabel, sourceLabel);
+  return group;
 }
 
 function renderMidiTone() {

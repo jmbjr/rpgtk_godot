@@ -1,9 +1,11 @@
 # RPG Toolkit 2 · Game Explorer
 
-A static viewer for issue #3. Serve the repository root with Python 3 and open
+A static viewer for issue #3. Run `npm ci` to prepare the optional sound-bank
+player, then serve the repository root with Python 3 and open
 `http://localhost:8000` in a browser.
 
 ```sh
+npm ci
 python3 -m http.server 8000
 ```
 
@@ -70,6 +72,19 @@ Then check the browser workflow.
 
 The demo files are supplied separately. The graph shows static source use.
 It does not evaluate RPGCode or infer reachability for other programs.
+
+## Compare MIDI sound banks
+
+Open `VIP - Title1.mid` under **Media** and listen for the strings, harp, and
+clarinet in the first ten seconds. In **MIDI sound source**, choose a local
+`.sf2` file such as GeneralUser GS, or a `.dls` bank such as the Windows
+`C:\Windows\System32\drivers\gm.dls` if present. The selection stays in the
+current page session. Switch **Playback synth** and press **Play MIDI** to
+replay the same passage. **Bypass EQ** compares the synths with flat EQ.
+
+The optional player uses SpessaSynth on HTTPS or localhost and loads only
+when you play with a local bank. The site bundles the player and its license
+notices. The MIDI and sound bank remain on your device.
 
 ## Refresh the command catalog
 
