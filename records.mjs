@@ -1,4 +1,4 @@
-const partialFormats = new Set(["gam", "prg", "tem", "brd"]);
+const partialFormats = new Set(["gam", "prg", "tem", "brd", "gif", "jpg", "jpeg", "wav", "mid", "doc", "___"]);
 
 export function artifactId(path, mainFile = false) {
   const encoded = path.split("/").map(encodeURIComponent).join("/");
@@ -46,8 +46,9 @@ export function artifactRecord(artifact, graph, { external = false, bindings = [
   })) : (graph.outgoing.get(path) ?? []).filter(edge => !edge.external);
 
   let decoded = data;
-  if (bytes && type === "tst") decoded = tilesetData(bytes, data.count);
+  if (bytes && type === "tst") decoded = { byteLength: data.byteLength, ...tilesetData(bytes, data.count) };
   if (program) decoded = {
+    byteLength: data.byteLength,
     lines: program.rows.map(row => row.line),
     symbols: [...program.groups.values()],
     builtInCalls: program.count,

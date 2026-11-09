@@ -1,4 +1,5 @@
 import { decodeProgram, indexProgram, readMainFile } from "./model.mjs";
+import { readCompoundDocument, readGif, readJpeg, readMidi, readWave } from "./media.mjs";
 
 const text = new TextDecoder("windows-1252");
 export const extension = path => path.match(/\.([^.\/]+)$/)?.[1].toLowerCase() ?? "";
@@ -413,10 +414,33 @@ function readItem(bytes) {
     sizeType, walking, rest: Object.values(rest.values), refs };
 }
 
+// The demo contains one headerless text artifact with this repeated record shape.
+// Its producer and the meanings of its header integers are unverified.
+function readTemporaryBoardText(bytes) {
+  const lines = decodeProgram(bytes).split(/\r\n|\n|\r/);
+  if (lines.at(-1) === "") lines.pop();
+  const integer = line => /^[+-]?\d+$/.test(line.trim()) && Number.isSafeInteger(Number(line));
+  if (lines.length < 9 || (lines.length - 5) % 4 !== 0 || !lines.slice(0, 5).every(integer)) {
+    throw new Error("Temporary text does not match the demo record shape.");
+  }
+  const records = [];
+  const refs = [];
+  for (let i = 5; i < lines.length; i += 4) {
+    const value = lines[i].trim();
+    const numbers = lines.slice(i + 1, i + 4);
+    if ((value && !/\.tst\d+$/i.test(value)) || !numbers.every(integer)) throw new Error("Invalid temporary text record.");
+    records.push({ tileName: value, values: numbers.map(Number) });
+    if (value) refs.push(reference(value, "Observed temporary text tile name", i + 1));
+  }
+  return { layout: "Observed text records; producer and field meanings unverified", header: lines.slice(0, 5).map(Number), records, refs };
+}
+
 const readers = {
   gam: readMainFile, prg: readProgram, tst: readTileset, tan: readAnimation, tem: readCharacter, brd: readBoard,
   bkg: readBackground, ene: readEnemy, spc: readSpecialMove, anm: readLegacyAnimation,
   fnt: readFont, gph: readStandaloneTile, itm: readItem,
+  gif: readGif, jpg: readJpeg, jpeg: readJpeg, wav: readWave, mid: readMidi,
+  doc: readCompoundDocument, ___: readTemporaryBoardText,
 };
 
 export async function readArtifacts(zip, catalog) {
@@ -431,7 +455,9 @@ export async function readArtifacts(zip, catalog) {
       /^(gif|jpe?g|png|bmp|wav|mid)$/.test(type) ? "media" : type === "doc" ? "document" : "unidentified" };
     if (read) {
       try {
-        Object.assign(artifact, read(await file.async("uint8array"), catalog));
+        const bytes = await file.async("uint8array");
+        artifact.byteLength = bytes.length;
+        Object.assign(artifact, read(bytes, catalog));
       } catch (error) {
         artifact.error = error.message;
         artifact.decodeStatus = "error";
