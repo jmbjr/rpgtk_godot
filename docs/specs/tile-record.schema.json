@@ -1,0 +1,320 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RPG Toolkit decoded GPH or TST record, version 1",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "$id": {
+      "type": "string",
+      "pattern": "^rpgtk:/"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "format": {
+      "enum": [
+        "gph",
+        "tst"
+      ]
+    },
+    "decode": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": "decoded"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "data": {
+      "type": "object"
+    },
+    "references": {
+      "type": "object",
+      "properties": {
+        "incoming": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edge"
+          }
+        },
+        "outgoing": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edge"
+          }
+        }
+      },
+      "required": [
+        "incoming",
+        "outgoing"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "$id",
+    "path",
+    "format",
+    "decode",
+    "data",
+    "references"
+  ],
+  "additionalProperties": false,
+  "if": {
+    "properties": {
+      "format": {
+        "const": "gph"
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "data": {
+        "$ref": "#/$defs/gphData"
+      }
+    }
+  },
+  "else": {
+    "properties": {
+      "data": {
+        "$ref": "#/$defs/tstData"
+      }
+    }
+  },
+  "$defs": {
+    "edge": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "resolved",
+            "missing",
+            "ambiguous",
+            "tileset-unavailable",
+            "tile-index-out-of-range"
+          ]
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source": {
+          "type": "object",
+          "properties": {
+            "$ref": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "$ref"
+          ],
+          "additionalProperties": false
+        },
+        "target": {
+          "type": "object",
+          "properties": {
+            "$ref": {
+              "type": "string"
+            },
+            "tileIndex": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "$ref"
+          ],
+          "additionalProperties": false
+        },
+        "placements": {
+          "type": "array"
+        }
+      },
+      "required": [
+        "value",
+        "evidence",
+        "status"
+      ],
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "status": {
+            "const": "resolved"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "target"
+        ]
+      }
+    },
+    "gphData": {
+      "type": "object",
+      "properties": {
+        "byteLength": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "width": {
+          "enum": [
+            16,
+            32
+          ]
+        },
+        "height": {
+          "enum": [
+            16,
+            32
+          ]
+        },
+        "detail": {
+          "enum": [
+            1,
+            2
+          ]
+        },
+        "compressed": {
+          "type": "boolean"
+        },
+        "order": {
+          "const": "column-major"
+        },
+        "encoding": {
+          "const": "Toolkit COLORREF; -1 is transparent"
+        },
+        "pixels": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": -1,
+            "maximum": 16777215
+          }
+        }
+      },
+      "required": [
+        "byteLength",
+        "width",
+        "height",
+        "detail",
+        "compressed",
+        "order",
+        "encoding",
+        "pixels"
+      ],
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "detail": {
+            "const": 1
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "width": {
+            "const": 32
+          },
+          "height": {
+            "const": 32
+          },
+          "pixels": {
+            "minItems": 1024,
+            "maxItems": 1024
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "width": {
+            "const": 16
+          },
+          "height": {
+            "const": 16
+          },
+          "pixels": {
+            "minItems": 256,
+            "maxItems": 256
+          }
+        }
+      }
+    },
+    "tstData": {
+      "type": "object",
+      "properties": {
+        "byteLength": {
+          "type": "integer",
+          "minimum": 6
+        },
+        "width": {
+          "const": 32
+        },
+        "height": {
+          "const": 32
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 32767
+        },
+        "encoding": {
+          "const": "base64 RGB24, column-major"
+        },
+        "transparentRgb": {
+          "const": [
+            0,
+            1,
+            2
+          ]
+        },
+        "tiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 32767
+              },
+              "rgb": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9+/]{4096}$"
+              }
+            },
+            "required": [
+              "number",
+              "rgb"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 32767
+        }
+      },
+      "required": [
+        "byteLength",
+        "width",
+        "height",
+        "count",
+        "encoding",
+        "transparentRgb",
+        "tiles"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
