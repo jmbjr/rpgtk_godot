@@ -140,9 +140,10 @@ GeneralUser GS and the built-in synth.
 ## Format specifications
 
 The [format spec index](docs/specs/README.md) describes supported legacy
-layouts and decoded JSON. The GPH and TST inspectors link to the relevant
-spec. Run `node scripts/check-tile-specs.mjs` after `npm ci` to check the
-synthetic tile fixtures and expected records.
+layouts and decoded JSON. Every inspector links to its format or
+coverage page. Run `node scripts/check-format-specs.mjs` and
+`node scripts/check-tile-specs.mjs` after `npm ci` to check the
+published schema and fixtures.
 
 ## Refresh the command catalog
 

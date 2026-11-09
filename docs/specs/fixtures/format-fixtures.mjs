@@ -1,0 +1,152 @@
+// Synthetic bytes and independent expected data. This file uses only Node APIs.
+const fixtures = [];
+const fill = (count, value) => Array(count).fill(value);
+const zstr = value => Buffer.from(value + "\0", "ascii");
+const binary = (...fields) => Buffer.concat(fields.map(field => typeof field === "string" ? zstr(field) : field));
+const i16 = (...values) => {
+  const bytes = Buffer.alloc(values.length * 2);
+  values.forEach((value, index) => bytes.writeInt16LE(value, index * 2));
+  return bytes;
+};
+const i32 = (...values) => {
+  const bytes = Buffer.alloc(values.length * 4);
+  values.forEach((value, index) => bytes.writeInt32LE(value, index * 4));
+  return bytes;
+};
+const header = (signature, minor) => binary(signature, i16(2, minor));
+const text = (signature, ...fields) => Buffer.from([signature, 2, 0, ...fields, ""].join("\r\n"), "ascii");
+const blank = count => Buffer.alloc(count);
+function add(path, bytes, data, status = "decoded") {
+  fixtures.push({ path, bytes, expected: { status, data: { byteLength: bytes.length, ...data } } });
+}
+
+add("main.gam", binary(header("RPGTLKIT MAIN", 2), i16(0), "", "Example", "Fixture",
+  i16(0, 0, 0, 0, 0), "english.lng", "start.prg", "room.brd", "hero.tem"),
+{ major: 2, minor: 2, projectPath: "Example", title: "Fixture", language: "english.lng",
+  startup: "start.prg", board: "room.brd", character: "hero.tem" }, "partial");
+add("legacy.gam", text("RPGTLKIT MAIN", 1, "start.prg", "", 0, 0, 27, 13, "room.brd", "hero.tem"),
+  { major: 2, minor: 0, startup: "start.prg", board: "room.brd", character: "hero.tem" }, "partial");
+
+add("Prg/start.prg", Buffer.from('* #Done()\n#Run("other.prg")'), {
+  lines: ["* #Done()", '#Run("other.prg")'],
+  symbols: [{ key: "builtin:run", kind: "builtin", name: "run", value: "#Run", lines: [2] }],
+  builtInCalls: 1,
+}, "partial");
+add("Tiles/water.tan", binary(header("RPGTLKIT TILEANIM", 0), i32(8, 1), "two-tiles.tst2"), { speed: 8 });
+
+const walking = ["South", "East", "North", "West"].flatMap(direction =>
+  [1, 2, 3, 4].map(frame => ({ direction, frame, parts: ["top", "bottom"].map(part => ({
+    value: "", evidence: `Walk ${direction.toLowerCase()} · frame ${frame} · ${part}`,
+  })) })));
+add("Chrs/hero.tem", binary(header("RPGTLKIT CHAR", 3), "Hero", blank(9), i32(10, 7, 9, 2, 3, 4, 6, 1),
+  "face.gif", blank(201 * 11), blank(1 + 1 + 11 + 22 + 4 + 1 + 2 + 32)), {
+  name: "Hero",
+  stats: { XP: 10, HP: 7, "Max HP": 9, Defense: 2, Fight: 3, "Special power": 4, "Max special power": 6, Level: 1 },
+  profile: { value: "face.gif", evidence: "Character portrait" },
+  walking,
+}, "partial");
+
+const boardBytes = binary(header("RPGTLKIT BOARD", 2), i16(0), "", i16(1, 1, 1), blank(8),
+  i16(1), "", "two-tiles.tst2", i16(1, -30, 0, 20), blank(1),
+  blank(3), i32(255), blank(4), i16(1), blank(4), blank(2), "", blank(8), "", blank(22),
+  "", "Ground", blank(8), i16(-1), "", "", i16(-1));
+add("Boards/room.brd", boardBytes, {
+  width: 1, height: 1, layers: 1, layerTitles: ["Ground", ...fill(8, "")],
+  background: 255, ambient: [75, 75, 75],
+  tileLookup: [{ value: "" }, { value: "two-tiles.tst2", reference: {
+    value: "two-tiles.tst2", evidence: "Board tile lookup · entry 1 · 1 placed", status: "resolved",
+    source: { $ref: "rpgtk:/Boards/room.brd" }, target: { $ref: "rpgtk:/Tiles/two-tiles.tst#/data/tiles/1", tileIndex: 2 },
+    placements: 1,
+  } }],
+  cellOrder: "zero-based offset; layer, row, column",
+  runs: [{ offset: 0, length: 1, lookupIndex: 1, shade: [-30, 0, 20] }],
+}, "partial");
+
+for (const version of [2, 3]) {
+  const n = version === 2 ? i16 : i32;
+  add(`Item/token-${version}.itm`, binary(header("RPGTLKIT ITEM", version), "Token", "Example",
+    Buffer.from([0, 1, 0, 0, 0]), blank(51), n(12, 6), blank(1 + 8), "", n(2, 0, 0, -1),
+    "", "", n(5, 0), "start.prg", n(0, 0), "", "", "", "", blank(1), blank(32), "", "two-tiles.tst2"), {
+    version, name: "Token", description: "Example", modes: { equip: false, menu: true, board: false, battle: false },
+    usableBy: 0, characters: fill(51, ""), buyPrice: 12, sellPrice: 6, keyItem: false, armorSlots: fill(8, 0),
+    accessory: "", modifiers: { hp: 2, defense: 0, fight: 0, specialPower: -1 },
+    programs: { "Equip program": "", "Remove program": "", "Menu-use program": "start.prg", "Battle-use program": "",
+      "On-board program": "", "Pickup program": "" },
+    animation: "", menu: { hp: 5, specialPower: 0 }, battle: { hp: 0, specialPower: 0 }, sizeType: 0,
+    walking: fill(16, ["", ""]), rest: ["", "two-tiles.tst2"],
+  });
+}
+
+const enemyFields = ["Foe", 10, 3, 2, 1, 1, 0, 0, 1, 1, "two-tiles.tst2", ...fill(132, ""),
+  ...fill(202, ""), 0, 0, "", 4, 2, "", "", "", "", "", ""];
+const enemyData = {
+  name: "Foe", stats: { HP: 10, "Special power": 3, Fight: 2, Defense: 1 }, canFlee: true, sneakChance: 0, sneakUp: 0,
+  width: 1, height: 1, tileStride: 7, tiles: ["two-tiles.tst2", ...fill(132, "")], specialMoves: fill(101, ""),
+  weaknesses: fill(101, ""), ai: 0, usesScript: false, script: "", xp: 4, gold: 2,
+  programs: { "Victory program": "", "Escape program": "" },
+  sounds: { "Attack sound": "", "Defense sound": "", "Special move sound": "", "Defeat sound": "" },
+};
+add("Enemy/foe.ene", text("RPGTLKIT ENEMY", ...enemyFields), { ...enemyData, animations: {} });
+add("Enemy/animated.ene", text("RPGTLKIT ENEMY", ...enemyFields, "effect.anm", "", "", ""), {
+  ...enemyData, animations: { Attack: "effect.anm", Defense: "", "Special move": "", Defeat: "" },
+});
+add("Bkrounds/room.bkg", text("RPGTLKIT BKG", "two-tiles.tst2", ...fill(208, ""), "note.mid", "", "", "", "", "",
+  -30, 0, 20, ...fill(208 * 3, 0)), {
+  width: 19, height: 11, order: "column-major", tiles: ["two-tiles.tst2", ...fill(208, "")],
+  audio: { Music: "note.mid", "Select sound": "", "Choose sound": "", "Ready sound": "", "Invalid action sound": "" },
+  shading: [[-30, 0, 20], ...fill(208, [0, 0, 0])],
+});
+add("SpcMove/pulse.spc", text("RPGTLKIT SPLMOVE", "Pulse", 12, 6, "start.prg", 2, 0, 1, "slow.ste", "effect.anm", "Example"), {
+  name: "Pulse", fightPower: 12, cost: 6, program: "start.prg", targetSpecialPower: 2, battle: true, board: false,
+  storedUseFlags: [0, 1], assets: { "Status effect": "slow.ste", Animation: "effect.anm" }, description: "Example",
+});
+add("StatusE/slow.ste", binary(header("RPGTLKIT STATUSE", 2), "Slow", i16(0, 0, 1, 0, 1, -4, 0, 0, 1), "start.prg"), {
+  version: 2, name: "Slow", rounds: 0, speed: false, slow: true, disable: false, removeHp: true, hpAmount: -4,
+  removeSmp: false, smpAmount: 0, runProgram: true, program: "start.prg",
+});
+add("Misc/effect.anm", text("RPGTLKIT ANIM", 16, 32, 0, "face.gif", 255, "tone.wav",
+  ...fill(50, ["", 0, ""]).flat(), 0.25), {
+  width: 16, height: 32, storedFrameCount: 0,
+  frames: [{ image: "face.gif", transparentColor: 255, sound: "tone.wav" }, ...fill(50, { image: "", transparentColor: 0, sound: "" })],
+  pauseSeconds: 0.25,
+});
+add("Font/one.fnt", text("RPGTLKIT FONT", 128, ...fill(2047, 0)), {
+  width: 8, height: 8, glyphs: [[128, ...fill(7, 0)], ...fill(255, fill(8, 0))],
+});
+add("Boards/temp.___", Buffer.from("1\n2\n3\n4\n5\ntwo-tiles.tst2\n-2\n0\n1\n"), {
+  layout: "Observed text records; producer and field meanings unverified", header: [1, 2, 3, 4, 5],
+  records: [{ tileName: "two-tiles.tst2", values: [-2, 0, 1] }],
+}, "partial");
+
+add("Bitmap/face.gif", Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64"), {
+  signature: "GIF89a", width: 1, height: 1, globalColors: 2, frames: [
+    { x: 0, y: 0, width: 1, height: 1, interlaced: false, localColors: 0,
+      delayCentiseconds: 0, disposalMethod: 0, transparentIndex: 0 },
+  ],
+}, "partial");
+for (const extension of ["jpg", "jpeg"]) {
+  add(`Bitmap/header.${extension}`, Buffer.from("ffd8ffc0000b080002000301011100ffd9", "hex"), {
+    width: 3, height: 2, precisionBits: 8, frameMarker: "0xc0",
+    components: [{ id: 1, horizontalSampling: 1, verticalSampling: 1, quantizationTable: 0 }],
+  }, "partial");
+}
+add("Media/tone.wav", Buffer.from("524946462600000057415645666d74201000000001000100401f0000401f00000100080064617461020000008080", "hex"), {
+  encodingTag: 1, channels: 1, sampleRateHz: 8000, bytesPerSecond: 8000, blockAlign: 1, bitsPerSample: 8,
+  audioBytes: 2, sampleFrames: 2, durationSeconds: 0.00025,
+  chunks: [{ id: "fmt ", size: 16, offset: 20 }, { id: "data", size: 2, offset: 44 }],
+}, "partial");
+add("Media/note.mid", Buffer.from("4d546864000000060000000100604d54726b0000000f00c04700903c6460803c0000ff2f00", "hex"), {
+  format: 0, trackCount: 1, timeDivision: { ticksPerQuarter: 96 },
+  tracks: [{ number: 1, size: 15, ticks: 96, events: 4, noteOnEvents: 1, channels: [1], names: [], instruments: [], tempos: [],
+    parts: [{ port: 0, channel: 1, program: 72, percussion: false, instrument: "Clarinet", noteCount: 1, lowestNote: 60, highestNote: 60 }] }],
+}, "partial");
+const cfb = blank(512);
+Buffer.from("d0cf11e0a1b11ae1", "hex").copy(cfb);
+for (const [offset, value] of [[24, 62], [26, 3], [28, 0xfffe], [30, 9]]) cfb.writeUInt16LE(value, offset);
+cfb.writeUInt32LE(0xfffffffe, 48);
+cfb.writeUInt32LE(4096, 56);
+add("Media/empty.doc", cfb, {
+  container: "CFB", major: 3, minor: 62, sectorSize: 512, fatSectorCount: 0, miniStreamCutoff: 4096, directory: [],
+}, "partial");
+
+export { fixtures };
