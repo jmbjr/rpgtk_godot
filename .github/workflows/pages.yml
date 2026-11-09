@@ -48,7 +48,7 @@ jobs:
           mkdir -p site/vendor
           cp .nojekyll index.html style.css app.mjs model.mjs artifacts.mjs records.mjs media.mjs midi.mjs sprites.mjs catalog.json site/
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
-          cp -R vendor/soundfont site/vendor/
+          cp -R vendor/soundfont vendor/generaluser-gs site/vendor/
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4

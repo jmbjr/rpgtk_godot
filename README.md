@@ -76,15 +76,20 @@ It does not evaluate RPGCode or infer reachability for other programs.
 ## Compare MIDI sound banks
 
 Open `VIP - Title1.mid` under **Media** and listen for the strings, harp, and
-clarinet in the first ten seconds. In **MIDI sound source**, choose a local
-`.sf2` file such as GeneralUser GS, or a `.dls` bank such as the Windows
-`C:\Windows\System32\drivers\gm.dls` if present. The selection stays in the
-current page session. Switch **Playback synth** and press **Play MIDI** to
+clarinet in the first ten seconds. Select **GeneralUser GS 2.0.3** in **Playback
+synth** and press **Play MIDI**. The browser downloads the 32 MB bank on first
+play and reuses it for the page session. You can also choose a local `.sf2`
+or `.dls` file. Switch back to **Built-in synth** and press **Play MIDI** to
 replay the same passage. **Bypass EQ** compares the synths with flat EQ.
 
 The optional player uses SpessaSynth on HTTPS or localhost and loads only
-when you play with a local bank. The site bundles the player and its license
-notices. The MIDI and sound bank remain on your device.
+when you play with a sound bank. The site bundles the player and its license
+notices. The MIDI and any local bank remain on your device.
+
+The site serves an unmodified copy of [GeneralUser GS](https://www.schristiancollins.com/generaluser.php)
+by S. Christian Collins, pinned to upstream commit
+`684543d5e5efaef08d02be50dcda8d552478fa60`. The bank and its
+[original license](vendor/generaluser-gs/LICENSE.txt) are in `vendor/generaluser-gs/`.
 
 ## Refresh the command catalog
 

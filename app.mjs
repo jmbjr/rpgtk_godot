@@ -41,7 +41,24 @@ let mediaUrl;
 let midiPlayback;
 let midiTone = { ...defaultMidiTone };
 let midiSoundBank;
-let useMidiSoundBank = false;
+let midiSoundSource = "builtin";
+let generalUserGsDownload;
+const generalUserGs = {
+  name: "GeneralUser GS 2.0.3",
+  async arrayBuffer() {
+    generalUserGsDownload ??= fetch(new URL("./vendor/generaluser-gs/GeneralUser-GS.sf2", import.meta.url))
+      .then(response => {
+        if (!response.ok) throw new Error(`Could not download GeneralUser GS (HTTP ${response.status}).`);
+        return response.blob();
+      })
+      .catch(error => {
+        generalUserGsDownload = undefined;
+        throw error;
+      });
+    // The audio worklet takes ownership of each playback's ArrayBuffer.
+    return (await generalUserGsDownload).arrayBuffer();
+  },
+};
 let inspectorRevision = 0;
 const demoStartup = "Demo/Prg/start.prg";
 const sourceNames = {
@@ -544,7 +561,8 @@ function renderMidiControls(panel, artifact) {
   const play = button("Play MIDI", () => {
     play.disabled = true;
     stop.disabled = false;
-    const bank = useMidiSoundBank ? midiSoundBank : undefined;
+    const bank = midiSoundSource === "generaluser" ? generalUserGs :
+      midiSoundSource === "local" ? midiSoundBank : undefined;
     message.textContent = bank ? `Loading MIDI with ${bank.name}…` : "Loading MIDI…";
     midiPlayback = playMidi(
       archive.file(artifact.path).async("uint8array"),
@@ -578,16 +596,18 @@ function renderMidiSoundBank() {
   const source = el("select");
   const builtIn = el("option", "Built-in synth");
   builtIn.value = "builtin";
-  const sampled = el("option");
-  sampled.value = "sampled";
-  source.append(builtIn, sampled);
+  const hosted = el("option", generalUserGs.name);
+  hosted.value = "generaluser";
+  const local = el("option");
+  local.value = "local";
+  source.append(builtIn, hosted, local);
   const sourceLabel = el("label", "Playback synth");
   sourceLabel.append(source);
 
   function display() {
-    sampled.textContent = midiSoundBank?.name ?? "Local sound bank";
-    sampled.disabled = !midiSoundBank;
-    source.value = useMidiSoundBank ? "sampled" : "builtin";
+    local.textContent = midiSoundBank?.name ?? "Local sound bank";
+    local.disabled = !midiSoundBank;
+    source.value = midiSoundSource;
   }
 
   picker.addEventListener("change", () => {
@@ -595,16 +615,22 @@ function renderMidiSoundBank() {
     if (!file) return;
     midiPlayback?.stop();
     midiSoundBank = file;
-    useMidiSoundBank = true;
+    midiSoundSource = "local";
     display();
     picker.value = "";
   });
   source.addEventListener("change", () => {
     midiPlayback?.stop();
-    useMidiSoundBank = source.value === "sampled";
+    midiSoundSource = source.value;
   });
+  const credit = el("p", "GeneralUser GS by ");
+  const creator = el("a", "S. Christian Collins");
+  creator.href = "https://www.schristiancollins.com/generaluser.php";
+  const license = el("a", "License");
+  license.href = "./vendor/generaluser-gs/LICENSE.txt";
+  credit.append(creator, " · ", license, " · 32 MB on first play");
   display();
-  group.append(pickerLabel, sourceLabel);
+  group.append(sourceLabel, credit, pickerLabel);
   return group;
 }
 
