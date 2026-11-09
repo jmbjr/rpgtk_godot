@@ -1,5 +1,6 @@
 import { readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
+import { artifactRecord } from "./records.mjs";
 
 const byId = id => document.getElementById(id);
 const el = (tag, value = "", className = "") => {
@@ -34,7 +35,7 @@ let selectedFolder = null;
 let references = { incoming: new Map(), outgoing: new Map() };
 let tileSelection;
 let animationTimer;
-let portraitUrl;
+let mediaUrl;
 let inspectorRevision = 0;
 const demoStartup = "Demo/Prg/start.prg";
 const sourceNames = {
@@ -56,6 +57,16 @@ function selectDefault() {
   tileSelection = undefined;
   const bindings = renderBindings(startup);
   references = buildReferences(artifacts, mainFile && { name: mainFile.filename, bindings });
+  const mainData = byId("main-data");
+  mainData.replaceChildren();
+  if (mainFile) {
+    const { filename, ...data } = mainFile;
+    mainData.append(jsonPanel(() => artifactRecord(
+      { ...data, path: filename, type: "gam", decodeStatus: "decoded" },
+      references,
+      { external: true, bindings },
+    )));
+  }
   renderBrowser();
   showArtifact();
 }
@@ -67,9 +78,9 @@ function renderBindings(startup) {
   if (!mainFile) return [];
   const root = startup.path ? directory(directory(startup.path).slice(0, -1)) : null;
   const bindings = [
-    ["Configured startup", startup],
-    ["Opening board", resolveAsset(paths, "Boards", mainFile.board, root)],
-    ["Initial character", resolveAsset(paths, "Chrs", mainFile.character, root)],
+    ["Configured startup", { ...startup, value: mainFile.startup }],
+    ["Opening board", { ...resolveAsset(paths, "Boards", mainFile.board, root), value: mainFile.board }],
+    ["Initial character", { ...resolveAsset(paths, "Chrs", mainFile.character, root), value: mainFile.character }],
   ];
   const facts = [
     ["Game title", mainFile.title],
@@ -140,9 +151,9 @@ function selectionLabel(path) {
 function showArtifact() {
   clearInterval(animationTimer);
   inspectorRevision++;
-  if (portraitUrl) {
-    URL.revokeObjectURL(portraitUrl);
-    portraitUrl = undefined;
+  if (mediaUrl) {
+    URL.revokeObjectURL(mediaUrl);
+    mediaUrl = undefined;
   }
   const artifact = artifacts.get(selected);
   const source = byId("source");
@@ -245,7 +256,7 @@ function renderAsset(artifact) {
       stats.append(fact);
     }
     const portrait = edges.find(edge => edge.evidence === "Character portrait")?.to;
-    if (portrait) showImage(panel, portrait, `${artifact.name} portrait`);
+    if (portrait) showMedia(panel, portrait, `${artifact.name} portrait`);
     panel.append(stats);
     const sprites = el("div", "", "sprite-strip");
     for (const frame of artifact.walking.filter(frame => frame.frame === 1)) {
@@ -265,7 +276,25 @@ function renderAsset(artifact) {
     return;
   }
   if (/^(gif|jpg|jpeg|png|bmp)$/.test(artifact.type)) {
-    showImage(panel, artifact.path, basename(artifact.path));
+    if (artifact.width) panel.append(el("p", `${artifact.width} × ${artifact.height} pixels`));
+    showMedia(panel, artifact.path, basename(artifact.path));
+    return;
+  }
+  if (artifact.type === "wav") {
+    panel.append(el("p", `${artifact.channels} channel(s) · ${artifact.sampleRateHz} Hz · ${artifact.bitsPerSample} bits`));
+    showMedia(panel, artifact.path, basename(artifact.path), true);
+    return;
+  }
+  if (artifact.type === "mid") {
+    panel.append(el("p", `Standard MIDI File · Format ${artifact.format} · ${artifact.trackCount} tracks`));
+    return;
+  }
+  if (artifact.type === "doc") {
+    panel.append(el("p", `Compound document · ${artifact.directory?.length ?? 0} directory entries`));
+    return;
+  }
+  if (artifact.type === "___") {
+    panel.append(el("p", `${artifact.records.length} observed text records · Source format unverified`));
     return;
   }
   panel.append(el("p", `${artifact.type.toUpperCase() || "Unknown format"} · Archive entry`));
@@ -315,7 +344,7 @@ function renderBoard(panel, board, edges) {
   const notes = el("p", "", "board-note");
   preview.replaceChildren(controls, stage, notes);
   const background = edges.find(edge => edge.evidence === "Board background image")?.to;
-  if (background) showImage(stage, background, "Board background");
+  if (background) showMedia(stage, background, "Board background");
 
   const indexed = new Map(edges.filter(edge => edge.index !== undefined).map(edge => [edge.index, edge]));
   const area = board.width * board.height;
@@ -367,19 +396,24 @@ function renderBoard(panel, board, edges) {
   draw();
 }
 
-async function showImage(panel, path, description) {
+async function showMedia(panel, path, description, audio = false) {
   const revision = inspectorRevision;
   try {
     const blob = await archive.file(path).async("blob");
     if (revision !== inspectorRevision) return;
-    if (portraitUrl) URL.revokeObjectURL(portraitUrl);
-    portraitUrl = URL.createObjectURL(blob);
-    const image = el("img", "", "artifact-image");
-    image.src = portraitUrl;
-    image.alt = description;
-    panel.prepend(image);
+    if (mediaUrl) URL.revokeObjectURL(mediaUrl);
+    mediaUrl = URL.createObjectURL(audio ? new Blob([blob], { type: "audio/wav" }) : blob);
+    const media = el(audio ? "audio" : "img", "", audio ? "artifact-audio" : "artifact-image");
+    media.src = mediaUrl;
+    if (audio) {
+      media.controls = true;
+      media.setAttribute("aria-label", description);
+    } else {
+      media.alt = description;
+    }
+    panel.prepend(media);
   } catch {
-    if (revision === inspectorRevision) panel.append(el("p", "Image preview unavailable."));
+    if (revision === inspectorRevision) panel.append(el("p", "Media preview unavailable."));
   }
 }
 
@@ -392,6 +426,20 @@ function renderConnections(path) {
   const title = tileSelection ? `Used by · Tile ${tileSelection}` : "Used by";
   renderEdges(container, title, uses, true);
   renderEdges(container, "References", outgoing, false);
+  container.append(jsonPanel(() => artifactRecord(artifacts.get(path), references)));
+}
+
+function jsonPanel(record) {
+  const details = el("details", "", "reference data-panel");
+  const summary = el("summary", "View decoded JSON");
+  const code = el("pre", "", "json-source");
+  code.tabIndex = 0;
+  code.setAttribute("aria-label", "Decoded artifact JSON");
+  details.append(summary, code);
+  details.addEventListener("toggle", () => {
+    if (details.open && !code.textContent) code.textContent = JSON.stringify(record(), null, 2);
+  });
+  return details;
 }
 
 function renderEdges(container, title, edges, reverse) {

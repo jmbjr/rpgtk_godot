@@ -89,3 +89,64 @@ const boards = [...artifacts.values()].filter(artifact => artifact.type === "brd
 assert.equal(boards.length, 17);
 assert.ok(boards.every(artifact => artifact.runs.length > 0));
 console.log("Board smoke passed: 17 tile maps, compressed runs, placed programs, incoming board links, and animation-backed tilesets.");
+
+const { artifactRecord } = await import("../records.mjs");
+const counts = new Map();
+for (const artifact of artifacts.values()) counts.set(artifact.decodeStatus, (counts.get(artifact.decodeStatus) ?? 0) + 1);
+assert.deepEqual(Object.fromEntries(counts), { decoded: 153 });
+assert.equal(artifacts.get("Demo/Font/BASE.FNT").glyphs.length, 256);
+assert.equal(artifacts.get("Demo/Tiles/key.gph").pixels.length, 1024);
+assert.equal(artifacts.get("Demo/Misc/explode.anm").frames[1].sound, "bang.wav");
+assert.equal(artifacts.get("Demo/Enemy/larva.ene").stats.HP, 2000);
+assert.equal(artifacts.get("Demo/Bkrounds/grass.bkg").tiles.length, 209);
+assert.equal(artifacts.get("Demo/SpcMove/attackall.spc").program, "spc_attackall.prg");
+assert.equal(artifacts.get("Demo/Item/kid1.itm").walking.length, 16);
+assert.ok(connections.incoming.get(animation).some(edge => edge.from === castle));
+
+const boardRecord = artifactRecord(board, connections);
+const tileRecord = artifactRecord(artifacts.get("Demo/Tiles/default.tst"), connections);
+assert.equal(boardRecord.schemaVersion, 1);
+assert.equal(boardRecord.decode.status, "partial");
+const lookup = boardRecord.data.tileLookup.find(entry => entry.value === "default.tst10");
+assert.ok(boardRecord.data.runs.some(run => boardRecord.data.tileLookup[run.lookupIndex] === lookup));
+assert.equal(lookup.value, "default.tst10");
+assert.equal(lookup.reference.target.$ref, `${tileRecord.$id}#/data/tiles/9`);
+assert.equal(tileRecord.data.tiles[9].number, 10);
+assert.equal(Buffer.from(tileRecord.data.tiles[9].rgb, "base64").length, 3072);
+const mainRecord = artifactRecord({ ...gam, path: "Demo.gam", type: "gam", decodeStatus: "decoded" }, connections, {
+  external: true,
+  bindings: [["Opening board", { path: openingBoard, value: gam.board, status: "resolved" }]],
+});
+assert.equal(mainRecord.$id, "rpgtk-main:/Demo.gam");
+assert.equal(mainRecord.references.outgoing[0].target.$ref, boardRecord.$id);
+assert.equal(artifactRecord(artifacts.get("Demo/Boards/temp.___"), connections).decode.status, "partial");
+console.log("JSON smoke passed: all 153 files have structured records and exact tile and Main File references.");
+
+const gif = artifacts.get("Demo/Bitmap/title.gif");
+assert.deepEqual([gif.signature, gif.width, gif.height], ["GIF89a", 608, 352]);
+assert.ok(gif.frames.length);
+const jpeg = artifacts.get("Demo/Bitmap/mountains.jpg");
+assert.deepEqual([jpeg.width, jpeg.height], [608, 512]);
+assert.equal(jpeg.components.length, 3);
+const wave = artifacts.get("Demo/Media/bang.wav");
+assert.deepEqual([wave.channels, wave.sampleRateHz, wave.bitsPerSample, wave.sampleFrames], [1, 8000, 8, 7187]);
+assert.equal(wave.durationSeconds, 0.898375);
+const midi = artifacts.get("Demo/Media/VIP - Dungeon2.mid");
+assert.equal(midi.trackCount, 18);
+assert.equal(midi.timeDivision.ticksPerQuarter, 120);
+assert.ok(midi.tracks.some(track => track.tempos.length));
+const doc = artifacts.get("Demo/Media/VIP - RPGToolkit Fo Sho Music Pak  EULA.doc");
+assert.equal(doc.sectorSize, 512);
+assert.ok(doc.directory.some(entry => entry.name === "WordDocument"));
+const temp = artifacts.get("Demo/Boards/temp.___");
+assert.deepEqual(temp.header, [0, 0, 0, 35, 23]);
+assert.equal(temp.records.length, 280);
+assert.deepEqual(temp.records[0], { tileName: "default.tst80", values: [-30, -30, -30] });
+assert.ok(connections.outgoing.get(temp.path).some(edge => edge.tile === 80 && edge.line === 6));
+
+const { readCompoundDocument, readGif, readJpeg, readMidi, readWave } = await import("../media.mjs");
+for (const [read, artifact] of [[readGif, gif], [readJpeg, jpeg], [readWave, wave], [readMidi, midi], [readCompoundDocument, doc]]) {
+  const bytes = await zip.file(artifact.path).async("uint8array");
+  assert.throws(() => read(bytes.subarray(0, 8)));
+}
+console.log("Media smoke passed: image headers, WAV timing, MIDI tracks, compound directory, and observed temporary text records.");
