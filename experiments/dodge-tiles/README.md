@@ -26,3 +26,18 @@ node experiments/dodge-tiles/check.mjs \
 ```
 
 The optional last argument writes `dodge.json` and `toolkit-sidecar.json`. The check validates the pinned schema and verifies source order, stable IDs across input record order, and the board-to-tile mapping. A separate in-memory board variant checks repeated placements, out-of-range indexes, and missing tiles.
+
+## Build the tabletop review
+
+The tabletop projection adds a separate DODGE review scene and keeps the tile IDs from the catalog. In that scene, the two TST members are reference cards. The scene instantiates the display once, and the board placement continues to refer to the second tile. There is no card generated for the standalone GPH or board in this slice.
+
+After running the check above, build both targets with Python 3.12:
+
+```sh
+python -m pip install -r experiments/dodge-tiles/targets/requirements.txt
+python experiments/dodge-tiles/targets/build.py \
+  /path/to/DODGE/draft/v0.2.1/schemas /tmp/toolkit-dodge-tiles /tmp/toolkit-tabletop \
+  --source-sha "$(git rev-parse HEAD)"
+```
+
+The build validates the pinned DODGE document, export contract and target manifest schemas and resolves the fixture's supported subset. It compares both manifests, reopens the PDF to check trim size and card order, and checks the TTS save's IDs, positions and asset bytes. The PR workflow uploads the PDF, TTS save, images, manifests and [review instructions](targets/REVIEW.md) together. Opening the save in TTS is the manual acceptance step.

@@ -1,0 +1,38 @@
+{
+  "contract_version": "0.2.1",
+  "contract_id": "toolkit-tile-cards-tts",
+  "target": "tts",
+  "accepts": {
+    "dodge_versions": [
+      "0.2.1"
+    ],
+    "object_kinds": [
+      "token",
+      "collection"
+    ],
+    "component_forms": [
+      "card"
+    ],
+    "rule_features": []
+  },
+  "maps": [
+    {
+      "from": "scenes.tile-review",
+      "to": "one reference card per declared tileset member"
+    }
+  ],
+  "adds": [
+    "left-to-right display",
+    "local image paths",
+    "display-only card backs"
+  ],
+  "outputs": [
+    "tile-cards.tts.json",
+    "assets/*.png"
+  ],
+  "forbidden_in_dodge": [
+    "TTS GUIDs",
+    "table transforms",
+    "asset paths"
+  ]
+}
