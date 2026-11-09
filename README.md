@@ -68,8 +68,10 @@ Then check the browser workflow.
    another file to confirm playback stops and the settings carry over.
    **Reset EQ** restores flat playback. Expand **MIDI tracks** to see each
    file track's instruments, channel, note counts and ranges. Open
-   `VIP - Title1.mid` to see several instruments in one track. Track and
-   tempo data are also under **View decoded JSON**.
+   `VIP - Title1.mid` to see several instruments in one track. Expand
+   **Piano roll** while it plays and choose the clarinet on channel 7.
+   Check that the playhead and note highlights follow playback, pause,
+   and reset. Track and tempo data are also under **View decoded JSON**.
 10. Open `temple.bkg` under **Bkrounds**. Compare the pool, pillars and
     floor shadows against the Toolkit 2 editor. Check the linked menu sounds
     and the missing battle music reference. Open **Font** → `BASE.FNT` and
@@ -102,6 +104,13 @@ The site serves an unmodified copy of [GeneralUser GS](https://www.schristiancol
 by S. Christian Collins, pinned to upstream commit
 `684543d5e5efaef08d02be50dcda8d552478fa60`. The bank and its
 [original license](vendor/generaluser-gs/LICENSE.txt) are in `vendor/generaluser-gs/`.
+
+## Follow MIDI notes
+
+**Piano roll** loads Magenta's SVG visualizer on demand. Each bar shows a
+MIDI key hold from note-on to note-off. Filter by MIDI port and channel to
+follow a part. The playhead uses the active player's clock, including
+GeneralUser GS and the built-in synth.
 
 ## Refresh the command catalog
 

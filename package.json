@@ -2,9 +2,10 @@
   "name": "rpgtk-godot-viewer",
   "private": true,
   "scripts": {
-    "prepare": "node scripts/stage-soundfont.mjs"
+    "prepare": "node scripts/stage-soundfont.mjs && node scripts/stage-piano-roll.mjs"
   },
   "dependencies": {
+    "@magenta/music": "1.23.1",
     "spessasynth_lib": "4.4.7"
   },
   "devDependencies": {
