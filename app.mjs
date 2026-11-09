@@ -41,7 +41,7 @@ let mediaUrl;
 let midiPlayback;
 let midiTone = { ...defaultMidiTone };
 let midiSoundBank;
-let midiSoundSource = "builtin";
+let midiSoundSource = "generaluser";
 let generalUserGsDownload;
 const generalUserGs = {
   name: "GeneralUser GS 2.0.3",
@@ -600,7 +600,7 @@ function renderMidiSoundBank() {
   hosted.value = "generaluser";
   const local = el("option");
   local.value = "local";
-  source.append(builtIn, hosted, local);
+  source.append(hosted, builtIn, local);
   const sourceLabel = el("label", "Playback synth");
   sourceLabel.append(source);
 

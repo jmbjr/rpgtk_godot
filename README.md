@@ -76,10 +76,10 @@ It does not evaluate RPGCode or infer reachability for other programs.
 ## Compare MIDI sound banks
 
 Open `VIP - Title1.mid` under **Media** and listen for the strings, harp, and
-clarinet in the first ten seconds. Select **GeneralUser GS 2.0.3** in **Playback
-synth** and press **Play MIDI**. The browser downloads the 32 MB bank on first
-play and reuses it for the page session. You can also choose a local `.sf2`
-or `.dls` file. Switch back to **Built-in synth** and press **Play MIDI** to
+clarinet in the first ten seconds. **GeneralUser GS 2.0.3** is selected by
+default. Press **Play MIDI** to download the 32 MB bank on first play and
+reuse it for the page session. You can also choose a local `.sf2` or `.dls`
+file. Switch to **Built-in synth** and press **Play MIDI** to
 replay the same passage. **Bypass EQ** compares the synths with flat EQ.
 
 The optional player uses SpessaSynth on HTTPS or localhost and loads only
