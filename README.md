@@ -111,8 +111,23 @@ decoder errors, media, accompanying documents, and unidentified entries.
 | ANM | Dimensions, stored frame count, frame slots, transparent colors, sounds and pause |
 | GPH | Dimensions, encoding, compression flag and expanded column-ordered color values |
 | FNT | 256 glyphs, each with eight stored row bytes |
+| GIF | Logical screen size, palette sizes, frame positions and graphic-control fields |
+| JPG | Frame size, sample precision, coding marker and component sampling |
+| WAV | RIFF chunk table, format fields, and PCM sample count and duration |
+| MID | SMF timing division and per-track names, instruments, tempo changes, channel and event counts |
+| DOC | Compound container version, sector sizes and directory entry names and sizes |
+| `___` | Observed numeric header and repeated tile-name/three-value records, with source line references |
 
-The demo contains 116 Toolkit files in the ZIP and one separate GAM. The
-record also accounts for 35 standard media files, the accompanying DOC,
-and the unidentified `Boards/temp.___`. Full legacy engine behavior and
-decoding of fields outside the covered variants are separate work.
+All 153 archive entries and the separate GAM have structured records. Media
+decoders expose container and track or frame metadata. The browser renders
+images and plays WAV audio. The DOC record describes its compound container.
+`Boards/temp.___` uses a fixture-specific text reader and is marked partial
+because its producer and field semantics are unverified. Legacy engine
+behavior and fields beyond the documented slices remain outside the viewer.
+
+Media format sources include the
+[GIF89a specification](https://giflib.sourceforge.net/gifstandard/GIF89a.html),
+[JPEG specification](https://www.w3.org/Graphics/JPEG/itu-t81.pdf),
+[RIFF/WAVE format fields](https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.2088-2-202511-I%21%21PDF-E.pdf),
+[Standard MIDI File field guide](https://midi.community/docs/smf/),
+and [Microsoft Compound File Binary format](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/53989ce4-7b05-4f8d-829b-d08d6148375b).

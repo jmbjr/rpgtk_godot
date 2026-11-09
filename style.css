@@ -112,3 +112,5 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
   background: #111013;
   font: .78rem/1.45 var(--mono);
 }
+
+.artifact-audio { display: block; width: 100%; margin-top: .65rem; }

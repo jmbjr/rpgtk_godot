@@ -23,6 +23,7 @@ jobs:
           node --check model.mjs
           node --check artifacts.mjs
           node --check records.mjs
+          node --check media.mjs
           node --check scripts/smoke.mjs
           node --input-type=module <<'JS'
           import assert from "node:assert/strict";
@@ -40,7 +41,7 @@ jobs:
       - name: Stage public viewer files
         run: |
           mkdir -p site/vendor
-          cp .nojekyll index.html style.css app.mjs model.mjs artifacts.mjs records.mjs catalog.json site/
+          cp .nojekyll index.html style.css app.mjs model.mjs artifacts.mjs records.mjs media.mjs catalog.json site/
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md site/vendor/
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'

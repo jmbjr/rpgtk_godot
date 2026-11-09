@@ -35,7 +35,7 @@ let selectedFolder = null;
 let references = { incoming: new Map(), outgoing: new Map() };
 let tileSelection;
 let animationTimer;
-let portraitUrl;
+let mediaUrl;
 let inspectorRevision = 0;
 const demoStartup = "Demo/Prg/start.prg";
 const sourceNames = {
@@ -151,9 +151,9 @@ function selectionLabel(path) {
 function showArtifact() {
   clearInterval(animationTimer);
   inspectorRevision++;
-  if (portraitUrl) {
-    URL.revokeObjectURL(portraitUrl);
-    portraitUrl = undefined;
+  if (mediaUrl) {
+    URL.revokeObjectURL(mediaUrl);
+    mediaUrl = undefined;
   }
   const artifact = artifacts.get(selected);
   const source = byId("source");
@@ -256,7 +256,7 @@ function renderAsset(artifact) {
       stats.append(fact);
     }
     const portrait = edges.find(edge => edge.evidence === "Character portrait")?.to;
-    if (portrait) showImage(panel, portrait, `${artifact.name} portrait`);
+    if (portrait) showMedia(panel, portrait, `${artifact.name} portrait`);
     panel.append(stats);
     const sprites = el("div", "", "sprite-strip");
     for (const frame of artifact.walking.filter(frame => frame.frame === 1)) {
@@ -276,7 +276,25 @@ function renderAsset(artifact) {
     return;
   }
   if (/^(gif|jpg|jpeg|png|bmp)$/.test(artifact.type)) {
-    showImage(panel, artifact.path, basename(artifact.path));
+    if (artifact.width) panel.append(el("p", `${artifact.width} × ${artifact.height} pixels`));
+    showMedia(panel, artifact.path, basename(artifact.path));
+    return;
+  }
+  if (artifact.type === "wav") {
+    panel.append(el("p", `${artifact.channels} channel(s) · ${artifact.sampleRateHz} Hz · ${artifact.bitsPerSample} bits`));
+    showMedia(panel, artifact.path, basename(artifact.path), true);
+    return;
+  }
+  if (artifact.type === "mid") {
+    panel.append(el("p", `Standard MIDI File · Format ${artifact.format} · ${artifact.trackCount} tracks`));
+    return;
+  }
+  if (artifact.type === "doc") {
+    panel.append(el("p", `Compound document · ${artifact.directory?.length ?? 0} directory entries`));
+    return;
+  }
+  if (artifact.type === "___") {
+    panel.append(el("p", `${artifact.records.length} observed text records · Source format unverified`));
     return;
   }
   panel.append(el("p", `${artifact.type.toUpperCase() || "Unknown format"} · Archive entry`));
@@ -326,7 +344,7 @@ function renderBoard(panel, board, edges) {
   const notes = el("p", "", "board-note");
   preview.replaceChildren(controls, stage, notes);
   const background = edges.find(edge => edge.evidence === "Board background image")?.to;
-  if (background) showImage(stage, background, "Board background");
+  if (background) showMedia(stage, background, "Board background");
 
   const indexed = new Map(edges.filter(edge => edge.index !== undefined).map(edge => [edge.index, edge]));
   const area = board.width * board.height;
@@ -378,19 +396,24 @@ function renderBoard(panel, board, edges) {
   draw();
 }
 
-async function showImage(panel, path, description) {
+async function showMedia(panel, path, description, audio = false) {
   const revision = inspectorRevision;
   try {
     const blob = await archive.file(path).async("blob");
     if (revision !== inspectorRevision) return;
-    if (portraitUrl) URL.revokeObjectURL(portraitUrl);
-    portraitUrl = URL.createObjectURL(blob);
-    const image = el("img", "", "artifact-image");
-    image.src = portraitUrl;
-    image.alt = description;
-    panel.prepend(image);
+    if (mediaUrl) URL.revokeObjectURL(mediaUrl);
+    mediaUrl = URL.createObjectURL(audio ? new Blob([blob], { type: "audio/wav" }) : blob);
+    const media = el(audio ? "audio" : "img", "", audio ? "artifact-audio" : "artifact-image");
+    media.src = mediaUrl;
+    if (audio) {
+      media.controls = true;
+      media.setAttribute("aria-label", description);
+    } else {
+      media.alt = description;
+    }
+    panel.prepend(media);
   } catch {
-    if (revision === inspectorRevision) panel.append(el("p", "Image preview unavailable."));
+    if (revision === inspectorRevision) panel.append(el("p", "Media preview unavailable."));
   }
 }
 
