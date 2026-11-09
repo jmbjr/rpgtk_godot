@@ -141,3 +141,9 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 .midi-bank label { display: grid; grid-template-columns: minmax(0, 1fr); font-size: .875rem; }
 .midi-bank label + label { margin-top: .55rem; }
 .midi-bank input, .midi-bank select { min-width: 0; width: 100%; font: inherit; }
+
+.asset-fields { display: grid; grid-template-columns: minmax(6rem, auto) minmax(0, 1fr); gap: .35rem .65rem; }
+.asset-fields dd { margin: 0; overflow-wrap: anywhere; }
+.asset-fields button { max-width: 100%; text-align: left; overflow-wrap: anywhere; }
+.font-sample { grid-template-columns: 1fr; }
+.font-sample input { width: 100%; min-width: 0; font: inherit; }

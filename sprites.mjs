@@ -42,6 +42,12 @@ function compose(columns, rows, parts, artifacts, graph) {
       missing.push(part);
       continue;
     }
+    if (part.shade?.some(Boolean)) {
+      for (let i = 0; i < tile.length; i += 4) {
+        if (!tile[i + 3]) continue;
+        for (let channel = 0; channel < 3; channel++) tile[i + channel] += part.shade[channel];
+      }
+    }
     for (let y = 0; y < tileSize; y++) {
       const start = y * tileSize * 4;
       const destination = ((part.y * tileSize + y) * width + part.x * tileSize) * 4;
@@ -86,4 +92,31 @@ export function itemSprites(item, artifacts, graph) {
         .map((frame, index) => composeFrame(frame, `Walking frame ${group * 4 + index + 1}`)),
     })),
   };
+}
+
+export function battleBackground(background, artifacts, graph) {
+  const { width, height, tiles, shading } = background;
+  const byEvidence = new Map((graph.outgoing.get(background.path) ?? []).map(edge => [edge.evidence, edge]));
+  const parts = [];
+  for (const [index, value] of tiles.entries()) {
+    if (!value) continue;
+    const x = Math.floor(index / height);
+    const y = index % height;
+    parts.push({ x, y, value, shade: shading[index], edge: byEvidence.get(`Background tile (${x + 1}, ${y + 1})`) });
+  }
+  return compose(width, height, parts, artifacts, graph);
+}
+
+export function animationFrames(frames) {
+  const last = frames.findLastIndex(frame => frame.image || frame.sound);
+  return frames.slice(0, last + 1);
+}
+
+export function keyFrameColor(pixels, color) {
+  const red = color & 255;
+  const green = (color >>> 8) & 255;
+  const blue = (color >>> 16) & 255;
+  for (let i = 0; i < pixels.length; i += 4) {
+    if (pixels[i] === red && pixels[i + 1] === green && pixels[i + 2] === blue) pixels[i + 3] = 0;
+  }
 }

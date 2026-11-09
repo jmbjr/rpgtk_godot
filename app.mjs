@@ -2,7 +2,7 @@ import { readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
 import { defaultMidiTone, playMidi } from "./midi.mjs";
 import { artifactRecord } from "./records.mjs";
-import { enemySprite, itemSprites, standaloneTilePixels } from "./sprites.mjs";
+import { animationFrames, battleBackground, enemySprite, itemSprites, keyFrameColor, standaloneTilePixels } from "./sprites.mjs";
 
 const byId = id => document.getElementById(id);
 const el = (tag, value = "", className = "") => {
@@ -183,7 +183,8 @@ function showArtifact() {
   const source = byId("source");
   byId("source-path").textContent = selected ?? "";
   byId("selection").textContent = selectionLabel(selected);
-  byId("file-title").textContent = artifact?.program ? "Source" : artifact?.runs ? "Board preview" : "File details";
+  byId("file-title").textContent = artifact?.program ? "Source" : artifact?.runs ? "Board preview" :
+    artifact?.type === "bkg" && !artifact.error ? "Battle background preview" : "File details";
   byId("graph-title").textContent = artifact?.program ? "Capability graph" : "Artifact inspector";
   byId("graph").replaceChildren();
   byId("reference").replaceChildren();
@@ -219,6 +220,22 @@ function renderAsset(artifact) {
   const edges = references.outgoing.get(artifact.path) ?? [];
   if (artifact.error) {
     panel.append(el("p", artifact.error));
+    return;
+  }
+  if (artifact.type === "bkg") {
+    renderBattleBackground(panel, artifact, edges);
+    return;
+  }
+  if (artifact.type === "fnt") {
+    renderFont(panel, artifact);
+    return;
+  }
+  if (artifact.type === "anm") {
+    renderAnimation(panel, artifact, edges);
+    return;
+  }
+  if (artifact.type === "spc") {
+    renderSpecialMove(panel, artifact, edges);
     return;
   }
   if (artifact.type === "tst") {
@@ -351,6 +368,180 @@ function renderAsset(artifact) {
     return;
   }
   panel.append(el("p", `${artifact.type.toUpperCase() || "Unknown format"} · Archive entry`));
+}
+
+function assetFields(fields) {
+  const list = el("dl", "", "asset-fields");
+  for (const [name, value] of fields) {
+    const detail = el("dd");
+    detail.append(value);
+    list.append(el("dt", name), detail);
+  }
+  return list;
+}
+
+function linkedAsset(value, edge) {
+  if (edge?.to) return button(value, () => selectArtifact(edge.to, edge.tile));
+  return edge ? `${value} · ${edge.status}` : value || "—";
+}
+
+function renderBattleBackground(panel, artifact, edges) {
+  const background = battleBackground(artifact, artifacts, references);
+  const canvas = spriteCanvas(`Battle backdrop for ${basename(artifact.path)}`);
+  drawSprite(canvas, background);
+  canvas.style.width = `${background.width}px`;
+  byId("source").replaceChildren(canvas);
+  if (!background.parts.length) byId("source").append(el("p", "This background has no tile placements."));
+  panel.append(el("p", `Battle backdrop · ${artifact.width} × ${artifact.height} tiles`),
+    el("h3", "Battle media"), assetFields(Object.entries(artifact.audio).map(([name, value]) =>
+      [name, linkedAsset(value, edges.find(edge => edge.evidence === name))])));
+  if (background.parts.length) panel.append(spriteLinks(background));
+}
+
+function renderFont(panel, font) {
+  function drawGlyph(context, rows, x, y) {
+    rows.forEach((byte, row) => {
+      for (let column = 0; column < font.width; column++) {
+        if (byte & (128 >> column)) context.fillRect(x + column, y + row, 1, 1);
+      }
+    });
+  }
+  const sampleLabel = el("label", "Sample text (ASCII)", "font-sample");
+  const input = el("input");
+  input.type = "text";
+  input.maxLength = 80;
+  input.value = "The Jewel of Destiny 0123";
+  sampleLabel.append(input);
+  const sample = spriteCanvas("Bitmap font sample");
+  function drawSample() {
+    const text = Array.from(input.value);
+    sample.width = Math.max(1, text.length * font.width);
+    sample.height = font.height;
+    sample.style.width = `${sample.width * 2}px`;
+    sample.setAttribute("aria-label", `Bitmap font sample: ${input.value}`);
+    const context = sample.getContext("2d");
+    context.fillStyle = "#ece8df";
+    text.forEach((character, i) => {
+      const code = character.codePointAt(0);
+      drawGlyph(context, font.glyphs[code < 128 ? code : 63], i * font.width, 0);
+    });
+  }
+  input.addEventListener("input", drawSample);
+  drawSample();
+  const atlas = spriteCanvas("All 256 glyphs in byte order, 16 per row");
+  atlas.width = 16 * (font.width + 1);
+  atlas.height = 16 * (font.height + 1);
+  atlas.style.width = `${atlas.width * 2}px`;
+  const context = atlas.getContext("2d");
+  context.fillStyle = "#ece8df";
+  font.glyphs.forEach((glyph, index) => {
+    drawGlyph(context, glyph, (index % 16) * (font.width + 1), Math.floor(index / 16) * (font.height + 1));
+  });
+  panel.append(el("p", `Bitmap font · ${font.width} × ${font.height} pixels per glyph`),
+    sampleLabel, sample, el("h3", "Glyphs in byte order"), atlas);
+}
+
+function renderSpecialMove(panel, move, edges) {
+  const { name, description, fightPower, targetSpecialPower, cost, battle, board, program, assets } = move;
+  const link = (value, evidence) => linkedAsset(value, edges.find(edge => edge.evidence === evidence));
+  panel.append(el("h3", name), el("p", description), assetFields([
+    ["Fight Power", String(fightPower)],
+    ["Target SMP removed", String(targetSpecialPower)],
+    ["SMP cost", String(cost)],
+    ["Battle-Driven", battle ? "Yes" : "No"],
+    ["Board-Driven", board ? "Yes" : "No"],
+    ["RPGCode program", link(program, "Special move program")],
+    ["Status effect", link(assets["Status effect"], "Status effect")],
+    ["Effect animation", link(assets.Animation, "Animation")],
+  ]));
+}
+
+function renderAnimation(panel, artifact, edges) {
+  const frames = animationFrames(artifact.frames);
+  const { width, height } = artifact;
+  panel.append(el("p", `Animation · ${width} × ${height} pixels · ${frames.length} frames`));
+  if (!frames.length) return;
+  if (![width, height].every(size => Number.isInteger(size) && size > 0 && size <= 2048)) {
+    panel.append(el("p", "These animation dimensions cannot be previewed."));
+    return;
+  }
+
+  const revision = inspectorRevision;
+  const canvas = spriteCanvas(`Frame preview for ${basename(artifact.path)}`);
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  context.imageSmoothingEnabled = false;
+  const frameStatus = el("p", "", "technical");
+  const frameAssets = el("div");
+  const controls = el("div", "", "sprite-controls");
+  const byEvidence = new Map(edges.map(edge => [edge.evidence, edge]));
+  const sourceArchive = archive;
+  const images = frames.map(({ image }, index) => {
+    const path = byEvidence.get(`Frame ${index + 1} image`)?.to;
+    return path && image ? sourceArchive.file(path).async("blob").then(async blob => {
+      const url = URL.createObjectURL(blob);
+      try {
+        const frameImage = new Image();
+        frameImage.src = url;
+        await frameImage.decode();
+        return frameImage;
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    }).catch(() => null) : Promise.resolve(null);
+  });
+  let index = 0;
+  let drawRequest = 0;
+  function display() {
+    const request = ++drawRequest;
+    const frame = frames[index];
+    const label = `Frame ${index + 1} of ${frames.length}`;
+    frameStatus.textContent = label;
+    frameAssets.replaceChildren(assetFields([
+      ["Image", linkedAsset(frame.image, byEvidence.get(`Frame ${index + 1} image`))],
+      ["Sound", linkedAsset(frame.sound, byEvidence.get(`Frame ${index + 1} sound`))],
+    ]));
+    context.clearRect(0, 0, width, height);
+    void images[index].then(image => {
+      if (revision !== inspectorRevision || request !== drawRequest) return;
+      if (!image) {
+        if (frame.image) frameStatus.textContent = `${label} · Image unavailable`;
+        return;
+      }
+      context.drawImage(image, 0, 0, width, height);
+      const pixels = context.getImageData(0, 0, width, height);
+      keyFrameColor(pixels.data, frame.transparentColor);
+      context.putImageData(pixels, 0, 0);
+    });
+  }
+  function stop() {
+    clearInterval(animationTimer);
+    play.textContent = "Play animation";
+  }
+  function step(change) {
+    index = (index + change + frames.length) % frames.length;
+    display();
+  }
+  const play = button("Play animation", () => {
+    if (play.textContent === "Pause animation") {
+      stop();
+      return;
+    }
+    play.textContent = "Pause animation";
+    animationTimer = setInterval(() => step(1), Math.max(16, artifact.pauseSeconds * 1000 || 100));
+  });
+  controls.append(
+    button("Previous frame", () => { stop(); step(-1); }),
+    play,
+    button("Next frame", () => { stop(); step(1); }),
+  );
+  play.disabled = true;
+  void Promise.all(images).then(() => {
+    if (revision === inspectorRevision) play.disabled = false;
+  });
+  panel.append(canvas, frameStatus, controls, frameAssets);
+  display();
 }
 
 function spriteCanvas(label) {

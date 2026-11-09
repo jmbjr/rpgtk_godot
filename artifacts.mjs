@@ -326,12 +326,13 @@ function readSpecialMove(bytes) {
   const cost = reader.number();
   const program = reader.string();
   const targetSpecialPower = reader.number();
-  const battle = Boolean(reader.number());
-  const menu = Boolean(reader.number());
+  const storedUseFlags = [reader.number(), reader.number()];
+  // Verified in the Toolkit 2 editor with the demo's exact 2.0 text file.
+  const [board, battle] = storedUseFlags.map(Boolean);
   const { values: assets, refs } = fields(reader, ["Status effect", "Animation"]);
   if (program) refs.push(reference(program, "Special move program"));
   const description = reader.string();
-  return { name, fightPower, cost, program, targetSpecialPower, battle, menu, assets, description, refs };
+  return { name, fightPower, cost, program, targetSpecialPower, battle, board, storedUseFlags, assets, description, refs };
 }
 
 function readLegacyAnimation(bytes) {

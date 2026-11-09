@@ -67,7 +67,14 @@ Then check the browser workflow.
    another file to confirm playback stops and the settings carry over.
    **Reset EQ** restores flat playback. Check the track and tempo data
    under **View decoded JSON**.
-10. Repeat on the GitHub Pages deployment. Test an unreadable ZIP and a
+10. Open `temple.bkg` under **Bkrounds**. Compare the pool, pillars and
+    floor shadows against the Toolkit 2 editor. Check the linked menu sounds
+    and the missing battle music reference. Open **Font** → `BASE.FNT` and
+    type a sample. Under **Misc**, open `explode.anm` and step to frame 2 of
+    8 to find `bang.wav`. Play the frames and switch files to stop playback.
+    Under **SpcMove**, check `attackall.spc` against the editor screenshot
+    and follow its program and effect animation links.
+11. Repeat on the GitHub Pages deployment. Test an unreadable ZIP and a
     truncated Main File, then select valid files again to verify recovery.
 
 The demo files are supplied separately. The graph shows static source use.
@@ -139,7 +146,7 @@ decoder errors, media, accompanying documents, and unidentified entries.
 | ITM | Name, description, use modes, prices, modifiers, programs, walking and rest graphics |
 | ENE | Stats, graphic tile slots, AI, special moves, weaknesses, rewards, sounds and animations |
 | BKG | Dimensions, column-ordered tile names, matching RGB shading, audio fields |
-| SPC | Name, power, cost, use flags, program, animation and description |
+| SPC | Name, power, cost, raw use flags, editor-style battle and board flags, program, animation and description |
 | ANM | Dimensions, stored frame count, frame slots, transparent colors, sounds and pause |
 | GPH | Dimensions, encoding, compression flag and expanded column-ordered color values |
 | FNT | 256 glyphs, each with eight stored row bytes |
@@ -149,6 +156,13 @@ decoder errors, media, accompanying documents, and unidentified entries.
 | MID | SMF timing division and per-track names, instruments, tempo changes, channel and event counts |
 | DOC | Compound container version, sector sizes and directory entry names and sizes |
 | `___` | Observed numeric header and repeated tile-name/three-value records, with source line references |
+
+The battle background preview applies per-tile RGB lighting. The font preview
+shows all 256 glyphs in byte order and supports ASCII sample text. Animation
+previews use the stored dimensions and frame delay, key out the stored
+transparent color, and link to each frame's sound for separate playback.
+The special move's use flags follow the Toolkit 2 editor display verified with
+`attackall.spc`. The raw flag order is also available in JSON.
 
 All 153 archive entries and the separate GAM have structured records. Media
 decoders expose container and track or frame metadata. The browser renders

@@ -160,7 +160,7 @@ for (const [read, artifact] of [[readGif, gif], [readJpeg, jpeg], [readWave, wav
 }
 console.log("Media smoke passed: image headers, WAV timing, MIDI tracks, compound directory, and observed temporary text records.");
 
-const { enemySprite, itemSprites, standaloneTilePixels } = await import("../sprites.mjs");
+const { animationFrames, battleBackground, enemySprite, itemSprites, keyFrameColor, standaloneTilePixels } = await import("../sprites.mjs");
 const larva = enemySprite(artifacts.get("Demo/Enemy/larva.ene"), artifacts, connections);
 assert.deepEqual([larva.width, larva.height, larva.parts.length, larva.missing.length], [128, 64, 8, 0]);
 const enemySet = artifacts.get("Demo/Tiles/enemy.tst");
@@ -193,3 +193,32 @@ for (const artifact of artifacts.values()) {
   assert.ok(sprite.missing.every(part => part.edge?.status === "Missing"));
 }
 console.log("Sprite smoke passed: assembled enemy pixels, all directions for Kid1, standalone tile transparency, and an item without graphics.");
+
+const temple = artifacts.get("Demo/Bkrounds/temple.bkg");
+const backdrop = battleBackground(temple, artifacts, connections);
+assert.deepEqual([backdrop.width, backdrop.height, backdrop.parts.length, backdrop.missing.length], [608, 352, 209, 0]);
+const shaded = backdrop.parts.find(part => part.x === 2 && part.y === 2);
+assert.equal(shaded.edge.tile, 60);
+assert.deepEqual(shaded.shade, [-30, -30, -30]);
+const sourcePixel = tilePixels(artifacts.get(shaded.edge.to), shaded.edge.tile).slice(0, 4);
+const shadedOffset = ((2 * 32) * backdrop.width + 2 * 32) * 4;
+assert.deepEqual(backdrop.pixels.slice(shadedOffset, shadedOffset + 4),
+  new Uint8ClampedArray([sourcePixel[0] - 30, sourcePixel[1] - 30, sourcePixel[2] - 30, sourcePixel[3]]));
+assert.ok(connections.outgoing.get(temple.path).some(edge =>
+  edge.evidence === "Music" && edge.status === "Missing" && edge.value === "VIP - Battle2.mid"));
+
+const explosion = artifacts.get("Demo/Misc/explode.anm");
+const explosionFrames = animationFrames(explosion.frames);
+assert.deepEqual([explosion.width, explosion.height, explosionFrames.length], [180, 135, 8]);
+assert.equal(explosionFrames[1].sound, "bang.wav");
+assert.ok(connections.outgoing.get(explosion.path).some(edge =>
+  edge.evidence === "Frame 2 sound" && edge.to === "Demo/Media/bang.wav"));
+const framePixels = new Uint8ClampedArray([255, 0, 0, 255, 0, 0, 255, 255]);
+keyFrameColor(framePixels, 255);
+assert.deepEqual([...framePixels], [255, 0, 0, 0, 0, 0, 255, 255]);
+const move = artifacts.get("Demo/SpcMove/attackall.spc");
+assert.deepEqual(move.storedUseFlags, [0, 1]);
+assert.equal(move.battle, true);
+assert.equal(move.board, false);
+assert.ok(connections.outgoing.get(move.path).some(edge => edge.to === explosion.path));
+console.log("Inspector smoke passed: shaded battle backdrop, frame and sound references, color key, and editor-verified special-move flags.");
