@@ -113,7 +113,6 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
   font: .78rem/1.45 var(--mono);
 }
 
-.artifact-audio { display: block; width: 100%; margin-top: .65rem; }
 .sprite-preview {
   display: block;
   max-width: 100%;
@@ -122,7 +121,7 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
   background: repeating-conic-gradient(#252228 0 25%, #19171b 0 50%) 0 0 / 16px 16px;
   image-rendering: pixelated;
 }
-.sprite-controls, .midi-controls { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .45rem; }
+.sprite-controls, .audio-controls { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .45rem; }
 
 .midi-eq, .midi-bank { min-inline-size: 0; margin: .65rem 0; padding: .55rem .65rem; border: 1px solid var(--line); border-radius: .4rem; }
 .midi-eq > label {
@@ -148,16 +147,16 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 .font-sample { grid-template-columns: 1fr; }
 .font-sample input { width: 100%; min-width: 0; font: inherit; }
 
-.animation-controls { align-items: center; }
-.animation-controls button {
+.animation-controls, .audio-controls { align-items: center; }
+.animation-controls button, .audio-controls button {
   display: grid;
   place-items: center;
   inline-size: 2.5rem;
   block-size: 2.5rem;
   padding: 0;
 }
-.animation-controls button:disabled { opacity: .45; cursor: default; }
-.animation-controls svg { inline-size: 1.25rem; block-size: 1.25rem; fill: currentColor; }
+.animation-controls button:disabled, .audio-controls button:disabled { opacity: .45; cursor: default; }
+.animation-controls svg, .audio-controls svg { inline-size: 1.25rem; block-size: 1.25rem; fill: currentColor; }
 .animation-loop { display: inline-flex; align-items: center; margin-inline-start: .35rem; }
 .animation-loop input { accent-color: var(--gold); }
 
