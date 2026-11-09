@@ -114,3 +114,12 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 }
 
 .artifact-audio { display: block; width: 100%; margin-top: .65rem; }
+.sprite-preview {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: .65rem 0;
+  background: repeating-conic-gradient(#252228 0 25%, #19171b 0 50%) 0 0 / 16px 16px;
+  image-rendering: pixelated;
+}
+.sprite-controls { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .45rem; }

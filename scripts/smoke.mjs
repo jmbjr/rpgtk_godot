@@ -150,3 +150,37 @@ for (const [read, artifact] of [[readGif, gif], [readJpeg, jpeg], [readWave, wav
   assert.throws(() => read(bytes.subarray(0, 8)));
 }
 console.log("Media smoke passed: image headers, WAV timing, MIDI tracks, compound directory, and observed temporary text records.");
+
+const { enemySprite, itemSprites, standaloneTilePixels } = await import("../sprites.mjs");
+const larva = enemySprite(artifacts.get("Demo/Enemy/larva.ene"), artifacts, connections);
+assert.deepEqual([larva.width, larva.height, larva.parts.length, larva.missing.length], [128, 64, 8, 0]);
+const enemySet = artifacts.get("Demo/Tiles/enemy.tst");
+for (const { x, y, edge } of larva.parts) {
+  const tile = tilePixels(enemySet, 17 + x * 2 + y);
+  assert.equal(edge.tile, 17 + x * 2 + y);
+  for (let row = 0; row < 32; row++) {
+    const start = ((y * 32 + row) * larva.width + x * 32) * 4;
+    assert.deepEqual(larva.pixels.subarray(start, start + 128), tile.subarray(row * 128, (row + 1) * 128));
+  }
+}
+const kid = itemSprites(artifacts.get("Demo/Item/kid1.itm"), artifacts, connections);
+assert.deepEqual([kid.rest.width, kid.rest.height, kid.rest.parts[0].edge.tile], [32, 32, 33]);
+assert.deepEqual(kid.walking.map(sequence => sequence.direction), ["South", "East", "North", "West"]);
+assert.ok(kid.walking.every(sequence => sequence.frames.length === 4 && sequence.frames.every(frame => !frame.missing.length)));
+assert.deepEqual(kid.walking[0].frames.map(frame => frame.parts[0].edge.tile), [33, 34, 33, 34]);
+const key = itemSprites(artifacts.get("Demo/Item/keystone.itm"), artifacts, connections);
+assert.equal(key.rest.parts[0].edge.to, "Demo/Tiles/key.gph");
+assert.deepEqual(key.rest.pixels, standaloneTilePixels(artifacts.get("Demo/Tiles/key.gph")));
+assert.ok(key.rest.pixels.some((value, i) => i % 4 === 3 && value === 0));
+assert.ok(key.rest.pixels.some((value, i) => i % 4 === 3 && value === 255));
+const herb = itemSprites(artifacts.get("Demo/Item/herb1.itm"), artifacts, connections);
+assert.equal(herb.rest, null);
+assert.ok(herb.walking.every(sequence => sequence.frames.every(frame => frame === null)));
+for (const artifact of artifacts.values()) {
+  if (artifact.type !== "ene") continue;
+  const sprite = enemySprite(artifact, artifacts, connections);
+  const expectedMissing = /\/Evthing2?\.ene$/.test(artifact.path) ? 18 : 0;
+  assert.equal(sprite.missing.length, expectedMissing, artifact.path);
+  assert.ok(sprite.missing.every(part => part.edge?.status === "Missing"));
+}
+console.log("Sprite smoke passed: assembled enemy pixels, all directions for Kid1, standalone tile transparency, and an item without graphics.");
