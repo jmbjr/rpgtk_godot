@@ -26,6 +26,8 @@ jobs:
           node --check records.mjs
           node --check media.mjs
           node --check midi.mjs
+          node --check piano-roll.mjs
+          node --check scripts/stage-piano-roll.mjs
           node --check scripts/stage-soundfont.mjs
           node --check vendor/webaudio-tinysynth.js
           node --check sprites.mjs
@@ -46,9 +48,9 @@ jobs:
       - name: Stage public viewer files
         run: |
           mkdir -p site/vendor
-          cp .nojekyll index.html style.css app.mjs model.mjs artifacts.mjs records.mjs media.mjs midi.mjs sprites.mjs catalog.json site/
+          cp .nojekyll index.html style.css app.mjs model.mjs artifacts.mjs records.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs catalog.json site/
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
-          cp -R vendor/soundfont vendor/generaluser-gs site/vendor/
+          cp -R vendor/soundfont vendor/generaluser-gs vendor/piano-roll site/vendor/
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4

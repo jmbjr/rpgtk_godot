@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { midiTimeline } from "../midi.mjs";
+import { midiNoteSequence } from "../piano-roll.mjs";
 import JSZip from "../vendor/jszip.min.js";
 import { decodeProgram, indexProgram, readMainFile, resolveAsset } from "../model.mjs";
 
@@ -160,6 +161,12 @@ for (const [read, artifact] of [[readGif, gif], [readJpeg, jpeg], [readWave, wav
 }
 const titleOne = artifacts.get("Demo/Media/VIP - Title1.mid");
 assert.equal(titleOne.tracks.length, 1);
+const titleNotes = midiNoteSequence(await zip.file(titleOne.path).async("uint8array"));
+assert.equal(titleNotes.notes.length, titleOne.tracks[0].noteOnEvents);
+const clarinet = titleNotes.notes.filter(note => note.channel === 7);
+assert.equal(clarinet.length, 269);
+assert.equal(clarinet[0].pitch, 66);
+assert.ok(clarinet[0].startTime > 5 && clarinet[0].endTime > clarinet[0].startTime);
 const openingParts = titleOne.tracks[0].parts.slice(0, 3);
 assert.deepEqual(openingParts.map(({ channel, instrument, noteCount, lowestNote, highestNote }) =>
   [channel, instrument, noteCount, lowestNote, highestNote]), [
@@ -184,6 +191,11 @@ assert.deepEqual(shared[1].parts.map(part => [part.instrument, part.noteCount, p
   ["Clarinet", 1, 60], ["Orchestral Harp", 1, 64], ["Percussion", 1, 35],
 ]);
 assert.equal(readMidi(midiBytes(2, programTrack, noteTrack)).tracks[1].parts[0].instrument, "Acoustic Grand Piano");
+const paired = midiNoteSequence(midiBytes(1,
+  [0, 0x90, 60, 90, 24, 0x90, 60, 80],
+  [48, 0x80, 60, 0, 48, 0x90, 60, 0],
+));
+assert.deepEqual(paired.notes.map(({ startTime, endTime }) => [startTime, endTime]), [[0, 0.25], [0.125, 0.5]]);
 console.log("Media smoke passed: image headers, WAV timing, MIDI tracks, compound directory, and observed temporary text records.");
 
 const { animationFrames, battleBackground, enemySprite, itemSprites, keyFrameColor, standaloneTilePixels } = await import("../sprites.mjs");

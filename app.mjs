@@ -1,6 +1,7 @@
 import { readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
 import { defaultMidiTone, playMidi } from "./midi.mjs";
+import { renderMidiPianoRoll } from "./piano-roll.mjs";
 import { artifactRecord } from "./records.mjs";
 import { animationFrames, battleBackground, enemySprite, itemSprites, keyFrameColor, standaloneTilePixels } from "./sprites.mjs";
 
@@ -954,7 +955,12 @@ function renderMidiControls(panel, artifact) {
   updatePlay();
   reset.disabled = true;
   controls.append(play, reset);
-  panel.append(controls, message, renderMidiTracks(artifact.tracks), renderMidiSoundBank(), renderMidiTone());
+  const pianoRoll = renderMidiPianoRoll(
+    artifact.tracks,
+    () => archive.file(artifact.path).async("uint8array"),
+    () => midiPlayback?.currentTime ?? -1,
+  );
+  panel.append(controls, message, pianoRoll, renderMidiTracks(artifact.tracks), renderMidiSoundBank(), renderMidiTone());
 }
 
 function renderMidiSoundBank() {

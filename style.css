@@ -170,3 +170,18 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 }
 .midi-track-table small { display: block; color: var(--muted); font-weight: 400; }
 .midi-track-table td:nth-last-child(-n + 2) { white-space: nowrap; }
+
+.midi-piano-roll label { grid-template-columns: auto minmax(0, 1fr); align-items: center; margin-block: .5rem; }
+.midi-piano-roll select { min-width: 0; max-width: 100%; font: inherit; }
+.midi-roll-viewport {
+  overflow: auto;
+  max-block-size: 22rem;
+  border: 1px solid var(--line);
+  background: #111013;
+}
+.midi-roll-viewport svg {
+  display: block;
+  background-image: repeating-linear-gradient(to right, #302b34 0 1px, transparent 1px 64px);
+}
+.midi-roll-viewport .note.active { fill: #fff0be; }
+.midi-roll-playhead { stroke: #f0a16a; stroke-width: 1.5px; pointer-events: none; }

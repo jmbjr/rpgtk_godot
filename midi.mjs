@@ -2,8 +2,8 @@ import { readMidiWithMessages } from "./media.mjs";
 
 export function midiTimeline(bytes) {
   const events = [];
-  const midi = readMidiWithMessages(bytes, (tick, status, args) => {
-    events.push({ tick, message: [status, ...args] });
+  const midi = readMidiWithMessages(bytes, (tick, status, args, _track, port) => {
+    events.push({ tick, port, message: [status, ...args] });
   });
   if (midi.format === 2) throw new Error("Format 2 MIDI contains independent sequences.");
   const { ticksPerQuarter, framesPerSecondCode, ticksPerFrame } = midi.timeDivision;
@@ -89,6 +89,7 @@ export function playMidi(bytes, initialTone, soundBank, onPlaying, onFinish) {
   let dispose;
   let stopped = false;
   let paused = false;
+  let readTime;
 
   function stop(message = "MIDI stopped.") {
     if (stopped) return;
@@ -116,6 +117,7 @@ export function playMidi(bytes, initialTone, soundBank, onPlaying, onFinish) {
     synth.setAudioContext(context, eq.input);
     const { events, duration } = midiTimeline(data);
     const startTime = context.currentTime + 0.05;
+    readTime = () => context.currentTime - startTime;
     let next = 0;
 
     function schedule() {
@@ -159,6 +161,7 @@ export function playMidi(bytes, initialTone, soundBank, onPlaying, onFinish) {
     sequencer.eventHandler.addEvent("songChange", "viewer", () => {
       if (stopped) return;
       sequencer.play();
+      readTime = () => sequencer.currentTime;
       onPlaying();
     });
     sequencer.eventHandler.addEvent("songEnded", "viewer", () => {
@@ -180,6 +183,9 @@ export function playMidi(bytes, initialTone, soundBank, onPlaying, onFinish) {
   void start().catch(error => stop(`Unable to play MIDI. ${error.message}`));
   return {
     stop,
+    get currentTime() {
+      return readTime ? Math.max(0, readTime()) : undefined;
+    },
     setPaused(value) {
       if (stopped || paused === value) return;
       paused = value;
