@@ -1479,6 +1479,8 @@ class WebAudioTinySynth {
     }
     this.setQuality(1);
     if(opt){
+      if(opt.internalcontext!=undefined)
+        this.internalcontext=opt.internalcontext;
       if(opt.useReverb!=undefined)
         this.useReverb=opt.useReverb;
       if(opt.quality!=undefined)

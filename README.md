@@ -131,8 +131,8 @@ All 153 archive entries and the separate GAM have structured records. Media
 decoders expose container and track or frame metadata. The browser renders
 images and plays WAV and MIDI audio. The MIDI preview supports Standard MIDI
 File formats 0 and 1. It uses a General MIDI-style Web Audio synth, so timbres
-can differ from the original Windows setup. It previews channel messages
-and timing. System Exclusive messages are skipped. The DOC record describes
+can differ from the original Windows setup. The viewer softens the synth's
+high frequencies with a treble shelf. It previews channel messages and timing. System Exclusive messages are skipped. The DOC record describes
 its compound container.
 `Boards/temp.___` uses a fixture-specific text reader and is marked partial
 because its producer and field semantics are unverified. Legacy engine
@@ -147,4 +147,6 @@ and [Microsoft Compound File Binary format](https://learn.microsoft.com/en-us/op
 
 The MIDI preview bundles [WebAudio TinySynth](https://github.com/g200kg/webaudio-tinysynth)
 1.1.4 at commit `3d75aee4b3f43cbd932265e7d60201fd5b770397` under the Apache 2.0 license.
-Both the synthesizer and the selected MIDI bytes run locally in the browser.
+The vendored constructor accepts the existing `internalcontext` setting so
+the viewer can route the synth through its own audio graph. Both the synth
+and the selected MIDI bytes run locally in the browser.

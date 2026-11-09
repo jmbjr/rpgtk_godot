@@ -58,13 +58,16 @@ export function playMidi(bytes, onPlaying, onFinish) {
   async function start() {
     const AudioContext = globalThis.AudioContext ?? globalThis.webkitAudioContext;
     if (!AudioContext) throw new Error("Web Audio is unavailable in this browser.");
-    if (synth) {
-      context = new AudioContext();
-      synth.setAudioContext(context);
-    } else {
-      synth = new globalThis.WebAudioTinySynth();
-      context = synth.getAudioContext();
-    }
+    synth ??= new globalThis.WebAudioTinySynth({ internalcontext: 0 });
+    context = new AudioContext();
+
+    // Ease the oscillator synth's bright upper harmonics and percussion.
+    const tone = context.createBiquadFilter();
+    tone.type = "highshelf";
+    tone.frequency.value = 3000;
+    tone.gain.value = -6;
+    tone.connect(context.destination);
+    synth.setAudioContext(context, tone);
     const [data] = await Promise.all([bytes, context.resume()]);
     if (stopped) return;
     const { events, duration } = midiTimeline(data);
