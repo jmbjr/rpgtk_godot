@@ -128,10 +128,11 @@ export function readWave(bytes) {
   return { ...format, audioBytes, sampleFrames, durationSeconds: pcm ? sampleFrames / format.sampleRateHz : null, chunks };
 }
 
-function midiTrack(bytes, onMessage) {
+function midiTrack(bytes, trackNumber, onMessage) {
   let offset = 0;
   let tick = 0;
   let running = 0;
+  let port = 0;
   let events = 0;
   let noteOnEvents = 0;
   const names = [];
@@ -174,7 +175,7 @@ function midiTrack(bytes, onMessage) {
       const args = payload(command === 0xc || command === 0xd ? 1 : 2);
       requireBytes(args.every(value => value < 128), "Invalid MIDI channel event data.");
       if (command === 9 && args[1] > 0) noteOnEvents++;
-      onMessage?.(tick, status, args);
+      onMessage?.(tick, status, args, trackNumber, port);
       continue;
     }
     running = 0;
@@ -183,6 +184,7 @@ function midiTrack(bytes, onMessage) {
       const value = payload(variable());
       if (kind === 3) names.push(decoder.decode(value));
       if (kind === 4) instruments.push(decoder.decode(value));
+      if (kind === 0x21 && value.length === 1) port = value[0];
       if (kind === 0x51 && value.length === 3) {
         tempos.push({ tick, microsecondsPerQuarter: value[0] * 65536 + value[1] * 256 + value[2] });
       }
@@ -196,8 +198,80 @@ function midiTrack(bytes, onMessage) {
   return { ticks: tick, events, noteOnEvents, channels: [...channels].sort((a, b) => a - b), names, instruments, tempos };
 }
 
+// General MIDI Level 1 program names in MIDI byte order (0–127).
+const gmPrograms = [
+  "Acoustic Grand Piano", "Bright Acoustic Piano", "Electric Grand Piano", "Honky-tonk Piano",
+  "Electric Piano 1", "Electric Piano 2", "Harpsichord", "Clavi",
+  "Celesta", "Glockenspiel", "Music Box", "Vibraphone",
+  "Marimba", "Xylophone", "Tubular Bells", "Dulcimer",
+  "Drawbar Organ", "Percussive Organ", "Rock Organ", "Church Organ",
+  "Reed Organ", "Accordion", "Harmonica", "Tango Accordion",
+  "Acoustic Guitar (nylon)", "Acoustic Guitar (steel)", "Electric Guitar (jazz)", "Electric Guitar (clean)",
+  "Electric Guitar (muted)", "Overdriven Guitar", "Distortion Guitar", "Guitar harmonics",
+  "Acoustic Bass", "Electric Bass (finger)", "Electric Bass (pick)", "Fretless Bass",
+  "Slap Bass 1", "Slap Bass 2", "Synth Bass 1", "Synth Bass 2",
+  "Violin", "Viola", "Cello", "Contrabass",
+  "Tremolo Strings", "Pizzicato Strings", "Orchestral Harp", "Timpani",
+  "String Ensemble 1", "String Ensemble 2", "SynthStrings 1", "SynthStrings 2",
+  "Choir Aahs", "Voice Oohs", "Synth Voice", "Orchestra Hit",
+  "Trumpet", "Trombone", "Tuba", "Muted Trumpet",
+  "French Horn", "Brass Section", "SynthBrass 1", "SynthBrass 2",
+  "Soprano Sax", "Alto Sax", "Tenor Sax", "Baritone Sax",
+  "Oboe", "English Horn", "Bassoon", "Clarinet",
+  "Piccolo", "Flute", "Recorder", "Pan Flute",
+  "Blown Bottle", "Shakuhachi", "Whistle", "Ocarina",
+  "Lead 1 (square)", "Lead 2 (sawtooth)", "Lead 3 (calliope)", "Lead 4 (chiff)",
+  "Lead 5 (charang)", "Lead 6 (voice)", "Lead 7 (fifths)", "Lead 8 (bass + lead)",
+  "Pad 1 (new age)", "Pad 2 (warm)", "Pad 3 (polysynth)", "Pad 4 (choir)",
+  "Pad 5 (bowed)", "Pad 6 (metallic)", "Pad 7 (halo)", "Pad 8 (sweep)",
+  "FX 1 (rain)", "FX 2 (soundtrack)", "FX 3 (crystal)", "FX 4 (atmosphere)",
+  "FX 5 (brightness)", "FX 6 (goblins)", "FX 7 (echoes)", "FX 8 (sci-fi)",
+  "Sitar", "Banjo", "Shamisen", "Koto",
+  "Kalimba", "Bag pipe", "Fiddle", "Shanai",
+  "Tinkle Bell", "Agogo", "Steel Drums", "Woodblock",
+  "Taiko Drum", "Melodic Tom", "Synth Drum", "Reverse Cymbal",
+  "Guitar Fret Noise", "Breath Noise", "Seashore", "Bird Tweet",
+  "Telephone Ring", "Helicopter", "Applause", "Gunshot",
+];
+
 export function readMidi(bytes) {
-  return readMidiWithMessages(bytes);
+  const messages = [];
+  const midi = readMidiWithMessages(bytes, (tick, status, args, track, port) => {
+    const command = status >>> 4;
+    if (command === 12 || (command === 9 && args[1] > 0)) {
+      messages.push({ tick, command, key: args[0], track, port, channel: (status & 15) + 1 });
+    }
+  });
+  // Format 1 tracks share channel programs. Format 2 tracks are independent.
+  if (midi.format !== 2) messages.sort((a, b) => a.tick - b.tick);
+  const programs = new Map();
+  const parts = midi.tracks.map(() => new Map());
+  for (const { command, key, track, port, channel } of messages) {
+    const channelKey = `${midi.format === 2 ? track : 0}:${port}:${channel}`;
+    if (command === 12) {
+      programs.set(channelKey, key);
+      continue;
+    }
+    const program = programs.get(channelKey) ?? 0;
+    const percussion = channel === 10;
+    const partKey = `${port}:${channel}:${program}`;
+    const trackParts = parts[track - 1];
+    if (!trackParts.has(partKey)) {
+      trackParts.set(partKey, {
+        port, channel, program: program + 1, percussion,
+        instrument: percussion ? "Percussion" : gmPrograms[program],
+        noteCount: 0, lowestNote: key, highestNote: key,
+      });
+    }
+    const part = trackParts.get(partKey);
+    part.noteCount++;
+    part.lowestNote = Math.min(part.lowestNote, key);
+    part.highestNote = Math.max(part.highestNote, key);
+  }
+  return {
+    ...midi,
+    tracks: midi.tracks.map((track, index) => ({ ...track, parts: [...parts[index].values()] })),
+  };
 }
 
 export function readMidiWithMessages(bytes, onMessage) {
@@ -218,7 +292,8 @@ export function readMidiWithMessages(bytes, onMessage) {
     const end = offset + 8 + size;
     requireBytes(end <= bytes.length, "Truncated MIDI track.");
     if (tag(bytes, offset) === "MTrk") {
-      tracks.push({ number: tracks.length + 1, size, ...midiTrack(bytes.subarray(offset + 8, end), onMessage) });
+      const number = tracks.length + 1;
+      tracks.push({ number, size, ...midiTrack(bytes.subarray(offset + 8, end), number, onMessage) });
     }
     offset = end;
   }

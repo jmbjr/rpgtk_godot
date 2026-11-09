@@ -65,8 +65,10 @@ Then check the browser workflow.
    it plays. Try **Bypass EQ** to compare the unfiltered sound, then toggle
    it off to return to the chosen settings. Stop, replay, and switch to
    another file to confirm playback stops and the settings carry over.
-   **Reset EQ** restores flat playback. Check the track and tempo data
-   under **View decoded JSON**.
+   **Reset EQ** restores flat playback. Expand **MIDI tracks** to see each
+   file track's instruments, channel, note counts and ranges. Open
+   `VIP - Title1.mid` to see several instruments in one track. Track and
+   tempo data are also under **View decoded JSON**.
 10. Open `temple.bkg` under **Bkrounds**. Compare the pool, pillars and
     floor shadows against the Toolkit 2 editor. Check the linked menu sounds
     and the missing battle music reference. Open **Font** → `BASE.FNT` and
@@ -155,7 +157,7 @@ decoder errors, media, accompanying documents, and unidentified entries.
 | GIF | Logical screen size, palette sizes, frame positions and graphic-control fields |
 | JPG | Frame size, sample precision, coding marker and component sampling |
 | WAV | RIFF chunk table, format fields, and PCM sample count and duration |
-| MID | SMF timing division and per-track names, instruments, tempo changes, channel and event counts |
+| MID | SMF timing division, track metadata, and note counts and ranges grouped by channel, port and program |
 | DOC | Compound container version, sector sizes and directory entry names and sizes |
 | `___` | Observed numeric header and repeated tile-name/three-value records, with source line references |
 
@@ -173,7 +175,9 @@ images and plays WAV and MIDI audio. The MIDI preview supports Standard MIDI
 File formats 0 and 1. It uses a General MIDI-style Web Audio synth, so timbres
 can differ from the original Windows setup. The viewer starts with flat EQ
 and provides live bass, mid, and treble controls. Settings carry over between
-tracks during the current page session. The player previews channel messages
+tracks during the current page session. The track summary uses General MIDI
+program names, counts positive-velocity note-on events, and shows MIDI key
+numbers for percussion. The player previews channel messages
 and timing. System Exclusive messages are skipped. The DOC record describes
 its compound container.
 `Boards/temp.___` uses a fixture-specific text reader and is marked partial

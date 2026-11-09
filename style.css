@@ -160,3 +160,14 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 .animation-controls svg { inline-size: 1.25rem; block-size: 1.25rem; fill: currentColor; }
 .animation-loop { display: inline-flex; align-items: center; margin-inline-start: .35rem; }
 .animation-loop input { accent-color: var(--gold); }
+
+.midi-track-scroll { overflow-x: auto; margin-top: .5rem; }
+.midi-track-table { width: 100%; border-collapse: collapse; font-size: .85rem; font-variant-numeric: tabular-nums; }
+.midi-track-table th, .midi-track-table td {
+  padding: .4rem;
+  border-bottom: 1px solid var(--line);
+  text-align: start;
+  vertical-align: top;
+}
+.midi-track-table small { display: block; color: var(--muted); font-weight: 400; }
+.midi-track-table td:nth-last-child(-n + 2) { white-space: nowrap; }
