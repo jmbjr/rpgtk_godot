@@ -39,7 +39,7 @@ function tilesetData(bytes, count) {
 }
 
 export function artifactRecord(artifact, graph, { external = false, bindings = [] } = {}) {
-  const { path, type, decodeStatus, error, refs, bytes, program, ...data } = artifact;
+  const { path, type, decodeStatus, error, refs, bytes, ...data } = artifact;
   const incoming = external ? [] : (graph.incoming.get(path) ?? []);
   const outgoing = external ? bindings.map(([evidence, binding]) => ({
     evidence, value: binding.value, status: binding.status, to: binding.path,
@@ -47,6 +47,7 @@ export function artifactRecord(artifact, graph, { external = false, bindings = [
 
   let decoded = data;
   if (bytes && type === "tst") decoded = { byteLength: data.byteLength, ...tilesetData(bytes, data.count) };
+  const program = type === "prg" ? data.program : undefined;
   if (program) decoded = {
     byteLength: data.byteLength,
     lines: program.rows.map(row => row.line),
