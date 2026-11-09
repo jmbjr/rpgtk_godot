@@ -72,7 +72,8 @@ Then check the browser workflow.
     and the missing battle music reference. Open **Font** → `BASE.FNT` and
     type a sample. Under **Misc**, open `explode.anm` and step to frame 2 of
     8 to find `bang.wav`. Play the animation and listen for the sound on
-    frame 2. Pause or switch files to stop playback and audio.
+    frame 2. Playback stops on the last frame by default. Check **Loop**
+    to repeat it. Pause or switch files to stop playback and audio.
     Under **SpcMove**, check `attackall.spc` against the editor screenshot
     and follow its program and effect animation links.
 11. Repeat on the GitHub Pages deployment. Test an unreadable ZIP and a

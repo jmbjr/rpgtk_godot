@@ -147,3 +147,16 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 .asset-fields button { max-width: 100%; text-align: left; overflow-wrap: anywhere; }
 .font-sample { grid-template-columns: 1fr; }
 .font-sample input { width: 100%; min-width: 0; font: inherit; }
+
+.animation-controls { align-items: center; }
+.animation-controls button {
+  display: grid;
+  place-items: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  padding: 0;
+}
+.animation-controls button:disabled { opacity: .45; cursor: default; }
+.animation-controls svg { inline-size: 1.25rem; block-size: 1.25rem; fill: currentColor; }
+.animation-loop { display: inline-flex; align-items: center; margin-inline-start: .35rem; }
+.animation-loop input { accent-color: var(--gold); }

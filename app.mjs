@@ -460,6 +460,19 @@ function renderSpecialMove(panel, move, edges) {
   ]));
 }
 
+function setAnimationIcon(control, label, outline) {
+  const namespace = "http://www.w3.org/2000/svg";
+  const icon = document.createElementNS(namespace, "svg");
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS(namespace, "path");
+  path.setAttribute("d", outline);
+  icon.append(path);
+  control.setAttribute("aria-label", label);
+  control.title = label;
+  control.replaceChildren(icon);
+}
+
 function renderAnimation(panel, artifact, edges) {
   const frames = animationFrames(artifact.frames);
   const { width, height } = artifact;
@@ -478,7 +491,13 @@ function renderAnimation(panel, artifact, edges) {
   context.imageSmoothingEnabled = false;
   const frameStatus = el("p", "", "technical");
   const frameAssets = el("div");
-  const controls = el("div", "", "sprite-controls");
+  const controls = el("div", "", "sprite-controls animation-controls");
+  controls.setAttribute("role", "group");
+  controls.setAttribute("aria-label", "Animation playback controls");
+  const loop = el("input");
+  loop.type = "checkbox";
+  const loopLabel = el("label", "", "animation-loop");
+  loopLabel.append(loop, "Loop");
   const byEvidence = new Map(edges.map(edge => [edge.evidence, edge]));
   const sourceArchive = archive;
   const images = frames.map(({ image }, index) => {
@@ -508,6 +527,8 @@ function renderAnimation(panel, artifact, edges) {
     const frame = frames[index];
     const label = `Frame ${index + 1} of ${frames.length}`;
     frameStatus.textContent = label;
+    previous.disabled = index === 0;
+    next.disabled = index === frames.length - 1;
     frameAssets.replaceChildren(assetFields([
       ["Image", linkedAsset(frame.image, byEvidence.get(`Frame ${index + 1} image`))],
       ["Sound", linkedAsset(frame.sound, byEvidence.get(`Frame ${index + 1} sound`))],
@@ -530,11 +551,19 @@ function renderAnimation(panel, artifact, edges) {
     clearInterval(playback.timer);
     if (playback.audio) void playback.audio.close().catch(() => {});
     playback = undefined;
-    play.textContent = "Play animation";
+    updatePlayButton(false);
   }
-  function step(change) {
-    index = (index + change + frames.length) % frames.length;
+  function moveFrame(change) {
+    stop();
+    index = Math.min(frames.length - 1, Math.max(0, index + change));
     display();
+  }
+  function finish(run) {
+    clearInterval(run.timer);
+    run.finished = true;
+    updatePlayButton(false);
+    // Let the final frame's sound ring out before releasing the audio context.
+    if (!run.activeSounds) stop();
   }
   function playFrameSound(run) {
     const buffer = run.buffers.get(sounds[index]);
@@ -542,12 +571,21 @@ function renderAnimation(panel, artifact, edges) {
     const source = run.audio.createBufferSource();
     source.buffer = buffer;
     source.connect(run.audio.destination);
+    run.activeSounds++;
+    source.onended = () => {
+      run.activeSounds--;
+      if (playback === run && run.finished && !run.activeSounds) stop();
+    };
     source.start();
   }
   async function start() {
-    const run = { buffers: new Map() };
+    if (index === frames.length - 1) {
+      index = 0;
+      display();
+    }
+    const run = { buffers: new Map(), activeSounds: 0, finished: false };
     playback = run;
-    play.textContent = "Pause animation";
+    updatePlayButton(true);
     audioStatus.hidden = true;
     if (soundPaths.length) {
       try {
@@ -572,20 +610,31 @@ function renderAnimation(panel, artifact, edges) {
     if (playback !== run) return;
     playFrameSound(run);
     run.timer = setInterval(() => {
-      step(1);
+      if (index === frames.length - 1 && !loop.checked) {
+        finish(run);
+        return;
+      }
+      index = (index + 1) % frames.length;
+      display();
       playFrameSound(run);
     }, Math.max(16, artifact.pauseSeconds * 1000 || 100));
   }
-  const play = button("Play animation", () => {
-    if (playback) stop();
-    else void start();
+  const previous = button("", () => moveFrame(-1));
+  setAnimationIcon(previous, "Previous frame", "M5 5h2v14H5zM19 5v14L8 12z");
+  const next = button("", () => moveFrame(1));
+  setAnimationIcon(next, "Next frame", "M17 5h2v14h-2zM5 5l11 7-11 7z");
+  const play = button("", () => {
+    const playing = playback && !playback.finished;
+    stop();
+    if (!playing) void start();
   });
+  function updatePlayButton(playing) {
+    setAnimationIcon(play, playing ? "Pause animation" : "Play animation",
+      playing ? "M6 5h4v14H6zm8 0h4v14h-4z" : "M7 5l12 7-12 7z");
+  }
+  updatePlayButton(false);
   stopAnimationPlayback = stop;
-  controls.append(
-    button("Previous frame", () => { stop(); step(-1); }),
-    play,
-    button("Next frame", () => { stop(); step(1); }),
-  );
+  controls.append(previous, play, next, loopLabel);
   play.disabled = true;
   void Promise.all(images).then(() => {
     if (revision === inspectorRevision) play.disabled = false;
