@@ -141,7 +141,8 @@
           "additionalProperties": false
         },
         "placements": {
-          "type": "array"
+          "type": "integer",
+          "minimum": 1
         }
       },
       "required": [

@@ -1,4 +1,18 @@
-# Tile conformance fixtures
+# Format conformance fixtures
+
+[format-fixtures.mjs](format-fixtures.mjs) exports synthetic input bytes and
+expected status and decoded data for each supported non-tile decoder. It
+also supplies multiple variants where the layout differs. It uses only
+Node APIs, so another implementation can write the `bytes` to disk or
+read them directly. Some standard media examples are metadata test inputs.
+
+After `npm ci`, run `node scripts/check-format-specs.mjs`. It checks
+the shared schema, expected decoded fields, and reference states in an
+assembled synthetic archive. You can pass a local game ZIP and optional
+GAM as arguments to check those records against the same schema.
+The original demo and DustBall packages are supplied separately.
+
+## Tile fixtures
 
 These synthetic fixtures contain no original demo artwork. Each source
 file has a neighboring `*.expected.json` containing its complete successful

@@ -48,8 +48,10 @@ jobs:
           JS
       - name: Check game archive imports
         run: node scripts/check-game-archive.mjs
-      - name: Check tile format conformance
-        run: node scripts/check-tile-specs.mjs
+      - name: Check format conformance
+        run: |
+          node scripts/check-tile-specs.mjs
+          node scripts/check-format-specs.mjs
       - name: Stage public viewer files
         run: |
           mkdir -p site/vendor

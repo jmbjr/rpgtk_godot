@@ -1,0 +1,933 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "artifact-record.schema.json",
+  "title": "RPG Toolkit decoded artifact record, version 1",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "$id": {"type": "string", "pattern": "^rpgtk(?:-main)?:/"},
+    "path": {"type": "string", "minLength": 1},
+    "format": {"type": "string", "minLength": 1},
+    "decode": {
+      "type": "object",
+      "properties": {
+        "status": {"enum": ["decoded", "partial", "error", "media", "document", "unidentified"]},
+        "message": {"type": "string"}
+      },
+      "required": ["status"],
+      "additionalProperties": false
+    },
+    "data": {"type": "object"},
+    "references": {
+      "type": "object",
+      "properties": {
+        "outgoing": {"type": "array", "items": {"$ref": "#/$defs/edge"}},
+        "incoming": {"type": "array", "items": {"$ref": "#/$defs/edge"}}
+      },
+      "required": ["outgoing", "incoming"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["schemaVersion", "$id", "path", "format", "decode", "data", "references"],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {"format": {"const": "gam"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/gam"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "prg"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/prg"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "tan"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/tan"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "tem"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/tem"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "brd"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/brd"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "itm"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/itm"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "ene"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/ene"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "bkg"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/bkg"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "spc"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/spc"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "ste"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/ste"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "anm"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/anm"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "fnt"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/fnt"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "gif"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/gif"}}}
+    },
+    {
+      "if": {
+        "properties": {
+          "format": {"enum": ["jpg", "jpeg"]},
+          "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}
+        }
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/jpg"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "wav"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/wav"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "mid"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/mid"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "doc"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/doc"}}}
+    },
+    {
+      "if": {
+        "properties": {"format": {"const": "___"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/___"}}}
+    },
+    {
+      "if": {
+        "properties": {
+          "format": {"enum": ["gph", "tst"]},
+          "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}
+        }
+      },
+      "then": {"$ref": "tile-record.schema.json"}
+    }
+  ],
+  "$defs": {
+    "edge": {
+      "type": "object",
+      "properties": {
+        "value": {"type": "string"},
+        "evidence": {"type": "string"},
+        "status": {
+          "enum": ["resolved", "missing", "ambiguous", "unset", "tileset-unavailable", "tile-index-out-of-range"]
+        },
+        "line": {"type": "integer", "minimum": 1},
+        "source": {
+          "type": "object",
+          "properties": {"$ref": {"type": "string"}},
+          "required": ["$ref"],
+          "additionalProperties": false
+        },
+        "target": {
+          "type": "object",
+          "properties": {"$ref": {"type": "string"}, "tileIndex": {"type": "integer", "minimum": 1}},
+          "required": ["$ref"],
+          "additionalProperties": false
+        },
+        "placements": {"type": "integer", "minimum": 1}
+      },
+      "required": ["value", "evidence", "status"],
+      "additionalProperties": false,
+      "if": {"properties": {"status": {"const": "resolved"}}},
+      "then": {"required": ["target"]}
+    },
+    "gam": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "major": {"const": 2},
+        "minor": {"enum": [0, 2]},
+        "startup": {"type": "string"},
+        "board": {"type": "string"},
+        "character": {"type": "string"},
+        "projectPath": {"type": "string"},
+        "title": {"type": "string"},
+        "language": {"type": "string"}
+      },
+      "required": ["major", "minor", "startup", "board", "character"],
+      "additionalProperties": false
+    },
+    "prg": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "lines": {"type": "array", "items": {"type": "string"}},
+        "symbols": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {"type": "string"},
+              "name": {"type": "string"},
+              "value": {"type": "string"},
+              "kind": {"enum": ["assignment", "declaration", "local", "builtin", "unknown"]},
+              "lines": {"type": "array", "items": {"type": "integer", "minimum": 1}}
+            },
+            "required": ["key", "name", "value", "kind", "lines"],
+            "additionalProperties": false
+          }
+        },
+        "builtInCalls": {"type": "integer", "minimum": 0}
+      },
+      "required": ["byteLength", "lines", "symbols", "builtInCalls"],
+      "additionalProperties": false
+    },
+    "tan": {
+      "type": "object",
+      "properties": {"byteLength": {"type": "integer", "minimum": 0}, "speed": {"type": "integer"}},
+      "required": ["byteLength", "speed"],
+      "additionalProperties": false
+    },
+    "tem": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "name": {"type": "string"},
+        "stats": {
+          "type": "object",
+          "properties": {
+            "XP": {"type": "integer"},
+            "HP": {"type": "integer"},
+            "Max HP": {"type": "integer"},
+            "Defense": {"type": "integer"},
+            "Fight": {"type": "integer"},
+            "Special power": {"type": "integer"},
+            "Max special power": {"type": "integer"},
+            "Level": {"type": "integer"}
+          },
+          "required": ["XP", "HP", "Max HP", "Defense", "Fight", "Special power", "Max special power", "Level"],
+          "additionalProperties": false
+        },
+        "profile": {
+          "type": "object",
+          "properties": {
+            "value": {"type": "string"},
+            "evidence": {"type": "string"},
+            "line": {"type": "integer", "minimum": 1}
+          },
+          "required": ["value", "evidence"],
+          "additionalProperties": false
+        },
+        "walking": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "direction": {"enum": ["South", "East", "North", "West"]},
+              "frame": {"type": "integer", "minimum": 1, "maximum": 4},
+              "parts": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {"type": "string"},
+                    "evidence": {"type": "string"},
+                    "line": {"type": "integer", "minimum": 1}
+                  },
+                  "required": ["value", "evidence"],
+                  "additionalProperties": false
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            },
+            "required": ["direction", "frame", "parts"],
+            "additionalProperties": false
+          },
+          "minItems": 16,
+          "maxItems": 16
+        }
+      },
+      "required": ["byteLength", "name", "stats", "profile", "walking"],
+      "additionalProperties": false
+    },
+    "brd": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "width": {"type": "integer", "minimum": 1},
+        "height": {"type": "integer", "minimum": 1},
+        "layers": {"type": "integer", "minimum": 1},
+        "layerTitles": {"type": "array", "items": {"type": "string"}, "minItems": 9, "maxItems": 9},
+        "background": {"type": "integer"},
+        "ambient": {"type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3},
+        "tileLookup": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {"value": {"type": "string"}, "reference": {"$ref": "#/$defs/edge"}},
+            "required": ["value"],
+            "additionalProperties": false
+          }
+        },
+        "cellOrder": {"const": "zero-based offset; layer, row, column"},
+        "runs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "offset": {"type": "integer", "minimum": 0},
+              "length": {"type": "integer", "minimum": 1},
+              "lookupIndex": {"type": "integer", "minimum": 1},
+              "shade": {"type": "array", "items": {"type": "integer"}, "minItems": 3, "maxItems": 3}
+            },
+            "required": ["offset", "length", "lookupIndex", "shade"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "byteLength",
+        "width",
+        "height",
+        "layers",
+        "layerTitles",
+        "background",
+        "ambient",
+        "tileLookup",
+        "cellOrder",
+        "runs"
+      ],
+      "additionalProperties": false
+    },
+    "itm": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "version": {"enum": [2, 3]},
+        "name": {"type": "string"},
+        "description": {"type": "string"},
+        "modes": {
+          "type": "object",
+          "properties": {
+            "equip": {"type": "boolean"},
+            "menu": {"type": "boolean"},
+            "board": {"type": "boolean"},
+            "battle": {"type": "boolean"}
+          },
+          "required": ["equip", "menu", "board", "battle"],
+          "additionalProperties": false
+        },
+        "usableBy": {"type": "integer", "minimum": 0, "maximum": 255},
+        "characters": {"type": "array", "items": {"type": "string"}, "minItems": 51, "maxItems": 51},
+        "buyPrice": {"type": "integer"},
+        "sellPrice": {"type": "integer"},
+        "keyItem": {"type": "boolean"},
+        "armorSlots": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "minItems": 8,
+          "maxItems": 8
+        },
+        "accessory": {"type": "string"},
+        "modifiers": {
+          "type": "object",
+          "properties": {
+            "hp": {"type": "integer"},
+            "defense": {"type": "integer"},
+            "fight": {"type": "integer"},
+            "specialPower": {"type": "integer"}
+          },
+          "required": ["hp", "defense", "fight", "specialPower"],
+          "additionalProperties": false
+        },
+        "programs": {
+          "type": "object",
+          "properties": {
+            "Equip program": {"type": "string"},
+            "Remove program": {"type": "string"},
+            "Menu-use program": {"type": "string"},
+            "Battle-use program": {"type": "string"},
+            "On-board program": {"type": "string"},
+            "Pickup program": {"type": "string"}
+          },
+          "required": [
+            "Equip program",
+            "Remove program",
+            "Menu-use program",
+            "Battle-use program",
+            "On-board program",
+            "Pickup program"
+          ],
+          "additionalProperties": false
+        },
+        "animation": {"type": "string"},
+        "menu": {
+          "type": "object",
+          "properties": {"hp": {"type": "integer"}, "specialPower": {"type": "integer"}},
+          "required": ["hp", "specialPower"],
+          "additionalProperties": false
+        },
+        "battle": {
+          "type": "object",
+          "properties": {"hp": {"type": "integer"}, "specialPower": {"type": "integer"}},
+          "required": ["hp", "specialPower"],
+          "additionalProperties": false
+        },
+        "sizeType": {"type": "integer", "minimum": 0, "maximum": 255},
+        "walking": {
+          "type": "array",
+          "items": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2},
+          "minItems": 16,
+          "maxItems": 16
+        },
+        "rest": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2}
+      },
+      "required": [
+        "byteLength",
+        "version",
+        "name",
+        "description",
+        "modes",
+        "usableBy",
+        "characters",
+        "buyPrice",
+        "sellPrice",
+        "keyItem",
+        "armorSlots",
+        "accessory",
+        "modifiers",
+        "programs",
+        "animation",
+        "menu",
+        "battle",
+        "sizeType",
+        "walking",
+        "rest"
+      ],
+      "additionalProperties": false
+    },
+    "ene": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "name": {"type": "string"},
+        "stats": {
+          "type": "object",
+          "properties": {
+            "HP": {"type": "number"},
+            "Special power": {"type": "number"},
+            "Fight": {"type": "number"},
+            "Defense": {"type": "number"}
+          },
+          "required": ["HP", "Special power", "Fight", "Defense"],
+          "additionalProperties": false
+        },
+        "canFlee": {"type": "boolean"},
+        "usesScript": {"type": "boolean"},
+        "sneakChance": {"type": "number"},
+        "sneakUp": {"type": "number"},
+        "width": {"type": "number"},
+        "height": {"type": "number"},
+        "ai": {"type": "number"},
+        "xp": {"type": "number"},
+        "gold": {"type": "number"},
+        "tileStride": {"const": 7},
+        "tiles": {"type": "array", "items": {"type": "string"}, "minItems": 133, "maxItems": 133},
+        "specialMoves": {"type": "array", "items": {"type": "string"}, "minItems": 101, "maxItems": 101},
+        "weaknesses": {"type": "array", "items": {"type": "string"}, "minItems": 101, "maxItems": 101},
+        "script": {"type": "string"},
+        "programs": {
+          "type": "object",
+          "properties": {"Victory program": {"type": "string"}, "Escape program": {"type": "string"}},
+          "required": ["Victory program", "Escape program"],
+          "additionalProperties": false
+        },
+        "sounds": {
+          "type": "object",
+          "properties": {
+            "Attack sound": {"type": "string"},
+            "Defense sound": {"type": "string"},
+            "Special move sound": {"type": "string"},
+            "Defeat sound": {"type": "string"}
+          },
+          "required": ["Attack sound", "Defense sound", "Special move sound", "Defeat sound"],
+          "additionalProperties": false
+        },
+        "animations": {
+          "oneOf": [
+            {"type": "object", "properties": {}, "required": [], "additionalProperties": false},
+            {
+              "type": "object",
+              "properties": {
+                "Attack": {"type": "string"},
+                "Defense": {"type": "string"},
+                "Special move": {"type": "string"},
+                "Defeat": {"type": "string"}
+              },
+              "required": ["Attack", "Defense", "Special move", "Defeat"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "byteLength",
+        "name",
+        "stats",
+        "canFlee",
+        "usesScript",
+        "sneakChance",
+        "sneakUp",
+        "width",
+        "height",
+        "ai",
+        "xp",
+        "gold",
+        "tileStride",
+        "tiles",
+        "specialMoves",
+        "weaknesses",
+        "script",
+        "programs",
+        "sounds",
+        "animations"
+      ],
+      "additionalProperties": false
+    },
+    "bkg": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "width": {"const": 19},
+        "height": {"const": 11},
+        "order": {"const": "column-major"},
+        "tiles": {"type": "array", "items": {"type": "string"}, "minItems": 209, "maxItems": 209},
+        "audio": {
+          "type": "object",
+          "properties": {
+            "Music": {"type": "string"},
+            "Select sound": {"type": "string"},
+            "Choose sound": {"type": "string"},
+            "Ready sound": {"type": "string"},
+            "Invalid action sound": {"type": "string"}
+          },
+          "required": ["Music", "Select sound", "Choose sound", "Ready sound", "Invalid action sound"],
+          "additionalProperties": false
+        },
+        "shading": {
+          "type": "array",
+          "items": {"type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3},
+          "minItems": 209,
+          "maxItems": 209
+        }
+      },
+      "required": ["byteLength", "width", "height", "order", "tiles", "audio", "shading"],
+      "additionalProperties": false
+    },
+    "spc": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "name": {"type": "string"},
+        "description": {"type": "string"},
+        "program": {"type": "string"},
+        "fightPower": {"type": "number"},
+        "cost": {"type": "number"},
+        "targetSpecialPower": {"type": "number"},
+        "battle": {"type": "boolean"},
+        "board": {"type": "boolean"},
+        "storedUseFlags": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2},
+        "assets": {
+          "type": "object",
+          "properties": {"Status effect": {"type": "string"}, "Animation": {"type": "string"}},
+          "required": ["Status effect", "Animation"],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "byteLength",
+        "name",
+        "description",
+        "program",
+        "fightPower",
+        "cost",
+        "targetSpecialPower",
+        "battle",
+        "board",
+        "storedUseFlags",
+        "assets"
+      ],
+      "additionalProperties": false
+    },
+    "ste": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "version": {"const": 2},
+        "name": {"type": "string"},
+        "program": {"type": "string"},
+        "rounds": {"type": "integer"},
+        "hpAmount": {"type": "integer"},
+        "smpAmount": {"type": "integer"},
+        "speed": {"type": "boolean"},
+        "slow": {"type": "boolean"},
+        "disable": {"type": "boolean"},
+        "removeHp": {"type": "boolean"},
+        "removeSmp": {"type": "boolean"},
+        "runProgram": {"type": "boolean"}
+      },
+      "required": [
+        "byteLength",
+        "version",
+        "name",
+        "program",
+        "rounds",
+        "hpAmount",
+        "smpAmount",
+        "speed",
+        "slow",
+        "disable",
+        "removeHp",
+        "removeSmp",
+        "runProgram"
+      ],
+      "additionalProperties": false
+    },
+    "anm": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "width": {"type": "number"},
+        "height": {"type": "number"},
+        "storedFrameCount": {"type": "number"},
+        "pauseSeconds": {"type": "number"},
+        "frames": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "image": {"type": "string"},
+              "transparentColor": {"type": "number"},
+              "sound": {"type": "string"}
+            },
+            "required": ["image", "transparentColor", "sound"],
+            "additionalProperties": false
+          },
+          "minItems": 51,
+          "maxItems": 51
+        }
+      },
+      "required": ["byteLength", "width", "height", "storedFrameCount", "pauseSeconds", "frames"],
+      "additionalProperties": false
+    },
+    "fnt": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "width": {"const": 8},
+        "height": {"const": 8},
+        "glyphs": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {"type": "integer", "minimum": 0, "maximum": 255},
+            "minItems": 8,
+            "maxItems": 8
+          },
+          "minItems": 256,
+          "maxItems": 256
+        }
+      },
+      "required": ["byteLength", "width", "height", "glyphs"],
+      "additionalProperties": false
+    },
+    "gif": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "signature": {"enum": ["GIF87a", "GIF89a"]},
+        "width": {"type": "integer", "minimum": 0},
+        "height": {"type": "integer", "minimum": 0},
+        "globalColors": {"type": "integer", "minimum": 0},
+        "frames": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {"type": "integer", "minimum": 0},
+              "y": {"type": "integer", "minimum": 0},
+              "width": {"type": "integer", "minimum": 0},
+              "height": {"type": "integer", "minimum": 0},
+              "localColors": {"type": "integer", "minimum": 0},
+              "interlaced": {"type": "boolean"},
+              "delayCentiseconds": {"type": "integer", "minimum": 0},
+              "disposalMethod": {"type": "integer", "minimum": 0},
+              "transparentIndex": {"type": ["integer", "null"], "minimum": 0}
+            },
+            "required": ["x", "y", "width", "height", "localColors", "interlaced"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["byteLength", "signature", "width", "height", "globalColors", "frames"],
+      "additionalProperties": false
+    },
+    "jpg": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "width": {"type": "integer", "minimum": 0},
+        "height": {"type": "integer", "minimum": 0},
+        "precisionBits": {"type": "integer", "minimum": 0},
+        "frameMarker": {"type": "string"},
+        "components": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {"type": "integer", "minimum": 0},
+              "horizontalSampling": {"type": "integer", "minimum": 0},
+              "verticalSampling": {"type": "integer", "minimum": 0},
+              "quantizationTable": {"type": "integer", "minimum": 0}
+            },
+            "required": ["id", "horizontalSampling", "verticalSampling", "quantizationTable"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["byteLength", "width", "height", "precisionBits", "frameMarker", "components"],
+      "additionalProperties": false
+    },
+    "wav": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "encodingTag": {"type": "integer", "minimum": 0},
+        "channels": {"type": "integer", "minimum": 0},
+        "sampleRateHz": {"type": "integer", "minimum": 0},
+        "bytesPerSecond": {"type": "integer", "minimum": 0},
+        "blockAlign": {"type": "integer", "minimum": 0},
+        "bitsPerSample": {"type": "integer", "minimum": 0},
+        "audioBytes": {"type": "integer", "minimum": 0},
+        "sampleFrames": {"type": ["integer", "null"], "minimum": 0},
+        "durationSeconds": {"type": ["number", "null"], "minimum": 0},
+        "chunks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "size": {"type": "integer", "minimum": 0},
+              "offset": {"type": "integer", "minimum": 0}
+            },
+            "required": ["id", "size", "offset"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "byteLength",
+        "encodingTag",
+        "channels",
+        "sampleRateHz",
+        "bytesPerSecond",
+        "blockAlign",
+        "bitsPerSample",
+        "audioBytes",
+        "sampleFrames",
+        "durationSeconds",
+        "chunks"
+      ],
+      "additionalProperties": false
+    },
+    "mid": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "format": {"enum": [0, 1, 2]},
+        "trackCount": {"type": "integer", "minimum": 1},
+        "timeDivision": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {"ticksPerQuarter": {"type": "integer", "minimum": 1}},
+              "required": ["ticksPerQuarter"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "framesPerSecondCode": {"type": "integer", "minimum": 0},
+                "ticksPerFrame": {"type": "integer", "minimum": 0, "maximum": 255}
+              },
+              "required": ["framesPerSecondCode", "ticksPerFrame"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "tracks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {"type": "integer", "minimum": 0},
+              "size": {"type": "integer", "minimum": 0},
+              "ticks": {"type": "integer", "minimum": 0},
+              "events": {"type": "integer", "minimum": 0},
+              "noteOnEvents": {"type": "integer", "minimum": 0},
+              "channels": {"type": "array", "items": {"type": "integer", "minimum": 1, "maximum": 16}},
+              "names": {"type": "array", "items": {"type": "string"}},
+              "instruments": {"type": "array", "items": {"type": "string"}},
+              "tempos": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "tick": {"type": "integer", "minimum": 0},
+                    "microsecondsPerQuarter": {"type": "integer", "minimum": 0}
+                  },
+                  "required": ["tick", "microsecondsPerQuarter"],
+                  "additionalProperties": false
+                }
+              },
+              "parts": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "port": {"type": "integer", "minimum": 0, "maximum": 255},
+                    "channel": {"type": "integer", "minimum": 1, "maximum": 16},
+                    "program": {"type": "integer", "minimum": 1, "maximum": 128},
+                    "percussion": {"type": "boolean"},
+                    "instrument": {"type": "string"},
+                    "noteCount": {"type": "integer", "minimum": 1},
+                    "lowestNote": {"type": "integer", "minimum": 0, "maximum": 127},
+                    "highestNote": {"type": "integer", "minimum": 0, "maximum": 127}
+                  },
+                  "required": [
+                    "port",
+                    "channel",
+                    "program",
+                    "percussion",
+                    "instrument",
+                    "noteCount",
+                    "lowestNote",
+                    "highestNote"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "number",
+              "size",
+              "ticks",
+              "events",
+              "noteOnEvents",
+              "channels",
+              "names",
+              "instruments",
+              "tempos",
+              "parts"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["byteLength", "format", "trackCount", "timeDivision", "tracks"],
+      "additionalProperties": false
+    },
+    "doc": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "container": {"const": "CFB"},
+        "major": {"enum": [3, 4]},
+        "minor": {"type": "integer", "minimum": 0},
+        "sectorSize": {"enum": [512, 4096]},
+        "fatSectorCount": {"type": "integer", "minimum": 0},
+        "miniStreamCutoff": {"type": "integer", "minimum": 0},
+        "directory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string"},
+              "type": {"type": "integer", "minimum": 0, "maximum": 255},
+              "size": {"type": "integer", "minimum": 0}
+            },
+            "required": ["name", "type", "size"],
+            "additionalProperties": false
+          }
+        },
+        "directoryStatus": {"type": "string"}
+      },
+      "required": ["byteLength", "container", "major", "minor", "sectorSize", "fatSectorCount", "miniStreamCutoff"],
+      "additionalProperties": false,
+      "oneOf": [{"required": ["directory"]}, {"required": ["directoryStatus"]}]
+    },
+    "___": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "layout": {"type": "string"},
+        "header": {"type": "array", "items": {"type": "integer"}, "minItems": 5, "maxItems": 5},
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "tileName": {"type": "string"},
+              "values": {"type": "array", "items": {"type": "integer"}, "minItems": 3, "maxItems": 3}
+            },
+            "required": ["tileName", "values"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["byteLength", "layout", "header", "records"],
+      "additionalProperties": false
+    }
+  }
+}
