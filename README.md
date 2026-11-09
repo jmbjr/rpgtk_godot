@@ -71,7 +71,8 @@ Then check the browser workflow.
     floor shadows against the Toolkit 2 editor. Check the linked menu sounds
     and the missing battle music reference. Open **Font** → `BASE.FNT` and
     type a sample. Under **Misc**, open `explode.anm` and step to frame 2 of
-    8 to find `bang.wav`. Play the frames and switch files to stop playback.
+    8 to find `bang.wav`. Play the animation and listen for the sound on
+    frame 2. Pause or switch files to stop playback and audio.
     Under **SpcMove**, check `attackall.spc` against the editor screenshot
     and follow its program and effect animation links.
 11. Repeat on the GitHub Pages deployment. Test an unreadable ZIP and a
@@ -160,7 +161,8 @@ decoder errors, media, accompanying documents, and unidentified entries.
 The battle background preview applies per-tile RGB lighting. The font preview
 shows all 256 glyphs in byte order and supports ASCII sample text. Animation
 previews use the stored dimensions and frame delay, key out the stored
-transparent color, and link to each frame's sound for separate playback.
+transparent color, and play each frame's assigned sound during animation
+playback. Each sound also links to its own media inspector.
 The special move's use flags follow the Toolkit 2 editor display verified with
 `attackall.spc`. The raw flag order is also available in JSON.
 

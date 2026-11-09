@@ -37,6 +37,7 @@ let selectedFolder = null;
 let references = { incoming: new Map(), outgoing: new Map() };
 let tileSelection;
 let animationTimer;
+let stopAnimationPlayback;
 let mediaUrl;
 let midiPlayback;
 let midiTone = { ...defaultMidiTone };
@@ -173,6 +174,8 @@ function selectionLabel(path) {
 
 function showArtifact() {
   midiPlayback?.stop();
+  stopAnimationPlayback?.();
+  stopAnimationPlayback = undefined;
   clearInterval(animationTimer);
   inspectorRevision++;
   if (mediaUrl) {
@@ -180,21 +183,22 @@ function showArtifact() {
     mediaUrl = undefined;
   }
   const artifact = artifacts.get(selected);
+  const program = artifact?.type === "prg" ? artifact.program : undefined;
   const source = byId("source");
   byId("source-path").textContent = selected ?? "";
   byId("selection").textContent = selectionLabel(selected);
-  byId("file-title").textContent = artifact?.program ? "Source" : artifact?.runs ? "Board preview" :
+  byId("file-title").textContent = program ? "Source" : artifact?.runs ? "Board preview" :
     artifact?.type === "bkg" && !artifact.error ? "Battle background preview" : "File details";
-  byId("graph-title").textContent = artifact?.program ? "Capability graph" : "Artifact inspector";
+  byId("graph-title").textContent = program ? "Capability graph" : "Artifact inspector";
   byId("graph").replaceChildren();
   byId("reference").replaceChildren();
   byId("connections").replaceChildren();
   byId("counts").textContent = "";
   source.replaceChildren(el("p", artifact ? "Details for this file appear in the inspector." : "Choose a file to inspect."));
   if (!artifact) return;
-  if (artifact.program) {
-    renderSource(artifact.program);
-    renderGraph(artifact.program);
+  if (program) {
+    renderSource(program);
+    renderGraph(program);
   } else {
     renderAsset(artifact);
   }
@@ -491,8 +495,14 @@ function renderAnimation(panel, artifact, edges) {
       }
     }).catch(() => null) : Promise.resolve(null);
   });
+  const sounds = frames.map((_, index) => byEvidence.get(`Frame ${index + 1} sound`)?.to);
+  const soundPaths = [...new Set(sounds.filter(Boolean))];
+  const audioStatus = el("p");
+  audioStatus.setAttribute("role", "status");
+  audioStatus.hidden = true;
   let index = 0;
   let drawRequest = 0;
+  let playback;
   function display() {
     const request = ++drawRequest;
     const frame = frames[index];
@@ -516,21 +526,61 @@ function renderAnimation(panel, artifact, edges) {
     });
   }
   function stop() {
-    clearInterval(animationTimer);
+    if (!playback) return;
+    clearInterval(playback.timer);
+    if (playback.audio) void playback.audio.close().catch(() => {});
+    playback = undefined;
     play.textContent = "Play animation";
   }
   function step(change) {
     index = (index + change + frames.length) % frames.length;
     display();
   }
-  const play = button("Play animation", () => {
-    if (play.textContent === "Pause animation") {
-      stop();
-      return;
-    }
+  function playFrameSound(run) {
+    const buffer = run.buffers.get(sounds[index]);
+    if (!buffer) return;
+    const source = run.audio.createBufferSource();
+    source.buffer = buffer;
+    source.connect(run.audio.destination);
+    source.start();
+  }
+  async function start() {
+    const run = { buffers: new Map() };
+    playback = run;
     play.textContent = "Pause animation";
-    animationTimer = setInterval(() => step(1), Math.max(16, artifact.pauseSeconds * 1000 || 100));
+    audioStatus.hidden = true;
+    if (soundPaths.length) {
+      try {
+        const AudioContext = globalThis.AudioContext ?? globalThis.webkitAudioContext;
+        run.audio = new AudioContext();
+        const resumed = run.audio.resume();
+        const results = soundPaths.map(async path => {
+          const bytes = await sourceArchive.file(path).async("arraybuffer");
+          const buffer = await run.audio.decodeAudioData(bytes);
+          run.buffers.set(path, buffer);
+        });
+        const [, decoded] = await Promise.all([resumed, Promise.allSettled(results)]);
+        if (decoded.some(result => result.status === "rejected")) {
+          throw new Error("One or more frame sounds could not be decoded.");
+        }
+      } catch {
+        if (playback !== run) return;
+        audioStatus.textContent = "Some frame audio could not be played.";
+        audioStatus.hidden = false;
+      }
+    }
+    if (playback !== run) return;
+    playFrameSound(run);
+    run.timer = setInterval(() => {
+      step(1);
+      playFrameSound(run);
+    }, Math.max(16, artifact.pauseSeconds * 1000 || 100));
+  }
+  const play = button("Play animation", () => {
+    if (playback) stop();
+    else void start();
   });
+  stopAnimationPlayback = stop;
   controls.append(
     button("Previous frame", () => { stop(); step(-1); }),
     play,
@@ -540,7 +590,7 @@ function renderAnimation(panel, artifact, edges) {
   void Promise.all(images).then(() => {
     if (revision === inspectorRevision) play.disabled = false;
   });
-  panel.append(canvas, frameStatus, controls, frameAssets);
+  panel.append(canvas, frameStatus, controls, audioStatus, frameAssets);
   display();
 }
 

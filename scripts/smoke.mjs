@@ -220,5 +220,8 @@ const move = artifacts.get("Demo/SpcMove/attackall.spc");
 assert.deepEqual(move.storedUseFlags, [0, 1]);
 assert.equal(move.battle, true);
 assert.equal(move.board, false);
+const moveRecord = artifactRecord(move, connections);
+assert.equal(moveRecord.data.program, "spc_attackall.prg");
+assert.ok(moveRecord.references.outgoing.some(edge => edge.target.$ref === "rpgtk:/Demo/Prg/spc_attackall.prg"));
 assert.ok(connections.outgoing.get(move.path).some(edge => edge.to === explosion.path));
 console.log("Inspector smoke passed: shaded battle backdrop, frame and sound references, color key, and editor-verified special-move flags.");
