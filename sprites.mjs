@@ -75,6 +75,18 @@ export function enemySprite(enemy, artifacts, graph) {
 
 export function itemSprites(item, artifacts, graph) {
   const byEvidence = new Map((graph.outgoing.get(item.path) ?? []).map(edge => [edge.evidence, edge]));
+  if (item.embeddedGraphics) {
+    const sprite = pixels => pixels && ({
+      width: tileSize, height: tileSize, pixels: standaloneTilePixels({ width: tileSize, height: tileSize, pixels }),
+      parts: [], missing: [], embedded: true,
+    });
+    return {
+      rest: sprite(item.embeddedGraphics.rest),
+      walking: directions.map((direction, group) => ({
+        direction, frames: item.embeddedGraphics.walking.slice(group * 4, group * 4 + 4).map(sprite),
+      })),
+    };
+  }
   const frames = [item.rest, ...item.walking];
   const tall = frames.some(frame => frame[0]);
   const composeFrame = (values, label) => {

@@ -516,7 +516,61 @@ function readStandaloneTile(bytes) {
   return { width: size, height: size, detail, compressed: Boolean(compressed), order: "column-major", encoding: "Toolkit COLORREF; -1 is transparent", pixels };
 }
 
+function readTextItem(bytes) {
+  const reader = textReader(bytes, "RPGTLKIT ITEM", [1]);
+  const integer = () => {
+    const value = reader.number();
+    if (!Number.isSafeInteger(value)) throw new Error("Invalid text item integer.");
+    return value;
+  };
+  const name = reader.string();
+  const modes = Object.fromEntries(["equip", "menu", "board", "battle"].map(mode => [mode, Boolean(integer())]));
+  const armorSlots = [0, ...Array.from({ length: 7 }, integer)];
+  const accessory = reader.string();
+  const modifiers = { hp: integer(), defense: integer(), fight: integer(), specialPower: integer() };
+  const equip = fields(reader, ["Equip program", "Remove program"]);
+  const menu = { hp: integer(), specialPower: integer() };
+  const menuProgram = fields(reader, ["Menu-use program"]);
+  const battle = { hp: integer(), specialPower: integer() };
+  const battleProgram = fields(reader, ["Battle-use program"]);
+  const board = fields(reader, ["On-board program", "Pickup program"]);
+  const sizeType = integer();
+  if (![0, 1].includes(sizeType)) throw new Error("Unsupported text item graphic size.");
+
+  const refs = [...equip.refs, ...menuProgram.refs, ...battleProgram.refs, ...board.refs];
+  const readPair = label => {
+    const pair = fields(reader, [`${label} top`, `${label} bottom`]);
+    refs.push(...pair.refs);
+    return Object.values(pair.values);
+  };
+  const readTile = () => {
+    const first = integer();
+    if (first === -2) return null;
+    const pixels = [first, ...Array.from({ length: 1023 }, integer)];
+    if (pixels.some(color => color < -1 || color > 0xffffff)) throw new Error("Invalid embedded item tile color.");
+    return pixels;
+  };
+  const walking = Array.from({ length: 16 }, (_, i) => sizeType ? readPair(`Walking frame ${i + 1}`) : ["", ""]);
+  const rest = sizeType ? readPair("Rest graphic") : ["", ""];
+  const embeddedGraphics = sizeType === 0 ? { walking: Array.from({ length: 16 }, readTile), rest: readTile() } : undefined;
+  const usableBy = integer();
+  const characters = ["", ...Array.from({ length: 50 }, () => reader.string())];
+  const buyPrice = integer();
+  const sellPrice = integer();
+  const keyItem = Boolean(integer());
+  const description = reader.string();
+  const animation = fields(reader, ["Item animation"]);
+  refs.push(...animation.refs);
+  return {
+    version: reader.minor, name, description, modes, usableBy, characters, buyPrice, sellPrice, keyItem,
+    armorSlots, accessory, modifiers, programs: { ...equip.values, ...menuProgram.values, ...battleProgram.values, ...board.values },
+    animation: animation.values["Item animation"], menu, battle, sizeType, walking, rest,
+    ...(embeddedGraphics ? { embeddedGraphics } : {}), refs,
+  };
+}
+
 function readItem(bytes) {
+  if (/^RPGTLKIT ITEM[\r\n]/i.test(text.decode(bytes.subarray(0, 15)))) return readTextItem(bytes);
   const reader = cursor(bytes);
   const version = header(reader, "RPGTLKIT ITEM", [2, 3]);
   const number = version === 3 ? reader.long : reader.short;
