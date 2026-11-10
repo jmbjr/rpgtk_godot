@@ -1,11 +1,13 @@
-import { createHash } from "node:crypto";
-
 const source = "toolkit";
 const sidecarFile = "toolkit-sidecar.json";
-const assetKey = id => createHash("sha256").update(id).digest("hex");
+export async function sha256Text(value) {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+}
 
 // Project decoded Toolkit records from a single archive into a definition catalog.
-export function projectTiles(records) {
+export async function projectTiles(records) {
   const objects = {};
   const tileBindings = [];
   const tileByRef = new Map();
@@ -23,8 +25,8 @@ export function projectTiles(records) {
   }
 
   for (const record of records) {
-    if (record.decode.status !== "decoded") continue;
-    const key = assetKey(record.$id);
+    if (record.decode.status !== "decoded" || !["gph", "tst"].includes(record.format)) continue;
+    const key = await sha256Text(record.$id);
     if (record.format === "gph") {
       addTile(`tile-${key}`, record.$id, record.path);
     }

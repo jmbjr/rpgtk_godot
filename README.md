@@ -29,6 +29,12 @@ Format sources at the reviewed Toolkit 3 revision include the
 [character reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vb/tkCommon/modules/CommonPlayer.bas#L527-L686),
 and [board reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/common/board.cpp#L575-L851).
 
+To make print-and-play cards from your game, open its ZIP, select **Tiles** and
+a supported `.tst` file, then choose **Download print-and-play PDF** in the
+inspector. The PDF includes the whole selected tileset in its original order.
+Print on US Letter paper at actual size (100%) to get 2.5 × 3.5 inch cards.
+The viewer generates the file in your browser.
+
 ## Open a game ZIP from a URL
 
 Paste a public HTTPS ZIP address into **Game ZIP URL** and choose **Open URL**.

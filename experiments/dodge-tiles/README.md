@@ -25,7 +25,7 @@ node experiments/dodge-tiles/check.mjs \
   /tmp/toolkit-dodge-tiles
 ```
 
-The optional last argument writes `dodge.json` and `toolkit-sidecar.json`. The check validates the pinned schema and verifies source order, stable IDs across input record order, and the board-to-tile mapping. A separate in-memory board variant checks repeated placements, out-of-range indexes, and missing tiles.
+The optional last argument writes `dodge.json`, `toolkit-sidecar.json`, and the separate `tile-card-scene.json`. The check validates the pinned schema and verifies source order, stable IDs across input record order, and the board-to-tile mapping. A separate in-memory board variant checks repeated placements, out-of-range indexes, and missing tiles.
 
 ## Build the tabletop review
 
