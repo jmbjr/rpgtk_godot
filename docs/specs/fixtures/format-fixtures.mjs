@@ -72,6 +72,35 @@ add("Boards/room.brd", boardBytes, {
   runs: [{ offset: 0, length: 1, lookupIndex: 1, shade: [-30, 0, 20] }],
 }, "partial");
 
+// Text boards serialize x, y, layer, unlike the normalized board record.
+const textGrid = Array.from({ length: 2 * 3 * 8 }, () => ["", 0, 0, 0, 0]);
+textGrid[2 * 8] = ["two-tiles.tst2", -3, 4, 5, 1]; // x=0, y=2, layer=0
+textGrid[3 * 8] = ["two-tiles.tst1", 7, 0, -2, 0]; // x=1, y=0, layer=0
+textGrid[3 * 8 + 1] = ["two-tiles.tst2", 0, 0, 0, 0]; // x=1, y=0, layer=1
+const textBoard = Buffer.from(["RPGTLKIT BOARD", 2, 1, 0, "NOCODE", 2, 3, ...textGrid.flat(),
+  "face.gif", "", 255, 0, 3, ...fill(4, ""), 0, "", 0, ...fill(10, ""), "note.mid",
+  "Ground", "Upper", ...fill(6, ""),
+  "start.prg", 2, 3, 1, "", ...fill(6, ""), ...fill(50 * 11, ""),
+  "token-2.itm", 1, 2, 2, ...fill(6, ""), ...fill(10 * 10, ""),
+  1, 1, 1, "start.prg", ...fill(10, ""), 0, "other.prg", ...fill(10, ""), ""].join("\r\n"), "ascii");
+const textTileRef = (tileIndex, index, placements) => ({
+  value: `two-tiles.tst${tileIndex}`, evidence: `Board tile lookup · entry ${index} · ${placements} placed`,
+  status: "resolved", source: { $ref: "rpgtk:/Boards/text-room.brd" },
+  target: { $ref: `rpgtk:/Tiles/two-tiles.tst#/data/tiles/${tileIndex - 1}`, tileIndex }, placements,
+});
+add("Boards/text-room.brd", textBoard, {
+  width: 2, height: 3, layers: 8, layerTitles: ["", "Ground", "Upper", ...fill(6, "")],
+  background: 255, ambient: [0, 0, 75],
+  tileLookup: [{ value: "" }, { value: "two-tiles.tst2", reference: textTileRef(2, 1, 2) },
+    { value: "two-tiles.tst1", reference: textTileRef(1, 2, 1) }],
+  cellOrder: "zero-based offset; layer, row, column",
+  runs: [
+    { offset: 1, length: 1, lookupIndex: 2, shade: [7, 0, -2] },
+    { offset: 4, length: 1, lookupIndex: 1, shade: [-3, 4, 5] },
+    { offset: 7, length: 1, lookupIndex: 1, shade: [0, 0, 0] },
+  ],
+}, "partial");
+
 for (const version of [2, 3]) {
   const n = version === 2 ? i16 : i32;
   add(`Item/token-${version}.itm`, binary(header("RPGTLKIT ITEM", version), "Token", "Example",
