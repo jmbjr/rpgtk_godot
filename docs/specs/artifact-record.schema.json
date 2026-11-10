@@ -264,6 +264,12 @@
           "required": ["value", "evidence"],
           "additionalProperties": false
         },
+        "embeddedWalking": {
+          "type": "array",
+          "minItems": 16,
+          "maxItems": 16,
+          "items": {"$ref": "#/$defs/embeddedTile"}
+        },
         "walking": {
           "type": "array",
           "items": {
@@ -347,7 +353,10 @@
       "additionalProperties": false
     },
     "embeddedItemTile": {
-      "type": ["array", "null"],
+      "anyOf": [{"type": "null"}, {"$ref": "#/$defs/embeddedTile"}]
+    },
+    "embeddedTile": {
+      "type": "array",
       "items": {"type": "integer", "minimum": -1, "maximum": 16777215},
       "minItems": 1024,
       "maxItems": 1024

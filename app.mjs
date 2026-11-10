@@ -420,11 +420,18 @@ function renderAsset(artifact) {
     if (portrait) showMedia(panel, portrait, `${artifact.name} portrait`);
     panel.append(stats);
     const sprites = el("div", "", "sprite-strip");
-    for (const frame of artifact.walking.filter(frame => frame.frame === 1)) {
-      const canvas = tileCanvas(64);
+    for (const [index, frame] of artifact.walking.entries()) {
+      if (frame.frame !== 1) continue;
+      const embedded = artifact.embeddedWalking?.[index];
+      const canvas = tileCanvas(embedded ? 32 : 64);
       const caption = el("div", frame.direction);
-      for (const [index, part] of frame.parts.entries()) {
-        paintTile(canvas, edges.find(edge => edge.evidence === part.evidence), index * 32);
+      if (embedded) {
+        const pixels = standaloneTilePixels({ width: 32, height: 32, pixels: embedded });
+        canvas.getContext("2d").putImageData(new ImageData(pixels, 32, 32), 0, 0);
+      } else {
+        for (const [partIndex, part] of frame.parts.entries()) {
+          paintTile(canvas, edges.find(edge => edge.evidence === part.evidence), partIndex * 32);
+        }
       }
       caption.prepend(canvas);
       sprites.append(caption);
