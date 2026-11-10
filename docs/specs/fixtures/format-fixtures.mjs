@@ -184,6 +184,10 @@ add("StatusE/slow.ste", binary(header("RPGTLKIT STATUSE", 2), "Slow", i16(0, 0, 
   version: 2, name: "Slow", rounds: 0, speed: false, slow: true, disable: false, removeHp: true, hpAmount: -4,
   removeSmp: false, smpAmount: 0, runProgram: true, program: "start.prg",
 });
+add("StatusE/text-ste.ste", text("RPGTLKIT STATUSE", "Old effect", 3, 1, 0, 1, 1, -50, 1, 7, 0, "start.prg"), {
+  version: 0, name: "Old effect", rounds: 3, speed: true, slow: false, disable: true, removeHp: true, hpAmount: -50,
+  removeSmp: true, smpAmount: 7, runProgram: false, program: "start.prg",
+});
 add("Misc/effect.anm", text("RPGTLKIT ANIM", 16, 32, 0, "face.gif", 255, "tone.wav",
   ...fill(50, ["", 0, ""]).flat(), 0.25), {
   width: 16, height: 32, storedFrameCount: 0,

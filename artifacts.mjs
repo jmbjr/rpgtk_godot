@@ -454,18 +454,24 @@ function readSpecialMove(bytes) {
 }
 
 function readStatusEffect(bytes) {
-  const reader = cursor(bytes);
-  const version = header(reader, "RPGTLKIT STATUSE", [2]);
+  const isText = /^RPGTLKIT STATUSE[\r\n]/i.test(text.decode(bytes.subarray(0, 17)));
+  const reader = isText ? textReader(bytes, "RPGTLKIT STATUSE") : cursor(bytes);
+  const version = isText ? reader.minor : header(reader, "RPGTLKIT STATUSE", [2]);
+  const number = isText ? () => {
+    const value = reader.number();
+    if (!Number.isSafeInteger(value)) throw new Error("Invalid status effect integer.");
+    return value;
+  } : reader.short;
   const name = reader.string();
-  const rounds = reader.short();
-  const speed = Boolean(reader.short());
-  const slow = Boolean(reader.short());
-  const disable = Boolean(reader.short());
-  const removeHp = Boolean(reader.short());
-  const hpAmount = reader.short();
-  const removeSmp = Boolean(reader.short());
-  const smpAmount = reader.short();
-  const runProgram = Boolean(reader.short());
+  const rounds = number();
+  const speed = Boolean(number());
+  const slow = Boolean(number());
+  const disable = Boolean(number());
+  const removeHp = Boolean(number());
+  const hpAmount = number();
+  const removeSmp = Boolean(number());
+  const smpAmount = number();
+  const runProgram = Boolean(number());
   const program = reader.string();
   const refs = program ? [reference(program, "Status effect program")] : [];
   return { version, name, rounds, speed, slow, disable, removeHp, hpAmount, removeSmp, smpAmount, runProgram, program, refs };
