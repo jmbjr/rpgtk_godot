@@ -332,7 +332,7 @@ function renderAsset(artifact) {
     return;
   }
   if (artifact.type === "tst") {
-    panel.append(el("p", `${artifact.count} tiles · 32 × 32 pixels · ART-05 Tilesets`));
+    panel.append(el("p", `${artifact.count} tiles · ${artifact.width} × ${artifact.height} pixels · ART-05 Tilesets`));
     if (artifact.count > 0) panel.append(tilesetPdfControl(artifact));
     const grid = el("div", "", "tile-grid");
     for (let tile = 1; tile <= artifact.count; tile++) {

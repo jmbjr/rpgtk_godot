@@ -24,11 +24,11 @@ function edgeRecord(edge) {
   };
 }
 
-function tilesetData(bytes, count) {
-  const tileSize = 3072;
+function tilesetData(bytes, { width, height, count }) {
+  const tileSize = width * height * 3;
   return {
-    width: 32,
-    height: 32,
+    width,
+    height,
     count,
     encoding: "base64 RGB24, column-major",
     transparentRgb: [0, 1, 2],
@@ -47,7 +47,7 @@ export function artifactRecord(artifact, graph, { external = false, bindings = [
   })) : (graph.outgoing.get(path) ?? []).filter(edge => !edge.external);
 
   let decoded = data;
-  if (bytes && type === "tst") decoded = { byteLength: data.byteLength, ...tilesetData(bytes, data.count) };
+  if (bytes && type === "tst") decoded = { byteLength: data.byteLength, ...tilesetData(bytes, data) };
   const program = type === "prg" ? data.program : undefined;
   if (program) decoded = {
     byteLength: data.byteLength,
