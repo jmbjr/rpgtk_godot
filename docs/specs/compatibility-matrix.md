@@ -30,7 +30,7 @@ the Toolkit release that wrote them.
 | [BRD](brd.md) text 2.0 | **Partial.** Source and fixed-size fixture verify the 19 × 11 × 8 grid and references. | The [3.0.4 development reader][board304] reads it directly. The [3.1 editor][board31] directs old text boards through a re-save in 3.0.6 or earlier. | Verify a real text 2.0 sample and compare the upgrade output. |
 | BRD text 2.1 | **Partial.** Cluetest, 59 DustBall boards and an asymmetric fixture verify dimensions, tile order and indexed links. | Same upgrade path. The [3.0.4 reader][board304] reads stored width and height before the grid. | Compare the unexported tile types, placement conditions, start coordinates and tail fields against converter output. |
 | BRD binary 2.2 | **Partial.** Demo, Cluetest and fixture verify grid and indexed links. | The [3.1 reader][board31] opens the pre-vector layout and translates legacy placements and tile types for the newer editor. | Check fidelity of tile types and legacy conditions separately from visual placement. |
-| BRD binary 2.3 | **Partial.** The viewer accepts the header and reads the same prefix as 2.2. Dedicated fixture pending. | The [3.1 reader][board31] uses the pre-vector branch with [version-dependent tail fields][board-tail]. | Verify a real 2.3 file or controlled fixture, especially the tail boundary. |
+| BRD binary 2.3 | **Partial.** A historical demo board and fixtures verify the common prefix, counted thread slots and the raw coordinate byte. | The [3.1 reader][board31] uses the pre-vector branch with [version-dependent tail fields][board-tail]. | Compare coordinate interpretation with an isometric sample. |
 | BRD headerless fallback | **Open.** The legacy board reader documents a separate fallback. | The [3.0.4 development source][board304] has a separate version-1 route. | Establish which files were still valid Toolkit 2 input before adding a reader. |
 | [PRG](prg.md) Toolkit 2 source | **Partial.** Demo, Cluetest and DustBall verify source display and static indexing. | The [RPGCode updater][prg] rewrites legacy syntax, including functions, variable typing and comments. | Audit supported legacy syntax and file-taking commands. Runtime behavior and conversion of executable code are separate. |
 
@@ -74,8 +74,8 @@ the Toolkit release that wrote them.
 ## Verification order
 
 1. Obtain fixtures for known Toolkit 2 variants with the highest impact
-   on previews and references, including binary BRD 2.3 and older palette
-   tiles. Confirm variant provenance before changing a decoder.
+   on previews and references, including an isometric binary BRD 2.3 sample and
+   older palette tiles. Confirm variant provenance before changing a decoder.
 2. Check the remaining fields of the layouts already supported. Prioritize
    fields that alter graph links or output, and compare the source values
    with the Toolkit 3 conversion where possible.

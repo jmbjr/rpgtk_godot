@@ -44,13 +44,19 @@ const embeddedItem = fixtures.find(({ path }) => path === "Item/text-item-0.itm"
 zip.file("Item/truncated-text.itm", embeddedItem.subarray(0, 700));
 const textCharacter = fixtures.find(({ path }) => path === "Chrs/text-hero-0.tem").bytes;
 zip.file("Chrs/truncated-text.tem", textCharacter.subarray(0, 7000));
+const threadedBoard = fixtures.find(({ path }) => path === "Boards/threaded-room.brd").bytes;
+zip.file("Boards/truncated-thread-tail.brd", threadedBoard.subarray(0, -1));
+const badThreadCount = Buffer.from(fixtures.find(({ path }) => path === "Boards/no-threads.brd").bytes);
+badThreadCount.writeInt32LE(10000, badThreadCount.length - 5);
+zip.file("Boards/invalid-thread-count.brd", badThreadCount);
 const { artifacts, graph } = await load(zip);
 for (const { path, expected } of fixtures) {
   const record = recordFor(artifacts.get(path), graph);
   assert.equal(record.decode.status, expected.status, path);
   assert.deepEqual(record.data, expected.data, path);
 }
-for (const [path, status] of [["Bitmap/browser.png", "media"], ["unidentified.xyz", "unidentified"], ["broken.ste", "error"], ["StatusE/truncated-text.ste", "error"], ["Chrs/truncated.tem", "error"], ["Chrs/truncated-text.tem", "error"], ["Boards/truncated-text.brd", "error"], ["Boards/truncated-fixed-grid.brd", "error"], ["Item/truncated-text.itm", "error"]]) {
+for (const [path, status] of [["Bitmap/browser.png", "media"], ["unidentified.xyz", "unidentified"], ["broken.ste", "error"], ["StatusE/truncated-text.ste", "error"], ["Chrs/truncated.tem", "error"], ["Chrs/truncated-text.tem", "error"], ["Boards/truncated-text.brd", "error"], ["Boards/truncated-fixed-grid.brd", "error"],
+  ["Boards/truncated-thread-tail.brd", "error"], ["Boards/invalid-thread-count.brd", "error"], ["Item/truncated-text.itm", "error"]]) {
   assert.equal(recordFor(artifacts.get(path), graph).decode.status, status);
 }
 assert.ok(recordFor(artifacts.get("Prg/start.prg"), graph).references.outgoing.some(ref => ref.status === "missing"));
@@ -107,6 +113,14 @@ for (const size of [0, 1]) {
     assert.deepEqual([...pixels.slice(128, 132)], [255, 0, 0, 255]);
   }
 }
+const threaded = recordFor(artifacts.get("Boards/threaded-room.brd"), graph);
+const threadEdges = threaded.references.outgoing.filter(edge => edge.evidence.startsWith("Board thread"));
+assert.deepEqual(threadEdges.map(edge => [edge.evidence, edge.status, edge.target?.$ref]), [
+  ["Board thread · slot 0", "resolved", "rpgtk:/Prg/start.prg"],
+  ["Board thread · slot 2", "missing", undefined],
+]);
+assert.equal(threaded.references.outgoing.find(edge => edge.evidence.startsWith("Item activation program")).target.$ref,
+  "rpgtk:/Prg/start.prg");
 for (const archivePath of process.argv.slice(2)) {
   if (/\.gam$/i.test(archivePath)) {
     const data = readMainFile(await readFile(archivePath));

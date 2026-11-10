@@ -313,6 +313,8 @@
         "layerTitles": {"type": "array", "items": {"type": "string"}, "minItems": 9, "maxItems": 9},
         "background": {"type": "integer"},
         "ambient": {"type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3},
+        "threads": {"type": "array", "items": {"type": "string"}},
+        "coordinateType": {"type": "integer", "minimum": 0, "maximum": 255},
         "tileLookup": {
           "type": "array",
           "items": {

@@ -26,12 +26,23 @@ zero-based coordinates, a cell offset is
 | 2 | Four directional board zstr in North, South, East, West order. Skip two bytes, read battle background zstr, skip eight bytes, one zstr and 22 bytes. Read music zstr and nine layer-title zstr. |
 | 3 | i16 maximum program index. For each of max plus one slots read program zstr, three i16 coordinates, graphic zstr, skip two bytes, four zstr and two bytes. Then read entry-program zstr and skip one zstr. |
 | 4 | i16 maximum item index. For each of max plus one slots read item zstr, three i16 coordinates, skip two bytes, four zstr and two bytes, then read activation and multitask program zstr. |
+| 5 (2.3) | Signed i32 maximum thread index, then that value plus one program filename zstr, then the raw coordinate-type byte. Index −1 means zero thread slots. |
 
 Program and item counts may be zero and are bounded by input size.
 Position fields are preserved as stored in reference evidence and the
 structured `position` field. The viewer
 does not convert their coordinate basis. Blank and `none` asset slots
-are omitted from references.
+are omitted from references. In 2.3, preserve blank thread slots in the
+record and index nonempty thread filenames. Reject a thread count that
+cannot fit before the coordinate byte or a truncated tail. The 2.2 tail
+uses another order and remains outside the viewer's decoded profile.
+
+The [pinned 2.3 writer](https://github.com/chrisbmatthews/rpgtoolkit/blob/0012b9f9b2093525b4edb42893c5a669cdbb491a/vb/tkCommon/modules/CommonBoard.bas#L724-L734)
+and [3.1 compatibility reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vb/tkCommon/modules/CommonBoard.bas#L1008-L1028)
+agree on the 2.3 tail order. The
+[historical demo board](https://github.com/chrisbmatthews/rpgtoolkit/blob/4133fc81d4144582e06a63ffc6017eec770d2d86/build/game/demo/Boards/start.brd)
+verified the common prefix and a blank thread slot. Synthetic fixtures
+exercise populated, empty, and invalid tails.
 
 ## Text 2.0 and 2.1
 
@@ -65,8 +76,10 @@ synthetic fixture based on the fixed-size branch of the
 describe the preview. `tileLookup` holds original values and optional
 indexed references. Nonempty `runs` contain `offset`, `length`,
 `lookupIndex`, and `shade`. `cellOrder` describes the offset convention.
-The board preview uses the first frame of animated tiles. Later board
-fields, tile-type behavior, and other text revisions are outside the slice.
+Binary 2.3 adds `threads` and `coordinateType` to the record. The preview
+uses its existing tile grid and the first frame of animated tiles.
+Coordinate conversion, tile-type behavior, and other uninspected fields
+and text revisions are outside the slice.
 
 Evidence includes the demo's 17 boards and the pinned
 [board reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/common/board.cpp#L461-L851)
@@ -79,7 +92,7 @@ for the compressed tile portion.
 | Text 2.0 | Pinned reader and synthetic fixture | The 3.0.4 development reader applies fixed dimensions and reads the old text grid. |
 | Text 2.1 | Cluetest and synthetic fixture | The same reader reads dimensions before the old text grid. |
 | Binary 2.2 | Demo and synthetic fixture | The 3.1 reader dispatches it to its pre-vector branch. |
-| Binary 2.3 | Viewer accepts it. A dedicated fixture still needs verification. | The 3.1 reader dispatches it to its pre-vector branch, with version-specific tail fields. |
+| Binary 2.3 | Historical demo board and synthetic fixtures cover the prefix and the thread/coordinate tail. | The 3.1 reader reads counted thread slots before the coordinate byte. |
 | Headerless board | Outside current coverage | The earlier reader has a separate fallback. The exact variants and fixtures still need verification. |
 
 The [later Toolkit 3.1 reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vb/tkCommon/modules/CommonBoard.bas#L449-L484)
