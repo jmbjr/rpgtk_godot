@@ -78,7 +78,7 @@ const boardBytes = binary(header("RPGTLKIT BOARD", 2), i16(0), "", i16(1, 1, 1),
   i16(1), "", "two-tiles.tst2", i16(1, -30, 0, 20), blank(1),
   blank(3), i32(255), blank(4), i16(1), blank(4), blank(2), "", blank(8), "", blank(22),
   "", "Ground", blank(8), i16(-1), "", "", i16(-1));
-add("Boards/room.brd", boardBytes, {
+const boardData = {
   width: 1, height: 1, layers: 1, layerTitles: ["Ground", ...fill(8, "")],
   background: 255, ambient: [75, 75, 75],
   tileLookup: [{ value: "" }, { value: "two-tiles.tst2", reference: {
@@ -88,7 +88,26 @@ add("Boards/room.brd", boardBytes, {
   } }],
   cellOrder: "zero-based offset; layer, row, column",
   runs: [{ offset: 0, length: 1, lookupIndex: 1, shade: [-30, 0, 20] }],
-}, "partial");
+};
+add("Boards/room.brd", boardBytes, boardData, "partial");
+
+const board23Prefix = binary(header("RPGTLKIT BOARD", 3), boardBytes.subarray(header("RPGTLKIT BOARD", 2).length, -2),
+  i16(0), "token-2.itm", i16(1, 1, 1, 0), blank(4), i16(0), "start.prg", "");
+for (const [path, threads, coordinateType] of [
+  ["Boards/threaded-room.brd", ["start.prg", "", "absent.prg"], 1],
+  ["Boards/no-threads.brd", [], 0],
+]) {
+  const tileReference = boardData.tileLookup[1].reference;
+  add(path, binary(board23Prefix, i32(threads.length - 1), ...threads, Buffer.of(coordinateType)), {
+    ...boardData,
+    tileLookup: [{ value: "" }, { value: "two-tiles.tst2", reference: {
+      ...tileReference, source: { $ref: `rpgtk:/${path}` },
+    } }],
+    threads, coordinateType,
+  }, "partial");
+}
+
+
 
 // Text boards serialize x, y, layer, unlike the normalized board record.
 const textGrid = Array.from({ length: 2 * 3 * 8 }, () => ["", 0, 0, 0, 0]);

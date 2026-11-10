@@ -15,6 +15,7 @@ function cursor(bytes) {
   }
   return {
     skip,
+    remaining: () => bytes.length - offset,
     byte() { skip(1); return view.getUint8(offset - 1); },
     short() { skip(2); return view.getInt16(offset - 2, true); },
     long() { skip(4); return view.getInt32(offset - 4, true); },
@@ -182,7 +183,7 @@ function readTextBoard(bytes) {
 function readBoard(bytes) {
   if (/^RPGTLKIT BOARD[\r\n]/i.test(text.decode(bytes.subarray(0, 16)))) return readTextBoard(bytes);
   const reader = cursor(bytes);
-  header(reader, "RPGTLKIT BOARD", [2, 3]);
+  const minor = header(reader, "RPGTLKIT BOARD", [2, 3]);
   reader.skip(2);
   reader.string();
   const width = reader.short();
@@ -259,7 +260,18 @@ function readBoard(bytes) {
     add(reader.string(), `Item activation program ${boardPositionLabel(position)}`, position);
     add(reader.string(), `Item multitask program ${boardPositionLabel(position)}`, position);
   }
-  return { width, height, layers, layerTitles, lookup, runs, background, ambient, refs };
+  const board = { width, height, layers, layerTitles, lookup, runs, background, ambient, refs };
+  if (minor === 3) {
+    const threadCount = reader.long() + 1;
+    if (threadCount < 0 || threadCount >= reader.remaining()) throw new Error("Invalid board thread count.");
+    board.threads = Array.from({ length: threadCount }, (_, index) => {
+      const program = reader.string();
+      add(program, `Board thread · slot ${index}`);
+      return program;
+    });
+    board.coordinateType = reader.byte();
+  }
+  return board;
 }
 
 export function boardTilesets(edges, graph, artifacts) {
