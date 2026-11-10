@@ -33,7 +33,9 @@ Use your browser or mouse Back and Forward buttons to retrace inspector
 selections, including a specific tile or RPGCode line. Opening another ZIP
 starts a fresh trail for that archive. Open **Connection map** in the
 inspector to see direct users and references. Select a node to see its
-evidence, then use **Open in inspector** to follow it.
+evidence, then use **Open in inspector** to follow it. Filter by direction,
+neighbor type, or resolution to narrow the map. Filters carry across
+selections within the open ZIP and reset when you open another one.
 
 Choose **Download connected game JSON** after opening an archive to export
 its decoded files, Main File bindings, and linked RPGCode evidence.

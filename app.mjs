@@ -6,7 +6,8 @@ import { renderMidiPianoRoll } from "./piano-roll.mjs";
 import { artifactRecord } from "./records.mjs";
 import { connectedGameRecord, rpgcodeRoles } from "./game-graph.mjs";
 import { createInspectorHistory } from "./inspector-history.mjs";
-import { connectionCounts, connectionNeighbors, referenceDestination } from "./connection-map.mjs";
+import { connectionCounts, connectionFilterOptions, connectionNeighbors, connectionType,
+  filterConnections, referenceDestination } from "./connection-map.mjs";
 import { animationFrames, battleBackground, enemySprite, itemSprites, keyFrameColor, standaloneTilePixels } from "./sprites.mjs";
 
 const byId = id => document.getElementById(id);
@@ -47,6 +48,7 @@ let references = { incoming: new Map(), outgoing: new Map() };
 let tileSelection;
 let selectedLine;
 let connectionMapOpen = false;
+let connectionFilters = {};
 const inspectorHistory = createInspectorHistory(window.history);
 let animationTimer;
 let stopAnimationPlayback;
@@ -1257,11 +1259,16 @@ const connectionTypes = {
   tst: "Tileset", gph: "Tile", tan: "Animated tile", gam: "Main File",
 };
 
+function connectionTypeLabel(type) {
+  if (type === "no-target") return "No target file";
+  if (Object.hasOwn(connectionTypes, type)) return connectionTypes[type];
+  return type === "file" ? "File" : type.toUpperCase();
+}
+
 function connectionBadge(path, tile, external) {
-  const type = external ? "gam" : artifacts.get(path)?.type;
-  const label = tile ? "Tile" : connectionTypes[type] ?? (type ? type.toUpperCase() : "File");
-  const badge = el("span", label, "connection-badge");
-  badge.dataset.type = tile ? "gph" : type ?? "";
+  const type = connectionType(path, tile, external, artifacts);
+  const badge = el("span", connectionTypeLabel(type), "connection-badge");
+  badge.dataset.type = type;
   return badge;
 }
 
@@ -1283,15 +1290,53 @@ function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
   map.addEventListener("toggle", () => {
     if (map.isConnected) connectionMapOpen = map.open;
   });
-  const sources = connectionCounts(incoming, true);
-  const targets = connectionCounts(outgoing, false);
   const summary = el("summary", "Connection map", "connection-map-summary");
-  const stats = [`${sources.files} in`, `${targets.files} out`];
-  if (targets.unresolved) stats.push(`${targets.unresolved} without a target`);
-  summary.append(el("span", stats.join(" · "), "technical"));
+  const stats = el("span", "", "technical");
+  summary.append(stats);
+  const controls = el("div", "", "connection-filters");
+  const neighborhood = el("div");
+  const counts = el("p", "", "technical");
+  counts.setAttribute("role", "status");
   const preview = el("div", "", "connection-preview");
   preview.setAttribute("aria-live", "polite");
   let active;
+
+  const { types, statuses } = connectionFilterOptions(incoming, outgoing, artifacts);
+  if (connectionFilters.type && !types.includes(connectionFilters.type)) types.push(connectionFilters.type);
+  if (connectionFilters.resolution && !["resolved", "no-target"].includes(connectionFilters.resolution) &&
+      !statuses.has(connectionFilters.resolution)) {
+    const value = connectionFilters.resolution;
+    statuses.set(value, value[0].toUpperCase() + value.slice(1));
+  }
+  const fields = {};
+  function filterControl(key, title, options) {
+    const label = el("label", title);
+    const select = el("select");
+    for (const [value, text] of options) {
+      const option = el("option", text);
+      option.value = value;
+      select.append(option);
+    }
+    select.value = connectionFilters[key] ?? "";
+    select.addEventListener("change", () => {
+      connectionFilters[key] = select.value;
+      renderNeighborhood();
+    });
+    fields[key] = select;
+    label.append(select);
+    controls.append(label);
+  }
+  filterControl("direction", "Direction", [["", "Both directions"], ["incoming", "Used by"], ["outgoing", "References"]]);
+  filterControl("type", "Neighbor type", [["", "All types"], ...types
+    .map(type => [type, connectionTypeLabel(type)]).sort((a, b) => a[1].localeCompare(b[1]))]);
+  filterControl("resolution", "Resolution", [["", "All references"], ["resolved", "Resolved"],
+    ["no-target", "Without a target"], ...[...statuses].sort((a, b) => a[1].localeCompare(b[1]))]);
+  const clear = button("Clear filters", () => {
+    connectionFilters = {};
+    for (const select of Object.values(fields)) select.value = "";
+    renderNeighborhood();
+  });
+  controls.append(clear);
 
   function lane(label, edges, reverse, counts) {
     const section = el("section", "", "connection-lane");
@@ -1302,8 +1347,30 @@ function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
     const neighbors = connectionNeighbors(edges, reverse);
     if (!neighbors.length) return section;
     const list = el("div", "", "connection-nodes");
-    const more = button("", () => addNodes(6), "connection-more");
+    const batch = 6;
     let shown = 0;
+    const more = button("", () => {
+      const firstNew = shown;
+      addNodes(batch);
+      list.children[firstNew]?.focus();
+    }, "connection-more");
+    const fewer = button("Show fewer", () => {
+      for (const node of [...list.children].slice(batch)) {
+        if (node === active) {
+          active = undefined;
+          preview.remove();
+        }
+        node.remove();
+      }
+      shown = batch;
+      updatePaging();
+      more.focus();
+    }, "connection-more");
+    function updatePaging() {
+      more.hidden = shown === neighbors.length;
+      more.textContent = `Show more (${neighbors.length - shown} hidden)`;
+      fewer.hidden = shown <= batch;
+    }
     function addNodes(count) {
       for (const node of neighbors.slice(shown, shown + count)) {
         const first = referenceDestination(node.edges[0], reverse, artifacts);
@@ -1336,11 +1403,10 @@ function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
         list.append(control);
       }
       shown = Math.min(neighbors.length, shown + count);
-      more.hidden = shown === neighbors.length;
-      more.textContent = `Show more (${neighbors.length - shown} hidden)`;
+      updatePaging();
     }
-    addNodes(6);
-    section.append(list, more);
+    addNodes(batch);
+    section.append(list, more, fewer);
     return section;
   }
 
@@ -1351,10 +1417,34 @@ function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
     marker.setAttribute("aria-hidden", "true");
     return marker;
   };
-  map.append(summary, el("p", "Select a direct neighbor to inspect its reference evidence."));
+  function renderNeighborhood() {
+    active = undefined;
+    preview.remove();
+    const uses = filterConnections(incoming, true, artifacts, connectionFilters);
+    const refs = filterConnections(outgoing, false, artifacts, connectionFilters);
+    const sources = connectionCounts(uses, true);
+    const targets = connectionCounts(refs, false);
+    const total = incoming.length + outgoing.length;
+    const shown = uses.length + refs.length;
+    const hidden = total - shown;
+    const labels = [`${sources.files} in`, `${targets.files} out`];
+    if (targets.unresolved) labels.push(`${targets.unresolved} without a target`);
+    if (hidden) labels.push(`${hidden} filtered`);
+    stats.textContent = labels.join(" · ");
+    const filtering = Object.values(connectionFilters).some(Boolean);
+    counts.textContent = filtering
+      ? `Showing ${shown} of ${countLabel(total, "reference")}. ${countLabel(hidden, "reference")} hidden by filters.` : "";
+    clear.disabled = !filtering;
+    const sections = [center];
+    if (connectionFilters.direction !== "outgoing") sections.unshift(lane("Used by", uses, true, sources), arrow());
+    if (connectionFilters.direction !== "incoming") sections.push(arrow(), lane("References", refs, false, targets));
+    if (!shown) sections.push(el("p", filtering ? "No references match these filters." : "No direct references in the indexed fields."));
+    neighborhood.replaceChildren(...sections);
+  }
+  map.append(summary, el("p", "Select a direct neighbor to inspect its reference evidence."), controls, counts);
   if (otherIncoming) map.append(el("p", `${countLabel(otherIncoming, "reference")} to other tiles or the whole tileset hidden.`, "technical"));
-  map.append(lane("Used by", incoming, true, sources), arrow(), center, arrow(),
-    lane("References", outgoing, false, targets));
+  map.append(neighborhood);
+  renderNeighborhood();
   return map;
 }
 
@@ -1500,6 +1590,7 @@ async function loadArchive(name, readBytes) {
     const indexed = await readArtifacts(zip, commands);
     if (request !== archiveRequest) return;
     archive = zip;
+    connectionFilters = {};
     archiveName = name;
     catalog = commands;
     artifacts = indexed.artifacts;
