@@ -25,15 +25,17 @@ Evidence includes demo `kid1.itm` and `herb.itm`, Toolkit 2 Help's item
 editor section, and the pinned [compatibility module](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vb/tkCommon/modules/CommonItem.bas).
 
 
-## Text 2.1
+## Text 2.0 and 2.1
 
-Read `RPGTLKIT ITEM`, major 2, and minor 1 as separate lines. The
+Read `RPGTLKIT ITEM`, major 2, and minor 0 or 1 as separate lines. The
 remaining fields are line-delimited. Blank numeric fields read as zero.
 
 1. Read name, four use flags in binary order, seven armor slots, accessory,
    four equip modifiers, and equip and remove scripts.
 2. Read menu HP, special power and script, then the same three battle
-   fields. Read on-board and pickup scripts and the size code.
+   fields. Read on-board and pickup scripts. Only text 2.1 stores a
+   size code. Text 2.0 uses size 0 and starts the graphics immediately
+   after the pickup script.
 3. Size 0 stores sixteen walking frames and one resting tile. Each tile is
    either a single `-2` line for an absent frame or 1024 COLORREF values
    in column-major order. A value of `-1` is transparent. Size 1 stores
@@ -48,5 +50,6 @@ pixels in `embeddedGraphics.walking` and `embeddedGraphics.rest`. An
 absent frame is `null`. The filename arrays remain empty for those
 frames. The viewer renders the pixels in place. The [Toolkit 3.0.4 development converter](https://github.com/chrisbmatthews/rpgtoolkit/blob/08f2fe3d21828ea3519875553a2bad2aa10a7adc/vb/tkCommon/modules/CommonItem.bas#L534-L656)
 instead extracts the pixels into a generated tileset. Evidence includes
-75 DustBall items and synthetic fixtures for both graphics layouts.
-Text 2.0 and later binary revisions remain outside this profile.
+75 DustBall text 2.1 items and synthetic fixtures for both graphics
+layouts. Text 2.0 uses a synthetic fixture based on the pinned converter.
+Later binary revisions remain outside this profile.

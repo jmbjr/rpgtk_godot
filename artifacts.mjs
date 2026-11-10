@@ -517,7 +517,7 @@ function readStandaloneTile(bytes) {
 }
 
 function readTextItem(bytes) {
-  const reader = textReader(bytes, "RPGTLKIT ITEM", [1]);
+  const reader = textReader(bytes, "RPGTLKIT ITEM", [0, 1]);
   const integer = () => {
     const value = reader.number();
     if (!Number.isSafeInteger(value)) throw new Error("Invalid text item integer.");
@@ -534,7 +534,7 @@ function readTextItem(bytes) {
   const battle = { hp: integer(), specialPower: integer() };
   const battleProgram = fields(reader, ["Battle-use program"]);
   const board = fields(reader, ["On-board program", "Pickup program"]);
-  const sizeType = integer();
+  const sizeType = reader.minor === 0 ? 0 : integer();
   if (![0, 1].includes(sizeType)) throw new Error("Unsupported text item graphic size.");
 
   const refs = [...equip.refs, ...menuProgram.refs, ...battleProgram.refs, ...board.refs];
