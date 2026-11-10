@@ -4,11 +4,13 @@ Specification revision **1.0**. These pages describe verified file layouts
 and the viewer's separate version 1 decoded JSON records. File format
 versions, this spec revision, and the JSON schema version are independent.
 
+The [compatibility matrix](compatibility-matrix.md) compares these profiles
+with the pinned Toolkit 3 readers and tracks evidence and remaining gaps.
+
 | Type | Spec | Covered file layout | Evidence |
 | --- | --- | --- | --- |
 | GPH | [Standalone tile](gph.md) | Text 2.0, detail 1 or 2, raw or run-length encoded | Demo fixture for detail 1 RLE. Compatibility source and synthetic examples for the other listed combinations. |
 | TST | [Tileset](tst.md) | Binary version 20, detail 1 | All four demo tilesets, compatibility source and synthetic example. |
-
 | GAM | [Main File](gam.md) | Binary 2.2 and text 2.0 startup fields | Demo.gam and DustBall main.gam |
 | PRG | [RPGCode program](prg.md) | Source and static indexing | Demo startup trace and Toolkit 2 Help |
 | TAN | [Animated tile](tan.md) | Binary 2.0 | Demo animation files |
