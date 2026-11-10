@@ -275,10 +275,10 @@
           "minimum": 6
         },
         "width": {
-          "const": 32
+          "enum": [16, 32]
         },
         "height": {
-          "const": 32
+          "enum": [16, 32]
         },
         "count": {
           "type": "integer",
@@ -307,7 +307,7 @@
               },
               "rgb": {
                 "type": "string",
-                "pattern": "^[A-Za-z0-9+/]{4096}$"
+                "pattern": "^[A-Za-z0-9+/]+$"
               }
             },
             "required": [
@@ -328,7 +328,22 @@
         "transparentRgb",
         "tiles"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "if": {
+        "properties": {"width": {"const": 16}}
+      },
+      "then": {
+        "properties": {
+          "height": {"const": 16},
+          "tiles": {"items": {"properties": {"rgb": {"minLength": 1024, "maxLength": 1024}}}}
+        }
+      },
+      "else": {
+        "properties": {
+          "height": {"const": 32},
+          "tiles": {"items": {"properties": {"rgb": {"minLength": 4096, "maxLength": 4096}}}}
+        }
+      }
     }
   }
 }

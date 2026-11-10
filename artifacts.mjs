@@ -46,21 +46,31 @@ export function readTileset(bytes) {
   const version = reader.short();
   const count = reader.short();
   const detail = reader.short();
-  if (version !== 20 || detail !== 1) throw new Error("This viewer supports version 20, detail 1 tilesets.");
-  if (count < 0 || bytes.length !== 6 + count * 3072) throw new Error("The tileset size does not match its header.");
-  return { count, bytes };
+  if (version !== 20 || ![1, 2].includes(detail)) {
+    throw new Error("This viewer supports version 20, detail 1 and 2 tilesets.");
+  }
+  const width = detail === 1 ? 32 : 16;
+  if (count < 0 || bytes.length !== 6 + count * width * width * 3) {
+    throw new Error("The tileset size does not match its header.");
+  }
+  return { count, width, height: width, bytes };
 }
 
 export function tilePixels(tileset, number) {
   if (!Number.isInteger(number) || number < 1 || number > tileset.count) return null;
-  const rgba = new Uint8ClampedArray(32 * 32 * 4);
-  let source = 6 + (number - 1) * 3072;
-  for (let x = 0; x < 32; x++) {
-    for (let y = 0; y < 32; y++) {
-      const offset = (y * 32 + x) * 4;
-      const r = tileset.bytes[source++];
-      const g = tileset.bytes[source++];
-      const b = tileset.bytes[source++];
+  const size = 32; // Preview cells use the same grid size for both tile details.
+  const { width, height, bytes } = tileset;
+  const scale = size / width;
+  const rgba = new Uint8ClampedArray(size * size * 4);
+  const start = 6 + (number - 1) * width * height * 3;
+  for (let y = 0; y < size; y++) {
+    const row = Math.floor(y / scale);
+    for (let x = 0; x < size; x++) {
+      const source = start + (Math.floor(x / scale) * height + row) * 3;
+      const offset = (y * size + x) * 4;
+      const r = bytes[source];
+      const g = bytes[source + 1];
+      const b = bytes[source + 2];
       rgba[offset] = r;
       rgba[offset + 1] = g;
       rgba[offset + 2] = b;

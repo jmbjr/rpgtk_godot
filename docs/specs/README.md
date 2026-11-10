@@ -10,7 +10,7 @@ with the pinned Toolkit 3 readers and tracks evidence and remaining gaps.
 | Type | Spec | Covered file layout | Evidence |
 | --- | --- | --- | --- |
 | GPH | [Standalone tile](gph.md) | Text 2.0, detail 1 or 2, raw or run-length encoded | Demo fixture for detail 1 RLE. Compatibility source and synthetic examples for the other listed combinations. |
-| TST | [Tileset](tst.md) | Binary version 20, detail 1 | All four demo tilesets, compatibility source and synthetic example. |
+| TST | [Tileset](tst.md) | Binary version 20, details 1 and 2 | Demo tilesets for detail 1, compatibility source and synthetic fixtures for both. |
 | GAM | [Main File](gam.md) | Binary 2.2 and text 2.0 startup fields | Demo.gam and DustBall main.gam |
 | PRG | [RPGCode program](prg.md) | Source and static indexing | Demo startup trace and Toolkit 2 Help |
 | TAN | [Animated tile](tan.md) | Binary 2.0 | Demo animation files |

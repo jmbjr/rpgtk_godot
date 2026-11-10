@@ -23,6 +23,7 @@ decoded record in an otherwise empty archive.
 | [standalone-16.gph](standalone-16.gph) | Detail 2, raw pixels, four asymmetric RGBA sample positions |
 | [standalone-32-rle.gph](standalone-32-rle.gph) | Detail 1, compressed runs spanning columns, including a transparent run |
 | [two-tiles.tst](two-tiles.tst) | Version 20, detail 1, two distinct tiles, transparent and opaque black pixels |
+| [two-tiles-16.tst](two-tiles-16.tst) | Version 20, detail 2, two 16 × 16 tiles with asymmetric and corner pixels |
 
 Run from the repository root with Node.js 22 or newer.
 

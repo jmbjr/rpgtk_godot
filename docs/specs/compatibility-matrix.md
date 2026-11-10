@@ -54,7 +54,8 @@ the Toolkit release that wrote them.
 | Type and revision | Viewer and evidence | Toolkit 3 compatibility path | Remaining confirmation |
 | --- | --- | --- | --- |
 | [TST](tst.md) version 20, detail 1 | **Sample and fixture.** RGB24, indexed positions and transparency are verified. | The [tile reader][tst] reads one-based entries and the transparent RGB sentinel. | Compare palette and 16 × 16 variants before extending the tileset record. |
-| TST version 20, detail 2 and palette details 3–6 | **Open.** The [tile reader][tst] branches on these details. | Direct read branches exist for smaller RGB and indexed tiles. | Obtain Toolkit 2 samples or controlled fixtures and verify the palette and transparent index. |
+| TST version 20, detail 2 | **Fixture.** Native 16 × 16 RGB bytes, transparency, addressing and doubled previews are verified. | The [tile reader][tst] uses 768 bytes per entry and the same RGB sentinel. | Verify a real Toolkit 2 sample. |
+| TST version 20, palette details 3–6 | **Open.** The [tile reader][tst] has separate indexed branches. | Reads palette indices and applies index transparency. | Verify palette mapping and a Toolkit 2 sample or controlled fixture. |
 | [GPH](gph.md) text 2.0, details 1–2 | **Sample and fixture.** RGB and run expansion verified across observed and synthetic cases. | The [tile reader][gph] reads raw and compressed true-color tiles. | Obtain real samples for fixture-only variants. |
 | GPH text 2.0, details 3–6 and version-1 fallback | **Open.** Source branches are present. | The [tile reader][gph] includes palette and older paths. | Confirm palette mapping, transparency and relevant Toolkit 2 inputs. |
 | [TAN](tan.md) binary 2.0 | **Sample and fixture.** Timing field and ordered tile references. | The [animated-tile reader][tan] reads the pause and counted tile names. | Confirm timing units and preview behavior independently of decoding. |
