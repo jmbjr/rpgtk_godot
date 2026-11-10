@@ -625,7 +625,7 @@
       "type": "object",
       "properties": {
         "byteLength": {"type": "integer", "minimum": 0},
-        "version": {"const": 2},
+        "version": {"enum": [0, 2]},
         "name": {"type": "string"},
         "program": {"type": "string"},
         "rounds": {"type": "integer"},

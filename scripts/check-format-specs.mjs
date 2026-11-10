@@ -33,6 +33,7 @@ for (const name of ["standalone-16.gph", "standalone-32-rle.gph", "two-tiles.tst
 zip.file("Bitmap/browser.png", "");
 zip.file("unidentified.xyz", "");
 zip.file("broken.ste", "truncated");
+zip.file("StatusE/truncated-text.ste", "RPGTLKIT STATUSE\n2\n0\nBroken\n1\n");
 const character24 = fixtures.find(({ path }) => path === "Chrs/walker.tem").bytes;
 zip.file("Chrs/truncated.tem", character24.subarray(0, -1));
 const textBoard = fixtures.find(({ path }) => path === "Boards/text-room.brd").bytes;
@@ -47,7 +48,7 @@ for (const { path, expected } of fixtures) {
   assert.equal(record.decode.status, expected.status, path);
   assert.deepEqual(record.data, expected.data, path);
 }
-for (const [path, status] of [["Bitmap/browser.png", "media"], ["unidentified.xyz", "unidentified"], ["broken.ste", "error"], ["Chrs/truncated.tem", "error"], ["Boards/truncated-text.brd", "error"], ["Boards/truncated-fixed-grid.brd", "error"], ["Item/truncated-text.itm", "error"]]) {
+for (const [path, status] of [["Bitmap/browser.png", "media"], ["unidentified.xyz", "unidentified"], ["broken.ste", "error"], ["StatusE/truncated-text.ste", "error"], ["Chrs/truncated.tem", "error"], ["Boards/truncated-text.brd", "error"], ["Boards/truncated-fixed-grid.brd", "error"], ["Item/truncated-text.itm", "error"]]) {
   assert.equal(recordFor(artifacts.get(path), graph).decode.status, status);
 }
 assert.ok(recordFor(artifacts.get("Prg/start.prg"), graph).references.outgoing.some(ref => ref.status === "missing"));
@@ -88,6 +89,8 @@ assert.equal(textItem.references.outgoing.find(edge => edge.evidence === "Walkin
   "rpgtk:/Tiles/two-tiles.tst#/data/tiles/1");
 assert.equal(textItem.references.outgoing.find(edge => edge.evidence === "Item animation").target.$ref,
   "rpgtk:/Misc/effect.anm");
+const textEffect = recordFor(artifacts.get("StatusE/text-ste.ste"), graph);
+assert.deepEqual(textEffect.references.outgoing.map(edge => edge.target?.$ref), ["rpgtk:/Prg/start.prg"]);
 for (const archivePath of process.argv.slice(2)) {
   if (/\.gam$/i.test(archivePath)) {
     const data = readMainFile(await readFile(archivePath));

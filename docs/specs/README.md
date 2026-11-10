@@ -20,7 +20,7 @@ versions, this spec revision, and the JSON schema version are independent.
 | SPC | [Special move](spc.md) | Text 2.0 | Demo move and Toolkit 2 editor |
 | ANM | [Effect animation](anm.md) | Text 2.0 | Demo explosion |
 | FNT | [Bitmap font](fnt.md) | Text 2.0 | Demo base font |
-| STE | [Status effect](ste.md) | Binary 2.2 | Status effect editor fixture |
+| STE | [Status effect](ste.md) | Text 2.0 and binary 2.2 | DustBall status effects, editor fixture and compatibility reader |
 | GIF | [GIF image](gif.md) | GIF87a/GIF89a metadata | GIF spec and demo images |
 | JPG/JPEG | [JPEG image](jpg.md) | SOF metadata | JPEG spec and demo images |
 | WAV | [Wave audio](wav.md) | RIFF/WAVE metadata | WAVE spec and demo sounds |
