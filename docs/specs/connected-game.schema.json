@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "connected-game.schema.json",
+  "title": "RPG Toolkit connected game, version 1",
+  "type": "object",
+  "required": ["format", "schemaVersion", "archive", "root", "artifacts", "actors", "commands", "capabilities", "edges", "coverage"],
+  "additionalProperties": false,
+  "properties": {
+    "format": {"const": "rpgtk-connected-game"},
+    "schemaVersion": {"const": 1},
+    "archive": {
+      "type": "object",
+      "required": ["name", "fileCount"],
+      "additionalProperties": false,
+      "properties": {"name": {"type": "string"}, "fileCount": {"type": "integer", "minimum": 0}}
+    },
+    "root": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["status", "origin", "mainFile"],
+          "additionalProperties": false,
+          "properties": {
+            "status": {"const": "configured"},
+            "origin": {"enum": ["archive", "external"]},
+            "mainFile": {"$ref": "#/$defs/ref"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["status", "candidates"],
+          "additionalProperties": false,
+          "properties": {
+            "status": {"const": "ambiguous"},
+            "candidates": {"type": "array", "minItems": 2, "uniqueItems": true, "items": {"$ref": "#/$defs/ref"}}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["status"],
+          "additionalProperties": false,
+          "properties": {"status": {"const": "missing"}}
+        }
+      ]
+    },
+    "artifacts": {
+      "type": "object",
+      "propertyNames": {"pattern": "^rpgtk(?:-main)?:/"},
+      "additionalProperties": {"$ref": "artifact-record.schema.json"}
+    },
+    "actors": {
+      "type": "object",
+      "propertyNames": {"pattern": "^rpgtk-actor:/"},
+      "additionalProperties": {
+        "type": "object",
+        "required": ["$id", "name", "kind"],
+        "additionalProperties": false,
+        "properties": {
+          "$id": {"type": "string", "pattern": "^rpgtk-actor:/"},
+          "name": {"type": "string"},
+          "kind": {"enum": ["character", "enemy", "toolkit-role"]}
+        }
+      }
+    },
+    "commands": {
+      "type": "object",
+      "propertyNames": {"pattern": "^rpgtk-command:/"},
+      "additionalProperties": {
+        "type": "object",
+        "required": ["$id", "name", "summary", "signature", "sources"],
+        "additionalProperties": false,
+        "properties": {
+          "$id": {"type": "string", "pattern": "^rpgtk-command:/"},
+          "name": {"type": "string"},
+          "summary": {"type": ["string", "null"]},
+          "signature": {"type": ["string", "null"]},
+          "sources": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "propertyNames": {"pattern": "^rpgtk-capability:/"},
+      "additionalProperties": {
+        "type": "object",
+        "required": ["$id", "code", "name"],
+        "additionalProperties": false,
+        "properties": {
+          "$id": {"type": "string", "pattern": "^rpgtk-capability:/"},
+          "code": {"type": "string"},
+          "name": {"type": "string"}
+        }
+      }
+    },
+    "edges": {"type": "array", "items": {"$ref": "#/$defs/edge"}},
+    "coverage": {
+      "type": "object",
+      "required": ["decodeCounts", "referenceCounts", "limitations"],
+      "additionalProperties": false,
+      "properties": {
+        "decodeCounts": {"$ref": "#/$defs/counts"},
+        "referenceCounts": {"$ref": "#/$defs/counts"},
+        "limitations": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+      }
+    }
+  },
+  "$defs": {
+    "ref": {"$ref": "artifact-record.schema.json#/$defs/edge/properties/source"},
+    "counts": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 1}},
+    "edge": {
+      "type": "object",
+      "required": ["type", "source", "status", "evidence"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["startup-program", "opening-board", "initial-character", "board-tile", "board-program",
+            "script-file", "asset-reference", "defined-by", "authors", "interprets", "invokes", "implements-capability"]
+        },
+        "source": {"$ref": "#/$defs/ref"},
+        "target": {"$ref": "artifact-record.schema.json#/$defs/edge/properties/target"},
+        "status": {"$ref": "artifact-record.schema.json#/$defs/edge/properties/status"},
+        "evidence": {"type": "string"},
+        "value": {"type": "string"},
+        "line": {"type": "integer", "minimum": 1},
+        "placements": {"type": "integer", "minimum": 1},
+        "position": {"$ref": "artifact-record.schema.json#/$defs/edge/properties/position"}
+      },
+      "if": {"properties": {"status": {"const": "resolved"}}},
+      "then": {"required": ["target"]},
+      "else": {"not": {"required": ["target"]}}
+    }
+  }
+}

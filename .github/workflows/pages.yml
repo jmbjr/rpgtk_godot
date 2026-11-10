@@ -25,6 +25,7 @@ jobs:
           node --check model.mjs
           node --check artifacts.mjs
           node --check records.mjs
+          node --check game-graph.mjs
           node --check media.mjs
           node --check midi.mjs
           node --check piano-roll.mjs
@@ -53,12 +54,13 @@ jobs:
         run: |
           node scripts/check-tile-specs.mjs
           node scripts/check-format-specs.mjs
+          node scripts/check-game-graph.mjs
       - name: Check tileset PDF export
         run: node scripts/check-tileset-pdf.mjs
       - name: Stage public viewer files
         run: |
           mkdir -p site/vendor
-          cp .nojekyll index.html style.css app.mjs archive.mjs model.mjs artifacts.mjs records.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs tile-pdf.mjs catalog.json site/
+          cp .nojekyll index.html style.css app.mjs archive.mjs model.mjs artifacts.mjs records.mjs game-graph.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs tile-pdf.mjs catalog.json site/
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
           cp -R vendor/soundfont vendor/generaluser-gs vendor/piano-roll vendor/jspdf site/vendor/
           cp --parents experiments/dodge-tiles/{project,card-scene}.mjs site/

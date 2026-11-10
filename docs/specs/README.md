@@ -36,6 +36,9 @@ The [fixture index](fixtures/README.md) provides synthetic examples and
 validation commands. Each format page
 identifies unsupported variants and the boundaries of the evidence.
 
+The [connected game export](connected-game.md) assembles these records and the
+observed RPGCode relationships in one document.
+
 ## Decoded record conventions
 
 A successful record has `schemaVersion: 1`, an archive-relative `path`,

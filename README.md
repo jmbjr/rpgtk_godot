@@ -29,6 +29,10 @@ Format sources at the reviewed Toolkit 3 revision include the
 [character reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vb/tkCommon/modules/CommonPlayer.bas#L527-L686),
 and [board reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/common/board.cpp#L575-L851).
 
+Choose **Download connected game JSON** after opening an archive to export
+its decoded files, Main File bindings, and linked RPGCode evidence.
+See the [connected game JSON contract](docs/specs/connected-game.md).
+
 To make print-and-play cards from your game, open its ZIP, select **Tiles** and
 a supported `.tst` file, then choose **Download print-and-play PDF** in the
 inspector. The PDF includes the whole selected tileset in its original order.

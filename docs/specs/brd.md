@@ -28,7 +28,8 @@ zero-based coordinates, a cell offset is
 | 4 | i16 maximum item index. For each of max plus one slots read item zstr, three i16 coordinates, skip two bytes, four zstr and two bytes, then read activation and multitask program zstr. |
 
 Program and item counts may be zero and are bounded by input size.
-Position fields are preserved as stored in reference evidence. The viewer
+Position fields are preserved as stored in reference evidence and the
+structured `position` field. The viewer
 does not convert their coordinate basis. Blank and `none` asset slots
 are omitted from references.
 

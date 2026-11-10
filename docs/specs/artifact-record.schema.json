@@ -159,7 +159,7 @@
         "value": {"type": "string"},
         "evidence": {"type": "string"},
         "status": {
-          "enum": ["resolved", "missing", "ambiguous", "unset", "tileset-unavailable", "tile-index-out-of-range"]
+          "enum": ["resolved", "missing", "ambiguous", "unset", "dynamic", "external", "tileset-unavailable", "tile-index-out-of-range"]
         },
         "line": {"type": "integer", "minimum": 1},
         "source": {
@@ -174,7 +174,13 @@
           "required": ["$ref"],
           "additionalProperties": false
         },
-        "placements": {"type": "integer", "minimum": 1}
+        "placements": {"type": "integer", "minimum": 1},
+        "position": {
+          "type": "object",
+          "required": ["x", "y", "layer"],
+          "additionalProperties": false,
+          "properties": {"x": {"type": "integer"}, "y": {"type": "integer"}, "layer": {"type": "integer"}}
+        }
       },
       "required": ["value", "evidence", "status"],
       "additionalProperties": false,
