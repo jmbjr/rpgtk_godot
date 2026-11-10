@@ -201,3 +201,23 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 
 .archive-url-form { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-block: .75rem; }
 .archive-url-form input { flex: 1 1 14rem; min-width: 0; padding: .4rem; font: inherit; }
+
+.connection-map-summary { cursor: pointer; color: var(--gold); font-weight: 700; }
+.connection-map-summary span { display: inline-block; margin-left: .5rem; color: var(--muted); font-weight: 400; }
+.connection-map h4 { margin: 0; font-size: .9rem; }
+.connection-lane, .connection-center, .connection-preview { padding: .65rem; border: 1px solid var(--line); border-radius: 5px; }
+.connection-lane p, .connection-preview p { margin: .3rem 0; font-size: .78rem; }
+.connection-center { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .45rem; background: #302724; }
+.connection-arrow { color: var(--gold); text-align: center; line-height: 1.2; }
+.connection-nodes { display: grid; gap: .3rem; max-height: 15rem; overflow: auto; padding: 3px; }
+.connection-node { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .4rem; text-align: left; }
+.connection-node-name { overflow-wrap: anywhere; font-size: .82rem; }
+.connection-badge, .connection-node-count { font-size: .7rem; color: var(--muted); }
+.connection-badge { border: 1px solid currentColor; border-radius: 3px; padding: .05rem .22rem; }
+.connection-badge[data-type="brd"] { color: #9bd4bc; }
+.connection-badge[data-type="prg"] { color: #bdd1ff; }
+.connection-badge:is([data-type="tst"], [data-type="gph"], [data-type="tan"]) { color: #e9c48a; }
+.connection-badge:is([data-type="tem"], [data-type="ene"], [data-type="itm"]) { color: #e8b5dd; }
+.connection-more { margin-top: .35rem; font-size: .8rem; }
+.connection-preview { margin-top: .65rem; }
+.connection-preview .edge-list { max-height: 12rem; overflow: auto; }

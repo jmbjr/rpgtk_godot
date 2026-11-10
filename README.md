@@ -31,7 +31,9 @@ and [board reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9
 
 Use your browser or mouse Back and Forward buttons to retrace inspector
 selections, including a specific tile or RPGCode line. Opening another ZIP
-starts a fresh trail for that archive.
+starts a fresh trail for that archive. Open **Connection map** in the
+inspector to see direct users and references. Select a node to see its
+evidence, then use **Open in inspector** to follow it.
 
 Choose **Download connected game JSON** after opening an archive to export
 its decoded files, Main File bindings, and linked RPGCode evidence.
