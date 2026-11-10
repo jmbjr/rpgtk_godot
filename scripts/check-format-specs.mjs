@@ -72,11 +72,17 @@ for (const path of ["Boards/text-room.brd", "Boards/fixed-room.brd"]) {
   assert.equal(boardEdge("Item activation program").target.$ref, "rpgtk:/Prg/start.prg");
   assert.equal(boardEdge("Item multitask program").status, "missing");
 }
-const embedded = itemSprites(artifacts.get("Item/text-item-0.itm"), artifacts, graph);
-assert.equal(embedded.walking[0].frames[0], null);
-assert.equal(embedded.rest.embedded, true);
-assert.deepEqual([...embedded.rest.pixels.slice(0, 8)], [0, 0, 0, 0, 0, 255, 0, 255]);
-assert.deepEqual([...embedded.rest.pixels.slice(128, 132)], [255, 0, 0, 255]);
+for (const path of ["Item/text-20-item.itm", "Item/text-item-0.itm"]) {
+  const embedded = itemSprites(artifacts.get(path), artifacts, graph);
+  assert.equal(embedded.walking[0].frames[0], null);
+  assert.equal(embedded.walking[0].frames[1].embedded, true);
+  assert.equal(embedded.rest.embedded, true);
+  assert.deepEqual([...embedded.rest.pixels.slice(0, 8)], [0, 0, 0, 0, 0, 255, 0, 255]);
+  assert.deepEqual([...embedded.rest.pixels.slice(128, 132)], [255, 0, 0, 255]);
+  const record = recordFor(artifacts.get(path), graph);
+  assert.equal(record.references.outgoing.find(edge => edge.evidence === "Equip program").target.$ref,
+    "rpgtk:/Prg/start.prg");
+}
 const textItem = recordFor(artifacts.get("Item/text-item-1.itm"), graph);
 assert.equal(textItem.references.outgoing.find(edge => edge.evidence === "Walking frame 1 bottom").target.$ref,
   "rpgtk:/Tiles/two-tiles.tst#/data/tiles/1");
