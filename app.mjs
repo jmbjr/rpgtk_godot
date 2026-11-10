@@ -1398,7 +1398,17 @@ function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
         control.title = node.label;
         const badge = node.path ? connectionBadge(node.path, node.tile, node.external) :
           el("span", node.status, "connection-badge");
-        control.append(badge, el("span", title, "connection-node-name"), el("span", String(node.edges.length), "connection-node-count"));
+        if (node.path && node.tile) {
+          const thumbnail = tileCanvas();
+          thumbnail.classList.add("connection-tile-thumbnail");
+          paintTile(thumbnail, { to: node.path, tile: node.tile });
+          const leading = el("span", "", "connection-node-leading");
+          leading.append(thumbnail, badge);
+          control.append(leading);
+        } else {
+          control.append(badge);
+        }
+        control.append(el("span", title, "connection-node-name"), el("span", String(node.edges.length), "connection-node-count"));
         if (destination) control.addEventListener("dblclick", () => openConnection(destination));
         list.append(control);
       }

@@ -211,6 +211,14 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 .connection-arrow { color: var(--gold); text-align: center; line-height: 1.2; }
 .connection-nodes { display: grid; gap: .3rem; max-height: 15rem; overflow: auto; padding: 3px; }
 .connection-node { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .4rem; text-align: left; }
+.connection-node-leading { display: flex; align-items: center; gap: .35rem; }
+.connection-tile-thumbnail {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: 1px solid var(--line);
+  background: conic-gradient(#403a44 25%, #252129 0 50%, #403a44 0 75%, #252129 0) 0 0 / 8px 8px;
+}
 .connection-node-name { overflow-wrap: anywhere; font-size: .82rem; }
 .connection-badge, .connection-node-count { font-size: .7rem; color: var(--muted); }
 .connection-badge { border: 1px solid currentColor; border-radius: 3px; padding: .05rem .22rem; }
