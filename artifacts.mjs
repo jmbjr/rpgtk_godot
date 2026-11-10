@@ -114,9 +114,13 @@ function readBoard(bytes) {
     index,
     tiles,
   }));
-  const add = (value, evidence) => {
-    if (value && value.toLowerCase() !== "none") refs.push(reference(value, evidence));
+  const add = (value, evidence, position) => {
+    if (value && value.toLowerCase() !== "none") {
+      refs.push({ ...reference(value, evidence), ...(position ? { position } : {}) });
+    }
   };
+  const readPosition = () => ({ x: reader.short(), y: reader.short(), layer: reader.short() });
+  const positionLabel = ({ x, y, layer }) => `(${x}, ${y}, layer ${layer})`;
   add(reader.string(), "Board background image");
   reader.string();
   reader.string();
@@ -136,13 +140,13 @@ function readBoard(bytes) {
   if (programCount < 0 || programCount > bytes.length) throw new Error("Invalid board program count.");
   for (let i = 0; i < programCount; i++) {
     const program = reader.string();
-    const position = `(${reader.short()}, ${reader.short()}, layer ${reader.short()})`;
+    const position = readPosition();
     const graphic = reader.string();
     reader.skip(2);
     for (let j = 0; j < 4; j++) reader.string();
     reader.skip(2);
-    add(program, `Board program ${position}`);
-    add(graphic, `Program graphic ${position}`);
+    add(program, `Board program ${positionLabel(position)}`, position);
+    add(graphic, `Program graphic ${positionLabel(position)}`, position);
   }
   add(reader.string(), "Board entry program");
   reader.string();
@@ -151,13 +155,13 @@ function readBoard(bytes) {
   if (itemCount < 0 || itemCount > bytes.length) throw new Error("Invalid board item count.");
   for (let i = 0; i < itemCount; i++) {
     const item = reader.string();
-    const position = `(${reader.short()}, ${reader.short()}, layer ${reader.short()})`;
+    const position = readPosition();
     reader.skip(2);
     for (let j = 0; j < 4; j++) reader.string();
     reader.skip(2);
-    add(item, `Board item ${position}`);
-    add(reader.string(), `Item activation program ${position}`);
-    add(reader.string(), `Item multitask program ${position}`);
+    add(item, `Board item ${positionLabel(position)}`, position);
+    add(reader.string(), `Item activation program ${positionLabel(position)}`, position);
+    add(reader.string(), `Item multitask program ${positionLabel(position)}`, position);
   }
   return { width, height, layers, layerTitles, lookup, runs, background, ambient, refs };
 }
@@ -219,13 +223,26 @@ function readCharacter(bytes) {
 const FILE_COMMANDS = new Set(("addplayer newplyr send viewbrd run include prg put layerput bitmap wingraphic setbutton setimage " +
   "setimagetransparent setimagetranslucent setimageadditive giveitem takeitem equip createitem fightenemy " +
   "animation sizedanimation mediaplay midiplay mp3 wav applystatus").split(" "));
+const externalFileCommands = new Set(["load", "save", "start"]);
+const firstFileArgument = new Set(["run", "include", "send", "viewbrd", ...externalFileCommands]);
 function readProgram(bytes, catalog) {
   const program = indexProgram(decodeProgram(bytes), catalog);
   const refs = [];
   for (const row of program.rows) {
     for (const [index, token] of row.tokens.entries()) {
-      if (token.kind !== "builtin" || !FILE_COMMANDS.has(token.name)) continue;
+      if (token.kind !== "builtin") continue;
       const args = row.line.slice(token.start + token.value.length, row.tokens[index + 1]?.start);
+      if (firstFileArgument.has(token.name) && /^\s*\(/.test(args)) {
+        const literal = args.match(/^\s*\(\s*"([^"]*)"\s*(?:,|\))/);
+        if (literal?.[1]) {
+          refs.push({ ...reference(literal[1], token.value, token.line),
+            ...(externalFileCommands.has(token.name) ? { status: "External" } : {}) });
+        } else if (!literal && /^\s*\(\s*[^)\s]/.test(args)) {
+          refs.push({ ...reference(args.trim(), token.value, token.line), status: "Dynamic" });
+        }
+        continue;
+      }
+      if (!FILE_COMMANDS.has(token.name)) continue;
       for (const match of args.matchAll(/"([^"]+)"/g)) {
         if (/\.[a-z][a-z0-9]{1,5}$/i.test(match[1])) refs.push(reference(match[1], token.value, token.line));
       }
@@ -490,7 +507,7 @@ export async function readArtifacts(zip, catalog) {
   return { artifacts, folders: [...folders].sort() };
 }
 
-export function buildReferences(artifacts, mainFile) {
+export function buildReferences(artifacts, mainFiles = []) {
   const names = new Map();
   for (const { path } of artifacts.values()) {
     const name = basename(path).toLowerCase();
@@ -506,12 +523,13 @@ export function buildReferences(artifacts, mainFile) {
     const tile = indexed ? Number(indexed[2]) : undefined;
     const candidates = (names.get(basename(name)) ?? [])
       .filter(path => !name.includes("/") || path.toLowerCase() === name || path.toLowerCase().endsWith(`/${name}`));
-    const to = ref.path ?? (candidates.length === 1 ? candidates[0] : undefined);
+    const status = ref.status ?? (/^(?:[a-z]:[\\/]|\\\\|https?:\/\/)/i.test(ref.value) ? "External" : undefined);
+    const to = ref.path ?? (!status && candidates.length === 1 ? candidates[0] : undefined);
     const target = artifacts.get(to);
     const invalidTile = tile !== undefined && target && (target.count === undefined || tile < 1 || tile > target.count);
     const edge = { ...ref, from, to: invalidTile ? undefined : to, tile,
       status: invalidTile ? (target.count === undefined ? "Tileset unavailable" : "Tile index out of range") :
-        to ? "Resolved" : candidates.length > 1 ? "Ambiguous" : "Missing" };
+        to ? "Resolved" : status ?? (candidates.length > 1 ? "Ambiguous" : "Missing") };
     if (!outgoing.has(from)) outgoing.set(from, []);
     outgoing.get(from).push(edge);
     if (!edge.to) return;
@@ -521,9 +539,10 @@ export function buildReferences(artifacts, mainFile) {
   for (const artifact of artifacts.values()) {
     for (const ref of artifact.refs ?? []) add(artifact.path, ref);
   }
-  if (mainFile) {
+  for (const mainFile of [mainFiles].flat().filter(Boolean)) {
     for (const [evidence, binding] of mainFile.bindings) {
-      if (binding.path) add(mainFile.name, { value: binding.path, evidence, path: binding.path, external: mainFile.external ?? true });
+      add(mainFile.name, { value: binding.value, evidence, path: binding.path, status: binding.status,
+        external: mainFile.external ?? true });
     }
   }
   return { incoming, outgoing };

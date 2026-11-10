@@ -6,7 +6,7 @@ export function artifactId(path, mainFile = false) {
 }
 
 function edgeRecord(edge) {
-  const { value, evidence, line, status, to, from, external, tile, tiles } = edge;
+  const { value, evidence, line, status, to, from, external, tile, tiles, position } = edge;
   return {
     value,
     evidence,
@@ -19,6 +19,7 @@ function edgeRecord(edge) {
         ...(tile === undefined ? {} : { tileIndex: tile }),
       },
     } : {}),
+    ...(position ? { position } : {}),
     ...(tiles === undefined ? {} : { placements: tiles }),
   };
 }
@@ -42,7 +43,7 @@ export function artifactRecord(artifact, graph, { external = false, bindings = [
   const { path, type, decodeStatus, error, refs, bytes, ...data } = artifact;
   const incoming = external ? [] : (graph.incoming.get(path) ?? []);
   const outgoing = external ? bindings.map(([evidence, binding]) => ({
-    evidence, value: binding.value, status: binding.status, to: binding.path,
+    evidence, value: binding.value, status: binding.status, to: binding.path, from: path, external: true,
   })) : (graph.outgoing.get(path) ?? []).filter(edge => !edge.external);
 
   let decoded = data;

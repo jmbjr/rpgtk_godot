@@ -104,6 +104,9 @@
             "resolved",
             "missing",
             "ambiguous",
+            "unset",
+            "dynamic",
+            "external",
             "tileset-unavailable",
             "tile-index-out-of-range"
           ]
@@ -143,6 +146,16 @@
         "placements": {
           "type": "integer",
           "minimum": 1
+        },
+        "position": {
+          "type": "object",
+          "required": ["x", "y", "layer"],
+          "additionalProperties": false,
+          "properties": {
+            "x": {"type": "integer"},
+            "y": {"type": "integer"},
+            "layer": {"type": "integer"}
+          }
         }
       },
       "required": [

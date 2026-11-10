@@ -1,9 +1,10 @@
 import { openGameArchive } from "./archive.mjs";
-import { readMainFile, resolveAsset } from "./model.mjs";
+import { mainFileBindings, readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
 import { defaultMidiTone, playMidi } from "./midi.mjs";
 import { renderMidiPianoRoll } from "./piano-roll.mjs";
 import { artifactRecord } from "./records.mjs";
+import { connectedGameRecord, rpgcodeRoles } from "./game-graph.mjs";
 import { animationFrames, battleBackground, enemySprite, itemSprites, keyFrameColor, standaloneTilePixels } from "./sprites.mjs";
 
 const byId = id => document.getElementById(id);
@@ -27,6 +28,7 @@ function status(id, message, error = false) {
 
 let catalog;
 let archive = null;
+let archiveName;
 let paths = [];
 let programs = [];
 let mainFile = null;
@@ -74,19 +76,14 @@ const sourceNames = {
   H: "help3.htm · RPGCode Reference",
   E: "eventsEN.ref · Event catalog",
 };
-const roles = [
-  ["Game Developer", "authors", "RPGCode program"],
-  ["Translator / Trans2", "interprets", "RPGCode commands"],
-];
-
 function selectDefault() {
   mainFile = uploadedMainFile ?? archiveMainFile;
-  const startup = mainFile ? resolveAsset(programs, "Prg", mainFile.startup) : null;
+  const bindings = mainFile ? mainFileBindings(mainFile, paths) : [];
   const demo = !mainFile && programs.includes(demoStartup) ? demoStartup : null;
-  selected = startup?.path ?? demo;
+  selected = bindings[0]?.[1].path ?? demo;
   selectedFolder = selected ? directory(selected) : (programs[0] ? directory(programs[0]) : folders[0]);
   tileSelection = undefined;
-  const bindings = renderBindings(startup);
+  renderBindings(bindings);
   references = buildReferences(artifacts, mainFile && {
     name: mainFile.filename, bindings, external: mainFile === uploadedMainFile,
   });
@@ -107,27 +104,20 @@ function selectDefault() {
   showArtifact();
 }
 
-function renderBindings(startup) {
+function renderBindings(bindings) {
   const panel = byId("bindings");
   panel.hidden = !mainFile;
   panel.replaceChildren();
-  if (!mainFile) return [];
-  const root = startup.path ? directory(directory(startup.path).slice(0, -1)) : null;
-  const bindings = [
-    ["Configured startup", { ...startup, value: mainFile.startup }],
-    ["Opening board", { ...resolveAsset(paths, "Boards", mainFile.board, root), value: mainFile.board }],
-    ["Initial character", { ...resolveAsset(paths, "Chrs", mainFile.character, root), value: mainFile.character }],
-  ];
+  if (!mainFile) return;
   const facts = [
     ["Game title", mainFile.title ?? "—"],
-    ...bindings.map(([label, binding], i) => [label, bindingValue([mainFile.startup, mainFile.board, mainFile.character][i], binding)]),
+    ...bindings.map(([label, binding]) => [label, bindingValue(binding.value, binding)]),
   ];
   for (const [label, value] of facts) {
     const fact = el("div");
     fact.append(el("dt", label), el("dd", value, "technical"));
     panel.append(fact);
   }
-  return bindings;
 }
 
 function bindingValue(name, result) {
@@ -1308,9 +1298,9 @@ function renderSource(result) {
 function renderGraph(result) {
   byId("counts").textContent = `${result.count} calls · ${result.builtins.length} built-ins`;
   const graphRoles = el("div", "", "graph-roles");
-  for (const [actor, verb, object] of roles) {
+  for (const role of rpgcodeRoles) {
     const row = el("div");
-    row.append(el("strong", actor), el("span", ` → ${verb} → `, "relation"), object);
+    row.append(el("strong", role.name), el("span", ` → ${role.relation} → `, "relation"), role.description);
     graphRoles.append(row);
   }
   const relation = el("p", "Source occurrences → RPGCode definitions → Toolkit capabilities");
@@ -1360,6 +1350,8 @@ function showReference(group) {
 async function loadArchive(name, readBytes) {
   const request = ++archiveRequest;
   status("archive-status", `Opening ${name}…`);
+  byId("export-game-json").disabled = true;
+  status("game-export-status", "");
   try {
     const [zip, commands] = await Promise.all([
       openGameArchive(await readBytes(), bytes => globalThis.JSZip.loadAsync(bytes)),
@@ -1372,6 +1364,7 @@ async function loadArchive(name, readBytes) {
     const indexed = await readArtifacts(zip, commands);
     if (request !== archiveRequest) return;
     archive = zip;
+    archiveName = name;
     catalog = commands;
     artifacts = indexed.artifacts;
     folders = indexed.folders;
@@ -1386,6 +1379,8 @@ async function loadArchive(name, readBytes) {
     selectDefault();
   } catch (error) {
     if (request === archiveRequest) status("archive-status", `Unable to open ${name}. ${error.message}`, true);
+  } finally {
+    if (request === archiveRequest) byId("export-game-json").disabled = !archive;
   }
 }
 
@@ -1393,6 +1388,25 @@ function mainFileLabel(file) {
   const format = file.minor === 0 ? "Text" : "Binary";
   return `${file.filename} · ${format} format ${file.major}.${file.minor}`;
 }
+
+byId("export-game-json").addEventListener("click", () => {
+  if (!archive) return;
+  try {
+    const graph = connectedGameRecord(artifacts, catalog, { archiveName, externalMain: uploadedMainFile });
+    const json = new Blob([JSON.stringify(graph, null, 2) + "\n"], { type: "application/json" });
+    const url = URL.createObjectURL(json);
+    const link = el("a");
+    link.href = url;
+    link.download = archiveName.replace(/\.zip$/i, "") + "-game.json";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    status("game-export-status", `Exported ${graph.archive.fileCount} archive files.`);
+  } catch (error) {
+    status("game-export-status", `Unable to export game JSON. ${error.message}`, true);
+  }
+});
 
 byId("archive").addEventListener("change", event => {
   const file = event.target.files[0];
@@ -1412,6 +1426,7 @@ byId("archive-url-form").addEventListener("submit", event => {
   } catch {
     archiveDownload?.abort();
     archiveRequest++;
+    byId("export-game-json").disabled = !archive;
     status("archive-status", "Enter a public HTTPS URL for a game ZIP.", true);
     download.hidden = true;
     return;

@@ -19,7 +19,10 @@ index are zero-based JavaScript string offsets.
    calls on the same line.
 4. For cataloged file-taking commands, index quoted literal filenames
    with an extension. A reference keeps the source line and command.
-   Expression results, computed paths, and reachability remain unknown.
+   For Run, Include, Send, ViewBrd, Load, Save, and Start, inspect the
+   first argument. Preserve expressions as dynamic evidence, and mark
+   literal save, load, and host-launch resources as external. Expression
+   results, computed paths, and reachability remain unknown.
 
 ## Decoded record
 
