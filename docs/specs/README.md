@@ -13,7 +13,7 @@ versions, this spec revision, and the JSON schema version are independent.
 | PRG | [RPGCode program](prg.md) | Source and static indexing | Demo startup trace and Toolkit 2 Help |
 | TAN | [Animated tile](tan.md) | Binary 2.0 | Demo animation files |
 | TEM | [Character](tem.md) | Binary 2.3 and 2.4 prefixes | Demo characters, Cluetest character, compatibility reader and synthetic fixtures |
-| BRD | [Board](brd.md) | Binary 2.2 and 2.3 placement and link fields | Demo boards |
+| BRD | [Board](brd.md) | Text 2.1 and binary 2.2 and 2.3 placement and link fields | Demo boards, Cluetest text board, compatibility readers and synthetic fixtures |
 | ITM | [Item](itm.md) | Binary 2.2 and 2.3 | Demo items |
 | ENE | [Enemy](ene.md) | Text 2.0, two observed tails | Demo enemies |
 | BKG | [Battle background](bkg.md) | Text 2.0 | Demo backgrounds |

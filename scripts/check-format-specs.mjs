@@ -34,13 +34,15 @@ zip.file("unidentified.xyz", "");
 zip.file("broken.ste", "truncated");
 const character24 = fixtures.find(({ path }) => path === "Chrs/walker.tem").bytes;
 zip.file("Chrs/truncated.tem", character24.subarray(0, -1));
+const textBoard = fixtures.find(({ path }) => path === "Boards/text-room.brd").bytes;
+zip.file("Boards/truncated-text.brd", textBoard.subarray(0, -15));
 const { artifacts, graph } = await load(zip);
 for (const { path, expected } of fixtures) {
   const record = recordFor(artifacts.get(path), graph);
   assert.equal(record.decode.status, expected.status, path);
   assert.deepEqual(record.data, expected.data, path);
 }
-for (const [path, status] of [["Bitmap/browser.png", "media"], ["unidentified.xyz", "unidentified"], ["broken.ste", "error"], ["Chrs/truncated.tem", "error"]]) {
+for (const [path, status] of [["Bitmap/browser.png", "media"], ["unidentified.xyz", "unidentified"], ["broken.ste", "error"], ["Chrs/truncated.tem", "error"], ["Boards/truncated-text.brd", "error"]]) {
   assert.equal(recordFor(artifacts.get(path), graph).decode.status, status);
 }
 assert.ok(recordFor(artifacts.get("Prg/start.prg"), graph).references.outgoing.some(ref => ref.status === "missing"));
@@ -54,6 +56,15 @@ const expectedTargets = {
 for (const [evidence, target] of Object.entries(expectedTargets)) {
   assert.equal(walker.references.outgoing.find(edge => edge.evidence === evidence)?.target?.$ref, target);
 }
+const textRoom = recordFor(artifacts.get("Boards/text-room.brd"), graph);
+const boardEdge = evidence => textRoom.references.outgoing.find(edge => edge.evidence.startsWith(evidence));
+assert.equal(boardEdge("Board background image").target.$ref, "rpgtk:/Bitmap/face.gif");
+assert.equal(boardEdge("Board music").target.$ref, "rpgtk:/Media/note.mid");
+assert.deepEqual(boardEdge("Board program").position, { x: 2, y: 3, layer: 1 });
+assert.equal(boardEdge("Board program").target.$ref, "rpgtk:/Prg/start.prg");
+assert.equal(boardEdge("Board item").target.$ref, "rpgtk:/Item/token-2.itm");
+assert.equal(boardEdge("Item activation program").target.$ref, "rpgtk:/Prg/start.prg");
+assert.equal(boardEdge("Item multitask program").status, "missing");
 for (const archivePath of process.argv.slice(2)) {
   if (/\.gam$/i.test(archivePath)) {
     const data = readMainFile(await readFile(archivePath));

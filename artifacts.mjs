@@ -79,7 +79,108 @@ function readAnimation(bytes) {
   return { speed, refs };
 }
 
+const boardAmbient = [[0, 0, 0], [75, 75, 75], [-75, -75, -75], [0, 0, 75]];
+const boardDirections = ["North", "South", "East", "West"];
+const boardPositionLabel = ({ x, y, layer }) => `(${x}, ${y}, layer ${layer})`;
+
+function boardTileReferences(lookup, placements) {
+  return [...placements].map(([index, tiles]) => ({
+    ...reference(lookup[index], `Board tile lookup · entry ${index} · ${tiles} placed`),
+    index,
+    tiles,
+  }));
+}
+
+function readTextBoard(bytes) {
+  const reader = textReader(bytes, "RPGTLKIT BOARD", 1);
+  const integer = () => {
+    const value = reader.number();
+    if (!Number.isSafeInteger(value)) throw new Error("Invalid board integer.");
+    return value;
+  };
+  const skip = count => {
+    for (let i = 0; i < count; i++) reader.string();
+  };
+  skip(2); // Registration flag and code.
+  const width = integer();
+  const height = integer();
+  const layers = 8;
+  const cells = width * height * layers;
+  if (width < 1 || height < 1 || cells > 2_000_000) throw new Error("Unsupported board dimensions.");
+  if (reader.remaining() < cells * 5) throw new Error("The text board tile grid is truncated.");
+
+  const lookup = [""];
+  const indices = new Map();
+  const runs = [];
+  const placements = new Map();
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) {
+      for (let layer = 0; layer < layers; layer++) {
+        const value = reader.string();
+        const shade = [integer(), integer(), integer()];
+        integer(); // Tile type.
+        if (!value) continue;
+        if (!indices.has(value)) {
+          indices.set(value, lookup.length);
+          lookup.push(value);
+        }
+        const index = indices.get(value);
+        const offset = (layer * height + y) * width + x;
+        runs.push({ offset, length: 1, index, shade });
+        placements.set(index, (placements.get(index) ?? 0) + 1);
+      }
+    }
+  }
+  runs.sort((a, b) => a.offset - b.offset);
+
+  const refs = boardTileReferences(lookup, placements);
+  const add = (value, evidence, position) => {
+    if (value && value.toLowerCase() !== "none") {
+      refs.push({ ...reference(value, evidence), ...(position ? { position } : {}) });
+    }
+  };
+  const readPosition = () => ({ x: integer(), y: integer(), layer: integer() });
+  add(reader.string(), "Board background image");
+  add(reader.string(), "Border background image");
+  const background = integer();
+  skip(1); // Border color.
+  const ambient = boardAmbient[integer()] ?? boardAmbient[0];
+  for (const direction of boardDirections) add(reader.string(), `${direction} board link`);
+  skip(1); // Battle skill.
+  add(reader.string(), "Battle background");
+  skip(11); // Battle flag and ten board constants.
+  add(reader.string(), "Board music");
+  const layerTitles = ["", ...Array.from({ length: layers }, () => reader.string())];
+
+  for (let i = 0; i < 51; i++) {
+    const program = reader.string();
+    const position = readPosition();
+    const graphic = reader.string();
+    skip(6);
+    add(program, `Board program ${boardPositionLabel(position)}`, position);
+    add(graphic, `Program graphic ${boardPositionLabel(position)}`, position);
+  }
+  const itemPositions = [];
+  for (let i = 0; i < 11; i++) {
+    const item = reader.string();
+    const position = readPosition();
+    itemPositions.push(position);
+    skip(6);
+    add(item, `Board item ${boardPositionLabel(position)}`, position);
+  }
+  skip(3); // Player start coordinates.
+  for (const position of itemPositions) {
+    add(reader.string(), `Item activation program ${boardPositionLabel(position)}`, position);
+  }
+  skip(1); // Save flag.
+  for (const position of itemPositions) {
+    add(reader.string(), `Item multitask program ${boardPositionLabel(position)}`, position);
+  }
+  return { width, height, layers, layerTitles, lookup, runs, background, ambient, refs };
+}
+
 function readBoard(bytes) {
+  if (/^RPGTLKIT BOARD[\r\n]/i.test(text.decode(bytes.subarray(0, 16)))) return readTextBoard(bytes);
   const reader = cursor(bytes);
   header(reader, "RPGTLKIT BOARD", [2, 3]);
   reader.skip(2);
@@ -109,25 +210,20 @@ function readBoard(bytes) {
     offset += length;
   }
 
-  const refs = [...placements].map(([index, tiles]) => ({
-    ...reference(lookup[index], `Board tile lookup · entry ${index} · ${tiles} placed`),
-    index,
-    tiles,
-  }));
+  const refs = boardTileReferences(lookup, placements);
   const add = (value, evidence, position) => {
     if (value && value.toLowerCase() !== "none") {
       refs.push({ ...reference(value, evidence), ...(position ? { position } : {}) });
     }
   };
   const readPosition = () => ({ x: reader.short(), y: reader.short(), layer: reader.short() });
-  const positionLabel = ({ x, y, layer }) => `(${x}, ${y}, layer ${layer})`;
   add(reader.string(), "Board background image");
   reader.string();
   reader.string();
   const background = reader.long();
   reader.skip(4);
-  const ambient = [[0, 0, 0], [75, 75, 75], [-75, -75, -75], [0, 0, 75]][reader.short()] ?? [0, 0, 0];
-  for (const direction of ["North", "South", "East", "West"]) add(reader.string(), `${direction} board link`);
+  const ambient = boardAmbient[reader.short()] ?? boardAmbient[0];
+  for (const direction of boardDirections) add(reader.string(), `${direction} board link`);
   reader.skip(2);
   add(reader.string(), "Battle background");
   reader.skip(8);
@@ -145,8 +241,8 @@ function readBoard(bytes) {
     reader.skip(2);
     for (let j = 0; j < 4; j++) reader.string();
     reader.skip(2);
-    add(program, `Board program ${positionLabel(position)}`, position);
-    add(graphic, `Program graphic ${positionLabel(position)}`, position);
+    add(program, `Board program ${boardPositionLabel(position)}`, position);
+    add(graphic, `Program graphic ${boardPositionLabel(position)}`, position);
   }
   add(reader.string(), "Board entry program");
   reader.string();
@@ -159,9 +255,9 @@ function readBoard(bytes) {
     reader.skip(2);
     for (let j = 0; j < 4; j++) reader.string();
     reader.skip(2);
-    add(item, `Board item ${positionLabel(position)}`, position);
-    add(reader.string(), `Item activation program ${positionLabel(position)}`, position);
-    add(reader.string(), `Item multitask program ${positionLabel(position)}`, position);
+    add(item, `Board item ${boardPositionLabel(position)}`, position);
+    add(reader.string(), `Item activation program ${boardPositionLabel(position)}`, position);
+    add(reader.string(), `Item multitask program ${boardPositionLabel(position)}`, position);
   }
   return { width, height, layers, layerTitles, lookup, runs, background, ambient, refs };
 }
@@ -253,7 +349,7 @@ function readProgram(bytes, catalog) {
   return { program, refs };
 }
 
-function textReader(bytes, signature) {
+function textReader(bytes, signature, minor = 0) {
   const lines = decodeProgram(bytes).split(/\r\n|\n|\r/);
   if (lines.at(-1) === "") lines.pop();
   let position = 0;
@@ -266,8 +362,8 @@ function textReader(bytes, signature) {
     if (!Number.isFinite(value)) throw new Error("Invalid numeric field.");
     return value;
   }
-  if (string().toUpperCase() !== signature || number() !== 2 || number() !== 0) {
-    throw new Error("This text file is outside the supported Toolkit 2.0 layout.");
+  if (string().toUpperCase() !== signature || number() !== 2 || number() !== minor) {
+    throw new Error(`This text file is outside the supported Toolkit 2.${minor} layout.`);
   }
   return { string, number, remaining: () => lines.length - position };
 }
