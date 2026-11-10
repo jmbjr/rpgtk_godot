@@ -189,7 +189,7 @@ function restoreSelection({ path, folder, tile, line }) {
     }
     renderConnections(path);
   }
-  if (fileChanged || lineChanged) jumpToLine(line);
+  if (line || fileChanged || lineChanged) jumpToLine(line);
 }
 
 window.addEventListener("popstate", event => {
