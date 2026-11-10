@@ -248,6 +248,38 @@ function formatSpecLink(format, section = "") {
   return link;
 }
 
+function tilesetPdfControl(artifact) {
+  const controls = el("div", "", "sprite-controls");
+  const message = el("span", "", "technical");
+  message.setAttribute("role", "status");
+  const download = button("Download print-and-play PDF", async () => {
+    const revision = inspectorRevision;
+    const graph = references;
+    download.disabled = true;
+    message.textContent = "Building PDF…";
+    try {
+      const { tilesetPdf } = await import("./tile-pdf.mjs");
+      const pdf = await tilesetPdf(artifact, graph);
+      if (revision !== inspectorRevision) return;
+      const url = URL.createObjectURL(pdf);
+      const link = el("a");
+      link.href = url;
+      link.download = basename(artifact.path).replace(/\.tst$/i, "") + "-tile-cards.pdf";
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      message.textContent = "PDF ready.";
+    } catch (error) {
+      message.textContent = `Unable to export PDF. ${error.message}`;
+    } finally {
+      download.disabled = false;
+    }
+  });
+  controls.append(download, message);
+  return controls;
+}
+
 function renderAsset(artifact) {
   const panel = byId("graph");
   const edges = references.outgoing.get(artifact.path) ?? [];
@@ -277,6 +309,7 @@ function renderAsset(artifact) {
   }
   if (artifact.type === "tst") {
     panel.append(el("p", `${artifact.count} tiles · 32 × 32 pixels · ART-05 Tilesets`));
+    if (artifact.count > 0) panel.append(tilesetPdfControl(artifact));
     const grid = el("div", "", "tile-grid");
     for (let tile = 1; tile <= artifact.count; tile++) {
       const node = button(String(tile), () => {

@@ -27,7 +27,6 @@ SCHEMA_HASHES = {
 VERSION = "0.2.1"
 SCENE = "tile-review"
 INSTANCE = "tileset-cards"
-CARD_ARCHETYPE = "toolkit-tile-card"
 TARGETS = ("pnp", "tts")
 
 
@@ -75,38 +74,6 @@ def entry(content_id, source, provenance, quantity, component=None, parent=None)
     if component:
         row.update(component_inherited=component, component_effective=component)
     return row
-
-
-def project(catalog, sidecar_digest):
-    # This scene describes a reference display, separate from the legacy game catalog.
-    [(collection_id, collection)] = [
-        (key, obj) for key, obj in catalog["objects"].items() if obj["kind"] == "collection"
-    ]
-    members = [member["object_ref"] for member in collection["members"]]
-    require(collection["ordering"] == "declared" and "behaviors" not in collection,
-            "Reference cards require the original declared order without gameplay behaviors")
-    require(len(members) == len(set(members)) == 2, "Expected two distinct fixture tiles")
-    tile_archetype = catalog["archetypes"]["toolkit-tile"]
-    return {
-        "dodge_version": VERSION, "document_id": "toolkit-tile-card-review",
-        "game_id": catalog["game_id"],
-        "sources": {"toolkit": {**catalog["sources"]["toolkit"], "sha256": sidecar_digest}},
-        "sidecars": catalog["sidecars"],
-        "archetypes": {
-            CARD_ARCHETYPE: {**tile_archetype, "component": {
-                "form": "card", "shape": "rectangle",
-                "dimensions": {"unit": "in", "width": 2.5, "height": 3.5},
-            }},
-            "toolkit-tileset": catalog["archetypes"]["toolkit-tileset"],
-        },
-        "objects": {
-            collection_id: collection,
-            **{key: {**catalog["objects"][key], "archetype_ref": CARD_ARCHETYPE} for key in members},
-        },
-        "scenes": {SCENE: {"name": "Toolkit tileset reference display", "instances": [
-            {"id": INSTANCE, "object_ref": collection_id},
-        ]}},
-    }
 
 
 def resolve(dodge, sidecar):
@@ -363,7 +330,8 @@ def main():
     sidecar_path = args.source / "toolkit-sidecar.json"
     sidecar = read(sidecar_path)
     sidecar_digest = sha(sidecar_path)
-    dodge = project(read(args.source / "dodge.json"), sidecar_digest)
+    dodge = read(args.source / "tile-card-scene.json")
+    require(dodge["sources"]["toolkit"]["sha256"] == sidecar_digest, "Toolkit sidecar hash does not match DODGE")
     validate(args.schemas, "dodge", dodge)
     contents, cards = resolve(dodge, sidecar)
     document_path = out / "dodge.json"

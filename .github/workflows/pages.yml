@@ -32,6 +32,7 @@ jobs:
           node --check scripts/stage-soundfont.mjs
           node --check vendor/webaudio-tinysynth.js
           node --check sprites.mjs
+          node --check tile-pdf.mjs
           node --check scripts/smoke.mjs
           node --input-type=module <<'JS'
           import assert from "node:assert/strict";
@@ -52,12 +53,15 @@ jobs:
         run: |
           node scripts/check-tile-specs.mjs
           node scripts/check-format-specs.mjs
+      - name: Check tileset PDF export
+        run: node scripts/check-tileset-pdf.mjs
       - name: Stage public viewer files
         run: |
           mkdir -p site/vendor
-          cp .nojekyll index.html style.css app.mjs archive.mjs model.mjs artifacts.mjs records.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs catalog.json site/
+          cp .nojekyll index.html style.css app.mjs archive.mjs model.mjs artifacts.mjs records.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs tile-pdf.mjs catalog.json site/
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
-          cp -R vendor/soundfont vendor/generaluser-gs vendor/piano-roll site/vendor/
+          cp -R vendor/soundfont vendor/generaluser-gs vendor/piano-roll vendor/jspdf site/vendor/
+          cp --parents experiments/dodge-tiles/{project,card-scene}.mjs site/
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4

@@ -6,8 +6,9 @@ import Ajv2020 from "ajv/dist/2020.js";
 import { buildReferences, readArtifacts } from "../../artifacts.mjs";
 import { fixtures } from "../../docs/specs/fixtures/format-fixtures.mjs";
 import { artifactRecord } from "../../records.mjs";
+import { projectTileCards } from "./card-scene.mjs";
 import JSZip from "../../vendor/jszip.min.js";
-import { projectTiles } from "./project.mjs";
+import { projectTiles, sha256Text } from "./project.mjs";
 
 const [schemaPath, outputDirectory] = process.argv.slice(2);
 assert.ok(schemaPath, "Usage: node experiments/dodge-tiles/check.mjs DODGE_SCHEMA [OUTPUT_DIRECTORY]");
@@ -30,7 +31,7 @@ function recordsFor(assets) {
 }
 
 const records = recordsFor(artifacts);
-const { dodge, sidecar } = projectTiles(records);
+const { dodge, sidecar } = await projectTiles(records);
 assert.ok(validate(dodge), JSON.stringify(validate.errors));
 assert.deepEqual(dodge.scenes, {});
 const [tileset] = Object.values(dodge.objects).filter(({ kind }) => kind === "collection");
@@ -49,7 +50,7 @@ const standalone = sidecar.tileBindings.find(({ toolkitRef }) => toolkitRef === 
 assert.equal(dodge.objects[standalone.objectId].kind, "token");
 assert.ok(tileset.members.every(({ object_ref }) => object_ref !== standalone.objectId));
 assert.deepEqual(sidecar.records, Object.fromEntries(records.map(record => [record.$id, record])));
-assert.deepEqual(projectTiles([...records].reverse()).dodge.objects, dodge.objects);
+assert.deepEqual((await projectTiles([...records].reverse())).dodge.objects, dodge.objects);
 assert.deepEqual(sidecar.boardPlacements, [{
   boardRef: "rpgtk:/Boards/room.brd", offset: 0, length: 1, lookupIndex: 1, shade: [-30, 0, 20],
   value: "two-tiles.tst2", status: "resolved", toolkitRef: `${tilesetRef}#/data/tiles/1`, objectId: second,
@@ -72,7 +73,7 @@ cases.set(boardPath, {
     { offset: 3, length: 1, index: 3, shade: [0, 0, 0] },
   ],
 });
-const variant = projectTiles(recordsFor(cases));
+const variant = await projectTiles(recordsFor(cases));
 assert.deepEqual(variant.dodge.objects, dodge.objects);
 assert.deepEqual(variant.sidecar.boardPlacements.map(({ length, status, objectId }) => [length, status, objectId]), [
   [2, "resolved", second],
@@ -83,6 +84,10 @@ assert.deepEqual(variant.sidecar.boardPlacements.map(({ length, status, objectId
 if (outputDirectory) {
   await mkdir(outputDirectory, { recursive: true });
   await writeFile(join(outputDirectory, "dodge.json"), JSON.stringify(dodge, null, 2) + "\n");
-  await writeFile(join(outputDirectory, dodge.sources.toolkit.uri), JSON.stringify(sidecar, null, 2) + "\n");
+  const sourceJson = JSON.stringify(sidecar, null, 2) + "\n";
+  const cards = projectTileCards(dodge, "Tiles/two-tiles.tst", await sha256Text(sourceJson));
+  assert.ok(validate(cards), JSON.stringify(validate.errors));
+  await writeFile(join(outputDirectory, dodge.sources.toolkit.uri), sourceJson);
+  await writeFile(join(outputDirectory, "tile-card-scene.json"), JSON.stringify(cards, null, 2) + "\n");
 }
 console.log("DODGE tile pilot passed: schema, declared order, stable IDs, and board placement cases.");
