@@ -6,6 +6,7 @@ import { renderMidiPianoRoll } from "./piano-roll.mjs";
 import { artifactRecord } from "./records.mjs";
 import { connectedGameRecord, rpgcodeRoles } from "./game-graph.mjs";
 import { createInspectorHistory } from "./inspector-history.mjs";
+import { connectionCounts, connectionNeighbors, referenceDestination } from "./connection-map.mjs";
 import { animationFrames, battleBackground, enemySprite, itemSprites, keyFrameColor, standaloneTilePixels } from "./sprites.mjs";
 
 const byId = id => document.getElementById(id);
@@ -45,6 +46,7 @@ let selectedFolder = null;
 let references = { incoming: new Map(), outgoing: new Map() };
 let tileSelection;
 let selectedLine;
+let connectionMapOpen = false;
 const inspectorHistory = createInspectorHistory(window.history);
 let animationTimer;
 let stopAnimationPlayback;
@@ -1244,9 +1246,116 @@ function renderConnections(path) {
   const uses = tileSelection ? incoming.filter(edge => edge.tile === tileSelection) : incoming;
   const title = tileSelection ? `Used by · Tile ${tileSelection}` : "Used by";
   if (tileSelection) container.append(formatSpecLink("tst", "#tile-addressing"));
+  container.append(renderConnectionMap(path, uses, outgoing, incoming.length - uses.length));
   renderEdges(container, title, uses, true);
   renderEdges(container, "References", outgoing, false);
   container.append(jsonPanel(() => artifactRecord(artifacts.get(path), references)));
+}
+
+const connectionTypes = {
+  brd: "Board", prg: "Program", tem: "Character", ene: "Enemy", itm: "Item",
+  tst: "Tileset", gph: "Tile", tan: "Animated tile", gam: "Main File",
+};
+
+function connectionBadge(path, tile, external) {
+  const type = external ? "gam" : artifacts.get(path)?.type;
+  const label = tile ? "Tile" : connectionTypes[type] ?? (type ? type.toUpperCase() : "File");
+  const badge = el("span", label, "connection-badge");
+  badge.dataset.type = tile ? "gph" : type ?? "";
+  return badge;
+}
+
+function countLabel(count, singular, plural = singular + "s") {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function evidenceLabel(edge) {
+  return `${edge.evidence}${edge.line ? ` · line ${edge.line}` : ""} · ${edge.value}`;
+}
+
+function openConnection({ path, tile, line }) {
+  selectArtifact(path, tile, line);
+}
+
+function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
+  const map = el("details", "", "reference connection-map");
+  map.open = connectionMapOpen;
+  map.addEventListener("toggle", () => {
+    if (map.isConnected) connectionMapOpen = map.open;
+  });
+  const sources = connectionCounts(incoming, true);
+  const targets = connectionCounts(outgoing, false);
+  const summary = el("summary", "Connection map", "connection-map-summary");
+  const stats = [`${sources.files} in`, `${targets.files} out`];
+  if (targets.unresolved) stats.push(`${targets.unresolved} without a target`);
+  summary.append(el("span", stats.join(" · "), "technical"));
+  const preview = el("div", "", "connection-preview");
+  preview.setAttribute("aria-live", "polite");
+  let active;
+
+  function lane(label, edges, reverse, counts) {
+    const section = el("section", "", "connection-lane");
+    const metrics = [countLabel(counts.files, "file"), countLabel(counts.references, "reference")];
+    if (counts.placements) metrics.push(countLabel(counts.placements, "board placement"));
+    if (counts.unresolved) metrics.push(`${counts.unresolved} without a target`);
+    section.append(el("h4", label), el("p", metrics.join(" · "), "technical"));
+    const neighbors = connectionNeighbors(edges, reverse);
+    if (!neighbors.length) return section;
+    const list = el("div", "", "connection-nodes");
+    const more = button("", () => addNodes(6), "connection-more");
+    let shown = 0;
+    function addNodes(count) {
+      for (const node of neighbors.slice(shown, shown + count)) {
+        const first = referenceDestination(node.edges[0], reverse, artifacts);
+        const destination = first && (node.edges.length === 1 ? first : { path: first.path, tile: first.tile });
+        const name = node.path ? basename(node.path) : node.label || "Unspecified";
+        const title = node.tile ? `${name} · Tile ${node.tile}` : name;
+        const control = button("", () => {
+          active?.setAttribute("aria-pressed", "false");
+          active = control;
+          control.setAttribute("aria-pressed", "true");
+          preview.replaceChildren(el("h4", title), el("p", node.path ?? node.status, "technical"));
+          if (destination) preview.append(button("Open in inspector", () => openConnection(destination)));
+          const evidence = el("ul", "", "edge-list");
+          for (const edge of node.edges) {
+            const exact = referenceDestination(edge, reverse, artifacts);
+            const label = evidenceLabel(edge) + (edge.tiles ? ` · ${countLabel(edge.tiles, "board placement")}` : "");
+            const entry = el("li");
+            entry.append(exact && node.edges.length > 1 ? button(label, () => openConnection(exact)) : el("span", label));
+            evidence.append(entry);
+          }
+          preview.append(evidence);
+          section.after(preview);
+        }, "connection-node");
+        control.setAttribute("aria-pressed", "false");
+        control.title = node.label;
+        const badge = node.path ? connectionBadge(node.path, node.tile, node.external) :
+          el("span", node.status, "connection-badge");
+        control.append(badge, el("span", title, "connection-node-name"), el("span", String(node.edges.length), "connection-node-count"));
+        if (destination) control.addEventListener("dblclick", () => openConnection(destination));
+        list.append(control);
+      }
+      shown = Math.min(neighbors.length, shown + count);
+      more.hidden = shown === neighbors.length;
+      more.textContent = `Show more (${neighbors.length - shown} hidden)`;
+    }
+    addNodes(6);
+    section.append(list, more);
+    return section;
+  }
+
+  const center = el("div", "", "connection-center");
+  center.append(connectionBadge(path, tileSelection), el("strong", tileSelection ? `${basename(path)} · Tile ${tileSelection}` : basename(path)));
+  const arrow = () => {
+    const marker = el("div", "↓", "connection-arrow");
+    marker.setAttribute("aria-hidden", "true");
+    return marker;
+  };
+  map.append(summary, el("p", "Select a direct neighbor to inspect its reference evidence."));
+  if (otherIncoming) map.append(el("p", `${countLabel(otherIncoming, "reference")} to other tiles or the whole tileset hidden.`, "technical"));
+  map.append(lane("Used by", incoming, true, sources), arrow(), center, arrow(),
+    lane("References", outgoing, false, targets));
+  return map;
 }
 
 function jsonPanel(record) {
@@ -1278,11 +1387,10 @@ function renderEdges(container, title, edges, reverse) {
     details.append(el("summary", `${name} · ${group.length}`, "technical"));
     const list = el("ul", "", "edge-list");
     for (const edge of group) {
-      const target = reverse ? edge.from : edge.to;
-      const label = `${edge.evidence}${edge.line ? ` · line ${edge.line}` : ""} · ${edge.value}`;
+      const destination = referenceDestination(edge, reverse, artifacts);
+      const label = evidenceLabel(edge);
       const item = el("li");
-      item.append(artifacts.has(target) && !(reverse && edge.external) ?
-        button(label, () => selectArtifact(target, reverse ? undefined : edge.tile, reverse ? edge.line : undefined)) :
+      item.append(destination ? button(label, () => openConnection(destination)) :
         el("span", edge.to ? label : `${label} · ${edge.status}`));
       list.append(item);
     }
