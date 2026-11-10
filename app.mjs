@@ -5,6 +5,7 @@ import { defaultMidiTone, playMidi } from "./midi.mjs";
 import { renderMidiPianoRoll } from "./piano-roll.mjs";
 import { artifactRecord } from "./records.mjs";
 import { connectedGameRecord, rpgcodeRoles } from "./game-graph.mjs";
+import { createInspectorHistory } from "./inspector-history.mjs";
 import { animationFrames, battleBackground, enemySprite, itemSprites, keyFrameColor, standaloneTilePixels } from "./sprites.mjs";
 
 const byId = id => document.getElementById(id);
@@ -43,6 +44,8 @@ let folders = [];
 let selectedFolder = null;
 let references = { incoming: new Map(), outgoing: new Map() };
 let tileSelection;
+let selectedLine;
+const inspectorHistory = createInspectorHistory(window.history);
 let animationTimer;
 let stopAnimationPlayback;
 let stopWavePlayback;
@@ -76,13 +79,14 @@ const sourceNames = {
   H: "help3.htm · RPGCode Reference",
   E: "eventsEN.ref · Event catalog",
 };
-function selectDefault() {
+function selectDefault(newArchive = false) {
   mainFile = uploadedMainFile ?? archiveMainFile;
   const bindings = mainFile ? mainFileBindings(mainFile, paths) : [];
   const demo = !mainFile && programs.includes(demoStartup) ? demoStartup : null;
   selected = bindings[0]?.[1].path ?? demo;
   selectedFolder = selected ? directory(selected) : (programs[0] ? directory(programs[0]) : folders[0]);
   tileSelection = undefined;
+  selectedLine = undefined;
   renderBindings(bindings);
   references = buildReferences(artifacts, mainFile && {
     name: mainFile.filename, bindings, external: mainFile === uploadedMainFile,
@@ -102,6 +106,9 @@ function selectDefault() {
   }
   renderBrowser();
   showArtifact();
+  const selection = { path: selected, folder: selectedFolder, tile: tileSelection, line: selectedLine };
+  if (newArchive) inspectorHistory.reset(crypto.getRandomValues(new Uint32Array(4)).join("-"), selection);
+  else inspectorHistory.replace(selection);
 }
 
 function renderBindings(bindings) {
@@ -132,9 +139,8 @@ function renderBrowser() {
   byId("folder-list").replaceChildren(...folders.map(folder => {
     const depth = Math.max(0, folder.split("/").length - 2);
     const node = button(folder ? basename(folder.slice(0, -1)) : "Archive root", () => {
-      selectedFolder = folder;
       const first = paths.find(path => directory(path) === folder);
-      selectArtifact(first ?? null);
+      selectArtifact(first ?? null, undefined, undefined, folder);
       [...byId("folder-list").children].find(item => item.dataset.folder === folder)?.focus({ preventScroll: true });
     });
     node.style.paddingInlineStart = `${0.55 + depth * 0.65}rem`;
@@ -157,15 +163,39 @@ function renderBrowser() {
   if (!files.length) byId("file-list").append(el("p", "No files in this folder."));
 }
 
-function selectArtifact(path, tile, line) {
+function selectArtifact(path, tile, line, folder = path ? directory(path) : selectedFolder) {
   if (path && !artifacts.has(path)) return;
-  selected = path;
-  if (path) selectedFolder = directory(path);
-  tileSelection = tile;
-  renderBrowser();
-  showArtifact();
-  if (line) jumpToLine(line);
+  const selection = { path, folder, tile, line };
+  inspectorHistory.visit(selection);
+  restoreSelection(selection);
 }
+
+function restoreSelection({ path, folder, tile, line }) {
+  const fileChanged = path !== selected || folder !== selectedFolder;
+  const tileChanged = tile !== tileSelection;
+  const lineChanged = line !== selectedLine;
+  selected = path;
+  selectedFolder = folder;
+  tileSelection = tile;
+  selectedLine = line;
+  if (fileChanged) {
+    renderBrowser();
+    showArtifact();
+  } else if (tileChanged) {
+    for (const cell of byId("graph").querySelectorAll(".tile-grid [data-tile]")) {
+      const active = Number(cell.dataset.tile) === tileSelection;
+      cell.setAttribute("aria-pressed", String(active));
+      if (active) cell.scrollIntoView({ block: "nearest" });
+    }
+    renderConnections(path);
+  }
+  if (line || fileChanged || lineChanged) jumpToLine(line);
+}
+
+window.addEventListener("popstate", event => {
+  const selection = inspectorHistory.restore(event.state);
+  if (selection) restoreSelection(selection);
+});
 
 function selectionLabel(path) {
   if (!path) return "";
@@ -303,9 +333,7 @@ function renderAsset(artifact) {
     const grid = el("div", "", "tile-grid");
     for (let tile = 1; tile <= artifact.count; tile++) {
       const node = button(String(tile), () => {
-        tileSelection = tileSelection === tile ? undefined : tile;
-        for (const cell of grid.children) cell.setAttribute("aria-pressed", String(Number(cell.dataset.tile) === tileSelection));
-        renderConnections(artifact.path);
+        selectArtifact(artifact.path, tileSelection === tile ? undefined : tile);
       });
       node.dataset.tile = tile;
       node.setAttribute("aria-label", `Tile ${tile}`);
@@ -1266,7 +1294,7 @@ function renderEdges(container, title, edges, reverse) {
 
 function jumpToLine(line) {
   byId("source").querySelector(".active-line")?.classList.remove("active-line");
-  const target = byId(`line-${line}`);
+  const target = line && byId(`line-${line}`);
   if (!target) return;
   target.classList.add("active-line");
   target.focus({ preventScroll: true });
@@ -1342,7 +1370,7 @@ function showReference(group) {
   }
   const jumps = el("div", "", "jump-list");
   for (const line of new Set(group.lines)) {
-    jumps.append(button(`Line ${line}`, () => jumpToLine(line), "line-jump"));
+    jumps.append(button(`Line ${line}`, () => selectArtifact(selected, undefined, line), "line-jump"));
   }
   reference.append(jumps);
 }
@@ -1376,7 +1404,7 @@ async function loadArchive(name, readBytes) {
       status("main-status", archiveMainFile ? mainFileLabel(archiveMainFile) : "A Main File can identify the configured startup script.");
     }
     status("archive-status", `${name} · ${paths.length} files · ${programs.length} RPGCode programs`);
-    selectDefault();
+    selectDefault(true);
   } catch (error) {
     if (request === archiveRequest) status("archive-status", `Unable to open ${name}. ${error.message}`, true);
   } finally {
