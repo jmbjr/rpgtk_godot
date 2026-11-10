@@ -232,7 +232,7 @@ function readProgram(bytes, catalog) {
     for (const [index, token] of row.tokens.entries()) {
       if (token.kind !== "builtin") continue;
       const args = row.line.slice(token.start + token.value.length, row.tokens[index + 1]?.start);
-      if (firstFileArgument.has(token.name)) {
+      if (firstFileArgument.has(token.name) && /^\s*\(/.test(args)) {
         const literal = args.match(/^\s*\(\s*"([^"]*)"\s*(?:,|\))/);
         if (literal?.[1]) {
           refs.push({ ...reference(literal[1], token.value, token.line),

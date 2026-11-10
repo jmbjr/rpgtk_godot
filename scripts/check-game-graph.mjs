@@ -76,7 +76,7 @@ const slot = Buffer.concat([
 zip.file("Boards/room.brd", Buffer.concat([board.subarray(0, -6), slot, board.subarray(-4)]));
 zip.file("Prg/start.prg", [
   '#Run("start.prg")', '#Run(next$)', '#Run("missing.prg")', '#Run("ambiguous.prg")',
-  '#Load(savefile$)', '#Load("slot.sav")', '#Put(1, 1, "two-tiles.tst3")',
+  '#Load(savefile$)', '#Load("slot.sav")', '#Put(1, 1, "two-tiles.tst3")', '#Run "legacy.prg"',
 ].join("\n"));
 zip.file("Prg/ambiguous.prg", "");
 zip.file("Other/Prg/ambiguous.prg", "");
@@ -104,7 +104,7 @@ const invocation = edge("invokes", programId, candidate => candidate.line === 1)
 assert.equal(invocation.target.$ref, "rpgtk-command:/run");
 assert.ok(edge("implements-capability", invocation.target.$ref));
 assert.equal(edge("script-file", programId, candidate => candidate.line === 1).target.$ref, programId);
-for (const [line, status] of ["dynamic", "missing", "ambiguous", "dynamic", "external", "tile-index-out-of-range"].entries()) {
+for (const [line, status] of ["dynamic", "missing", "ambiguous", "dynamic", "external", "tile-index-out-of-range", "missing"].entries()) {
   assert.equal(edge("script-file", programId, candidate => candidate.line === line + 2).status, status);
 }
 assert.equal(graph.artifacts["rpgtk:/misc/%23%20disconnected.txt"].decode.status, "unidentified");
