@@ -221,3 +221,9 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 .connection-more { margin-top: .35rem; font-size: .8rem; }
 .connection-preview { margin-top: .65rem; }
 .connection-preview .edge-list { max-height: 12rem; overflow: auto; }
+.connection-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 7.5rem), 1fr)); gap: .45rem; }
+.connection-filters label { grid-template-columns: minmax(0, 1fr); font-size: .8rem; }
+.connection-filters select { width: 100%; min-width: 0; padding: .25rem; font: inherit; }
+.connection-filters button { align-self: end; font-size: .8rem; }
+.connection-filters button:disabled { opacity: .55; cursor: default; }
+.connection-more + .connection-more { margin-left: .35rem; }
