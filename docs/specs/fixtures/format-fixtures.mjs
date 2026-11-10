@@ -56,6 +56,24 @@ add("Chrs/walker.tem", walker24, {
   walking: [{ ...walking[0], parts: [{ ...walking[0].parts[0], value: "two-tiles.tst2" }, walking[0].parts[1]] }, ...walking.slice(1)],
 }, "partial");
 
+const embeddedWalk = [-1, 255, ...fill(30, -1), 65280, ...fill(991, -1)];
+for (const sizeType of [0, 1]) {
+  const graphics = sizeType ? ["two-tiles.tst2", ...fill(119, "")] : [...embeddedWalk, ...fill(42 * 1024, -1)];
+  const bytes = Buffer.from(["RPGTLKIT CHAR", 2, 2, "Old hero", ...fill(9, ""), 10, 7, 9, 2, 3, 4, 6, 1,
+    "face.gif", "pulse.spc", ...fill(201 * 5 - 1, ""), "", 1, sizeType, ...graphics, ...fill(23, ""),
+    "tone.wav", "", "", "", "start.prg", 0, ""].join("\r\n"), "ascii");
+  const referencedWalk = [{ ...walking[0], parts: [
+    { ...walking[0].parts[0], value: "two-tiles.tst2" }, walking[0].parts[1],
+  ] }, ...walking.slice(1)];
+  add(`Chrs/text-hero-${sizeType}.tem`, bytes, {
+    name: "Old hero",
+    stats: { XP: 10, HP: 7, "Max HP": 9, Defense: 2, Fight: 3, "Special power": 4, "Max special power": 6, Level: 1 },
+    profile: { value: "face.gif", evidence: "Character portrait" },
+    walking: sizeType ? referencedWalk : walking,
+    ...(sizeType === 0 ? { embeddedWalking: [embeddedWalk, ...fill(15, fill(1024, -1))] } : {}),
+  }, "partial");
+}
+
 const boardBytes = binary(header("RPGTLKIT BOARD", 2), i16(0), "", i16(1, 1, 1), blank(8),
   i16(1), "", "two-tiles.tst2", i16(1, -30, 0, 20), blank(1),
   blank(3), i32(255), blank(4), i16(1), blank(4), blank(2), "", blank(8), "", blank(22),

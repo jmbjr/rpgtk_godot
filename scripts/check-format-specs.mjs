@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import Ajv2020 from "ajv/dist/2020.js";
 import { buildReferences, readArtifacts } from "../artifacts.mjs";
 import { artifactRecord } from "../records.mjs";
-import { itemSprites } from "../sprites.mjs";
+import { itemSprites, standaloneTilePixels } from "../sprites.mjs";
 import { readMainFile } from "../model.mjs";
 import { openGameArchive } from "../archive.mjs";
 import { fixtures } from "../docs/specs/fixtures/format-fixtures.mjs";
@@ -42,13 +42,15 @@ const fixedBoard = fixtures.find(({ path }) => path === "Boards/fixed-room.brd")
 zip.file("Boards/truncated-fixed-grid.brd", fixedBoard.subarray(0, 100));
 const embeddedItem = fixtures.find(({ path }) => path === "Item/text-item-0.itm").bytes;
 zip.file("Item/truncated-text.itm", embeddedItem.subarray(0, 700));
+const textCharacter = fixtures.find(({ path }) => path === "Chrs/text-hero-0.tem").bytes;
+zip.file("Chrs/truncated-text.tem", textCharacter.subarray(0, 7000));
 const { artifacts, graph } = await load(zip);
 for (const { path, expected } of fixtures) {
   const record = recordFor(artifacts.get(path), graph);
   assert.equal(record.decode.status, expected.status, path);
   assert.deepEqual(record.data, expected.data, path);
 }
-for (const [path, status] of [["Bitmap/browser.png", "media"], ["unidentified.xyz", "unidentified"], ["broken.ste", "error"], ["StatusE/truncated-text.ste", "error"], ["Chrs/truncated.tem", "error"], ["Boards/truncated-text.brd", "error"], ["Boards/truncated-fixed-grid.brd", "error"], ["Item/truncated-text.itm", "error"]]) {
+for (const [path, status] of [["Bitmap/browser.png", "media"], ["unidentified.xyz", "unidentified"], ["broken.ste", "error"], ["StatusE/truncated-text.ste", "error"], ["Chrs/truncated.tem", "error"], ["Chrs/truncated-text.tem", "error"], ["Boards/truncated-text.brd", "error"], ["Boards/truncated-fixed-grid.brd", "error"], ["Item/truncated-text.itm", "error"]]) {
   assert.equal(recordFor(artifacts.get(path), graph).decode.status, status);
 }
 assert.ok(recordFor(artifacts.get("Prg/start.prg"), graph).references.outgoing.some(ref => ref.status === "missing"));
@@ -91,6 +93,20 @@ assert.equal(textItem.references.outgoing.find(edge => edge.evidence === "Item a
   "rpgtk:/Misc/effect.anm");
 const textEffect = recordFor(artifacts.get("StatusE/text-ste.ste"), graph);
 assert.deepEqual(textEffect.references.outgoing.map(edge => edge.target?.$ref), ["rpgtk:/Prg/start.prg"]);
+for (const size of [0, 1]) {
+  const hero = recordFor(artifacts.get(`Chrs/text-hero-${size}.tem`), graph);
+  const target = evidence => hero.references.outgoing.find(edge => edge.evidence === evidence)?.target?.$ref;
+  assert.equal(target("Special move slot 0"), "rpgtk:/SpcMove/pulse.spc");
+  assert.equal(target("Attack sound"), "rpgtk:/Media/tone.wav");
+  assert.equal(target("Level-up program"), "rpgtk:/Prg/start.prg");
+  if (size === 1) {
+    assert.equal(target("Walk south · frame 1 · top"), "rpgtk:/Tiles/two-tiles.tst#/data/tiles/1");
+  } else {
+    const pixels = standaloneTilePixels({ width: 32, height: 32, pixels: hero.data.embeddedWalking[0] });
+    assert.deepEqual([...pixels.slice(0, 8)], [0, 0, 0, 0, 0, 255, 0, 255]);
+    assert.deepEqual([...pixels.slice(128, 132)], [255, 0, 0, 255]);
+  }
+}
 for (const archivePath of process.argv.slice(2)) {
   if (/\.gam$/i.test(archivePath)) {
     const data = readMainFile(await readFile(archivePath));

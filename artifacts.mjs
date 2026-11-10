@@ -280,14 +280,69 @@ export function boardTilesets(edges, graph, artifacts) {
   return sets;
 }
 
+const characterStats = ["XP", "HP", "Max HP", "Defense", "Fight", "Special power", "Max special power", "Level"];
+
+function readCharacterWalking(readPart) {
+  const walking = [];
+  for (const direction of ["South", "East", "North", "West"]) {
+    for (let frame = 1; frame <= 4; frame++) {
+      const parts = ["top", "bottom"].map(part => reference(readPart(), `Walk ${direction.toLowerCase()} · frame ${frame} · ${part}`));
+      walking.push({ direction, frame, parts });
+    }
+  }
+  return walking;
+}
+
+function readTextCharacter(bytes) {
+  const reader = textReader(bytes, "RPGTLKIT CHAR", [2]);
+  const integer = () => {
+    const value = reader.number();
+    if (!Number.isSafeInteger(value)) throw new Error("Invalid text character integer.");
+    return value;
+  };
+  const skip = count => {
+    for (let i = 0; i < count; i++) reader.string();
+  };
+  const name = reader.string();
+  skip(9); // RPGCode variable names.
+  const stats = Object.fromEntries(characterStats.map(label => [label, integer()]));
+  const profile = reference(reader.string(), "Character portrait");
+  const refs = [profile];
+  for (let i = 0; i < 201; i++) {
+    refs.push(reference(reader.string(), `Special move slot ${i}`));
+    skip(4);
+  }
+  skip(2); // Special move name and enable flag.
+  const sizeType = integer();
+  if (![0, 1].includes(sizeType)) throw new Error("Unsupported text character graphic size.");
+
+  let embeddedWalking;
+  if (sizeType === 0) {
+    embeddedWalking = Array.from({ length: 16 }, () => Array.from({ length: 1024 }, () => {
+      const color = integer();
+      if (color < -1 || color > 0xffffff) throw new Error("Invalid embedded character tile color.");
+      return color;
+    }));
+    skip((16 + 1 + 10) * 1024); // Battle, battle-rest, and custom graphics.
+  }
+  const walking = readCharacterWalking(embeddedWalking ? () => "" : reader.string);
+  refs.push(...walking.flatMap(frame => frame.parts));
+  if (sizeType === 1) skip(64 + 4 + 20); // Battle, battle-rest, and custom graphic names.
+  skip(10 + 6 + 7); // Accessories, armor flags, and level progression.
+  for (const label of ["Attack", "Defense", "Special move", "Defeat"]) refs.push(reference(reader.string(), `${label} sound`));
+  refs.push(reference(reader.string(), "Level-up program"));
+  skip(1); // Level-up type.
+  return { name, stats, profile, walking, ...(embeddedWalking ? { embeddedWalking } : {}), refs: refs.filter(ref => ref.value) };
+}
+
 function readCharacter(bytes) {
+  if (/^RPGTLKIT CHAR[\r\n]/i.test(text.decode(bytes.subarray(0, 15)))) return readTextCharacter(bytes);
   const reader = cursor(bytes);
   const minor = header(reader, "RPGTLKIT CHAR", [3, 4]);
   const name = reader.string();
   for (let i = 0; i < 9; i++) reader.string();
   const stats = Object.fromEntries(
-    ["XP", "HP", "Max HP", "Defense", "Fight", "Special power", "Max special power", "Level"]
-      .map(label => [label, reader.long()]),
+    characterStats.map(label => [label, reader.long()]),
   );
   const profile = reference(reader.string(), "Character portrait");
   const refs = [profile];
@@ -306,14 +361,8 @@ function readCharacter(bytes) {
   for (const label of ["Attack", "Defense", "Special move", "Defeat"]) refs.push(reference(reader.string(), `${label} sound`));
   refs.push(reference(reader.string(), "Level-up program"));
   reader.skip(2);
-  const walking = [];
-  for (const direction of ["South", "East", "North", "West"]) {
-    for (let frame = 1; frame <= 4; frame++) {
-      const parts = ["top", "bottom"].map(part => reference(reader.string(), `Walk ${direction.toLowerCase()} · frame ${frame} · ${part}`));
-      refs.push(...parts);
-      walking.push({ direction, frame, parts });
-    }
-  }
+  const walking = readCharacterWalking(reader.string);
+  refs.push(...walking.flatMap(frame => frame.parts));
   return { name, stats, profile, walking, refs: refs.filter(ref => ref.value) };
 }
 
