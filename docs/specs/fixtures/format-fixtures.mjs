@@ -135,6 +135,27 @@ for (const version of [2, 3]) {
   });
 }
 
+const embeddedItemTile = [-1, 255, ...fill(30, -1), 65280, ...fill(991, -1)];
+for (const sizeType of [0, 1]) {
+  const graphics = sizeType
+    ? ["", "two-tiles.tst2", ...fill(30, ""), "", "two-tiles.tst1"]
+    : [-2, ...embeddedItemTile, ...fill(14, -2), ...embeddedItemTile];
+  const bytes = Buffer.from(["RPGTLKIT ITEM", 2, 1, "Relic", 1, 0, 1, 0, 1, ...fill(6, 0),
+    "Charm", 4, -3, 2, 1, "start.prg", "", 2, 3, "", 4, 5, "", "", "",
+    sizeType, ...graphics, 1, "Hero", ...fill(49, ""), 20, 10, 1, "Old relic", "effect.anm", ""].join("\r\n"), "ascii");
+  add(`Item/text-item-${sizeType}.itm`, bytes, {
+    version: 1, name: "Relic", description: "Old relic", modes: { equip: true, menu: false, board: true, battle: false },
+    usableBy: 1, characters: ["", "Hero", ...fill(49, "")], buyPrice: 20, sellPrice: 10, keyItem: true,
+    armorSlots: [0, 1, ...fill(6, 0)], accessory: "Charm", modifiers: { hp: 4, defense: -3, fight: 2, specialPower: 1 },
+    programs: { "Equip program": "start.prg", "Remove program": "", "Menu-use program": "", "Battle-use program": "",
+      "On-board program": "", "Pickup program": "" },
+    animation: "effect.anm", menu: { hp: 2, specialPower: 3 }, battle: { hp: 4, specialPower: 5 }, sizeType,
+    walking: sizeType ? [["", "two-tiles.tst2"], ...fill(15, ["", ""])] : fill(16, ["", ""]),
+    rest: ["", sizeType ? "two-tiles.tst1" : ""],
+    ...(sizeType === 0 ? { embeddedGraphics: { walking: [null, embeddedItemTile, ...fill(14, null)], rest: embeddedItemTile } } : {}),
+  });
+}
+
 const enemyFields = ["Foe", 10, 3, 2, 1, 1, 0, 0, 1, 1, "two-tiles.tst2", ...fill(132, ""),
   ...fill(202, ""), 0, 0, "", 4, 2, "", "", "", "", "", ""];
 const enemyData = {

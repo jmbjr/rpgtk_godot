@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import Ajv2020 from "ajv/dist/2020.js";
 import { buildReferences, readArtifacts } from "../artifacts.mjs";
 import { artifactRecord } from "../records.mjs";
+import { itemSprites } from "../sprites.mjs";
 import { readMainFile } from "../model.mjs";
 import { openGameArchive } from "../archive.mjs";
 import { fixtures } from "../docs/specs/fixtures/format-fixtures.mjs";
@@ -38,13 +39,15 @@ const textBoard = fixtures.find(({ path }) => path === "Boards/text-room.brd").b
 zip.file("Boards/truncated-text.brd", textBoard.subarray(0, -15));
 const fixedBoard = fixtures.find(({ path }) => path === "Boards/fixed-room.brd").bytes;
 zip.file("Boards/truncated-fixed-grid.brd", fixedBoard.subarray(0, 100));
+const embeddedItem = fixtures.find(({ path }) => path === "Item/text-item-0.itm").bytes;
+zip.file("Item/truncated-text.itm", embeddedItem.subarray(0, 700));
 const { artifacts, graph } = await load(zip);
 for (const { path, expected } of fixtures) {
   const record = recordFor(artifacts.get(path), graph);
   assert.equal(record.decode.status, expected.status, path);
   assert.deepEqual(record.data, expected.data, path);
 }
-for (const [path, status] of [["Bitmap/browser.png", "media"], ["unidentified.xyz", "unidentified"], ["broken.ste", "error"], ["Chrs/truncated.tem", "error"], ["Boards/truncated-text.brd", "error"], ["Boards/truncated-fixed-grid.brd", "error"]]) {
+for (const [path, status] of [["Bitmap/browser.png", "media"], ["unidentified.xyz", "unidentified"], ["broken.ste", "error"], ["Chrs/truncated.tem", "error"], ["Boards/truncated-text.brd", "error"], ["Boards/truncated-fixed-grid.brd", "error"], ["Item/truncated-text.itm", "error"]]) {
   assert.equal(recordFor(artifacts.get(path), graph).decode.status, status);
 }
 assert.ok(recordFor(artifacts.get("Prg/start.prg"), graph).references.outgoing.some(ref => ref.status === "missing"));
@@ -69,6 +72,16 @@ for (const path of ["Boards/text-room.brd", "Boards/fixed-room.brd"]) {
   assert.equal(boardEdge("Item activation program").target.$ref, "rpgtk:/Prg/start.prg");
   assert.equal(boardEdge("Item multitask program").status, "missing");
 }
+const embedded = itemSprites(artifacts.get("Item/text-item-0.itm"), artifacts, graph);
+assert.equal(embedded.walking[0].frames[0], null);
+assert.equal(embedded.rest.embedded, true);
+assert.deepEqual([...embedded.rest.pixels.slice(0, 8)], [0, 0, 0, 0, 0, 255, 0, 255]);
+assert.deepEqual([...embedded.rest.pixels.slice(128, 132)], [255, 0, 0, 255]);
+const textItem = recordFor(artifacts.get("Item/text-item-1.itm"), graph);
+assert.equal(textItem.references.outgoing.find(edge => edge.evidence === "Walking frame 1 bottom").target.$ref,
+  "rpgtk:/Tiles/two-tiles.tst#/data/tiles/1");
+assert.equal(textItem.references.outgoing.find(edge => edge.evidence === "Item animation").target.$ref,
+  "rpgtk:/Misc/effect.anm");
 for (const archivePath of process.argv.slice(2)) {
   if (/\.gam$/i.test(archivePath)) {
     const data = readMainFile(await readFile(archivePath));

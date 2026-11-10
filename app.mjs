@@ -770,6 +770,7 @@ function drawSprite(canvas, sprite) {
 }
 
 function spriteLinks(sprite) {
+  if (sprite.embedded) return el("p", "Source artwork is embedded in this item.", "technical");
   const details = el("details", "", "edge-group");
   details.append(el("summary", `Source tiles · ${sprite.parts.length}`));
   const list = el("ul", "", "edge-list");

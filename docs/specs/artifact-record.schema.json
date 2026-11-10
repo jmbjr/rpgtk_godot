@@ -346,11 +346,17 @@
       ],
       "additionalProperties": false
     },
+    "embeddedItemTile": {
+      "type": ["array", "null"],
+      "items": {"type": "integer", "minimum": -1, "maximum": 16777215},
+      "minItems": 1024,
+      "maxItems": 1024
+    },
     "itm": {
       "type": "object",
       "properties": {
         "byteLength": {"type": "integer", "minimum": 0},
-        "version": {"enum": [2, 3]},
+        "version": {"enum": [1, 2, 3]},
         "name": {"type": "string"},
         "description": {"type": "string"},
         "modes": {
@@ -427,7 +433,16 @@
           "minItems": 16,
           "maxItems": 16
         },
-        "rest": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2}
+        "rest": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2},
+        "embeddedGraphics": {
+          "type": "object",
+          "properties": {
+            "walking": {"type": "array", "items": {"$ref": "#/$defs/embeddedItemTile"}, "minItems": 16, "maxItems": 16},
+            "rest": {"$ref": "#/$defs/embeddedItemTile"}
+          },
+          "required": ["walking", "rest"],
+          "additionalProperties": false
+        }
       },
       "required": [
         "byteLength",
