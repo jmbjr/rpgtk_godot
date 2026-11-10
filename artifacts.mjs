@@ -186,7 +186,7 @@ export function boardTilesets(edges, graph, artifacts) {
 
 function readCharacter(bytes) {
   const reader = cursor(bytes);
-  header(reader, "RPGTLKIT CHAR", [3]);
+  const minor = header(reader, "RPGTLKIT CHAR", [3, 4]);
   const name = reader.string();
   for (let i = 0; i < 9; i++) reader.string();
   const stats = Object.fromEntries(
@@ -204,7 +204,9 @@ function readCharacter(bytes) {
   reader.string();
   reader.skip(1);
   for (let i = 0; i < 11; i++) reader.string();
-  reader.skip(22);
+  reader.skip(7); // Armor types.
+  reader.skip(minor === 3 ? 1 : 4); // Level type.
+  reader.skip(14); // Experience and level progression.
   for (const label of ["Attack", "Defense", "Special move", "Defeat"]) refs.push(reference(reader.string(), `${label} sound`));
   refs.push(reference(reader.string(), "Level-up program"));
   reader.skip(2);

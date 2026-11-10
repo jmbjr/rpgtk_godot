@@ -46,6 +46,16 @@ add("Chrs/hero.tem", binary(header("RPGTLKIT CHAR", 3), "Hero", blank(9), i32(10
   walking,
 }, "partial");
 
+const walker24 = binary(header("RPGTLKIT CHAR", 4), "Walker", blank(9), i32(20, 12, 12, 3, 5, 6, 7, 2),
+  "face.gif", blank(201 * 11), blank(1 + 1 + 11 + 7), i32(1), i16(5), i32(10), i16(1, 2, 3, 4),
+  "tone.wav", "", "", "", "start.prg", blank(2), "two-tiles.tst2", blank(31));
+add("Chrs/walker.tem", walker24, {
+  name: "Walker",
+  stats: { XP: 20, HP: 12, "Max HP": 12, Defense: 3, Fight: 5, "Special power": 6, "Max special power": 7, Level: 2 },
+  profile: { value: "face.gif", evidence: "Character portrait" },
+  walking: [{ ...walking[0], parts: [{ ...walking[0].parts[0], value: "two-tiles.tst2" }, walking[0].parts[1]] }, ...walking.slice(1)],
+}, "partial");
+
 const boardBytes = binary(header("RPGTLKIT BOARD", 2), i16(0), "", i16(1, 1, 1), blank(8),
   i16(1), "", "two-tiles.tst2", i16(1, -30, 0, 20), blank(1),
   blank(3), i32(255), blank(4), i16(1), blank(4), blank(2), "", blank(8), "", blank(22),

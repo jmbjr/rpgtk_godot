@@ -32,17 +32,28 @@ for (const name of ["standalone-16.gph", "standalone-32-rle.gph", "two-tiles.tst
 zip.file("Bitmap/browser.png", "");
 zip.file("unidentified.xyz", "");
 zip.file("broken.ste", "truncated");
+const character24 = fixtures.find(({ path }) => path === "Chrs/walker.tem").bytes;
+zip.file("Chrs/truncated.tem", character24.subarray(0, -1));
 const { artifacts, graph } = await load(zip);
 for (const { path, expected } of fixtures) {
   const record = recordFor(artifacts.get(path), graph);
   assert.equal(record.decode.status, expected.status, path);
   assert.deepEqual(record.data, expected.data, path);
 }
-for (const [path, status] of [["Bitmap/browser.png", "media"], ["unidentified.xyz", "unidentified"], ["broken.ste", "error"]]) {
+for (const [path, status] of [["Bitmap/browser.png", "media"], ["unidentified.xyz", "unidentified"], ["broken.ste", "error"], ["Chrs/truncated.tem", "error"]]) {
   assert.equal(recordFor(artifacts.get(path), graph).decode.status, status);
 }
 assert.ok(recordFor(artifacts.get("Prg/start.prg"), graph).references.outgoing.some(ref => ref.status === "missing"));
 assert.equal(recordFor(artifacts.get("Tiles/two-tiles.tst"), graph).references.incoming[0].status, "resolved");
+const walker = recordFor(artifacts.get("Chrs/walker.tem"), graph);
+const expectedTargets = {
+  "Attack sound": "rpgtk:/Media/tone.wav",
+  "Level-up program": "rpgtk:/Prg/start.prg",
+  "Walk south · frame 1 · top": "rpgtk:/Tiles/two-tiles.tst#/data/tiles/1",
+};
+for (const [evidence, target] of Object.entries(expectedTargets)) {
+  assert.equal(walker.references.outgoing.find(edge => edge.evidence === evidence)?.target?.$ref, target);
+}
 for (const archivePath of process.argv.slice(2)) {
   if (/\.gam$/i.test(archivePath)) {
     const data = readMainFile(await readFile(archivePath));
