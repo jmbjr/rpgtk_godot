@@ -92,7 +92,7 @@ function boardTileReferences(lookup, placements) {
 }
 
 function readTextBoard(bytes) {
-  const reader = textReader(bytes, "RPGTLKIT BOARD", 1);
+  const reader = textReader(bytes, "RPGTLKIT BOARD", [0, 1]);
   const integer = () => {
     const value = reader.number();
     if (!Number.isSafeInteger(value)) throw new Error("Invalid board integer.");
@@ -102,8 +102,8 @@ function readTextBoard(bytes) {
     for (let i = 0; i < count; i++) reader.string();
   };
   skip(2); // Registration flag and code.
-  const width = integer();
-  const height = integer();
+  const width = reader.minor === 0 ? 19 : integer();
+  const height = reader.minor === 0 ? 11 : integer();
   const layers = 8;
   const cells = width * height * layers;
   if (width < 1 || height < 1 || cells > 2_000_000) throw new Error("Unsupported board dimensions.");
@@ -349,7 +349,7 @@ function readProgram(bytes, catalog) {
   return { program, refs };
 }
 
-function textReader(bytes, signature, minor = 0) {
+function textReader(bytes, signature, minors = [0]) {
   const lines = decodeProgram(bytes).split(/\r\n|\n|\r/);
   if (lines.at(-1) === "") lines.pop();
   let position = 0;
@@ -362,10 +362,13 @@ function textReader(bytes, signature, minor = 0) {
     if (!Number.isFinite(value)) throw new Error("Invalid numeric field.");
     return value;
   }
-  if (string().toUpperCase() !== signature || number() !== 2 || number() !== minor) {
-    throw new Error(`This text file is outside the supported Toolkit 2.${minor} layout.`);
+  const validHeader = string().toUpperCase() === signature && number() === 2;
+  const minor = validHeader ? number() : undefined;
+  if (!minors.includes(minor)) {
+    const versions = minors.map(version => `2.${version}`).join(" or ");
+    throw new Error(`This text file is outside the supported Toolkit ${versions} layout.`);
   }
-  return { string, number, remaining: () => lines.length - position };
+  return { minor, string, number, remaining: () => lines.length - position };
 }
 
 function fields(reader, names) {
