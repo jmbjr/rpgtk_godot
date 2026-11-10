@@ -12,7 +12,7 @@ versions, this spec revision, and the JSON schema version are independent.
 | GAM | [Main File](gam.md) | Binary 2.2 and text 2.0 startup fields | Demo.gam and DustBall main.gam |
 | PRG | [RPGCode program](prg.md) | Source and static indexing | Demo startup trace and Toolkit 2 Help |
 | TAN | [Animated tile](tan.md) | Binary 2.0 | Demo animation files |
-| TEM | [Character](tem.md) | Binary 2.3 prefix | Demo characters |
+| TEM | [Character](tem.md) | Binary 2.3 and 2.4 prefixes | Demo characters, Cluetest character, compatibility reader and synthetic fixtures |
 | BRD | [Board](brd.md) | Binary 2.2 and 2.3 placement and link fields | Demo boards |
 | ITM | [Item](itm.md) | Binary 2.2 and 2.3 | Demo items |
 | ENE | [Enemy](ene.md) | Text 2.0, two observed tails | Demo enemies |
