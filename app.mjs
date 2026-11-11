@@ -1,3 +1,4 @@
+import { indexTilesets, matchingArtwork } from "./tile-matches.mjs";
 import { formatSummary, formatSpecTarget, isTileFormat, mainSourceFormat, tileMode } from "./asset-format.mjs";
 import { openGameArchive } from "./archive.mjs";
 import { mainFileBindings, readMainFile, resolveAsset } from "./model.mjs";
@@ -32,6 +33,7 @@ function status(id, message, error = false) {
 
 let catalog;
 let archive = null;
+let tileMatchIndex;
 let archiveName;
 let paths = [];
 let programs = [];
@@ -327,6 +329,52 @@ function tilesetPdfControl(artifact) {
   return controls;
 }
 
+function artworkMatchControl(character) {
+  const section = el("section", "", "reference");
+  const status = el("p", "", "technical");
+  status.setAttribute("role", "status");
+  const results = el("div");
+  const search = button("Find matching tiles", async () => {
+    const revision = inspectorRevision;
+    search.disabled = true;
+    status.textContent = "Searching tilesets…";
+    const pending = tileMatchIndex ??= indexTilesets(artifacts);
+    try {
+      const index = await pending;
+      if (revision !== inspectorRevision) return;
+      const matches = matchingArtwork(character, index);
+      status.textContent = matches.length
+        ? `${matches.length} frame${matches.length === 1 ? "" : "s"} with matching artwork`
+        : "No exact tile matches for this character’s embedded artwork.";
+      for (const { label, pixels, matches: tiles } of matches) {
+        const row = el("details");
+        row.append(el("summary", `${label} · ${tiles.length} matching tile${tiles.length === 1 ? "" : "s"}`));
+        const preview = spriteCanvas(label);
+        drawSprite(preview, { width: 32, height: 32, pixels });
+        const list = el("ul", "", "edge-list");
+        for (const { path, tile } of tiles) {
+          const item = el("li");
+          item.append(button(`${path} · Tile ${tile}`, () => selectArtifact(path, tile)));
+          list.append(item);
+        }
+        row.append(preview, list);
+        results.append(row);
+      }
+    } catch (error) {
+      if (tileMatchIndex === pending) tileMatchIndex = undefined;
+      if (revision === inspectorRevision) {
+        results.replaceChildren();
+        status.textContent = `Could not find matching tiles. ${error.message}`;
+        search.disabled = false;
+      }
+    }
+  });
+  section.append(el("h4", "Matching artwork"),
+    el("p", "Compare visible pixels at 32 × 32 within this archive. Blank frames are skipped. Stored file references appear in the connection map."),
+    search, status, results);
+  return section;
+}
+
 function renderAsset(artifact) {
   const panel = byId("graph");
   const edges = references.outgoing.get(artifact.path) ?? [];
@@ -442,6 +490,7 @@ function renderAsset(artifact) {
     const portrait = edges.find(edge => edge.evidence === "Character portrait")?.to;
     if (portrait) showMedia(panel, portrait, `${artifact.name} portrait`);
     panel.append(stats);
+    if (artifact.embeddedWalking) panel.append(artworkMatchControl(artifact));
     const sprites = el("div", "", "sprite-strip");
     for (const [index, frame] of artifact.walking.entries()) {
       if (frame.frame !== 1) continue;
@@ -1721,6 +1770,7 @@ async function loadArchive(name, readBytes) {
     const indexed = await readArtifacts(zip, commands);
     if (request !== archiveRequest) return;
     archive = zip;
+    tileMatchIndex = undefined;
     connectionFilters = {};
     archiveName = name;
     catalog = commands;
