@@ -17,7 +17,7 @@ Open these tiles one by one using the Toolkit 2 **tile editor's standalone GPH o
 | `Game/TK2LegacyLab/Tiles/palette-6-0.gph` | 6 · 16 × 16 · 16-color | Raw |
 | `Game/TK2LegacyLab/Tiles/palette-6-1.gph` | 6 · 16 × 16 · 16-color | RLE |
 
-For **each** file, record the exact Toolkit editor release, whether opening succeeds, whether the transparent and colored pixels render correctly, and whether saving a **copy** and reopening works. Preserve the original samples; note any conversion, changed format revision/mode, or rejection. These are synthetic, source-backed conformance fixtures—not verified editor-written files. Do **not** mark runtime GPH behavior as passed merely because the project runs.
+For **each** file, record the exact Toolkit editor release, whether opening succeeds, whether the transparent and colored pixels render correctly, and whether saving a **copy** and reopening works. Preserve the original samples; note any conversion, changed format revision/mode, or rejection. These are synthetic, source-backed conformance fixtures—not verified editor-written files. The ZIP normalizes the fixture text to **CRLF line endings** for desktop compatibility while preserving field values and pixels; the committed source fixtures remain unchanged. Do **not** mark runtime GPH behavior as passed merely because the project runs.
 
 The [manifest](manifest.json) lists exact ZIP locations, source fixture paths, GPH modes and compression, and coverage status. See the [matrix](../../docs/specs/test-matrix.md) for viewer and desktop results.
 
