@@ -194,5 +194,127 @@
       "fixture": "Media/note.mid",
       "usage": "board music reference target"
     }
+  ],
+  "legacyCharacters": [
+    {
+      "path": "Game/TK2LegacyLab/Chrs/tem-text-20-embedded.tem",
+      "fixture": "Chrs/text-0-0.tem",
+      "format": "text",
+      "revision": "2.0",
+      "graphics": "embedded",
+      "expectedName": "Text 2.0 hero 0",
+      "battleSize": [
+        32,
+        32
+      ],
+      "expectedTilesetReference": false,
+      "usage": "standalone character editor/open-save-copy inspection; not active GAM character"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Chrs/tem-text-21-embedded.tem",
+      "fixture": "Chrs/text-1-0.tem",
+      "format": "text",
+      "revision": "2.1",
+      "graphics": "embedded",
+      "expectedName": "Text 2.1 hero 0",
+      "battleSize": [
+        32,
+        32
+      ],
+      "expectedTilesetReference": false,
+      "usage": "standalone character editor/open-save-copy inspection; not active GAM character"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Chrs/tem-text-21-referenced.tem",
+      "fixture": "Chrs/text-1-1.tem",
+      "format": "text",
+      "revision": "2.1",
+      "graphics": "referenced",
+      "expectedName": "Text 2.1 hero 1",
+      "battleSize": [
+        32,
+        64
+      ],
+      "expectedTilesetReference": true,
+      "usage": "standalone character editor/open-save-copy inspection; not active GAM character"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Chrs/tem-text-22-embedded.tem",
+      "fixture": "Chrs/text-hero-0.tem",
+      "format": "text",
+      "revision": "2.2",
+      "graphics": "embedded",
+      "expectedName": "Old hero",
+      "battleSize": [
+        32,
+        32
+      ],
+      "expectedTilesetReference": false,
+      "usage": "standalone character editor/open-save-copy inspection; not active GAM character"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Chrs/tem-text-22-referenced.tem",
+      "fixture": "Chrs/text-hero-1.tem",
+      "format": "text",
+      "revision": "2.2",
+      "graphics": "referenced",
+      "expectedName": "Old hero",
+      "battleSize": [
+        64,
+        64
+      ],
+      "expectedTilesetReference": true,
+      "usage": "standalone character editor/open-save-copy inspection; not active GAM character"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Chrs/tem-binary-23.tem",
+      "fixture": "Chrs/hero.tem",
+      "format": "binary",
+      "revision": "2.3",
+      "graphics": "referenced",
+      "expectedName": "Hero",
+      "battleSize": [
+        64,
+        64
+      ],
+      "expectedTilesetReference": false,
+      "usage": "standalone character editor/open-save-copy inspection; not active GAM character"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Chrs/tem-binary-24.tem",
+      "fixture": "Chrs/walker.tem",
+      "format": "binary",
+      "revision": "2.4",
+      "graphics": "referenced",
+      "expectedName": "Walker",
+      "battleSize": [
+        64,
+        64
+      ],
+      "expectedTilesetReference": true,
+      "usage": "standalone character editor/open-save-copy inspection; not active GAM character"
+    }
+  ],
+  "legacyCharacterAssets": [
+    {
+      "path": "Game/TK2LegacyLab/Media/tone.wav",
+      "fixture": "Media/tone.wav",
+      "usage": "synthetic character sound reference"
+    },
+    {
+      "path": "Game/TK2LegacyLab/SpcMove/pulse.spc",
+      "fixture": "SpcMove/pulse.spc",
+      "usage": "synthetic special move referenced by text TEM"
+    },
+    {
+      "path": "Game/TK2LegacyLab/StatusE/slow.ste",
+      "fixture": "StatusE/slow.ste",
+      "usage": "synthetic status effect referenced by pulse.spc"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Misc/effect.anm",
+      "fixture": "Misc/effect.anm",
+      "usage": "synthetic animation referenced by pulse.spc"
+    }
   ]
 }
