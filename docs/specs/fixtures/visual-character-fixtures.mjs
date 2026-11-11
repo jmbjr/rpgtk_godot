@@ -18,6 +18,8 @@ const bg = color(24, 31, 49);
 const white = color(255, 253, 235);
 const ink = color(13, 16, 31);
 const skin = color(248, 199, 143);
+const hair = color(73, 57, 88);
+const hairLight = color(118, 98, 138);
 
 const slug = name => name.toLowerCase().replaceAll(" ", "-");
 const walkFile = (direction, segment) => "diag-walk-" + slug(direction) + "-" + segment + ".gph";
@@ -47,11 +49,32 @@ function diagnosticTile(kind, frame = 1, segment = "whole") {
   rect(26, 26, 29, 29, white);  // bottom-right square
   if (directions.includes(kind)) {
     if (segment !== "bottom") {
-      rect(9, 8, 22, 22, skin);
-      rect(10, 9, 21, 10, white);
-      rect(12, 14, 14, 16, ink);
-      rect(18, 14, 20, 16, ink);
-      rect(14, 20, 18, 21, ink);
+      // Four *readable* facings, independent of the direction's accent color.
+      // South: two eyes. East/West: one eye and a protruding nose pointing
+      // right/left. North: back of the head, with hair and no visible face.
+      if (kind === "North") {
+        rect(9, 8, 22, 22, hair);
+        rect(10, 9, 21, 10, white);
+        rect(11, 12, 13, 19, hairLight);
+        rect(18, 12, 20, 19, hairLight);
+        rect(14, 20, 17, 22, skin); // neck, not a mouth
+      } else {
+        rect(9, 8, 22, 22, skin);
+        rect(10, 9, 21, 10, white);
+        if (kind === "South") {
+          rect(12, 14, 14, 16, ink);
+          rect(18, 14, 20, 16, ink);
+          rect(14, 19, 18, 19, ink);
+        } else if (kind === "East") {
+          rect(18, 14, 20, 16, ink);
+          rect(22, 17, 24, 19, skin); // nose facing right
+          rect(20, 20, 22, 21, ink);
+        } else if (kind === "West") {
+          rect(11, 14, 13, 16, ink);
+          rect(7, 17, 9, 19, skin); // nose facing left
+          rect(9, 20, 11, 21, ink);
+        }
+      }
     }
     if (segment !== "top") {
       const top = segment === "whole" ? 20 : 8;

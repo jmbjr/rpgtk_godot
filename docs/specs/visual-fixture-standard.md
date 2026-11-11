@@ -11,7 +11,18 @@ Every GPH in the diagnostic kit and every embedded TEM drawing has:
 - A substantial center mark — no deliberately empty walking or action frames.
 - Consistent accent colors: **South green**, **East orange**, **North blue**, **West violet**; **Attack coral**, **Defense blue**, **Special move purple**, **Defeat gray**, **Rest teal**, **Custom yellow**.
 
-Walking poses use a face, eyes and uniform. Referenced walking art separates the face/top and uniform/bottom into two vertically stacked GPH files, whereas embedded walking art stores the full character in one 32 × 32 frame. This **difference in proportions is expected** from the historical layout.
+Walking poses use a directional head and uniform. All four facings must look different **even in grayscale**—accent colors alone are not sufficient:
+
+| Direction | Head diagnostic rule |
+| --- | --- |
+| South · green | Front-facing: **two visible eyes** and centered mouth |
+| East · orange | Profile looking **right**: eye on the right and a small nose protruding right |
+| North · blue | **Back of head**: hair and highlights, no visible face or eyes |
+| West · violet | Profile looking **left**: eye on the left and a small nose protruding left |
+
+The face's eye and nose pixel signatures are checked in CI both for the four standalone referenced walking-top GPH files and for **all sixteen embedded walking frames**. The top/bottom sprite split and existing frame markers are otherwise unchanged; this revision does **not** claim new walking animation or changed frame poses.
+
+Referenced walking art separates the head/top and uniform/bottom into two vertically stacked GPH files, whereas embedded walking art stores the full character in one 32 × 32 frame. This **difference in proportions is expected** from the historical layout.
 
 Actions use large bright emblems and a small white frame counter; the four action categories use different accent colors. The ten Custom slots have distinct dot counts. Referenced walking frames 1–4 intentionally reuse their direction's top/bottom artwork; the goal is to test the file references, not run animation. Source geometry still varies by format: text 2.1 referenced battle/rest = 32 × 64; text 2.2 and binary 2.3/2.4 referenced battle/rest = 64 × 64; embedded art = 32 × 32.
 
@@ -20,8 +31,8 @@ Actions use large bright emblems and a small white frame counter; the four actio
 | Inspect | Expected | Fail condition |
 | --- | --- | --- |
 | A diagnostic GPH (any `diag-*.gph`) | Visible dark field, colored border, white upper-left/lower-right registration squares; outer corner transparent | Completely blank, missing color or flipped registration squares |
-| TEM embedded walking | All 16 direction/frame slots show a complete 32 × 32 character, with direction colors | Empty walking slot or scrambled pixels |
-| TEM referenced walking | All 16 slots have visible top and bottom parts, with direction color | One missing half or broken GPH link |
+| TEM embedded walking | All 16 direction/frame slots show a complete 32 × 32 character, with direction-specific head shape and color | Empty walking slot, identical facings or scrambled pixels |
+| TEM referenced walking | All 16 slots have visible top and bottom parts, with direction-specific head shape and color | One missing half, identical facings or broken GPH link |
 | TEM battle artwork | Four visible Attack, Defense, Special move and Defeat frames each; correct dimensions for revision | Blank action frame, wrong part order or missing link |
 | TEM Rest and Custom | One Rest and ten distinct Custom frames are visibly populated | Empty frame or missing referenced tile |
 | Transparency | Transparent outside each mark; dark interior opaque | Entire image transparent or all-transparent preview |
