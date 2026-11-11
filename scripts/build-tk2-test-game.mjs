@@ -159,6 +159,12 @@ const instructions = [
   ...specimens.map(specimen => `Tile editor check (standalone): ${specimen.path}`),
   ...tilesetSpecimens.map(set => `Tileset mode ${set.detail}: ${set.path} | Board editor: ${set.board}`),
   ...legacyBoards.map(board => `Older board ${board.format} ${board.revision}: ${board.path} | Open in board editor; save a copy`),
+  ...(visualSpriteKit ? [
+    "Visual standard diagnostic-v1: transparent outer corner, bright border, white top-left and bottom-right, dark interior.",
+    "Every TEM walk and artwork slot must be visibly populated. Direction colors South=green, East=orange, North=blue, West=violet.",
+    "Action colors Attack=coral, Defense=blue, Special=purple, Defeat=gray, Rest=teal, Custom=yellow.",
+    "Referenced walking uses top/bottom parts, not a single embedded 32x32 sprite. Blank diagnostic artwork is a failure.",
+  ] : []),
   ...legacyCharacters.map(character => `TEM ${character.format} ${character.revision} ${character.graphics}: ${character.path} | Diagnostic colors and visible pixels; save a copy`),
 ].join("\r\n") + "\r\n";
 
