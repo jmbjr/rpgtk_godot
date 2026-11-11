@@ -14,6 +14,8 @@ const specimens = manifest.specimens ?? [];
 const tilesetSpecimens = manifest.tilesets ?? [];
 const legacyBoards = manifest.legacyBoards ?? [];
 const legacyBoardAssets = manifest.legacyBoardAssets ?? [];
+const legacyCharacters = manifest.legacyCharacters ?? [];
+const legacyCharacterAssets = manifest.legacyCharacterAssets ?? [];
 const fixtureByPath = new Map(formatFixtures.map(fixture => [fixture.path, fixture.bytes]));
 const sourceBytes = async specimen => {
   assert.ok(Boolean(specimen.fixture) !== Boolean(specimen.source), "Specify exactly one fixture or source");
@@ -147,6 +149,7 @@ const instructions = [
   ...specimens.map(specimen => `Tile editor check (standalone): ${specimen.path}`),
   ...tilesetSpecimens.map(set => `Tileset mode ${set.detail}: ${set.path} | Board editor: ${set.board}`),
   ...legacyBoards.map(board => `Older board ${board.format} ${board.revision}: ${board.path} | Open in board editor; save a copy`),
+  ...legacyCharacters.map(character => `TEM ${character.format} ${character.revision} ${character.graphics}: ${character.path} | Open in character editor; save a copy`),
 ].join("\r\n") + "\r\n";
 
 const zip = new JSZip();
@@ -171,9 +174,10 @@ for (const set of tilesetSpecimens) {
   zip.file(set.path, source, options); // Preserve exact binary fixture bytes.
   zip.file(set.board, boardFile(set), options); // Separate, unlinked editor-test room.
 }
-for (const specimen of [...legacyBoardAssets, ...legacyBoards]) {
+for (const specimen of [...legacyBoardAssets, ...legacyBoards, ...legacyCharacterAssets, ...legacyCharacters]) {
   assert.ok(specimen.path.startsWith(project + "/"), specimen.path);
   if (legacyBoards.includes(specimen)) assert.ok(specimen.path.startsWith(project + "/Boards/"), specimen.path);
+  if (legacyCharacters.includes(specimen)) assert.ok(specimen.path.startsWith(project + "/Chrs/"), specimen.path);
   zip.file(specimen.path, await sourceBytes(specimen), options); // Byte-for-byte controlled specimen.
 }
 for (const specimen of specimens) {
@@ -192,7 +196,9 @@ const catalog = JSON.parse(await readFile(new URL("../catalog.json", import.meta
 const { artifacts } = await readArtifacts(opened, catalog);
 const requiredPaths = [...Object.values(files), ...specimens.map(specimen => specimen.path),
   ...tilesetSpecimens.flatMap(set => [set.path, set.board]),
-  ...legacyBoards.map(board => board.path), ...legacyBoardAssets.map(asset => asset.path)];
+  ...legacyBoards.map(board => board.path), ...legacyBoardAssets.map(asset => asset.path),
+  ...legacyCharacters.map(character => character.path),
+  ...legacyCharacterAssets.map(asset => asset.path)];
 assert.equal(new Set(requiredPaths).size, requiredPaths.length, "Duplicate manifest paths");
 assert.deepEqual([...artifacts.keys()].sort(), [...requiredPaths, readmePath].sort());
 for (const path of requiredPaths) assert.equal(artifacts.get(path).decodeStatus, "decoded", path);
@@ -236,7 +242,7 @@ for (const set of tilesetSpecimens) {
   assert.deepEqual(edges.map(edge => [edge.to, edge.tile]).sort((a, b) => a[1] - b[1]),
     [[set.path, 1], [set.path, 2]], `${set.board}: both tile references resolve`);
 }
-for (const specimen of [...legacyBoardAssets, ...legacyBoards]) {
+for (const specimen of [...legacyBoardAssets, ...legacyBoards, ...legacyCharacters, ...legacyCharacterAssets]) {
   const packaged = Buffer.from(await opened.file(specimen.path).async("uint8array"));
   assert.deepEqual(packaged, await sourceBytes(specimen), `${specimen.path}: source bytes changed`);
 }
@@ -271,6 +277,60 @@ for (const boardSpec of legacyBoards) {
     }
   }
 }
+const expectedCharacterDependencies = {
+  portrait: `${project}/Bitmap/face.gif`,
+  tileset: `${project}/Tiles/two-tiles.tst`,
+  sound: `${project}/Media/tone.wav`,
+  specialMove: `${project}/SpcMove/pulse.spc`,
+  program: files.startup,
+};
+for (const characterSpec of legacyCharacters) {
+  assert.ok(["text", "binary"].includes(characterSpec.format));
+  assert.ok(["embedded", "referenced"].includes(characterSpec.graphics));
+  const asset = artifacts.get(characterSpec.path);
+  assert.equal(asset.name, characterSpec.expectedName, characterSpec.path);
+  assert.equal(asset.walking.length, 16, characterSpec.path);
+  assert.equal(asset.artwork.length, 27, characterSpec.path);
+  assert.deepEqual([asset.artwork[0].kind, asset.artwork[0].frame, asset.artwork[0].width,
+    asset.artwork[0].height], ["Attack", 1, ...characterSpec.battleSize], characterSpec.path);
+  assert.deepEqual([asset.artwork.at(-1).kind, asset.artwork.at(-1).frame],
+    ["Custom", 10], characterSpec.path);
+  if (characterSpec.graphics === "embedded") {
+    assert.equal(asset.embeddedWalking.length, 16, characterSpec.path);
+    assert.ok(asset.embeddedWalking.every(pixels => pixels.length === 1024), characterSpec.path);
+    assert.ok(asset.embeddedWalking.some(pixels => pixels.includes(-1)), characterSpec.path);
+    assert.ok(asset.artwork.every(frame => frame.pixels?.length === 1024), characterSpec.path);
+  } else {
+    assert.equal(asset.embeddedWalking, undefined, characterSpec.path);
+    assert.ok(asset.artwork.every(frame => Array.isArray(frame.parts)), characterSpec.path);
+    assert.ok(asset.artwork[0].parts.length > 0, characterSpec.path);
+  }
+  const edges = graph.outgoing.get(characterSpec.path) ?? [];
+  assert.ok(edges.some(edge => edge.evidence === "Character portrait" &&
+    edge.to === expectedCharacterDependencies.portrait), `${characterSpec.path}: portrait must resolve`);
+  if (characterSpec.format === "text") {
+    for (const [evidence, path] of [
+      ["Special move slot 0", expectedCharacterDependencies.specialMove],
+      ["Attack sound", expectedCharacterDependencies.sound],
+      ["Level-up program", expectedCharacterDependencies.program],
+    ]) assert.ok(edges.some(edge => edge.evidence === evidence && edge.to === path),
+      `${characterSpec.path}: missing resolved ${evidence}`);
+    // Text 2.0/2.1 fixtures supply a special-move sound; text 2.2 deliberately leaves it blank.
+    if (["2.0", "2.1"].includes(characterSpec.revision)) {
+      assert.ok(edges.some(edge => edge.evidence === "Special move sound" &&
+        edge.to === expectedCharacterDependencies.sound), `${characterSpec.path}: special-move sound`);
+    }
+  }
+  const tileEdges = edges.filter(edge => edge.to === expectedCharacterDependencies.tileset &&
+    edge.tile === 2 && edge.evidence.startsWith("Walk "));
+  assert.equal(tileEdges.length > 0, characterSpec.expectedTilesetReference,
+    `${characterSpec.path}: walking tile-reference presence`);
+  if (characterSpec.revision === "2.1" && characterSpec.graphics === "referenced") {
+    assert.equal(asset.artwork[0].parts.length, 2, "Text 2.1 referenced battle frames use one tile column");
+    assert.ok(edges.some(edge => edge.value === "battle-0.gph" && !edge.to),
+      "Unavailable historic battle art remains explicitly unresolved");
+  }
+}
 for (const path of [files.board, files.player]) {
   const edges = graph.outgoing.get(path);
   assert.equal(edges.length, path === files.board ? 6 : 16);
@@ -289,4 +349,4 @@ assert.ok(artifacts.get(files.player).walking.length === 16);
 const output = process.argv[2] ?? "dist/tk2-test-game.zip";
 await mkdir(dirname(output), { recursive: true });
 await writeFile(output, bytes);
-console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards; ${legacyBoards.length} historical boards.`);
+console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards; ${legacyBoards.length} historical boards; ${legacyCharacters.length} historical TEM profiles.`);
