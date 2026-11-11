@@ -23,7 +23,7 @@
       <section class="panel import-panel" aria-labelledby="import-heading">
         <h2 id="import-heading">Open a game</h2>
         <div class="pickers">
-          <label>Game archive <span>ZIP</span><input id="archive" type="file" accept=".zip,application/zip"></label>
+          <label>Game archive <span>ZIP / downloaded artifact</span><input id="archive" type="file"></label>
           <label>Main File <span>Optional · GAM</span><input id="main-file" type="file" accept=".gam"></label>
         </div>
         <form id="archive-url-form" class="archive-url-form">
@@ -32,11 +32,16 @@
           <button type="submit">Open URL</button>
         </form>
         <a id="archive-download" target="_blank" rel="noopener noreferrer" hidden>Download ZIP for local import</a>
+        <p>On Android, some ZIP downloads appear as unknown files and are disabled by file-type filters. This picker lets you choose any downloaded file; the viewer checks its contents when opening it. To skip downloading, open a published test game here:</p>
         <div class="sprite-controls">
-          <a class="download-button" href="./tk2-test-game.zip" download>Download Toolkit 2 test game</a>
-          <a class="download-button" href="./tk2-legacy-game.zip" download>Download Toolkit 2 legacy test game</a>
+          <button type="button" id="open-test-game">Open baseline game in viewer</button>
+          <button type="button" id="open-legacy-game">Open legacy game in viewer</button>
         </div>
-        <p>For browser inspection, select a game ZIP or a GitHub Actions artifact ZIP containing one game ZIP; no extraction is needed. To run in Toolkit 2, extract the game ZIP into your Toolkit 2 folder. Open <code>Main/TK2TestLab.gam</code> for the original baseline, or <code>Main/TK2LegacyLab.gam</code> for the first legacy format checks (GPH modes 4 and 6). Open the standalone GPH tiles individually in the tile editor.</p>
+        <div class="sprite-controls">
+          <a class="download-button" href="./tk2-test-game.zip" download="tk2-test-game.zip">Download baseline ZIP</a>
+          <a class="download-button" href="./tk2-legacy-game.zip" download="tk2-legacy-game.zip">Download legacy ZIP</a>
+        </div>
+        <p>For browser inspection, select a game ZIP or a GitHub Actions artifact ZIP containing one game ZIP; no extraction is needed. To run in Toolkit 2, extract the game ZIP into your Toolkit 2 folder. Open <code>Main/TK2TestLab.gam</code> for the baseline or <code>Main/TK2LegacyLab.gam</code> for legacy format checks. Open the standalone GPH tiles individually in the tile editor.</p>
         <div class="statuses">
           <p id="archive-status" role="status">Choose a game ZIP to browse its folders and files.</p>
           <p id="main-status" role="status">A Main File can identify the configured startup script.</p>

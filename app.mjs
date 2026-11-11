@@ -1848,8 +1848,28 @@ byId("archive").addEventListener("change", event => {
   if (!file) return;
   archiveDownload?.abort();
   byId("archive-download").hidden = true;
+  // Android may label ZIP downloads as application/octet-stream or no type.
+  // Validate the bytes with JSZip instead of relying on the filename or MIME.
   void loadArchive(file.name, () => file.arrayBuffer());
 });
+
+for (const [id, filename] of [
+  ["open-test-game", "tk2-test-game.zip"],
+  ["open-legacy-game", "tk2-legacy-game.zip"],
+]) {
+  byId(id).addEventListener("click", () => {
+    archiveDownload?.abort();
+    const controller = new AbortController();
+    archiveDownload = controller;
+    byId("archive-download").hidden = true;
+    const url = new URL(`./${filename}`, import.meta.url);
+    void loadArchive(filename, async () => {
+      const response = await fetch(url, { cache: "no-store", signal: controller.signal });
+      if (!response.ok) throw new Error(`The game ZIP server returned HTTP ${response.status}.`);
+      return response.arrayBuffer();
+    });
+  });
+}
 
 byId("archive-url-form").addEventListener("submit", event => {
   event.preventDefault();
