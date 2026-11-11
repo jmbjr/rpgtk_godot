@@ -58,6 +58,7 @@ jobs:
           node scripts/check-format-specs.mjs
           node scripts/check-asset-formats.mjs
           node scripts/check-character-board-details.mjs
+          node scripts/check-visual-diagnostics.mjs
           node scripts/check-tile-matches.mjs
           node scripts/check-game-graph.mjs
           node scripts/check-inspector-history.mjs
