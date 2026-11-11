@@ -10,6 +10,9 @@ const legacy = process.argv.includes("--legacy");
 const manifestLocation = legacy ? "../experiments/tk2-legacy-game/manifest.json" : "../experiments/tk2-test-game/manifest.json";
 const manifest = JSON.parse(await readFile(new URL(manifestLocation, import.meta.url)));
 const specimens = manifest.specimens ?? [];
+// Toolkit 2's text writers use CRLF. Conformance fixtures are LF, so normalize
+// the container's wire form without changing the checked-in source specimens.
+const gphWireText = bytes => bytes.toString("latin1").replace(/\r\n|\r|\n/g, "\r\n");
 const { name, title, files, room } = manifest;
 const project = `Game/${name}`;
 const readmePath = `Readme-${name}.txt`;
@@ -140,8 +143,9 @@ zip.file(files.player, characterFile(), options);
 for (const specimen of specimens) {
   assert.equal(specimen.type, "gph");
   assert.ok(specimen.path.startsWith(`${project}/Tiles/`), specimen.path);
-  // Package the versioned, checked-in conformance sample unchanged.
-  zip.file(specimen.path, await readFile(new URL(`../${specimen.source}`, import.meta.url)), options);
+  // Preserve the fixture's fields and pixels while using editor-native CRLF.
+  const source = await readFile(new URL(`../${specimen.source}`, import.meta.url));
+  zip.file(specimen.path, gphWireText(source), options);
 }
 zip.file(readmePath, instructions, options);
 const bytes = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
@@ -162,6 +166,9 @@ for (const specimen of specimens) {
   assert.equal(tile.pixels.length, 256, specimen.path);
   assert.equal(tile.pixels[0], -1, "Fixture transparency marker");
   assert.ok(tile.pixels.slice(1).every(Number.isInteger), specimen.path);
+  const source = await readFile(new URL(`../${specimen.source}`, import.meta.url));
+  const packaged = await opened.file(specimen.path).async("string");
+  assert.equal(packaged, gphWireText(source), "Fixture content must change only in line endings");
 }
 const main = artifacts.get(files.main);
 assert.equal(main.projectPath, `Game\\${name}\\`);
