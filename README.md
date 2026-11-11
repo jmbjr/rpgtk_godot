@@ -54,6 +54,15 @@ The ZIP host must allow cross-origin browser reads from the viewer. If the
 browser cannot read it, use **Download ZIP for local import** and then choose
 the downloaded file in **Game archive**.
 
+A GitHub Actions artifact download often contains an **outer ZIP with one
+inner game ZIP** (for example, `tk2-legacy-game.zip`). Select the outer
+downloaded artifact ZIP directly in **Game archive**; the viewer automatically
+opens the contained game ZIP without requiring you to extract it first.
+This works for local imports and readable URLs. If an outer ZIP contains
+multiple ZIPs, extract it and choose the desired inner game ZIP explicitly;
+invalid nested ZIPs report an error rather than appearing as an empty game.
+The wrapper is unwrapped only once.
+
 The viewer also recognizes the Toolkit installer layout with `setup.inf`
 and `zip.zip`, and reads the ZIP payload identified by the `CMP1` footer
 in the packaged game executable. It reads that payload as bytes. Windows
