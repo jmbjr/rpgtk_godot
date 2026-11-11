@@ -334,7 +334,7 @@ function appendCharacterTileInfo(entry, sprite, embedded, matchRows) {
     entry.append(spriteLinks(sprite));
     return;
   }
-  entry.append(el("span", "Source tiles"), el("span", "Embedded · No source tiles", "technical"));
+  entry.append(el("span", "Embedded · No source tiles", "technical"));
   const result = el("div", "", "frame-matches");
   result.hidden = true;
   entry.append(result);
