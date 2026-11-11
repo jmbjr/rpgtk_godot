@@ -74,3 +74,21 @@ and `Chrs/text-1-1.tem` with independent expected records. They cover the
 absent size field in text 2.0 and both text 2.1 graphics branches. These
 are controlled fixtures, not recovered game files. The DODGE review
 artifact includes `older-tem-fixtures.zip` for opening in the viewer.
+
+## Character artwork and board conditions
+
+`detail-fixtures.mjs` supplies seven character layout combinations with
+independently defined expected artwork. Each action/frame/quadrant has
+a distinguishable color. It also supplies text and binary board examples
+with conditional and blank slots, collision-only cells, unknown codes
+and RLE spans. Run `node scripts/check-character-board-details.mjs`.
+The earlier format check verifies the unchanged prefix contract; this
+additional check verifies the new fields and composed pixels.
+
+The PR review bundle includes `character-board-fixtures.zip`. Browse
+**Chrs** for the seven artwork examples, then expand Attack/Defense/
+Special move/Defeat/Rest/Custom. One quadrant is deliberately missing.
+Browse **Boards**, expand program/item placements, enable **Show tile
+types**, switch layers and click cells to inspect their codes. Existing
+PDF/TTS bundles remain tileset reference smoke tests; this change does
+not add character-sheet or board DODGE target representations.

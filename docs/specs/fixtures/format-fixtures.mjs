@@ -39,7 +39,7 @@ const walking = ["South", "East", "North", "West"].flatMap(direction =>
     value: "", evidence: `Walk ${direction.toLowerCase()} · frame ${frame} · ${part}`,
   })) })));
 add("Chrs/hero.tem", binary(header("RPGTLKIT CHAR", 3), "Hero", blank(9), i32(10, 7, 9, 2, 3, 4, 6, 1),
-  "face.gif", blank(201 * 11), blank(1 + 1 + 11 + 22 + 4 + 1 + 2 + 32)), {
+  "face.gif", blank(201 * 11), blank(1 + 1 + 11 + 22 + 4 + 1 + 2 + 32 + 88)), {
   name: "Hero",
   stats: { XP: 10, HP: 7, "Max HP": 9, Defense: 2, Fight: 3, "Special power": 4, "Max special power": 6, Level: 1 },
   profile: { value: "face.gif", evidence: "Character portrait" },
@@ -48,7 +48,7 @@ add("Chrs/hero.tem", binary(header("RPGTLKIT CHAR", 3), "Hero", blank(9), i32(10
 
 const walker24 = binary(header("RPGTLKIT CHAR", 4), "Walker", blank(9), i32(20, 12, 12, 3, 5, 6, 7, 2),
   "face.gif", blank(201 * 11), blank(1 + 1 + 11 + 7), i32(1), i16(5), i32(10), i16(1, 2, 3, 4),
-  "tone.wav", "", "", "", "start.prg", blank(2), "two-tiles.tst2", blank(31));
+  "tone.wav", "", "", "", "start.prg", blank(2), "two-tiles.tst2", blank(31 + 88));
 add("Chrs/walker.tem", walker24, {
   name: "Walker",
   stats: { XP: 20, HP: 12, "Max HP": 12, Defense: 3, Fight: 5, "Special power": 6, "Max special power": 7, Level: 2 },

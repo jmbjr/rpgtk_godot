@@ -103,6 +103,20 @@ function boardTileReferences(lookup, placements) {
   }));
 }
 
+function compactTileTypes(runs) {
+  const result = [];
+  for (const run of runs.sort((a, b) => a.offset - b.offset)) {
+    const last = result.at(-1);
+    if (last && last.value === run.value && last.offset + last.length === run.offset) last.length += run.length;
+    else result.push({ ...run });
+  }
+  return result;
+}
+
+function boardCondition(number, string) {
+  return { mode: number(), initialVariable: string(), finalVariable: string(), initialValue: string(), finalValue: string(), type: number() };
+}
+
 function readTextBoard(bytes) {
   const reader = textReader(bytes, "RPGTLKIT BOARD", [0, 1]);
   const integer = () => {
@@ -124,13 +138,15 @@ function readTextBoard(bytes) {
   const lookup = [""];
   const indices = new Map();
   const runs = [];
+  const tileTypes = [];
   const placements = new Map();
   for (let x = 0; x < width; x++) {
     for (let y = 0; y < height; y++) {
       for (let layer = 0; layer < layers; layer++) {
         const value = reader.string();
         const shade = [integer(), integer(), integer()];
-        integer(); // Tile type.
+        const valueType = integer();
+        tileTypes.push({ offset: (layer * height + y) * width + x, length: 1, value: valueType });
         if (!value) continue;
         if (!indices.has(value)) {
           indices.set(value, lookup.length);
@@ -164,11 +180,14 @@ function readTextBoard(bytes) {
   add(reader.string(), "Board music");
   const layerTitles = ["", ...Array.from({ length: layers }, () => reader.string())];
 
+  const programs = [];
+  const items = [];
   for (let i = 0; i < 51; i++) {
     const program = reader.string();
     const position = readPosition();
     const graphic = reader.string();
-    skip(6);
+    const condition = boardCondition(integer, reader.string);
+    programs.push({ slot: i, program, position, graphic, condition });
     add(program, `Board program ${boardPositionLabel(position)}`, position);
     add(graphic, `Program graphic ${boardPositionLabel(position)}`, position);
   }
@@ -177,18 +196,21 @@ function readTextBoard(bytes) {
     const item = reader.string();
     const position = readPosition();
     itemPositions.push(position);
-    skip(6);
+    const condition = boardCondition(integer, reader.string);
+    items.push({ slot: i, item, position, condition });
     add(item, `Board item ${boardPositionLabel(position)}`, position);
   }
-  skip(3); // Player start coordinates.
-  for (const position of itemPositions) {
-    add(reader.string(), `Item activation program ${boardPositionLabel(position)}`, position);
+  const start = readPosition();
+  for (const [i, position] of itemPositions.entries()) {
+    items[i].activationProgram = reader.string();
+    add(items[i].activationProgram, `Item activation program ${boardPositionLabel(position)}`, position);
   }
-  skip(1); // Save flag.
-  for (const position of itemPositions) {
-    add(reader.string(), `Item multitask program ${boardPositionLabel(position)}`, position);
+  const saveDisabled = integer();
+  for (const [i, position] of itemPositions.entries()) {
+    items[i].multitaskProgram = reader.string();
+    add(items[i].multitaskProgram, `Item multitask program ${boardPositionLabel(position)}`, position);
   }
-  return { width, height, layers, layerTitles, lookup, runs, background, ambient, refs };
+  return { width, height, layers, layerTitles, lookup, runs, tileTypes: compactTileTypes(tileTypes), programs, items, start, saveDisabled, background, ambient, refs };
 }
 
 function readBoard(bytes) {
@@ -202,18 +224,21 @@ function readBoard(bytes) {
   const layers = reader.short();
   const cells = width * height * layers;
   if (width < 1 || height < 1 || layers < 1 || cells > 2_000_000) throw new Error("Unsupported board dimensions.");
-  reader.skip(8);
+  const start = { x: reader.short(), y: reader.short(), layer: reader.short() };
+  const saveDisabled = reader.short();
   const count = reader.short() + 1;
   if (count < 1 || count > bytes.length) throw new Error("Invalid board tile lookup count.");
   const lookup = Array.from({ length: count }, () => reader.string());
   const runs = [];
+  const tileTypes = [];
   const placements = new Map();
   for (let offset = 0; offset < cells;) {
     const token = reader.short();
     const length = token < 0 ? -token : 1;
     const index = token < 0 ? reader.short() : token;
     const shade = [reader.short(), reader.short(), reader.short()];
-    reader.byte(); // Tile type is independent of the graphic.
+    const valueType = reader.byte();
+    tileTypes.push({ offset, length, value: valueType });
     if (index < 0 || index >= lookup.length || offset + length > cells) throw new Error("Invalid board tile run.");
     if (index && lookup[index]) {
       runs.push({ offset, length, index, shade });
@@ -246,13 +271,14 @@ function readBoard(bytes) {
 
   const programCount = reader.short() + 1;
   if (programCount < 0 || programCount > bytes.length) throw new Error("Invalid board program count.");
+  const programs = [];
+  const items = [];
   for (let i = 0; i < programCount; i++) {
     const program = reader.string();
     const position = readPosition();
     const graphic = reader.string();
-    reader.skip(2);
-    for (let j = 0; j < 4; j++) reader.string();
-    reader.skip(2);
+    const condition = boardCondition(reader.short, reader.string);
+    programs.push({ slot: i, program, position, graphic, condition });
     add(program, `Board program ${boardPositionLabel(position)}`, position);
     add(graphic, `Program graphic ${boardPositionLabel(position)}`, position);
   }
@@ -264,14 +290,15 @@ function readBoard(bytes) {
   for (let i = 0; i < itemCount; i++) {
     const item = reader.string();
     const position = readPosition();
-    reader.skip(2);
-    for (let j = 0; j < 4; j++) reader.string();
-    reader.skip(2);
+    const condition = boardCondition(reader.short, reader.string);
+    const activationProgram = reader.string();
+    const multitaskProgram = reader.string();
+    items.push({ slot: i, item, position, condition, activationProgram, multitaskProgram });
     add(item, `Board item ${boardPositionLabel(position)}`, position);
-    add(reader.string(), `Item activation program ${boardPositionLabel(position)}`, position);
-    add(reader.string(), `Item multitask program ${boardPositionLabel(position)}`, position);
+    add(activationProgram, `Item activation program ${boardPositionLabel(position)}`, position);
+    add(multitaskProgram, `Item multitask program ${boardPositionLabel(position)}`, position);
   }
-  const board = { width, height, layers, layerTitles, lookup, runs, background, ambient, refs };
+  const board = { width, height, layers, layerTitles, lookup, runs, tileTypes: compactTileTypes(tileTypes), programs, items, start, saveDisabled, background, ambient, refs };
   if (minor === 3) {
     const threadCount = reader.long() + 1;
     if (threadCount < 0 || threadCount >= reader.remaining()) throw new Error("Invalid board thread count.");
@@ -316,6 +343,41 @@ function readCharacterWalking(readPart) {
   return walking;
 }
 
+const characterActions = ["Attack", "Defense", "Special move", "Defeat"];
+
+function characterArtwork(embedded, minor, binary, read) {
+  const width = embedded ? 32 : (!binary && minor === 1 ? 32 : 64);
+  const height = embedded ? 32 : 64;
+  const artwork = characterActions.flatMap(kind => Array.from({ length: 4 }, (_, i) =>
+    ({ kind, frame: i + 1, width, height, ...(embedded ? { pixels: [] } : { parts: [] }) })));
+  const frame = (kind, i) => artwork.find(f => f.kind === kind && f.frame === i + 1);
+  const part = (f, x, y) => f.parts.push({ x, y, ...reference(read(), `${f.kind} · frame ${f.frame} · tile (${x}, ${y})`) });
+  if (embedded) {
+    // Text embedded order: frame, x, y, fight/special/defense/death.
+    for (let i = 0; i < 4; i++) for (let pixel = 0; pixel < 1024; pixel++) {
+      for (const kind of ["Attack", "Special move", "Defense", "Defeat"]) frame(kind, i).pixels.push(read());
+    }
+  } else if (binary) {
+    for (let i = 0; i < 4; i++) for (let x = 0; x < 2; x++) for (let y = 0; y < 2; y++) {
+      for (const kind of characterActions) part(frame(kind, i), x, y);
+    }
+  } else {
+    for (let x = 0; x < width / 32; x++) for (let y = 0; y < 2; y++) for (let i = 0; i < 4; i++) {
+      for (const kind of characterActions) part(frame(kind, i), x, y);
+    }
+  }
+  const rest = { kind: "Rest", frame: 1, width, height, ...(embedded ? { pixels: Array.from({ length: 1024 }, read) } : { parts: [] }) };
+  if (!embedded) for (let x = 0; x < width / 32; x++) for (let y = 0; y < 2; y++) part(rest, x, y);
+  artwork.push(rest);
+  for (let i = 0; i < 10; i++) {
+    const custom = { kind: "Custom", frame: i + 1, width: 32, height: embedded ? 32 : 64,
+      ...(embedded ? { pixels: Array.from({ length: 1024 }, read) } : { parts: [] }) };
+    if (!embedded) for (let y = 0; y < 2; y++) part(custom, 0, y);
+    artwork.push(custom);
+  }
+  return artwork;
+}
+
 function readTextCharacter(bytes) {
   const reader = textReader(bytes, "RPGTLKIT CHAR", [0, 1, 2]);
   const integer = () => {
@@ -339,23 +401,26 @@ function readTextCharacter(bytes) {
   const sizeType = reader.minor === 0 ? 0 : integer();
   if (![0, 1].includes(sizeType)) throw new Error("Unsupported text character graphic size.");
 
+  const color = () => {
+    const value = integer();
+    if (value < -1 || value > 0xffffff) throw new Error("Invalid embedded character tile color.");
+    return value;
+  };
   let embeddedWalking;
+  let artwork;
   if (sizeType === 0) {
-    embeddedWalking = Array.from({ length: 16 }, () => Array.from({ length: 1024 }, () => {
-      const color = integer();
-      if (color < -1 || color > 0xffffff) throw new Error("Invalid embedded character tile color.");
-      return color;
-    }));
-    skip((16 + 1 + 10) * 1024); // Battle, battle-rest, and custom graphics.
+    embeddedWalking = Array.from({ length: 16 }, () => Array.from({ length: 1024 }, color));
+    artwork = characterArtwork(true, reader.minor, false, color);
   }
   const walking = readCharacterWalking(embeddedWalking ? () => "" : reader.string);
   refs.push(...walking.flatMap(frame => frame.parts));
-  if (sizeType === 1) skip((reader.minor === 1 ? 32 + 2 : 64 + 4) + 20); // Battle, battle-rest, custom names.
+  if (sizeType === 1) artwork = characterArtwork(false, reader.minor, false, reader.string);
+  refs.push(...artwork.flatMap(frame => frame.parts ?? []));
   skip(10 + 6 + 7); // Accessories, armor flags, and level progression.
   for (const label of ["Attack", "Defense", "Special move", "Defeat"]) refs.push(reference(reader.string(), `${label} sound`));
   refs.push(reference(reader.string(), "Level-up program"));
   skip(1); // Level-up type.
-  return { name, stats, profile, walking, ...(embeddedWalking ? { embeddedWalking } : {}), refs: refs.filter(ref => ref.value) };
+  return { name, stats, profile, walking, ...(embeddedWalking ? { embeddedWalking } : {}), artwork, refs: refs.filter(ref => ref.value) };
 }
 
 function readCharacter(bytes) {
@@ -385,8 +450,9 @@ function readCharacter(bytes) {
   refs.push(reference(reader.string(), "Level-up program"));
   reader.skip(2);
   const walking = readCharacterWalking(reader.string);
-  refs.push(...walking.flatMap(frame => frame.parts));
-  return { name, stats, profile, walking, refs: refs.filter(ref => ref.value) };
+  const artwork = characterArtwork(false, minor, true, reader.string);
+  refs.push(...walking.flatMap(frame => frame.parts), ...artwork.flatMap(frame => frame.parts));
+  return { name, stats, profile, walking, artwork, refs: refs.filter(ref => ref.value) };
 }
 
 // Use documented file-taking commands, so prose in #MWin cannot create an edge.
