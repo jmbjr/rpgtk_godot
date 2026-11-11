@@ -1,6 +1,6 @@
 # Observed temporary board text · `___`
 
-Specification revision **1.0** · [conventions](README.md). Fixture-specific
+Specification revision **1.1** · [conventions](README.md). Fixture-specific
 partial reader.
 
 The original demo's `Boards/temp.___` has no signature. The viewer
@@ -15,3 +15,7 @@ Decoded data contains `layout`, the five-element `header`, and
 one-based source lines and follow [tile addressing](tst.md#tile-addressing).
 The producer and meanings of the numeric fields are unverified.
 DustBall's similarly named file does not match this profile.
+
+## Unversioned observed layout
+
+The observed temporary records have no verified format-version field. The numeric prefix must not be presented as a version. This page documents only the demo-specific shape, with producer and lifecycle still unverified.

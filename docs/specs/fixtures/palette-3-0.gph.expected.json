@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "sourceFormat": {"encoding": "text", "version": "2.0", "detail": 3, "supported": true},
   "$id": "rpgtk:/Tiles/palette-3-0.gph",
   "path": "Tiles/palette-3-0.gph",
   "format": "gph",

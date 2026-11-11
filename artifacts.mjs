@@ -1,3 +1,4 @@
+import { detectSourceFormat, toolkitAsset } from "./asset-format.mjs";
 import { dosPalette, tilesetRgb } from "./tile-palette.mjs";
 import { decodeProgram, indexProgram, readMainFile } from "./model.mjs";
 import { readCompoundDocument, readGif, readJpeg, readMidi, readWave } from "./media.mjs";
@@ -789,11 +790,13 @@ export async function readArtifacts(zip, catalog) {
     const read = readers[type];
     const artifact = { path, type, decodeStatus: read ? "decoded" :
       /^(gif|jpe?g|png|bmp|wav|mid)$/.test(type) ? "media" : type === "doc" ? "document" : "unidentified" };
-    if (read) {
+    if (read || toolkitAsset(type)) {
+      artifact.sourceFormat = detectSourceFormat(type, new Uint8Array());
       try {
         const bytes = await file.async("uint8array");
         artifact.byteLength = bytes.length;
-        Object.assign(artifact, read(bytes, catalog));
+        artifact.sourceFormat = detectSourceFormat(type, bytes);
+        if (read) Object.assign(artifact, read(bytes, catalog));
       } catch (error) {
         artifact.error = error.message;
         artifact.decodeStatus = "error";

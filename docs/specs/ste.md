@@ -1,6 +1,6 @@
 # STE · status effect
 
-Specification revision **1.0** · [conventions](README.md). Text 2.0 and binary 2.2,
+Specification revision **1.1** · [conventions](README.md). Text 2.0 and binary 2.2,
 signature `RPGTLKIT STATUSE`.
 
 | Order | Field | Binary type and interpretation |
@@ -30,3 +30,21 @@ Evidence includes the six text 2.0 DustBall status effects, the binary
 editor fixture `test_status_eff.ste`, Toolkit
 2 Help's Status Effects section, and the pinned
 [compatibility reader and writer](https://github.com/chrisbmatthews/rpgtoolkit/blob/08f2fe3d21828ea3519875553a2bad2aa10a7adc/vb/tkCommon/modules/CommonStatusEffect.bas#L100-L152).
+
+## Text 2.0
+
+Line-oriented `RPGTLKIT STATUSE`, major 2, minor 0. Read the documented fields one per line, keeping signed HP/SMP amounts and the program filename. Numeric fields use the text rules above, not binary widths.
+
+## Binary 2.2
+
+NUL-terminated `RPGTLKIT STATUSE`, major 2, minor 2 as little-endian i16. The table above gives i16 numeric fields and zstr filenames. This header revision is separate from the minor-only `data.version` value.
+
+## Unsupported versions
+
+The revision-specific sections on this page describe only the listed, verified
+reader profiles. A different or unreadable header is reported explicitly in the
+inspector and is not interpreted using a nearby revision. Detected header
+metadata does not establish successful decoding. See the
+[compatibility matrix](compatibility-matrix.md) for gaps and source evidence.
+File-format revisions, Toolkit product releases and decoded JSON schema versions
+are separate identifiers.

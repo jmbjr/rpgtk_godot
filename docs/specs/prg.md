@@ -1,6 +1,6 @@
 # PRG · RPGCode source
 
-Specification revision **1.0** · [conventions](README.md). Partial static
+Specification revision **1.1** · [conventions](README.md). Partial static
 index.
 
 A PRG is text without a file header. The viewer tries UTF-8 and falls back
@@ -35,3 +35,7 @@ feature IDs.
 Evidence is the Toolkit 2 RPGCode help and reference catalog, with
 `Demo/Prg/start.prg` as a trace fixture. This is a source index. Program
 execution and a full language grammar are outside this slice.
+
+## Unversioned source
+
+PRG is RPGCode source without a reliable file-format revision header. The inspector says “No stored file-format version”; it does not infer a Toolkit release from commands or syntax. The static indexing rules above apply.

@@ -1,6 +1,6 @@
 # TEM · character
 
-Specification revision **1.0** · [conventions](README.md). Partial text 2.0/2.1/2.2 and
+Specification revision **1.1** · [conventions](README.md). Partial text 2.0/2.1/2.2 and
 binary 2.3/2.4 profiles.
 
 ## Binary read sequence
@@ -119,3 +119,29 @@ fixtures use distinguishable colors at every action, frame and quadrant
 for all seven supported layout combinations. Demo and DustBall supply
 additional real-file regression evidence. The inspector shows static
 frame galleries with source-tile links; it does not execute battle logic.
+
+## Text 2.0
+
+Line-oriented `RPGTLKIT CHAR`, major 2, minor 0. No size token is stored: walking, battle, rest and custom pixels are embedded. Use the [older text layout](#older-text-20-and-21) and [artwork ordering](#battle-rest-and-custom-artwork). No source tileset filename is recorded for these pixels.
+
+## Text 2.1
+
+Line-oriented `RPGTLKIT CHAR`, major 2, minor 1. Size 0 embeds pixels; size 1 stores tile filenames. Referenced battle/rest frames are 32 × 64, with 32 battle filenames and two rest filenames. See [older text layouts](#older-text-20-and-21) and [artwork](#battle-rest-and-custom-artwork).
+
+## Binary 2.3
+
+Binary `RPGTLKIT CHAR`, major 2, minor 3. The level-type field is one byte. Graphics slots contain filenames: 32 walking, 64 battle, four rest and 20 custom filenames. See [binary read sequence](#binary-read-sequence) and [artwork](#battle-rest-and-custom-artwork).
+
+## Binary 2.4
+
+Binary `RPGTLKIT CHAR`, major 2, minor 4. The level-type field is i32 rather than the 2.3 one-byte field. Graphics remain filename references with the same counts and ordering. See [binary read sequence](#binary-read-sequence) and [artwork](#battle-rest-and-custom-artwork).
+
+## Unsupported versions
+
+The revision-specific sections on this page describe only the listed, verified
+reader profiles. A different or unreadable header is reported explicitly in the
+inspector and is not interpreted using a nearby revision. Detected header
+metadata does not establish successful decoding. See the
+[compatibility matrix](compatibility-matrix.md) for gaps and source evidence.
+File-format revisions, Toolkit product releases and decoded JSON schema versions
+are separate identifiers.

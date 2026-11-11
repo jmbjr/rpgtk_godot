@@ -1,6 +1,6 @@
 # BRD · board
 
-Specification revision **1.0** · [conventions](README.md). Partial text 2.0/2.1 and
+Specification revision **1.1** · [conventions](README.md). Partial text 2.0/2.1 and
 binary 2.2/2.3 profiles.
 
 ## Binary header and tile grid
@@ -148,3 +148,29 @@ is applied. Controlled fixtures cover conditional and blank slots,
 lexical values, invisible tile types, unknown codes, RLE runs crossing
 rows/layers, and truncated condition tails. These are data extraction
 and inspection features, not a running Toolkit engine.
+
+## Text 2.0
+
+Line-oriented `RPGTLKIT BOARD`, major 2, minor 0. Width/height are implicit 19 × 11 with eight layers; no dimension tokens follow registration. See [text layouts](#text-20-and-21) and [tile types and conditions](#tile-types-and-placement-conditions). Tile cells store graphic filenames, not embedded pixels.
+
+## Text 2.1
+
+Line-oriented `RPGTLKIT BOARD`, major 2, minor 1. Explicit width and height follow registration; eight layers are stored. See [text layouts](#text-20-and-21) and [tile types and conditions](#tile-types-and-placement-conditions). Tile cells store graphic filenames.
+
+## Binary 2.2
+
+Binary `RPGTLKIT BOARD`, major 2, minor 2. Use the [binary grid](#binary-header-and-tile-grid), inspected placement fields, and [conditions/types](#tile-types-and-placement-conditions). The viewer stops after item activation/multitask programs; the remaining 2.2 tail is outside this profile.
+
+## Binary 2.3
+
+Binary `RPGTLKIT BOARD`, major 2, minor 3. The common binary grid and placements are followed by counted thread filenames and a coordinate-type byte. See [remaining binary fields](#remaining-inspected-binary-fields). Coordinates are preserved without conversion.
+
+## Unsupported versions
+
+The revision-specific sections on this page describe only the listed, verified
+reader profiles. A different or unreadable header is reported explicitly in the
+inspector and is not interpreted using a nearby revision. Detected header
+metadata does not establish successful decoding. See the
+[compatibility matrix](compatibility-matrix.md) for gaps and source evidence.
+File-format revisions, Toolkit product releases and decoded JSON schema versions
+are separate identifiers.

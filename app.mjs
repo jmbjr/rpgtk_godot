@@ -1,3 +1,4 @@
+import { formatSummary, formatSpecTarget, mainSourceFormat } from "./asset-format.mjs";
 import { openGameArchive } from "./archive.mjs";
 import { mainFileBindings, readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
@@ -97,7 +98,7 @@ function selectDefault(newArchive = false) {
   });
   const mainData = byId("main-data");
   mainData.replaceChildren();
-  if (mainFile) mainData.append(formatSpecLink("gam"));
+  if (mainFile) mainData.append(assetFormatHeader({ type: "gam", sourceFormat: mainSourceFormat(mainFile) }));
   if (mainFile === archiveMainFile && archiveMainFile) {
     mainData.append(jsonPanel(() => artifactRecord(artifacts.get(archiveMainFile.filename), references)));
   } else if (mainFile) {
@@ -240,7 +241,7 @@ function showArtifact() {
   } else {
     renderAsset(artifact);
   }
-  byId("graph").prepend(formatSpecLink(artifact.type));
+  byId("graph").prepend(assetFormatHeader(artifact));
   renderConnections(artifact.path);
 }
 
@@ -258,18 +259,29 @@ function tileCanvas(height = 32) {
   return canvas;
 }
 
-const formatSpecs = {
-  gam: "gam", prg: "prg", tst: "tst", tan: "tan", tem: "tem", brd: "brd", itm: "itm",
-  ene: "ene", bkg: "bkg", spc: "spc", anm: "anm", gph: "gph", fnt: "fnt", ste: "ste",
-  gif: "gif", jpg: "jpg", jpeg: "jpg", wav: "wav", mid: "mid", doc: "doc", ___: "temporary-board",
-};
-
-function formatSpecLink(format, section = "") {
-  const page = Object.hasOwn(formatSpecs, format) ? formatSpecs[format] : "other";
-  const label = section ? "Tile addressing spec" : page === "other" ? "Archive entry spec" : `${format.toUpperCase()} format spec`;
+function formatSpecLink(format, section = "", sourceFormat) {
+  const target = formatSpecTarget({ type: format, sourceFormat });
+  const { page } = target;
+  const label = section ? "Tile addressing spec" : sourceFormat?.version ?
+    `${format.toUpperCase()} ${sourceFormat.encoding} ${sourceFormat.version}${sourceFormat.detail === undefined ? "" : ` detail ${sourceFormat.detail}`} ${sourceFormat.supported ? "spec" : "coverage limits"}` :
+    page === "other" ? "Archive entry spec" : `${format.toUpperCase()} format spec`;
+  section ||= target.anchor;
   const link = el("a", label);
   link.href = `https://github.com/jmbjr/rpgtk_godot/blob/main/docs/specs/${page}.md${section}`;
   return link;
+}
+
+function assetFormatHeader(artifact) {
+  const header = el("div", "", "asset-format");
+  header.append(el("p", `File format: ${formatSummary(artifact)}`, "asset-format-version"),
+    formatSpecLink(artifact.type, "", artifact.sourceFormat));
+  if (artifact.sourceFormat?.version) header.append(el("p", "File-format revisions are independent of Toolkit releases.", "technical"));
+  if (artifact.type === "tem" && !artifact.error) {
+    header.append(el("p", artifact.embeddedWalking ?
+      "Artwork storage: Embedded pixels. These pixels are stored inside this TEM; no source tileset is recorded." :
+      "Artwork storage: Tile references. Graphics slots store filenames and, where applicable, tileset tile numbers.", "artwork-storage"));
+  }
+  return header;
 }
 
 function tilesetPdfControl(artifact) {
@@ -1331,7 +1343,8 @@ async function showMedia(panel, path, description) {
     const media = el("img", "", "artifact-image");
     media.src = mediaUrl;
     media.alt = description;
-    panel.prepend(media);
+    if (panel.firstElementChild?.classList.contains("asset-format")) panel.firstElementChild.after(media);
+    else panel.prepend(media);
   } catch {
     if (revision === inspectorRevision) panel.append(el("p", "Media preview unavailable."));
   }

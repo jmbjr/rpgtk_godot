@@ -1,6 +1,6 @@
 # ENE · enemy
 
-Specification revision **1.0** · [conventions](README.md). Text 2.0,
+Specification revision **1.1** · [conventions](README.md). Text 2.0,
 signature `RPGTLKIT ENEMY`.
 
 | Order | Fields after header |
@@ -19,3 +19,17 @@ Missing graphics stay visible as missing references.
 
 Evidence includes the original demo enemies and the pinned
 [compatibility module](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vb/tkCommon/modules/CommonEnemy.bas).
+
+## Text 2.0
+
+Line-oriented `RPGTLKIT ENEMY`, major 2, minor 0. Both documented observed tail lengths use this header revision; the revision alone does not distinguish them. Use the tile-grid and optional-animation-tail rules above.
+
+## Unsupported versions
+
+The revision-specific sections on this page describe only the listed, verified
+reader profiles. A different or unreadable header is reported explicitly in the
+inspector and is not interpreted using a nearby revision. Detected header
+metadata does not establish successful decoding. See the
+[compatibility matrix](compatibility-matrix.md) for gaps and source evidence.
+File-format revisions, Toolkit product releases and decoded JSON schema versions
+are separate identifiers.

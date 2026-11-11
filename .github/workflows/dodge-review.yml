@@ -7,6 +7,7 @@ on:
       - 'experiments/dodge-tiles/**'
       - 'docs/specs/fixtures/**'
       - 'artifacts.mjs'
+      - 'asset-format.mjs'
       - 'tile-palette.mjs'
       - 'records.mjs'
       - 'package-lock.json'

@@ -92,3 +92,12 @@ Browse **Boards**, expand program/item placements, enable **Show tile
 types**, switch layers and click cells to inspect their codes. Existing
 PDF/TTS bundles remain tileset reference smoke tests; this change does
 not add character-sheet or board DODGE target representations.
+
+## Source format identification
+
+`node scripts/check-asset-formats.mjs` checks text/binary header revisions
+independently of payload decoding, all six TST/GPH details, unsupported
+Toolkit-style headers, truncated headers, unversioned PRG/temporary data,
+external GAM metadata, and revision-specific documentation anchors.
+This prevents a supported parser fixture from silently losing its version
+label or linking to an undocumented revision.

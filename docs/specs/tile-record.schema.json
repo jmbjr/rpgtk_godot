@@ -3,6 +3,38 @@
   "title": "RPG Toolkit decoded GPH or TST record, version 1",
   "type": "object",
   "properties": {
+    "sourceFormat": {
+      "type": "object",
+      "properties": {
+        "encoding": {
+          "enum": [
+            "text",
+            "binary",
+            "source",
+            "unknown"
+          ]
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^-?[0-9]+(?:\\.-?[0-9]+)?$"
+        },
+        "detail": {
+          "type": "integer"
+        },
+        "supported": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "encoding",
+        "version",
+        "supported"
+      ],
+      "additionalProperties": false
+    },
     "schemaVersion": {
       "const": 1
     },
