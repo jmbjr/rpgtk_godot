@@ -243,7 +243,7 @@ for (const set of tilesetSpecimens) {
     [[set.path, 1], [set.path, 2]], `${set.board}: both tile references resolve`);
 }
 for (const specimen of [...legacyBoardAssets, ...legacyBoards, ...legacyCharacters, ...legacyCharacterAssets]) {
-  const packaged = Buffer.from(await opened.file(specimen.path).async("uint8array");
+  const packaged = Buffer.from(await opened.file(specimen.path).async("uint8array"));
   assert.deepEqual(packaged, await sourceBytes(specimen), `${specimen.path}: source bytes changed`);
 }
 const boardDependencyPaths = {
