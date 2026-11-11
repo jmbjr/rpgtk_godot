@@ -24,7 +24,8 @@ and [generator and checks](https://github.com/jmbjr/rpgtk_godot/blob/0562ea3aeb7
 The first legacy coverage increment is a separate [TK2LegacyLab manifest](../../experiments/tk2-legacy-game/manifest.json)
 and [editor-open checklist](../../experiments/tk2-legacy-game/README.md). CI builds
 `tk2-legacy-game.zip` alongside the unchanged baseline `tk2-test-game.zip`.
-This increment includes four **standalone**, synthetic GPH mode 4/6 variants;
+This increment includes four **standalone**, synthetic GPH mode 4/6 variants
+(from checked-in fixtures, normalized to CRLF for the ZIP);
 their inclusion and viewer decoding are checked, but editor opening,
 save/reopen, and runtime usage are still unverified. Inclusion is **not** evidence
 that the game references or uses these standalone tiles.
