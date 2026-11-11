@@ -14,7 +14,7 @@ with the pinned Toolkit 3 readers and tracks evidence and remaining gaps.
 | GAM | [Main File](gam.md) | Binary 2.2 and text 2.0 startup fields | Demo.gam and DustBall main.gam |
 | PRG | [RPGCode program](prg.md) | Source and static indexing | Demo startup trace and Toolkit 2 Help |
 | TAN | [Animated tile](tan.md) | Binary 2.0 | Demo animation files |
-| TEM | [Character](tem.md) | Text 2.2 and binary 2.3/2.4 prefixes | DustBall, Demo and Cluetest characters, compatibility reader and synthetic fixtures |
+| TEM | [Character](tem.md) | Text 2.0/2.1/2.2 and binary 2.3/2.4 prefixes | DustBall, Demo and Cluetest characters, compatibility reader and synthetic fixtures |
 | BRD | [Board](brd.md) | Text 2.0 and 2.1 and binary 2.2 and 2.3 placement and link fields | Demo boards, Cluetest text board, compatibility readers and synthetic fixtures |
 | ITM | [Item](itm.md) | Text 2.0/2.1 and binary 2.2/2.3 | DustBall and Demo items, compatibility reader and synthetic fixtures |
 | ENE | [Enemy](ene.md) | Text 2.0, two observed tails | Demo enemies |

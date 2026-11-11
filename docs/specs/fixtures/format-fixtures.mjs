@@ -74,6 +74,30 @@ for (const sizeType of [0, 1]) {
   }, "partial");
 }
 
+// Older text layouts: 2.0 has no size token; 2.1 has smaller referenced battle art.
+for (const [minor, sizeType] of [[0, 0], [1, 0], [1, 1]]) {
+  const embedded = Array.from({ length: 16 }, (_, i) => [i + 1, ...fill(1023, -1)]);
+  const walkNames = Array.from({ length: 32 }, (_, i) => i === 0 || i === 31 ? "two-tiles.tst2" : "");
+  const graphics = sizeType
+    ? [...walkNames, ...Array.from({ length: 32 }, (_, i) => `battle-${i}.gph`), "rest-top.gph", "rest-bottom.gph",
+      ...Array.from({ length: 20 }, (_, i) => `custom-${i}.gph`)]
+    : [...embedded.flat(), ...fill(27 * 1024, -1)];
+  const bytes = Buffer.from(["RPGTLKIT CHAR", 2, minor, `Text 2.${minor} hero ${sizeType}`, ...fill(9, "variable!"),
+    10, 7, 9, 2, 3, 4, 6, 1, "face.gif", "pulse.spc", ...fill(201 * 5 - 1, ""), "Special", 0,
+    ...(minor ? [sizeType] : []), ...graphics, ...fill(10, "Accessory"), ...fill(6, 1), 1, 5, 99, 2, 3, 4, 5,
+    "tone.wav", "missing-defense.wav", "tone.wav", "missing-defeat.wav", "start.prg", 1, ""].join("\r\n"), "ascii");
+  const referenced = walking.map((frame, i) => ({ ...frame, parts: frame.parts.map((part, j) => ({
+    ...part, value: walkNames[i * 2 + j],
+  })) }));
+  add(`Chrs/text-${minor}-${sizeType}.tem`, bytes, {
+    name: `Text 2.${minor} hero ${sizeType}`,
+    stats: { XP: 10, HP: 7, "Max HP": 9, Defense: 2, Fight: 3, "Special power": 4, "Max special power": 6, Level: 1 },
+    profile: { value: "face.gif", evidence: "Character portrait" },
+    walking: sizeType ? referenced : walking,
+    ...(sizeType ? {} : { embeddedWalking: embedded }),
+  }, "partial");
+}
+
 const boardBytes = binary(header("RPGTLKIT BOARD", 2), i16(0), "", i16(1, 1, 1), blank(8),
   i16(1), "", "two-tiles.tst2", i16(1, -30, 0, 20), blank(1),
   blank(3), i32(255), blank(4), i16(1), blank(4), blank(2), "", blank(8), "", blank(22),

@@ -317,7 +317,7 @@ function readCharacterWalking(readPart) {
 }
 
 function readTextCharacter(bytes) {
-  const reader = textReader(bytes, "RPGTLKIT CHAR", [2]);
+  const reader = textReader(bytes, "RPGTLKIT CHAR", [0, 1, 2]);
   const integer = () => {
     const value = reader.number();
     if (!Number.isSafeInteger(value)) throw new Error("Invalid text character integer.");
@@ -336,7 +336,7 @@ function readTextCharacter(bytes) {
     skip(4);
   }
   skip(2); // Special move name and enable flag.
-  const sizeType = integer();
+  const sizeType = reader.minor === 0 ? 0 : integer();
   if (![0, 1].includes(sizeType)) throw new Error("Unsupported text character graphic size.");
 
   let embeddedWalking;
@@ -350,7 +350,7 @@ function readTextCharacter(bytes) {
   }
   const walking = readCharacterWalking(embeddedWalking ? () => "" : reader.string);
   refs.push(...walking.flatMap(frame => frame.parts));
-  if (sizeType === 1) skip(64 + 4 + 20); // Battle, battle-rest, and custom graphic names.
+  if (sizeType === 1) skip((reader.minor === 1 ? 32 + 2 : 64 + 4) + 20); // Battle, battle-rest, custom names.
   skip(10 + 6 + 7); // Accessories, armor flags, and level progression.
   for (const label of ["Attack", "Defense", "Special move", "Defeat"]) refs.push(reference(reader.string(), `${label} sound`));
   refs.push(reference(reader.string(), "Level-up program"));
