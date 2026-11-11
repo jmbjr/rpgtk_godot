@@ -8,10 +8,15 @@ Extract `tk2-legacy-game.zip` into the directory containing the existing Toolkit
 
 ## Test historical TEM text 2.0–2.2 and binary 2.3–2.4 characters
 
-These seven **synthetic, source-backed format fixtures** are copied byte-for-byte from
-[format-fixtures.mjs](../../docs/specs/fixtures/format-fixtures.mjs) into `Game/TK2LegacyLab/Chrs/`.
-They are **not active player characters** and their presence is not a claim the
-Toolkit 2 desktop editor will accept or write every variant.
+These seven files are now **diagnostic editions**, not byte-for-byte copies of
+[the original sparse format fixtures](../../docs/specs/fixtures/format-fixtures.mjs).
+The originals remain unchanged for strict decoder conformance, while
+[visual-character-fixtures.mjs](../../docs/specs/fixtures/visual-character-fixtures.mjs)
+generates bright 32 × 32 test artwork with predictable visual signatures.
+See the [visual diagnostic standard](../../docs/specs/visual-fixture-standard.md)
+for expected pixel patterns, colors, transparency and pass/fail examples.
+The seven formats are still separate synthetic variants, **not active player
+characters** or verified editor-saved bytes.
 
 | Character file (inside `Chrs/`) | Layout | Artwork check |
 | --- | --- | --- |
@@ -24,10 +29,14 @@ Toolkit 2 desktop editor will accept or write every variant.
 | `tem-binary-24.tem` | Binary 2.4 | External tile-reference slots and four-byte level type |
 
 In the [browser viewer](https://jmbjr.github.io/rpgtk_godot/),
-open each character to inspect the 16 walking frames and 27 Attack/Defense/
-Special move/Defeat/Rest/Custom artwork slots. Confirm embedded variants show
-stored pixels rather than tile filenames. For referenced variants, inspect the
-walking tile references, including the available `two-tiles.tst2`.
+open each character to inspect **16 visibly filled walking frames** and
+**27 visibly filled Attack/Defense/Special move/Defeat/Rest/Custom artwork slots**.
+Each should have a dark interior, bright accent, transparent outside,
+and distinctive white corner squares. Confirm embedded variants show stored
+pixels rather than file references. Referenced variants use the generated
+`diag-*.gph` tiles for each walking half and every artwork part.
+All GPH references in these diagnostic characters should resolve;
+there are **no intentionally blank graphic slots** in this edition.
 
 In Toolkit 2, open **each character independently** in the character editor,
 check its name, stats, graphics and warnings, and save **a copy**, then reopen
@@ -36,13 +45,12 @@ it rewrote the format or changed embedded/referenced artwork. Do not assign an
 older specimen to the main GAM or mark it runtime-tested from the main room.
 
 The ZIP supplies the existing synthetic `face.gif`, `two-tiles.tst`,
-`tone.wav`, `pulse.spc`, `slow.ste` and `effect.anm` references
-where applicable. Some historical `battle-*.gph` filenames and
-`missing-*.wav` sound references intentionally **remain absent**, because the
-fixture set does not contain attributable artwork or sound bytes for them.
-Do not interpret those missing references as a successful rendered battle
-frame. The viewer reports them as missing; the editor may reject or
-substitute them.
+`tone.wav`, `pulse.spc`, `slow.ste` and `effect.anm` as
+dependencies where applicable. The **historical source fixtures** still
+include intentionally missing `battle-*.gph` and sound references, but
+the newly packaged **visual diagnostic editions resolve every art tile**.
+If a diagnostic TEM's artwork is blank, that is a visual test failure
+rather than an expected missing historical asset.
 
 **Desktop editor opening, save/reopen and runtime acceptance remain pending.**
 
@@ -100,4 +108,4 @@ The [manifest](manifest.json) lists exact ZIP locations, source fixture paths, m
 node scripts/build-tk2-test-game.mjs dist/tk2-legacy-game.zip --legacy
 ```
 
-The generator normalizes the checked-in GPH text fixtures to CRLF, preserving their decoded values; checks each GPH's declared mode/compression; copies the TST binary fixtures *byte-for-byte*; builds the five gallery boards and validates both tile-reference edges for each; copies four historical board fixtures and their reference targets without byte changes; validates board dimensions, tile references and thread slots; packages seven historical TEM character variants and four additional dependency assets byte-for-byte; checks character names, walking/artwork layout, embedded pixel arrays, tile/portrait/sound/program links and intentionally missing battle art; and checks the full ZIP inventory plus original baseline project bindings. CI uploads this ZIP separately from the unchanged `tk2-test-game.zip` baseline.
+The generator normalizes the checked-in GPH text fixtures to CRLF, preserving their decoded values; checks each GPH's declared mode/compression; copies the TST binary fixtures *byte-for-byte*; builds the five gallery boards and validates both tile-reference edges for each; copies four historical board fixtures and their reference targets without byte changes; validates board dimensions, tile references and thread slots; packages seven generated historical TEM visual diagnostic editions and their 35 GPH tiles; checks character revisions, walking/artwork geometry, transparent and opaque pixel signatures, resolved tile references and shared support assets; and checks the full ZIP inventory plus original baseline project bindings. The source-only format fixtures remain separately unmodified. CI uploads this ZIP separately from the unchanged `tk2-test-game.zip` baseline.
