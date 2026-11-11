@@ -6,6 +6,8 @@ versions, this spec revision, and the JSON schema version are independent.
 
 The [compatibility matrix](compatibility-matrix.md) compares these profiles
 with the pinned Toolkit 3 readers and tracks evidence and remaining gaps.
+The [Toolkit 2 test matrix](test-matrix.md) links the individual fixtures
+and tracks test game and desktop editor coverage.
 
 ## Sources and reverse engineering
 
