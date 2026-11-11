@@ -264,6 +264,7 @@
           "required": ["value", "evidence"],
           "additionalProperties": false
         },
+        "artwork": {"type": "array", "minItems": 27, "maxItems": 27, "items": {"$ref": "#/$defs/characterArtwork"}},
         "embeddedWalking": {
           "type": "array",
           "minItems": 16,
@@ -314,6 +315,11 @@
         "background": {"type": "integer"},
         "ambient": {"type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3},
         "threads": {"type": "array", "items": {"type": "string"}},
+        "tileTypes": {"type": "array", "items": {"type": "object", "properties": {"offset": {"type": "integer", "minimum": 0}, "length": {"type": "integer", "minimum": 1}, "value": {"type": "integer"}}, "required": ["offset", "length", "value"], "additionalProperties": false}},
+        "start": {"$ref": "#/$defs/boardPosition"},
+        "saveDisabled": {"type": "integer"},
+        "programs": {"type": "array", "items": {"$ref": "#/$defs/boardProgram"}},
+        "items": {"type": "array", "items": {"$ref": "#/$defs/boardItem"}},
         "coordinateType": {"type": "integer", "minimum": 0, "maximum": 255},
         "tileLookup": {
           "type": "array",
@@ -351,6 +357,207 @@
         "tileLookup",
         "cellOrder",
         "runs"
+      ],
+      "additionalProperties": false
+    },
+    "boardPosition": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        },
+        "layer": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "layer"
+      ],
+      "additionalProperties": false
+    },
+    "boardCondition": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "integer"
+        },
+        "initialVariable": {
+          "type": "string"
+        },
+        "finalVariable": {
+          "type": "string"
+        },
+        "initialValue": {
+          "type": "string"
+        },
+        "finalValue": {
+          "type": "string"
+        },
+        "type": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mode",
+        "initialVariable",
+        "finalVariable",
+        "initialValue",
+        "finalValue",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "boardProgram": {
+      "type": "object",
+      "properties": {
+        "slot": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "position": {
+          "$ref": "#/$defs/boardPosition"
+        },
+        "condition": {
+          "$ref": "#/$defs/boardCondition"
+        },
+        "program": {
+          "type": "string"
+        },
+        "graphic": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "slot",
+        "position",
+        "condition",
+        "program",
+        "graphic"
+      ],
+      "additionalProperties": false
+    },
+    "boardItem": {
+      "type": "object",
+      "properties": {
+        "slot": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "position": {
+          "$ref": "#/$defs/boardPosition"
+        },
+        "condition": {
+          "$ref": "#/$defs/boardCondition"
+        },
+        "item": {
+          "type": "string"
+        },
+        "activationProgram": {
+          "type": "string"
+        },
+        "multitaskProgram": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "slot",
+        "position",
+        "condition",
+        "item",
+        "activationProgram",
+        "multitaskProgram"
+      ],
+      "additionalProperties": false
+    },
+    "characterArtwork": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "Attack",
+            "Defense",
+            "Special move",
+            "Defeat",
+            "Rest",
+            "Custom"
+          ]
+        },
+        "frame": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "width": {
+          "enum": [
+            32,
+            64
+          ]
+        },
+        "height": {
+          "enum": [
+            32,
+            64
+          ]
+        },
+        "pixels": {
+          "$ref": "#/$defs/embeddedTile"
+        },
+        "parts": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "y": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "value": {
+                "type": "string"
+              },
+              "evidence": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "value",
+              "evidence"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "frame",
+        "width",
+        "height"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "pixels"
+          ]
+        },
+        {
+          "required": [
+            "parts"
+          ]
+        }
       ],
       "additionalProperties": false
     },

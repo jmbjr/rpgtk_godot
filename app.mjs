@@ -8,7 +8,7 @@ import { connectedGameRecord, rpgcodeRoles } from "./game-graph.mjs";
 import { createInspectorHistory } from "./inspector-history.mjs";
 import { connectionCounts, connectionFilterOptions, connectionNeighbors, connectionType,
   filterConnections, referenceDestination } from "./connection-map.mjs";
-import { animationFrames, battleBackground, enemySprite, itemSprites, keyFrameColor, standaloneTilePixels } from "./sprites.mjs";
+import { characterArtworkSprite, animationFrames, battleBackground, enemySprite, itemSprites, keyFrameColor, standaloneTilePixels } from "./sprites.mjs";
 
 const byId = id => document.getElementById(id);
 const el = (tag, value = "", className = "") => {
@@ -437,6 +437,25 @@ function renderAsset(artifact) {
       sprites.append(caption);
     }
     panel.append(sprites);
+    for (const kind of ["Attack", "Defense", "Special move", "Defeat", "Rest", "Custom"]) {
+      const frames = artifact.artwork.filter(frame => frame.kind === kind);
+      const section = el("details", "", "character-artwork");
+      section.append(el("summary", `${kind} artwork · ${frames.length} frame${frames.length === 1 ? "" : "s"}`));
+      const strip = el("div", "", "sprite-strip");
+      for (const frame of frames) {
+        const sprite = characterArtworkSprite(artifact, frame, artifacts, references);
+        const canvas = spriteCanvas(`${kind} frame ${frame.frame}`);
+        drawSprite(canvas, sprite);
+        const entry = el("div");
+        entry.append(canvas, el("p", `Frame ${frame.frame}`));
+        if (frame.parts) entry.append(spriteLinks(sprite));
+        if (sprite.missing.length) entry.append(el("p", `${sprite.missing.length} tile parts missing`));
+        if (!sprite.pixels.some(value => value)) entry.append(el("p", "Empty or unavailable artwork"));
+        strip.append(entry);
+      }
+      section.append(strip);
+      panel.append(section);
+    }
     return;
   }
   if (artifact.runs) {
@@ -868,8 +887,40 @@ function renderItemSprites(panel, artifact) {
   display();
 }
 
+function renderBoardMetadata(panel, board) {
+  panel.append(el("p", `Stored start: (${board.start.x}, ${board.start.y}, layer ${board.start.layer}) · Save disabled flag: ${board.saveDisabled}`));
+  for (const [title, slots, field] of [["Program placements", board.programs, "program"], ["Item placements", board.items, "item"]]) {
+    const section = el("details", "", "board-conditions");
+    const populated = slots.filter(slot => slot[field] || slot.graphic || slot.activationProgram || slot.multitaskProgram ||
+      Object.values(slot.condition).some(value => value !== "" && value !== 0));
+    section.append(el("summary", `${title} · ${populated.length} populated / ${slots.length} stored slots`));
+    for (const slot of populated) {
+      const c = slot.condition;
+      const position = slot.position;
+      const row = el("div", "", "reference");
+      row.append(el("h4", `Slot ${slot.slot}: ${slot[field] || "(blank filename)"}`),
+        el("p", `Stored position (${position.x}, ${position.y}, layer ${position.layer})`),
+        el("p", `Activation mode ${c.mode}${c.mode === 0 ? " (always)" : c.mode === 1 ? " (conditional)" : ""}; type ${c.type}${c.type === 0 ? " (step on)" : c.type === 1 ? " (activation key)" : ""}`),
+        el("p", `Initial: ${JSON.stringify(c.initialVariable)} = ${JSON.stringify(c.initialValue)}; Final: ${JSON.stringify(c.finalVariable)} = ${JSON.stringify(c.finalValue)}`));
+      for (const [key, label] of [["graphic", "Graphic"], ["activationProgram", "Activation program"], ["multitaskProgram", "Multitask program"]]) if (slot[key]) row.append(el("p", `${label}: ${slot[key]}`));
+      section.append(row);
+    }
+    section.append(el("p", "Stored conditions are displayed as data; they are not evaluated."));
+    panel.append(section);
+  }
+  const types = new Map();
+  for (const run of board.tileTypes) types.set(run.value, (types.get(run.value) ?? 0) + run.length);
+  const labels = { 0: "Normal", 1: "Solid", 2: "Under", 3: "North/south normal", 4: "East/west normal" };
+  panel.append(el("h3", "Tile types"));
+  for (const [value, count] of [...types].sort((a, b) => a[0] - b[0])) {
+    const label = labels[value] ?? (value >= 11 && value <= 18 ? `Elevate to layer ${value - 10}` : "Unknown stored code");
+    panel.append(el("p", `${value}: ${label} · ${count} cells`));
+  }
+}
+
 function renderBoard(panel, board, edges) {
   panel.append(el("p", `${board.width} × ${board.height} tiles · ${board.layers} layers · MAP-01 Boards`));
+  renderBoardMetadata(panel, board);
   const sets = boardTilesets(edges, references, artifacts);
   panel.append(el("h3", "Tilesets used"));
   if (!sets.size) panel.append(el("p", "No resolved tilesets in the decoded board references."));
@@ -890,14 +941,20 @@ function renderBoard(panel, board, edges) {
     preview.replaceChildren(el("p", "This board exceeds the preview canvas size."));
     return;
   }
-  const controls = el("label", "Layers", "board-controls");
+  const controls = el("div", "", "board-controls");
   const layers = el("select");
   for (let i = 0; i <= board.layers; i++) {
     const option = el("option", i ? board.layerTitles[i] || `Layer ${i}` : "All layers");
     option.value = String(i);
     layers.append(option);
   }
-  controls.append(layers);
+  const typeLabel = el("label", "Show tile types");
+  const showTypes = el("input");
+  showTypes.type = "checkbox";
+  typeLabel.prepend(showTypes);
+  const layerLabel = el("label", "Layers");
+  layerLabel.append(layers);
+  controls.append(layerLabel, typeLabel);
   const stage = el("div", "", "board-stage");
   const canvas = el("canvas", "", "board-map");
   canvas.width = board.width * tileSize;
@@ -957,10 +1014,42 @@ function renderBoard(panel, board, edges) {
         context.drawImage(image, x * tileSize, y * tileSize, tileSize, tileSize);
       }
     }
+    if (showTypes.checked) {
+      for (const { offset, length, value } of board.tileTypes) {
+        if (!value) continue;
+        for (let cell = Math.max(from, offset); cell < Math.min(to, offset + length); cell++) {
+          const x = (cell % board.width) * tileSize;
+          const y = Math.floor((cell % area) / board.width) * tileSize;
+          context.fillStyle = "rgba(210, 80, 80, 0.45)";
+          context.fillRect(x, y, tileSize, tileSize);
+          context.fillStyle = "white";
+          context.font = `${Math.max(9, Math.floor(tileSize * 0.4))}px monospace`;
+          context.fillText(String(value), x + 1, y + Math.max(9, tileSize / 2));
+        }
+      }
+    }
     notes.textContent = "Static tile preview · animated tiles show their first frame."
       + (missing.size ? ` ${missing.size} tile references could not be rendered.` : "");
   }
-  layers.addEventListener("change", draw);
+  const cellInfo = el("p", "Click a cell to inspect its stored tile types.");
+  preview.append(cellInfo);
+  canvas.addEventListener("click", event => {
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((event.clientX - rect.left) * canvas.width / rect.width / tileSize);
+    const y = Math.floor((event.clientY - rect.top) * canvas.height / rect.height / tileSize);
+    if (x < 0 || x >= board.width || y < 0 || y >= board.height) return;
+    const selected = Number(layers.value);
+    const values = [];
+    for (let l = 0; l < board.layers; l++) {
+      if (selected && l !== selected - 1) continue;
+      const offset = l * area + y * board.width + x;
+      const run = board.tileTypes.find(run => offset >= run.offset && offset < run.offset + run.length);
+      values.push(`layer ${l + 1}: ${run?.value ?? "unavailable"}`);
+    }
+    cellInfo.textContent = `Cell (${x + 1}, ${y + 1}) · ${values.join("; ")}`;
+  });
+  showTypes.addEventListener("change", draw);
+  layers.addEventListener("change", () => { cellInfo.textContent = "Click a cell to inspect its stored tile types."; draw(); });
   draw();
 }
 

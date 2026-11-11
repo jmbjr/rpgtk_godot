@@ -206,7 +206,7 @@ decoder errors, media, accompanying documents, and unidentified entries.
 | PRG | Source lines, indexed symbols and their occurrences, built-in call count |
 | TST | Dimensions, tile count, transparency key, numbered tiles with base64 RGB24 pixels in column order |
 | TAN | Stored speed and ordered frame references |
-| TEM | Name, stats, portrait and walking frames, with additional decoded asset references |
+| TEM | Name, stats, portrait, walking, battle, rest and custom frames with asset references |
 | BRD | Dimensions, layer titles, shading, background color, tile lookup and placement runs |
 | ITM | Name, description, use modes, prices, modifiers, programs, walking and rest graphics |
 | ENE | Stats, graphic tile slots, AI, special moves, weaknesses, rewards, sounds and animations |

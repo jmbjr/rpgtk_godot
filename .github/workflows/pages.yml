@@ -55,6 +55,7 @@ jobs:
         run: |
           node scripts/check-tile-specs.mjs
           node scripts/check-format-specs.mjs
+          node scripts/check-character-board-details.mjs
           node scripts/check-game-graph.mjs
           node scripts/check-inspector-history.mjs
           node scripts/check-connection-map.mjs

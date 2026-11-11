@@ -1,3 +1,4 @@
+import { detailFixtures } from "../../docs/specs/fixtures/detail-fixtures.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -133,4 +134,12 @@ if (outputDirectory) {
   }
   zip.file("Tiles/two-tiles.tst", await readFile(new URL("../../docs/specs/fixtures/two-tiles.tst", import.meta.url)));
   await writeFile(join(outputDirectory, "older-tem-fixtures.zip"), await zip.generateAsync({ type: "nodebuffer" }));
+}
+
+if (outputDirectory) {
+  const zip = new JSZip();
+  for (const { path, bytes } of [...detailFixtures, ...fixtures.filter(f => ["Prg/start.prg", "Bitmap/face.gif", "Media/tone.wav", "Item/token-2.itm"].includes(f.path))]) zip.file(path, bytes);
+  zip.remove("Tiles/art-0-1-0-0.gph"); // Deliberately missing quadrant, as in the regression check.
+  zip.file("Tiles/two-tiles.tst", await readFile(new URL("../../docs/specs/fixtures/two-tiles.tst", import.meta.url)));
+  await writeFile(join(outputDirectory, "character-board-fixtures.zip"), await zip.generateAsync({ type: "nodebuffer" }));
 }

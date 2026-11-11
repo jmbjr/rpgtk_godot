@@ -132,3 +132,11 @@ export function keyFrameColor(pixels, color) {
     if (pixels[i] === red && pixels[i + 1] === green && pixels[i + 2] === blue) pixels[i + 3] = 0;
   }
 }
+
+export function characterArtworkSprite(character, frame, artifacts, graph) {
+  if (frame.pixels) return { width: 32, height: 32,
+    pixels: standaloneTilePixels({ width: 32, height: 32, pixels: frame.pixels }), missing: [] };
+  const byEvidence = new Map((graph.outgoing.get(character.path) ?? []).map(edge => [edge.evidence, edge]));
+  return compose(frame.width / 32, frame.height / 32,
+    frame.parts.filter(part => part.value).map(part => ({ ...part, edge: byEvidence.get(part.evidence) })), artifacts, graph);
+}

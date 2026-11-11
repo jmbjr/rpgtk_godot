@@ -7,7 +7,8 @@ binary 2.2/2.3 profiles.
 
 Read binary header `RPGTLKIT BOARD`, major 2, minor 2 or 3. Skip an i16
 and zstr. Read width, height and layer count as i16. Each is positive.
-The viewer accepts at most 2,000,000 cells. Skip eight bytes, then read
+The viewer accepts at most 2,000,000 cells. Read three i16 start coordinates
+and an i16 save-disabled flag, then read
 an i16 maximum lookup index and that value plus one zstr lookup entries.
 
 Traverse cells in layer, row, column order. A nonnegative i16 token is a
@@ -24,8 +25,8 @@ zero-based coordinates, a cell offset is
 | --- | --- |
 | 1 | Background image zstr, two skipped zstr, i32 background color, four skipped bytes, i16 ambient mode. Ambient modes 0–3 map to RGB offsets (0,0,0), (75,75,75), (-75,-75,-75), (0,0,75); others use zero. |
 | 2 | Four directional board zstr in North, South, East, West order. Skip two bytes, read battle background zstr, skip eight bytes, one zstr and 22 bytes. Read music zstr and nine layer-title zstr. |
-| 3 | i16 maximum program index. For each of max plus one slots read program zstr, three i16 coordinates, graphic zstr, skip two bytes, four zstr and two bytes. Then read entry-program zstr and skip one zstr. |
-| 4 | i16 maximum item index. For each of max plus one slots read item zstr, three i16 coordinates, skip two bytes, four zstr and two bytes, then read activation and multitask program zstr. |
+| 3 | i16 maximum program index. For each of max plus one slots read program zstr, three i16 coordinates, graphic zstr and the six condition fields documented below. Then read entry-program zstr and skip one zstr. |
+| 4 | i16 maximum item index. For each of max plus one slots read item zstr, three i16 coordinates and the six condition fields documented below, then read activation and multitask program zstr. |
 | 5 (2.3) | Signed i32 maximum thread index, then that value plus one program filename zstr, then the raw coordinate-type byte. Index −1 means zero thread slots. |
 
 Program and item counts may be zero and are bounded by input size.
@@ -78,7 +79,7 @@ indexed references. Nonempty `runs` contain `offset`, `length`,
 `lookupIndex`, and `shade`. `cellOrder` describes the offset convention.
 Binary 2.3 adds `threads` and `coordinateType` to the record. The preview
 uses its existing tile grid and the first frame of animated tiles.
-Coordinate conversion, tile-type behavior, and other uninspected fields
+Coordinate conversion, execution of tile-type behavior, and other uninspected fields
 and text revisions are outside the slice.
 
 Evidence includes the demo's 17 boards and the pinned
@@ -97,3 +98,53 @@ for the compressed tile portion.
 
 The [later Toolkit 3.1 reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vb/tkCommon/modules/CommonBoard.bas#L449-L484)
 directs users of old text boards to re-save them in 3.0.6 or earlier.
+
+## Tile types and placement conditions
+
+The decoded record adds `tileTypes`, `programs`, `items`, `start` and
+`saveDisabled` for every supported text/binary BRD layout.
+
+`tileTypes` is an exhaustive, compact array of `{offset, length, value}`
+runs. It uses the same zero-based layer/row/column offset as graphic runs.
+It includes every cell, even when its filename or lookup index is empty.
+Adjacent identical values are merged. Binary input uses an unsigned byte
+per source graphic run; text input uses an integer per cell, normalized
+from x/y/layer traversal. Unknown numeric codes are preserved.
+
+The [older board structure](https://github.com/chrisbmatthews/rpgtoolkit/blob/08f2fe3d21828ea3519875553a2bad2aa10a7adc/vb/tkCommon/modules/CommonBoard.bas#L37)
+labels codes 0 normal, 1 solid, 2 under, 3 north/south normal, 4 east/west
+normal and 11–18 elevate to layer 1–8. These are source labels; the viewer
+does not simulate their collision or movement behavior. The optional map
+overlay shows nonzero codes; selecting a layer isolates it, and clicking
+a cell reports stored codes for the selected layer(s). Overlaying all
+layers can overlap codes at the same screen position.
+
+`programs` preserves all stored slots as `{slot, program, position,
+graphic, condition}`. `items` preserves all slots as `{slot, item,
+position, condition, activationProgram, multitaskProgram}`. `slot` is
+zero-based. Text has 51 program and 11 item slots; binary uses its counted
+slot arrays. Empty filenames are retained. Graph edges remain limited
+to nonempty asset references and carry the existing position evidence.
+
+Each `condition` contains the following six source fields in order:
+
+| Field | Storage | Source meaning |
+| --- | --- | --- |
+| `mode` | Integer (binary i16) | 0 always active; 1 conditional |
+| `initialVariable` | String | Activation variable |
+| `finalVariable` | String | Variable at end of activation |
+| `initialValue` | String | Initial activation value |
+| `finalValue` | String | Value at end of activation |
+| `type` | Integer (binary i16) | 0 step on; 1 activation key |
+
+Preserve lexical values such as `"01"`, expressions and unknown numeric
+flags. Conditions are displayed without evaluation or gameplay inference.
+The [binary reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vb/tkCommon/modules/CommonBoard.bas#L950-L1008)
+and the earlier text reader linked above establish this sequence.
+
+`start` is the stored `{x,y,layer}` player start. `saveDisabled` preserves
+the raw integer (0 allows saving, 1 disables it). No coordinate conversion
+is applied. Controlled fixtures cover conditional and blank slots,
+lexical values, invisible tile types, unknown codes, RLE runs crossing
+rows/layers, and truncated condition tails. These are data extraction
+and inspection features, not a running Toolkit engine.
