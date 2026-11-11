@@ -237,7 +237,7 @@
         32,
         64
       ],
-      "expectedTilesetReference": true,
+      "expectedTilesetReference": false,
       "usage": "generated diagnostic edition of the source conformance fixture; open character editor and save a copy; not the active GAM player",
       "visualStyle": "diagnostic-v1"
     },
@@ -267,7 +267,7 @@
         64,
         64
       ],
-      "expectedTilesetReference": true,
+      "expectedTilesetReference": false,
       "usage": "generated diagnostic edition of the source conformance fixture; open character editor and save a copy; not the active GAM player",
       "visualStyle": "diagnostic-v1"
     },
@@ -297,7 +297,7 @@
         64,
         64
       ],
-      "expectedTilesetReference": true,
+      "expectedTilesetReference": false,
       "usage": "generated diagnostic edition of the source conformance fixture; open character editor and save a copy; not the active GAM player",
       "visualStyle": "diagnostic-v1"
     }
