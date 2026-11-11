@@ -5,6 +5,15 @@ import { readMainFile, resolveAsset } from "../model.mjs";
 import JSZip from "../vendor/jszip.min.js";
 
 const loadZip = bytes => JSZip.loadAsync(bytes);
+
+// Android file pickers may classify a valid ZIP as an unknown binary type.
+// Never restrict file selection by extension/MIME; the ZIP loader checks bytes.
+const page = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const archiveInput = page.match(/<input\\b[^>]*\\bid="archive"[^>]*>/)?.[0];
+assert.ok(archiveInput, "Archive picker must exist");
+assert.doesNotMatch(archiveInput, /\\baccept\\s*=/i, "Archive picker must not filter unknown Android MIME types");
+assert.match(page, /id="open-test-game"/, "Direct baseline viewer button is present");
+assert.match(page, /id="open-legacy-game"/, "Direct legacy viewer button is present");
 const game = new JSZip();
 game.file("main.gam", ["RPGTLKIT MAIN", " 2 ", " 0 ", "1", "start.prg", "", "0", "0", "27", "13",
   "home.brd", "db.tem", ""].join("\r\n"));
