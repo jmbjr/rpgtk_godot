@@ -26,9 +26,9 @@ const header = (type, minor) => join(`RPGTLKIT ${type}`, i16(2, minor));
 const empty = count => Buffer.alloc(count);
 
 function mainFile() {
-  // Full binary 2.2 layout, including the legacy settings after the startup bindings.
+  // Binary 2.2 layout. Use the desktop resolution and leave full screen off.
   return join(header("MAIN", 2), i16(0), "NOCODE",
-    `Game\\${name}\\`, title, i16(1, 1, 0, 2, 0), "0english.lng",
+    `Game\\${name}\\`, title, i16(0, 0, 0, 2, 0), "0english.lng",
     filename.startup, filename.board, filename.player,
     "None", i16(0, 13, 0),
     i16(50), empty(51 * 3), // Runtime key and program slots.
