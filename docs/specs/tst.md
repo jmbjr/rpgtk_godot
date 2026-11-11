@@ -1,7 +1,24 @@
 # TST · tileset
 
-Specification revision **1.1** · binary version **20**, details **1–6**.
+Specification revision **1.1** · TST format **20** · modes **1–6**.
 See the [spec index](README.md) for JSON conventions.
+
+## Format and mode
+
+The **format revision** selects the file layout. TST stores it as the
+integer `20`; this identifier is independent of the Toolkit release.
+The **mode** selects tile dimensions and color encoding. The Toolkit source
+calls this field `detail`. It is a mode code, not a ranking of quality.
+
+The primary reference for all six modes is the Toolkit's own
+[`CTile::calcInsertionPoint`](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/tkCommon/tkGfx/CTile.cpp#L1377-L1406),
+which lists each mode's dimensions, nominal color count and byte stride.
+[`openFromTileSet`](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/tkCommon/tkGfx/CTile.cpp#L1190-L1330)
+shows the pixel and transparency rules; the
+[palette rules](palette.md) link to the exact source color table.
+This spec reconstructs the layout from the pinned legacy reader and
+controlled fixtures; the [compatibility matrix](compatibility-matrix.md)
+distinguishes fixture coverage from real game samples.
 
 ## Original file layout
 
@@ -69,29 +86,47 @@ The count and sequential numbering are also checked by the
 - Version 30 and isometric layouts appear in that
   source. They are outside this specification's supported profile.
 
-## Binary 20 detail 1
+<a name="binary-20-detail-1"></a>
 
-The six-byte header stores literal binary version `20`, the tile count, and detail `1`. Native dimensions are 32 × 32; payload uses RGB24 (three bytes per pixel). Transparent RGB is `[0,1,2]`. Use the shared addressing and JSON rules above. Literal version 20 is not a Toolkit release number.
+## TST format 20 — Mode 1: 32 × 32, 24-bit RGB
 
-## Binary 20 detail 2
+Storage: binary. Mode 1: 32 × 32, 24-bit RGB stores each pixel as three RGB bytes. The transparent value is `[0,1,2]`.
+The stored `detail` field is `1`.
 
-The six-byte header stores literal binary version `20`, the tile count, and detail `2`. Native dimensions are 16 × 16; payload uses RGB24 (three bytes per pixel). Transparent RGB is `[0,1,2]`. Use the shared addressing and JSON rules above. Literal version 20 is not a Toolkit release number.
+<a name="binary-20-detail-2"></a>
 
-## Binary 20 detail 3
+## TST format 20 — Mode 2: 16 × 16, 24-bit RGB
 
-The six-byte header stores literal binary version `20`, the tile count, and detail `3`. Native dimensions are 32 × 32; payload uses DOS palette indexes (one byte per pixel, including nominal 16-color modes). Index 255 is transparent; see [palette rules](palette.md). Use the shared addressing and JSON rules above. Literal version 20 is not a Toolkit release number.
+Storage: binary. Mode 2: 16 × 16, 24-bit RGB stores each pixel as three RGB bytes. The transparent value is `[0,1,2]`.
+The stored `detail` field is `2`.
 
-## Binary 20 detail 4
+<a name="binary-20-detail-3"></a>
 
-The six-byte header stores literal binary version `20`, the tile count, and detail `4`. Native dimensions are 16 × 16; payload uses DOS palette indexes (one byte per pixel, including nominal 16-color modes). Index 255 is transparent; see [palette rules](palette.md). Use the shared addressing and JSON rules above. Literal version 20 is not a Toolkit release number.
+## TST format 20 — Mode 3: 32 × 32, 256-color palette
 
-## Binary 20 detail 5
+Storage: binary. [Mode 3: 32 × 32, 256-color palette](palette.md) stores one palette index byte per pixel. Index `255` is transparent.
+The stored `detail` field is `3`.
 
-The six-byte header stores literal binary version `20`, the tile count, and detail `5`. Native dimensions are 32 × 32; payload uses DOS palette indexes (one byte per pixel, including nominal 16-color modes). Index 255 is transparent; see [palette rules](palette.md). Use the shared addressing and JSON rules above. Literal version 20 is not a Toolkit release number.
+<a name="binary-20-detail-4"></a>
 
-## Binary 20 detail 6
+## TST format 20 — Mode 4: 16 × 16, 256-color palette
 
-The six-byte header stores literal binary version `20`, the tile count, and detail `6`. Native dimensions are 16 × 16; payload uses DOS palette indexes (one byte per pixel, including nominal 16-color modes). Index 255 is transparent; see [palette rules](palette.md). Use the shared addressing and JSON rules above. Literal version 20 is not a Toolkit release number.
+Storage: binary. [Mode 4: 16 × 16, 256-color palette](palette.md) stores one palette index byte per pixel. Index `255` is transparent.
+The stored `detail` field is `4`.
+
+<a name="binary-20-detail-5"></a>
+
+## TST format 20 — Mode 5: 32 × 32, 16-color palette
+
+Storage: binary. [Mode 5: 32 × 32, 16-color palette](palette.md) stores one palette index byte per pixel. Index `255` is transparent.
+The stored `detail` field is `5`.
+
+<a name="binary-20-detail-6"></a>
+
+## TST format 20 — Mode 6: 16 × 16, 16-color palette
+
+Storage: binary. [Mode 6: 16 × 16, 16-color palette](palette.md) stores one palette index byte per pixel. Index `255` is transparent.
+The stored `detail` field is `6`.
 
 ## Unsupported versions
 

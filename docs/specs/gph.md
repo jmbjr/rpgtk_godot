@@ -1,7 +1,10 @@
 # GPH · standalone tile
 
-Specification revision **1.1** · Toolkit text format **2.0**.
+Specification revision **1.1** · GPH format **2.0** · modes **1–6**.
 See the [spec index](README.md) for JSON conventions.
+
+The mode selects tile dimensions and color encoding. Its stored field
+is named `detail`, independent of the text header revision `2.0`.
 
 ## Original file layout
 
@@ -67,29 +70,47 @@ compressed examples with expected records.
   remains outside this specification's supported profile. Toolkit 2 Help's *Tileset Manager* distinguishes standalone
   GPH tiles from grouped TST tiles and describes the different detail levels.
 
-## Text 2.0 detail 1
+<a name="text-20-detail-1"></a>
 
-Line-oriented `RPGTLKIT TILE`, major 2, minor 0, detail `1`. Native dimensions are 32 × 32. Colors are COLORREF values. Both raw and RLE payloads use the common traversal above; `-1` is transparent. The detail code is separate from the header version.
+## GPH format 2.0 — Mode 1: 32 × 32, 24-bit RGB
 
-## Text 2.0 detail 2
+Storage: text. Mode 1: 32 × 32, 24-bit RGB stores pixels as decimal COLORREF integers. `-1` is transparent. Both raw and run-length encoded payloads use this mode.
+The stored `detail` field is `1`.
 
-Line-oriented `RPGTLKIT TILE`, major 2, minor 0, detail `2`. Native dimensions are 16 × 16. Colors are COLORREF values. Both raw and RLE payloads use the common traversal above; `-1` is transparent. The detail code is separate from the header version.
+<a name="text-20-detail-2"></a>
 
-## Text 2.0 detail 3
+## GPH format 2.0 — Mode 2: 16 × 16, 24-bit RGB
 
-Line-oriented `RPGTLKIT TILE`, major 2, minor 0, detail `3`. Native dimensions are 32 × 32. Values are DOS palette indexes; see [palette rules](palette.md). Both raw and RLE payloads use the common traversal above; `-1` is transparent. The detail code is separate from the header version.
+Storage: text. Mode 2: 16 × 16, 24-bit RGB stores pixels as decimal COLORREF integers. `-1` is transparent. Both raw and run-length encoded payloads use this mode.
+The stored `detail` field is `2`.
 
-## Text 2.0 detail 4
+<a name="text-20-detail-3"></a>
 
-Line-oriented `RPGTLKIT TILE`, major 2, minor 0, detail `4`. Native dimensions are 16 × 16. Values are DOS palette indexes; see [palette rules](palette.md). Both raw and RLE payloads use the common traversal above; `-1` is transparent. The detail code is separate from the header version.
+## GPH format 2.0 — Mode 3: 32 × 32, 256-color palette
 
-## Text 2.0 detail 5
+Storage: text. [Mode 3: 32 × 32, 256-color palette](palette.md) stores pixels as decimal DOS palette indexes. `-1` is transparent. Both raw and run-length encoded payloads use this mode.
+The stored `detail` field is `3`.
 
-Line-oriented `RPGTLKIT TILE`, major 2, minor 0, detail `5`. Native dimensions are 32 × 32. Values are DOS palette indexes; see [palette rules](palette.md). Both raw and RLE payloads use the common traversal above; `-1` is transparent. The detail code is separate from the header version.
+<a name="text-20-detail-4"></a>
 
-## Text 2.0 detail 6
+## GPH format 2.0 — Mode 4: 16 × 16, 256-color palette
 
-Line-oriented `RPGTLKIT TILE`, major 2, minor 0, detail `6`. Native dimensions are 16 × 16. Values are DOS palette indexes; see [palette rules](palette.md). Both raw and RLE payloads use the common traversal above; `-1` is transparent. The detail code is separate from the header version.
+Storage: text. [Mode 4: 16 × 16, 256-color palette](palette.md) stores pixels as decimal DOS palette indexes. `-1` is transparent. Both raw and run-length encoded payloads use this mode.
+The stored `detail` field is `4`.
+
+<a name="text-20-detail-5"></a>
+
+## GPH format 2.0 — Mode 5: 32 × 32, 16-color palette
+
+Storage: text. [Mode 5: 32 × 32, 16-color palette](palette.md) stores pixels as decimal DOS palette indexes. `-1` is transparent. Both raw and run-length encoded payloads use this mode.
+The stored `detail` field is `5`.
+
+<a name="text-20-detail-6"></a>
+
+## GPH format 2.0 — Mode 6: 16 × 16, 16-color palette
+
+Storage: text. [Mode 6: 16 × 16, 16-color palette](palette.md) stores pixels as decimal DOS palette indexes. `-1` is transparent. Both raw and run-length encoded payloads use this mode.
+The stored `detail` field is `6`.
 
 ## Unsupported versions
 

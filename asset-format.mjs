@@ -58,13 +58,24 @@ export function mainSourceFormat(file) {
   return file.sourceFormat ?? { encoding: file.minor === 0 ? "text" : "binary", version: `${file.major}.${file.minor}`, supported: file.major === 2 && [0, 2].includes(file.minor) };
 }
 
+export const isTileFormat = type => type === "tst" || type === "gph";
+
+export function tileMode({ type, sourceFormat }) {
+  if (!isTileFormat(type) || !sourceFormat?.supported) return undefined;
+  const { detail } = sourceFormat;
+  if (![1, 2, 3, 4, 5, 6].includes(detail)) return undefined;
+  const size = detail % 2 ? 32 : 16;
+  const color = detail <= 2 ? "24-bit RGB" : detail <= 4 ? "256-color palette" : "16-color palette";
+  return { label: `Mode ${detail}: ${size} × ${size}, ${color}`, palette: detail >= 3 };
+}
+
 export function formatSummary({ type, sourceFormat }) {
   if (!toolkitAsset(type)) return `${type.toUpperCase() || "Unknown"} · Standard media or archive entry · No Toolkit format version`;
   const f = sourceFormat ?? unknown();
   if (type === "prg") return "PRG · RPGCode source · No stored file-format version";
   if (f.version === null) return `${type.toUpperCase()} · File-format version unavailable · ${type === "___" ? "Unversioned observed text layout" : "Header unrecognized or truncated"}`;
+  if (isTileFormat(type)) return `${type.toUpperCase()} format ${f.version}${f.supported ? "" : " · Unsupported layout"}`;
   return `${type.toUpperCase()} · ${f.encoding === "text" ? "Text" : "Binary"} ${f.version}`
-    + (f.detail === undefined ? "" : ` · Detail ${f.detail}`)
     + (f.supported ? "" : " · Unsupported layout");
 }
 
