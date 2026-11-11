@@ -7,6 +7,52 @@ versions, this spec revision, and the JSON schema version are independent.
 The [compatibility matrix](compatibility-matrix.md) compares these profiles
 with the pinned Toolkit 3 readers and tracks evidence and remaining gaps.
 
+## Sources and reverse engineering
+
+These specifications reconstruct the Toolkit 2 file layouts supported by
+the viewer. We read the legacy readers, writers, and converters in the
+RPG Toolkit source repository and compared them with available game files,
+editor observations, and synthetic fixtures. A compatibility reader can
+skip fields or change their meaning during conversion, so the per-format
+pages identify which fields the viewer actually preserves.
+[Upstream RPG Toolkit repository](https://github.com/chrisbmatthews/rpgtoolkit)
+
+| Pinned upstream revision | How it is used |
+| --- | --- |
+| [3.1-era snapshot](https://github.com/chrisbmatthews/rpgtoolkit/tree/9191b9191c9bda0998c6faae16929b3331ed2ead) | Main source for legacy layouts and conversion behavior, including character artwork order, binary boards, and tile dimensions, strides, transparency, and palette lookup. |
+| [3.0.4 development snapshot](https://github.com/chrisbmatthews/rpgtoolkit/tree/08f2fe3d21828ea3519875553a2bad2aa10a7adc) | Earlier readers for text boards and items, and reader/writer evidence for status effects. |
+| [Binary board writer revision](https://github.com/chrisbmatthews/rpgtoolkit/tree/0012b9f9b2093525b4edb42893c5a669cdbb491a) | Evidence for the binary BRD 2.3 thread slots and coordinate-type byte. |
+| [Historical demo revision](https://github.com/chrisbmatthews/rpgtoolkit/tree/4133fc81d4144582e06a63ffc6017eec770d2d86) | Contains the BRD 2.3 sample used to check the common prefix and a blank thread slot. |
+
+The individual specs link to the relevant functions and line ranges.
+The DOS color table in the viewer transcribes Toolkit's
+`CTile::g_pnDosPalette`. [Palette source and interpretation](palette.md)
+
+We also reverse engineered behavior from original files where source
+inspection left gaps:
+
+| Case | Sample evidence and remaining uncertainty |
+| --- | --- |
+| Temporary board `.___` files | The original Demo establishes the observed numeric prefix and repeated tile records. The producer, field meanings, and version are unverified, and DustBall's file differs. [Temporary board notes](temporary-board.md) |
+| DustBall installer packaging | The shipped archive establishes the observed nested ZIP and the executable's `CMP1` footer describing the embedded ZIP. Coverage is limited to that observed wrapper. [Packaging evidence](compatibility-matrix.md#packaging-media-and-project-extras) |
+| Enemy text 2.0 tails | Demo files establish two observed tail lengths under the same header revision, including the shorter layout. Editor handling of the short tail still needs confirmation. [Enemy spec](ene.md) |
+| Special move text 2.0 use flags | The Demo file and Toolkit 2 editor observation establish the displayed values for that move. The Toolkit 3 reader uses different labels, so further controlled editor saves are needed to settle the general interpretation. [Special move spec](spc.md) |
+
+Some source-derived cases also require an interpretation. For example,
+the viewer applies palette lookup to 16 × 16 indexed GPH tiles based on
+the Toolkit editor and the other indexed branches. The pinned Toolkit 3
+GPH reader omits that lookup for modes 4 and 6. Controlled fixtures verify
+the viewer's interpretation, and real samples remain a follow-up.
+[Palette evidence and limits](palette.md#evidence-and-limits)
+
+In the [compatibility matrix](compatibility-matrix.md), **Sample** means
+a real file was checked, **Source** means the code path was traced, and
+**Fixture** means a synthetic case verifies the documented layout. These
+labels let readers distinguish observed file behavior from source-based
+reconstruction. [Fixture index](fixtures/README.md)
+
+## Format index
+
 | Type | Spec | Covered file layout | Evidence |
 | --- | --- | --- | --- |
 | GPH | [Standalone tile](gph.md) | Text 2.0, details 1–6, raw or run-length encoded | Demo detail 1 RLE; pinned palette table and raw/RLE fixtures for all details. |
