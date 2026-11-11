@@ -40,6 +40,14 @@ available for independent editor-open/save/reopen tests. The ZIP generator
 checks the exact board bytes, dimensions, resolved tile/asset references and
 thread slots; desktop/editor and runtime acceptance remain pending. The
 binary 2.3 raw coordinate flag does not establish isometric geometry.
+The fourth increment packages **all seven documented historical TEM layouts**
+(text 2.0 embedded; 2.1/2.2 embedded and referenced; binary 2.3/2.4)
+as distinct editor-open fixtures. Each TEM is byte-identical to its
+checked-in conformance generator and retains 16 walking frames plus all 27
+artwork slots. Character portraits, available walking tiles, sounds and
+special move references are validated; unavailable battle-art and missing
+sound filenames remain documented gaps. Desktop/editor and runtime acceptance
+are **pending**. The active GAM player remains the existing binary 2.3 test hero.
 Each archive has one active GAM. Use separate ZIPs with the same project assets
 for alternate GAM layouts. Establish the latest Toolkit 2 release and its
 actual writer output before selecting formats for the latest game.
@@ -62,13 +70,13 @@ actual writer output before selecting formats for the latest game.
 
 | Type and variant | Repository evidence | Viewer | Desktop open / save / run | Test route |
 | --- | --- | --- | --- | --- |
-| [TEM text 2.0 embedded](tem.md) | [`Chrs/text-0-0.tem`](fixtures/format-fixtures.mjs#L92) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy character |
-| [TEM text 2.1 embedded](tem.md) | [`Chrs/text-1-0.tem`](fixtures/format-fixtures.mjs#L92) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy character |
-| [TEM text 2.1 referenced](tem.md) | [`Chrs/text-1-1.tem`](fixtures/format-fixtures.mjs#L92) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy character |
-| [TEM text 2.2 embedded](tem.md) | [`Chrs/text-hero-0.tem`](fixtures/format-fixtures.mjs#L68) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy character |
-| [TEM text 2.2 referenced](tem.md) | [`Chrs/text-hero-1.tem`](fixtures/format-fixtures.mjs#L68) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy character |
-| [TEM binary 2.3](tem.md) | [`Chrs/hero.tem`](fixtures/format-fixtures.mjs#L41) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | Baseline player and legacy character |
-| [TEM binary 2.4](tem.md) | [`Chrs/walker.tem`](fixtures/format-fixtures.mjs#L52) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy character |
+| [TEM text 2.0 embedded](tem.md) | [`Chrs/text-0-0.tem`](fixtures/format-fixtures.mjs#L92) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy TEM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Chrs/tem-text-20-embedded.tem` · [individual editor-open checklist](../../experiments/tk2-legacy-game/README.md); not active GAM player |
+| [TEM text 2.1 embedded](tem.md) | [`Chrs/text-1-0.tem`](fixtures/format-fixtures.mjs#L92) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy TEM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Chrs/tem-text-21-embedded.tem` · [individual editor-open checklist](../../experiments/tk2-legacy-game/README.md); not active GAM player |
+| [TEM text 2.1 referenced](tem.md) | [`Chrs/text-1-1.tem`](fixtures/format-fixtures.mjs#L92) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy TEM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Chrs/tem-text-21-referenced.tem` · [individual editor-open checklist](../../experiments/tk2-legacy-game/README.md); not active GAM player |
+| [TEM text 2.2 embedded](tem.md) | [`Chrs/text-hero-0.tem`](fixtures/format-fixtures.mjs#L68) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy TEM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Chrs/tem-text-22-embedded.tem` · [individual editor-open checklist](../../experiments/tk2-legacy-game/README.md); not active GAM player |
+| [TEM text 2.2 referenced](tem.md) | [`Chrs/text-hero-1.tem`](fixtures/format-fixtures.mjs#L68) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy TEM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Chrs/tem-text-22-referenced.tem` · [individual editor-open checklist](../../experiments/tk2-legacy-game/README.md); not active GAM player |
+| [TEM binary 2.3](tem.md) | [`Chrs/hero.tem`](fixtures/format-fixtures.mjs#L41) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy TEM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Chrs/tem-binary-23.tem` · [individual editor-open checklist](../../experiments/tk2-legacy-game/README.md); not active GAM player |
+| [TEM binary 2.4](tem.md) | [`Chrs/walker.tem`](fixtures/format-fixtures.mjs#L52) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy TEM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Chrs/tem-binary-24.tem` · [individual editor-open checklist](../../experiments/tk2-legacy-game/README.md); not active GAM player |
 | [ITM text 2.0 embedded](itm.md) | [`Item/text-20-item.itm`](fixtures/format-fixtures.mjs#L200) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy item |
 | [ITM text 2.1 embedded](itm.md) | [`Item/text-item-0.itm`](fixtures/format-fixtures.mjs#L200) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy item |
 | [ITM text 2.1 referenced](itm.md) | [`Item/text-item-1.itm`](fixtures/format-fixtures.mjs#L200) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy item |
