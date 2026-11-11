@@ -26,7 +26,23 @@ function compoundZip(bytes) {
 }
 
 export async function openGameArchive(bytes, loadZip) {
-  const zip = normalizeZipPaths(await loadZip(bytes));
+  let zip = normalizeZipPaths(await loadZip(bytes));
+
+  // GitHub Actions artifact downloads wrap the uploaded game ZIP in another
+  // ZIP. Unwrap exactly one ZIP entry; do not guess among multiple archives or
+  // recursively unpack arbitrary nested files.
+  const entries = Object.values(zip.files).filter(file => !file.dir);
+  if (entries.length === 1 && /\.zip$/i.test(entries[0].name)) {
+    const nested = entries[0];
+    try {
+      zip = normalizeZipPaths(await loadZip(await nested.async("uint8array")));
+    } catch (error) {
+      throw new Error(`Unable to read nested game ZIP "${nested.name}": ${error.message}`);
+    }
+  } else if (entries.length > 1 && entries.every(file => /\.zip$/i.test(file.name))) {
+    throw new Error("This ZIP contains multiple game ZIPs. Extract it and open the game ZIP you want.");
+  }
+
   const files = Object.values(zip.files);
   const wrapper = files.find(file => !file.dir && file.name.toLowerCase() === "zip.zip");
   const installer = files.some(file => !file.dir && file.name.toLowerCase() === "setup.inf");
