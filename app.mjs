@@ -1,4 +1,4 @@
-import { indexTilesets, matchingArtwork } from "./tile-matches.mjs";
+import { indexTilesets, matchEmbeddedTile } from "./tile-matches.mjs";
 import { formatSummary, formatSpecTarget, isTileFormat, mainSourceFormat, tileMode } from "./asset-format.mjs";
 import { openGameArchive } from "./archive.mjs";
 import { mainFileBindings, readMainFile, resolveAsset } from "./model.mjs";
@@ -329,11 +329,22 @@ function tilesetPdfControl(artifact) {
   return controls;
 }
 
-function artworkMatchControl(character) {
+function appendCharacterTileInfo(entry, sprite, embedded, matchRows) {
+  if (!embedded) {
+    entry.append(spriteLinks(sprite));
+    return;
+  }
+  entry.append(el("span", "Source tiles"), el("span", "Embedded · No source tiles", "technical"));
+  const result = el("div", "", "frame-matches");
+  result.hidden = true;
+  entry.append(result);
+  matchRows.push({ pixels: embedded, result });
+}
+
+function artworkMatchControl(matchRows) {
   const section = el("section", "", "reference");
   const status = el("p", "", "technical");
   status.setAttribute("role", "status");
-  const results = el("div");
   const search = button("Find matching tiles", async () => {
     const revision = inspectorRevision;
     search.disabled = true;
@@ -342,36 +353,44 @@ function artworkMatchControl(character) {
     try {
       const index = await pending;
       if (revision !== inspectorRevision) return;
-      const matches = matchingArtwork(character, index);
-      status.textContent = matches.length
-        ? `${matches.length} frame${matches.length === 1 ? "" : "s"} with matching artwork`
-        : "No exact tile matches for this character’s embedded artwork.";
-      for (const { label, pixels, matches: tiles } of matches) {
-        const row = el("details");
-        row.append(el("summary", `${label} · ${tiles.length} matching tile${tiles.length === 1 ? "" : "s"}`));
-        const preview = spriteCanvas(label);
-        drawSprite(preview, { width: 32, height: 32, pixels });
+      let matched = 0;
+      let unmatched = 0;
+      let blank = 0;
+      for (const { pixels, result } of matchRows) {
+        const tiles = matchEmbeddedTile(pixels, index);
+        result.hidden = false;
+        if (!tiles?.length) {
+          result.textContent = tiles ? "No matched tiles" : "Blank frame";
+          if (tiles) unmatched++;
+          else blank++;
+          continue;
+        }
+        matched++;
+        result.append(el("span", "Matched tiles"));
         const list = el("ul", "", "edge-list");
         for (const { path, tile } of tiles) {
           const item = el("li");
           item.append(button(`${path} · Tile ${tile}`, () => selectArtifact(path, tile)));
           list.append(item);
         }
-        row.append(preview, list);
-        results.append(row);
+        result.append(list);
       }
+      status.textContent = `${matched} matched · ${unmatched} unmatched · ${blank} blank frames. See results beneath each frame.`;
     } catch (error) {
       if (tileMatchIndex === pending) tileMatchIndex = undefined;
       if (revision === inspectorRevision) {
-        results.replaceChildren();
+        for (const { result } of matchRows) {
+          result.replaceChildren();
+          result.hidden = true;
+        }
         status.textContent = `Could not find matching tiles. ${error.message}`;
         search.disabled = false;
       }
     }
   });
   section.append(el("h4", "Matching artwork"),
-    el("p", "Compare visible pixels at 32 × 32 within this archive. Blank frames are skipped. Stored file references appear in the connection map."),
-    search, status, results);
+    el("p", "Compare visible pixels at 32 × 32 within this archive. Blank frames are skipped."),
+    search, status);
   return section;
 }
 
@@ -490,25 +509,30 @@ function renderAsset(artifact) {
     const portrait = edges.find(edge => edge.evidence === "Character portrait")?.to;
     if (portrait) showMedia(panel, portrait, `${artifact.name} portrait`);
     panel.append(stats);
-    if (artifact.embeddedWalking) panel.append(artworkMatchControl(artifact));
-    const sprites = el("div", "", "sprite-strip");
+    const matchRows = [];
+    if (artifact.embeddedWalking) panel.append(artworkMatchControl(matchRows));
+    const walking = el("div", "", "sprite-strip");
+    const moreWalking = el("details");
+    const otherFrames = el("div", "", "sprite-strip");
+    moreWalking.append(el("summary", "More walking frames"), otherFrames);
     for (const [index, frame] of artifact.walking.entries()) {
-      if (frame.frame !== 1) continue;
       const embedded = artifact.embeddedWalking?.[index];
-      const canvas = tileCanvas(embedded ? 32 : 64);
-      const caption = el("div", frame.direction);
-      if (embedded) {
-        const pixels = standaloneTilePixels({ width: 32, height: 32, pixels: embedded });
-        canvas.getContext("2d").putImageData(new ImageData(pixels, 32, 32), 0, 0);
-      } else {
-        for (const [partIndex, part] of frame.parts.entries()) {
-          paintTile(canvas, edges.find(edge => edge.evidence === part.evidence), partIndex * 32);
-        }
-      }
-      caption.prepend(canvas);
-      sprites.append(caption);
+      const label = `${frame.direction} · Frame ${frame.frame}`;
+      const sprite = characterArtworkSprite(artifact, {
+        pixels: embedded,
+        width: 32,
+        height: 64,
+        parts: frame.parts.map((part, y) => ({ ...part, x: 0, y })),
+      }, artifacts, references);
+      const canvas = spriteCanvas(label);
+      drawSprite(canvas, sprite);
+      canvas.style.width = "32px";
+      const entry = el("div");
+      entry.append(canvas, el("span", label));
+      appendCharacterTileInfo(entry, sprite, embedded, matchRows);
+      (frame.frame === 1 ? walking : otherFrames).append(entry);
     }
-    panel.append(sprites);
+    panel.append(walking, moreWalking);
     for (const kind of ["Attack", "Defense", "Special move", "Defeat", "Rest", "Custom"]) {
       const frames = artifact.artwork.filter(frame => frame.kind === kind);
       const section = el("details", "", "character-artwork");
@@ -520,7 +544,7 @@ function renderAsset(artifact) {
         drawSprite(canvas, sprite);
         const entry = el("div");
         entry.append(canvas, el("p", `Frame ${frame.frame}`));
-        if (frame.parts) entry.append(spriteLinks(sprite));
+        appendCharacterTileInfo(entry, sprite, frame.pixels, matchRows);
         if (sprite.missing.length) entry.append(el("p", `${sprite.missing.length} tile parts missing`));
         if (!sprite.pixels.some(value => value)) entry.append(el("p", "Empty or unavailable artwork"));
         strip.append(entry);

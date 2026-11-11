@@ -36,24 +36,13 @@ export async function indexTilesets(artifacts) {
   return index;
 }
 
-export function matchingArtwork(character, index) {
-  const frames = character.walking.map((frame, i) => ({
-    label: `${frame.direction} walking · frame ${frame.frame}`,
-    pixels: character.embeddedWalking?.[i],
-  }));
-  for (const frame of character.artwork) {
-    frames.push({ label: `${frame.kind} · frame ${frame.frame}`, pixels: frame.pixels });
+// A blank frame has no visible artwork to compare.
+export function matchEmbeddedTile(pixels, index) {
+  if (!pixels.some(color => color !== -1)) return null;
+  const rgba = standaloneTilePixels({ width: 32, height: 32, pixels });
+  const matches = [];
+  for (const { set, tile } of index.get(fingerprint(rgba)) ?? []) {
+    if (samePixels(rgba, tilePixels(set, tile))) matches.push({ path: set.path, tile });
   }
-
-  const results = [];
-  for (const { label, pixels } of frames) {
-    if (!pixels?.some(color => color !== -1)) continue;
-    const rgba = standaloneTilePixels({ width: 32, height: 32, pixels });
-    const matches = [];
-    for (const { set, tile } of index.get(fingerprint(rgba)) ?? []) {
-      if (samePixels(rgba, tilePixels(set, tile))) matches.push({ path: set.path, tile });
-    }
-    if (matches.length) results.push({ label, pixels: rgba, matches });
-  }
-  return results;
+  return matches;
 }
