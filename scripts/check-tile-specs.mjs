@@ -10,7 +10,8 @@ const spec = new URL("../docs/specs/", import.meta.url);
 const fixture = name => readFile(new URL(`fixtures/${name}`, spec));
 const schema = JSON.parse(await readFile(new URL("tile-record.schema.json", spec)));
 const validate = new Ajv2020({ strictTypes: false }).compile(schema);
-const names = ["standalone-16.gph", "standalone-32-rle.gph", "two-tiles.tst", "two-tiles-16.tst"];
+const paletteNames = [3, 4, 5, 6].flatMap(d => [`palette-${d}.tst`, ...[0, 1].map(c => `palette-${d}-${c}.gph`)]);
+const names = [...paletteNames, "standalone-16.gph", "standalone-32-rle.gph", "two-tiles.tst", "two-tiles-16.tst"];
 const zip = new JSZip();
 for (const name of names) zip.file(`Tiles/${name}`, await fixture(name));
 const { artifacts } = await readArtifacts(zip, {});
@@ -29,7 +30,7 @@ for (const name of names) {
   if (record.format === "tst") {
     assert.equal(record.data.tiles.length, record.data.count);
     const bytesPerTile = record.data.width * record.data.height * 3;
-    assert.equal(record.data.byteLength, 6 + record.data.count * bytesPerTile);
+    assert.equal(record.data.byteLength, 6 + record.data.count * bytesPerTile / (name.startsWith("palette-") ? 3 : 1));
     record.data.tiles.forEach(({ number, rgb }, index) => {
       assert.equal(number, index + 1);
       assert.equal(Buffer.from(rgb, "base64").length, bytesPerTile);
@@ -110,3 +111,40 @@ for (const name of ["truncated.gph", "overshoot.gph", "bad-color.gph", "truncate
   assert.equal(cases.get(name).decodeStatus, "error", name);
 }
 console.log("Tile specs passed: decoded JSON schemas, GPH layouts, TST offsets, transparency, and error cases.");
+
+// Palette colors asserted independently of the conversion table and expected JSON.
+for (const detail of [3, 4, 5, 6]) {
+  const name = `palette-${detail}.tst`;
+  const set = artifacts.get(`Tiles/${name}`);
+  const scale = detail % 2 ? 1 : 2;
+  assert.deepEqual(rgba(tilePixels(set, 1), 0, 0), [0, 1, 2, 0]);
+  assert.deepEqual(rgba(tilePixels(set, 1), 0, scale), [168, 0, 0, 255]);
+  assert.deepEqual(rgba(tilePixels(set, 1), scale, 0), [0, 168, 0, 255]);
+  assert.deepEqual(rgba(tilePixels(set, 1), 31, 31), [0, 0, 168, 255]);
+  assert.deepEqual(rgba(tilePixels(set, 2), 0, 0), [0, 0, 0, 255]);
+  assert.deepEqual(rgba(tilePixels(set, 2), 0, scale), [255, 0, 0, 255]);
+  assert.equal(tilePixels(set, 3), null);
+  const target = `rpgtk:/Tiles/${name}#/data/tiles/1`;
+  const caller = `Prg/palette-${detail}.prg`;
+  artifacts.set(caller, { path: caller, refs: [{ value: `${name}2`, evidence: "Palette placement" }] });
+  const edges = buildReferences(artifacts);
+  assert.equal(artifactRecord(set, edges).references.incoming[0].target.$ref, target);
+  for (const compressed of [0, 1]) {
+    const tile = artifacts.get(`Tiles/palette-${detail}-${compressed}.gph`);
+    const pixels = standaloneTilePixels(tile);
+    assert.deepEqual(rgba(pixels, 0, 0), [0, 0, 0, 0]);
+    assert.deepEqual(rgba(pixels, 0, scale), [168, 0, 0, 255]);
+    assert.deepEqual(rgba(pixels, 0, 2 * scale), [0, 168, 0, 255]);
+    assert.deepEqual(rgba(pixels, 0, 3 * scale), [0, 0, 0, 255]); // GPH 255 is opaque.
+  }
+  zip.file(`short-${detail}.tst`, set.bytes.subarray(0, -1));
+  zip.file(`long-${detail}.tst`, Buffer.concat([set.bytes, Buffer.of(0)]));
+  zip.file(`bad-index-${detail}.gph`, gph(detail, 1, [set.width * set.height, 256]));
+  zip.file(`bad-negative-${detail}.gph`, gph(detail, 1, [set.width * set.height, -2]));
+  zip.file(`bad-run-${detail}.gph`, gph(detail, 1, [set.width * set.height + 1, 0]));
+}
+const invalidPalette = (await readArtifacts(zip, {})).artifacts;
+for (const [name, artifact] of invalidPalette) {
+  if (/^(short-|long-|bad-index-|bad-negative-|bad-run-)/.test(name)) assert.equal(artifact.decodeStatus, "error", name);
+}
+console.log("Palette details 3–6 passed: raw/RLE GPH, native TST strides, colors, transparency, references and malformed inputs.");

@@ -23,3 +23,12 @@ const smallContents = Buffer.from(await smallPdf.arrayBuffer()).toString("latin1
 assert.match(smallContents, /\/Count 1\b/);
 assert.equal([...smallContents.matchAll(/\/Subtype \/Image\b/g)].length, 2);
 console.log("Tileset PDF export passed: correct pages and image counts for detail 1 and detail 2.");
+
+for (const detail of [3, 4, 5, 6]) {
+  const bytes = await readFile(new URL(`../docs/specs/fixtures/palette-${detail}.tst`, import.meta.url));
+  const set = { ...readTileset(bytes), path: `Tiles/palette-${detail}.tst`, type: "tst", decodeStatus: "decoded" };
+  const contents = Buffer.from(await (await tilesetPdf(set, graph)).arrayBuffer()).toString("latin1");
+  assert.match(contents, /\/Count 1\b/);
+  assert.equal([...contents.matchAll(/\/Subtype \/Image\b/g)].length, 2);
+}
+console.log("Palette TST PDF export passed for details 3–6.");

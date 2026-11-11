@@ -7,6 +7,7 @@ on:
       - 'experiments/dodge-tiles/**'
       - 'docs/specs/fixtures/**'
       - 'artifacts.mjs'
+      - 'tile-palette.mjs'
       - 'records.mjs'
       - 'package-lock.json'
   workflow_dispatch:
@@ -44,6 +45,11 @@ jobs:
           schemas=upstream-dodge/draft/v0.2.1/schemas
           node experiments/dodge-tiles/check.mjs "$schemas/dodge.schema.v0.2.1.json" "$RUNNER_TEMP/tile-source"
           python experiments/dodge-tiles/targets/build.py "$schemas" "$RUNNER_TEMP/tile-source" "$RUNNER_TEMP/tile-review" --source-sha "$SOURCE_SHA"
+          cp "$RUNNER_TEMP/tile-source/palette-fixtures.zip" "$RUNNER_TEMP/tile-review/"
+          for detail in 3 4 5 6; do
+            python experiments/dodge-tiles/targets/build.py "$schemas" "$RUNNER_TEMP/tile-source/palette-$detail" "$RUNNER_TEMP/tile-review/palette-$detail" --source-sha "$SOURCE_SHA"
+            cp experiments/dodge-tiles/targets/{prepare-tts.py,REVIEW.md} "$RUNNER_TEMP/tile-review/palette-$detail/"
+          done
           cp experiments/dodge-tiles/targets/{prepare-tts.py,REVIEW.md} "$RUNNER_TEMP/tile-review/"
       - name: Upload PDF, TTS save, assets and manifests
         id: review

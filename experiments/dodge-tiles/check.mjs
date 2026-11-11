@@ -91,3 +91,37 @@ if (outputDirectory) {
   await writeFile(join(outputDirectory, "tile-card-scene.json"), JSON.stringify(cards, null, 2) + "\n");
 }
 console.log("DODGE tile pilot passed: schema, declared order, stable IDs, and board placement cases.");
+
+// Emit indexed-source review bundles through the same DODGE projection.
+if (outputDirectory) {
+  const paletteArchive = new JSZip();
+  for (const detail of [3, 4, 5, 6]) {
+    const name = `palette-${detail}.tst`;
+    const zip = new JSZip();
+    zip.file(`Tiles/${name}`, await readFile(new URL(`../../docs/specs/fixtures/${name}`, import.meta.url)));
+    paletteArchive.file(`Tiles/${name}`, await readFile(new URL(`../../docs/specs/fixtures/${name}`, import.meta.url)));
+    for (const compressed of [0, 1]) {
+      const gph = `palette-${detail}-${compressed}.gph`;
+      paletteArchive.file(`Tiles/${gph}`, await readFile(new URL(`../../docs/specs/fixtures/${gph}`, import.meta.url)));
+    }
+    const originalBoard = Buffer.from(fixtures.find(({ path }) => path === boardPath).bytes);
+    const oldReference = Buffer.from("two-tiles.tst2");
+    const offset = originalBoard.indexOf(oldReference);
+    assert.notEqual(offset, -1);
+    const paletteBoard = Buffer.concat([originalBoard.subarray(0, offset), Buffer.from(`${name}2`), originalBoard.subarray(offset + oldReference.length)]);
+    zip.file(boardPath, paletteBoard);
+    paletteArchive.file(`Boards/palette-${detail}.brd`, paletteBoard);
+    const { artifacts } = await readArtifacts(zip, {});
+    const { dodge, sidecar } = await projectTiles(recordsFor(artifacts));
+    assert.ok(validate(dodge), JSON.stringify(validate.errors));
+    const sourceJson = JSON.stringify(sidecar, null, 2) + "\n";
+    const cards = projectTileCards(dodge, `Tiles/${name}`, await sha256Text(sourceJson));
+    assert.ok(validate(cards), JSON.stringify(validate.errors));
+    const directory = join(outputDirectory, `palette-${detail}`);
+    await mkdir(directory, { recursive: true });
+    await writeFile(join(directory, "dodge.json"), JSON.stringify(dodge, null, 2) + "\n");
+    await writeFile(join(directory, dodge.sources.toolkit.uri), sourceJson);
+    await writeFile(join(directory, "tile-card-scene.json"), JSON.stringify(cards, null, 2) + "\n");
+  }
+  await writeFile(join(outputDirectory, "palette-fixtures.zip"), await paletteArchive.generateAsync({ type: "nodebuffer" }));
+}

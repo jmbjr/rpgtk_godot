@@ -63,7 +63,7 @@ jobs:
       - name: Stage public viewer files
         run: |
           mkdir -p site/vendor
-          cp .nojekyll index.html style.css app.mjs archive.mjs model.mjs artifacts.mjs records.mjs game-graph.mjs inspector-history.mjs connection-map.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs tile-pdf.mjs catalog.json site/
+          cp .nojekyll index.html style.css app.mjs archive.mjs model.mjs artifacts.mjs tile-palette.mjs records.mjs game-graph.mjs inspector-history.mjs connection-map.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs tile-pdf.mjs catalog.json site/
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
           cp -R vendor/soundfont vendor/generaluser-gs vendor/piano-roll vendor/jspdf site/vendor/
           cp --parents experiments/dodge-tiles/{project,card-scene}.mjs site/
