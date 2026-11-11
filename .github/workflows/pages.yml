@@ -82,7 +82,7 @@ jobs:
           name: tk2-test-game
           path: site/tk2-test-game.zip
           if-no-files-found: error
-      - name: Upload legacy GPH coverage game for PR review
+      - name: Upload legacy format coverage game for PR review
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:

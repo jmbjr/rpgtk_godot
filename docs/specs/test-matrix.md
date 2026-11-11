@@ -24,11 +24,15 @@ and [generator and checks](https://github.com/jmbjr/rpgtk_godot/blob/0562ea3aeb7
 The first legacy coverage increment is a separate [TK2LegacyLab manifest](../../experiments/tk2-legacy-game/manifest.json)
 and [editor-open checklist](../../experiments/tk2-legacy-game/README.md). CI builds
 `tk2-legacy-game.zip` alongside the unchanged baseline `tk2-test-game.zip`.
-This increment includes four **standalone**, synthetic GPH mode 4/6 variants
-(from checked-in fixtures, normalized to CRLF for the ZIP);
-their inclusion and viewer decoding are checked, but editor opening,
-save/reopen, and runtime usage are still unverified. Inclusion is **not** evidence
-that the game references or uses these standalone tiles.
+The initial increment includes four **standalone**, synthetic GPH mode 4/6
+variants (from checked-in fixtures, normalized to CRLF for the ZIP).
+The next increment adds five binary TST format 20 modes (2–6), copied byte-for-byte
+from checked-in fixtures, plus five binary BRD 2.2 *gallery* boards that place
+both tiles in each set. The generator checks each board's two exact tile
+references. None of these gallery boards is linked from the active GAM or
+startup script. Viewer decoding and static reference resolution are verified,
+but **desktop editor opening, save/reopen, and runtime usage remain pending**.
+Do not infer runtime acceptance from the main test room loading.
 Each archive has one active GAM. Use separate ZIPs with the same project assets
 for alternate GAM layouts. Establish the latest Toolkit 2 release and its
 actual writer output before selecting formats for the latest game.
@@ -42,7 +46,7 @@ actual writer output before selecting formats for the latest game.
 | [GAM binary 2.2](gam.md) | [`main.gam`](fixtures/format-fixtures.mjs#L23) | Partial title, project path, and startup bindings. [Check](../../scripts/check-format-specs.mjs) | Pending | Baseline and legacy main file |
 | [BRD text 2.0](brd.md) | [`Boards/fixed-room.brd`](fixtures/format-fixtures.mjs#L170) | Partial fixed grid, conditions, and links. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy board |
 | [BRD text 2.1](brd.md) | [`Boards/text-room.brd`](fixtures/format-fixtures.mjs#L146) | Partial dimensioned grid, conditions, and links. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy board |
-| [BRD binary 2.2](brd.md) | [`Boards/types-2.brd`](fixtures/detail-fixtures.mjs#L64) | Partial binary grid, placement conditions, and tile types. [Check](../../scripts/check-character-board-details.mjs) | Pending | Baseline and legacy board |
+| [BRD binary 2.2](brd.md) | [`Boards/types-2.brd`](fixtures/detail-fixtures.mjs#L64) | Partial binary grid, placement conditions, and tile types. [Check](../../scripts/check-character-board-details.mjs) | Pending | Baseline and [five mode-specific TST gallery boards](../../experiments/tk2-legacy-game/manifest.json); desktop editor checks pending |
 | [BRD binary 2.3, thread slots](brd.md) | [`Boards/threaded-room.brd`](fixtures/format-fixtures.mjs#L121) and [`Boards/no-threads.brd`](fixtures/format-fixtures.mjs#L122) | Partial thread names and raw coordinate byte. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy board |
 | [BRD binary 2.3, isometric coordinates](brd.md) | [Legacy reader evidence](compatibility-matrix.md#project-boards-and-scripts). Need a real isometric specimen. | Raw coordinate byte retained. Geometry verification pending. | Pending | Acquire sample |
 | [PRG unversioned RPGCode](prg.md) | [`Prg/start.prg`](fixtures/format-fixtures.mjs#L30) | Partial source and static references. [Check](../../scripts/check-format-specs.mjs) | Pending | Baseline startup and legacy scripts |
@@ -75,11 +79,11 @@ actual writer output before selecting formats for the latest game.
 | Type and variant | Repository evidence | Viewer | Desktop open / save / run | Test route |
 | --- | --- | --- | --- | --- |
 | [TST binary 20 mode 1](tst.md) | [`two-tiles.tst`](fixtures/two-tiles.tst) | Decode 32 × 32 RGB tiles and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Baseline tiles and legacy tileset |
-| [TST binary 20 mode 2](tst.md) | [`two-tiles-16.tst`](fixtures/two-tiles-16.tst) | Decode 16 × 16 RGB tiles and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tileset |
-| [TST binary 20 mode 3](tst.md) | [`palette-3.tst`](fixtures/palette-3.tst) | Decode 32 × 32 indexed tiles and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tileset |
-| [TST binary 20 mode 4](tst.md) | [`palette-4.tst`](fixtures/palette-4.tst) | Decode 16 × 16 indexed tiles and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tileset |
-| [TST binary 20 mode 5](tst.md) | [`palette-5.tst`](fixtures/palette-5.tst) | Decode 32 × 32 indexed tiles and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tileset |
-| [TST binary 20 mode 6](tst.md) | [`palette-6.tst`](fixtures/palette-6.tst) | Decode 16 × 16 indexed tiles and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tileset |
+| [TST binary 20 mode 2](tst.md) | [`two-tiles-16.tst`](fixtures/two-tiles-16.tst) | Decode 16 × 16 RGB tiles and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | [Legacy ZIP manifest](../../experiments/tk2-legacy-game/manifest.json) · `Tiles/two-tiles-16.tst` · `Boards/test-tst-mode-2.brd` (both numbered tile references; not the startup board) |
+| [TST binary 20 mode 3](tst.md) | [`palette-3.tst`](fixtures/palette-3.tst) | Decode 32 × 32 indexed tiles and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | [Legacy ZIP manifest](../../experiments/tk2-legacy-game/manifest.json) · `Tiles/palette-3.tst` · `Boards/test-tst-mode-3.brd` (both numbered tile references; not the startup board) |
+| [TST binary 20 mode 4](tst.md) | [`palette-4.tst`](fixtures/palette-4.tst) | Decode 16 × 16 indexed tiles and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | [Legacy ZIP manifest](../../experiments/tk2-legacy-game/manifest.json) · `Tiles/palette-4.tst` · `Boards/test-tst-mode-4.brd` (both numbered tile references; not the startup board) |
+| [TST binary 20 mode 5](tst.md) | [`palette-5.tst`](fixtures/palette-5.tst) | Decode 32 × 32 indexed tiles and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | [Legacy ZIP manifest](../../experiments/tk2-legacy-game/manifest.json) · `Tiles/palette-5.tst` · `Boards/test-tst-mode-5.brd` (both numbered tile references; not the startup board) |
+| [TST binary 20 mode 6](tst.md) | [`palette-6.tst`](fixtures/palette-6.tst) | Decode 16 × 16 indexed tiles and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | [Legacy ZIP manifest](../../experiments/tk2-legacy-game/manifest.json) · `Tiles/palette-6.tst` · `Boards/test-tst-mode-6.brd` (both numbered tile references; not the startup board) |
 | [GPH text 2.0 mode 1, raw](gph.md) | [`raw-32.gph`](../../scripts/check-tile-specs.mjs#L96) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tile editor |
 | [GPH text 2.0 mode 1, RLE](gph.md) | [`standalone-32-rle.gph`](fixtures/standalone-32-rle.gph) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tile editor |
 | [GPH text 2.0 mode 2, raw](gph.md) | [`standalone-16.gph`](fixtures/standalone-16.gph) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tile editor |
