@@ -3,7 +3,7 @@
 Specification revision **1.0**. Shared by TST version 20 and GPH text 2.0,
 detail levels 3–6. These files contain indexes, not an embedded palette.
 
-| Detail | Native dimensions | Nominal color mode | Stored bytes per TST tile |
+| Mode (`detail`) | Native dimensions | Nominal color mode | Stored bytes per TST tile |
 | --- | --- | --- | --- |
 | 3 | 32 × 32 | 256 colors | 1,024 |
 | 4 | 16 × 16 | 256 colors | 256 |

@@ -1,4 +1,4 @@
-import { formatSummary, formatSpecTarget, mainSourceFormat } from "./asset-format.mjs";
+import { formatSummary, formatSpecTarget, isTileFormat, mainSourceFormat, tileMode } from "./asset-format.mjs";
 import { openGameArchive } from "./archive.mjs";
 import { mainFileBindings, readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
@@ -259,22 +259,33 @@ function tileCanvas(height = 32) {
   return canvas;
 }
 
+const specBase = "https://github.com/jmbjr/rpgtk_godot/blob/main/docs/specs/";
+
 function formatSpecLink(format, section = "", sourceFormat) {
   const target = formatSpecTarget({ type: format, sourceFormat });
   const { page } = target;
   const label = section ? "Tile addressing spec" : sourceFormat?.version ?
-    `${format.toUpperCase()} ${sourceFormat.encoding} ${sourceFormat.version}${sourceFormat.detail === undefined ? "" : ` detail ${sourceFormat.detail}`} ${sourceFormat.supported ? "spec" : "coverage limits"}` :
+    `${format.toUpperCase()} ${isTileFormat(format) ? "format" : sourceFormat.encoding} ${sourceFormat.version}${tileMode({ type: format, sourceFormat }) ? `, mode ${sourceFormat.detail}` : ""} ${sourceFormat.supported ? "spec" : "coverage limits"}` :
     page === "other" ? "Archive entry spec" : `${format.toUpperCase()} format spec`;
   section ||= target.anchor;
   const link = el("a", label);
-  link.href = `https://github.com/jmbjr/rpgtk_godot/blob/main/docs/specs/${page}.md${section}`;
+  link.href = `${specBase}${page}.md${section}`;
   return link;
 }
 
 function assetFormatHeader(artifact) {
   const header = el("div", "", "asset-format");
-  header.append(el("p", `File format: ${formatSummary(artifact)}`, "asset-format-version"),
-    formatSpecLink(artifact.type, "", artifact.sourceFormat));
+  const mode = tileMode(artifact);
+  const summary = formatSummary(artifact);
+  header.append(el("p", isTileFormat(artifact.type) ? summary : `File format: ${summary}`, "asset-format-version"));
+  if (mode) {
+    const description = el("p");
+    const label = el(mode.palette ? "a" : "span", mode.label);
+    if (mode.palette) label.href = `${specBase}palette.md`;
+    description.append(label, document.createTextNode(` · Storage: ${artifact.sourceFormat.encoding}`));
+    header.append(description);
+  }
+  header.append(formatSpecLink(artifact.type, "", artifact.sourceFormat));
   if (artifact.sourceFormat?.version) header.append(el("p", "File-format revisions are independent of Toolkit releases.", "technical"));
   if (artifact.type === "tem" && !artifact.error) {
     header.append(el("p", artifact.embeddedWalking ?

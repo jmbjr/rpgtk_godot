@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
-import {detectSourceFormat, formatSpecTarget, formatSummary, mainSourceFormat, toolkitAsset} from "../asset-format.mjs";
+import {detectSourceFormat, formatSpecTarget, formatSummary, mainSourceFormat, tileMode, toolkitAsset} from "../asset-format.mjs";
 import {readArtifacts, buildReferences} from "../artifacts.mjs";
 import {artifactRecord} from "../records.mjs";
 import {fixtures} from "../docs/specs/fixtures/format-fixtures.mjs";
@@ -30,6 +30,12 @@ for(const {type,bytes,expected} of cases) {
   const actual=detectSourceFormat(type,bytes);assert.deepEqual(actual,expected,type);
   assert.ok(formatSummary({type,sourceFormat:actual}).includes(actual.version));
   assert.ok(!formatSummary({type,sourceFormat:actual}).includes("Unsupported"));
+  if (actual.detail !== undefined) {
+    const labels = ["32 × 32, 24-bit RGB", "16 × 16, 24-bit RGB", "32 × 32, 256-color palette",
+      "16 × 16, 256-color palette", "32 × 32, 16-color palette", "16 × 16, 16-color palette"];
+    assert.equal(formatSummary({type,sourceFormat:actual}), `${type.toUpperCase()} format ${actual.version}`);
+    assert.deepEqual(tileMode({type,sourceFormat:actual}), {label:`Mode ${actual.detail}: ${labels[actual.detail-1]}`,palette:actual.detail>=3});
+  }
 }
 for(const [type,data,version] of [["tem",binary("RPGTLKIT CHAR",2,8),"2.8"],["brd",bytes("RPGTLKIT BOARD\n2\n9\n"),"2.9"],
   ["tbm",binary("RPGTLKIT TILEBITMAP",3,0),"3.0"]]) {
@@ -48,13 +54,14 @@ assert.match(formatSummary({type:"prg",sourceFormat:detectSourceFormat("prg",byt
 assert.equal(formatSpecTarget({type:"___"}).anchor,"#unversioned-observed-layout");
 assert.deepEqual(mainSourceFormat({major:2,minor:0}),{encoding:"text",version:"2.0",supported:true});
 assert.deepEqual(mainSourceFormat({major:2,minor:2}),{encoding:"binary",version:"2.2",supported:true});
-// Follow every generated native spec target and verify its exact heading anchor.
+// Follow every generated native spec target, including stable links to renamed sections.
 const targets=cases.map(({type,expected})=>formatSpecTarget({type,sourceFormat:expected}));
 for(const type of ["prg","___","tem","brd","itm","gam","gph","tst","tan","ene","bkg","spc","ste","anm","fnt","tbm","iso"]) targets.push(formatSpecTarget({type}));
 for(const {page,anchor} of targets) {
   const markdown=await readFile(new URL(`../docs/specs/${page}.md`,import.meta.url),"utf8");
   const headings=[...markdown.matchAll(/^## (.+)$/gm)].map(m=>"#"+m[1].toLowerCase().replace(/[^\w\- ]/g,"").replaceAll(" ","-"));
-  assert.ok(headings.includes(anchor),`${page}.md${anchor}`);
+  const namedAnchors=[...markdown.matchAll(/<a name="([^"]+)"><\/a>/g)].map(m=>`#${m[1]}`);
+  assert.ok([...headings, ...namedAnchors].includes(anchor),`${page}.md${anchor}`);
 }
 const zip=new JSZip();
 for(const {path,bytes} of [...fixtures,...detailFixtures])zip.file(path,bytes);
