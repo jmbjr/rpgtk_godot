@@ -66,3 +66,11 @@ not files recovered from a released game. See [palette rules](../palette.md).
 The PR's DODGE review artifact also contains `palette-fixtures.zip`: open
 it in the website to browse all 12 palette fixtures. `palette-3/` through
 `palette-6/` each contain a generated PDF, TTS save and matching assets.
+
+## Older text characters
+
+`format-fixtures.mjs` defines `Chrs/text-0-0.tem`, `Chrs/text-1-0.tem`
+and `Chrs/text-1-1.tem` with independent expected records. They cover the
+absent size field in text 2.0 and both text 2.1 graphics branches. These
+are controlled fixtures, not recovered game files. The DODGE review
+artifact includes `older-tem-fixtures.zip` for opening in the viewer.

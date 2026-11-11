@@ -1,6 +1,6 @@
 # TEM · character
 
-Specification revision **1.0** · [conventions](README.md). Partial text 2.2 and
+Specification revision **1.0** · [conventions](README.md). Partial text 2.0/2.1/2.2 and
 binary 2.3/2.4 profiles.
 
 ## Binary read sequence
@@ -50,3 +50,35 @@ this profile.
 
 Evidence includes four DustBall text 2.2 characters, synthetic fixtures
 and the [pinned compatibility reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vb/tkCommon/modules/CommonPlayer.bas#L851-L1082).
+
+## Older text 2.0 and 2.1
+
+These revisions share the text 2.2 prefix through the special-move name
+and enable flag, and the same accessories/progression/audio/program tail.
+The version-dependent graphics block must be consumed before that tail:
+
+| Revision | Size field | Walking | Battle/rest/custom payload after walking |
+| --- | --- | --- | --- |
+| 2.0 | Absent; implicit size 0 | 16 embedded 32 × 32 tiles | 16 embedded battle tiles, one rest tile, ten custom tiles |
+| 2.1, size 0 | Decimal `0` | Same embedded layout | Same embedded layout |
+| 2.1, size 1 | Decimal `1` | 16 top/bottom filename pairs | 32 battle filenames, two rest filenames, 20 custom filenames |
+| 2.2, size 1 | Decimal `1` | Same referenced walking layout | 64 battle filenames, four rest filenames, 20 custom filenames |
+
+Embedded colors are signed decimal COLORREF integers: `-1` is transparent,
+`0..16777215` is opaque. Each tile is column-major. The embedded battle
+block is interleaved per pixel (fight, special move, defense, death),
+for four frames. The reader skips that block, then the rest and custom
+art, preserving its exact length before reading the shared tail.
+For 2.1 referenced battle art, the source loops top/bottom, then four
+frames, reading fight/defense/special/death filenames for each frame.
+Size codes other than 0 or 1 are unsupported.
+
+All three added layout combinations use the existing partial TEM record,
+walking preview and reference contract. Controlled fixtures check all
+sixteen embedded frame boundaries, first/last walking references,
+portrait, special moves, sounds and level-up script. Truncated graphics,
+truncated tails, invalid embedded colors, size codes and unsupported
+versions are rejected. No real text 2.0/2.1 character sample has yet been
+validated; the evidence is the pinned reader linked above and controlled
+fixtures. Battle/rest/custom graphics, conditions and progression remain
+unexported, as in the text 2.2 profile.

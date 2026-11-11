@@ -49,6 +49,16 @@ zip.file("Boards/truncated-thread-tail.brd", threadedBoard.subarray(0, -1));
 const badThreadCount = Buffer.from(fixtures.find(({ path }) => path === "Boards/no-threads.brd").bytes);
 badThreadCount.writeInt32LE(10000, badThreadCount.length - 5);
 zip.file("Boards/invalid-thread-count.brd", badThreadCount);
+const olderCharacters = fixtures.filter(({ path }) => /^Chrs\/text-[01]-[01]\.tem$/.test(path));
+for (const { path, bytes } of olderCharacters) {
+  zip.file(`${path}.short-graphics.tem`, bytes.subarray(0, Math.min(7000, Math.floor(bytes.length / 2))));
+  zip.file(`${path}.short-tail.tem`, bytes.subarray(0, -8));
+}
+const oldReferenced = olderCharacters.find(({ path }) => path === "Chrs/text-1-1.tem").bytes;
+zip.file("Chrs/bad-old-size.tem", Buffer.from(oldReferenced.toString("ascii").replace("Special\r\n0\r\n1\r\n", "Special\r\n0\r\n2\r\n")));
+const oldEmbedded = olderCharacters.find(({ path }) => path === "Chrs/text-0-0.tem").bytes;
+zip.file("Chrs/bad-old-color.tem", Buffer.from(oldEmbedded.toString("ascii").replace("Special\r\n0\r\n1\r\n", "Special\r\n0\r\n16777216\r\n")));
+zip.file("Chrs/unsupported-old-version.tem", Buffer.from(oldEmbedded.toString("ascii").replace("CHAR\r\n2\r\n0", "CHAR\r\n2\r\n9")));
 const { artifacts, graph } = await load(zip);
 for (const { path, expected } of fixtures) {
   const record = recordFor(artifacts.get(path), graph);
@@ -113,6 +123,29 @@ for (const size of [0, 1]) {
     assert.deepEqual([...pixels.slice(128, 132)], [255, 0, 0, 255]);
   }
 }
+for (const { path } of olderCharacters) {
+  const hero = recordFor(artifacts.get(path), graph);
+  const edge = evidence => hero.references.outgoing.find(ref => ref.evidence === evidence);
+  assert.equal(edge("Character portrait").target.$ref, "rpgtk:/Bitmap/face.gif");
+  assert.equal(edge("Special move slot 0").target.$ref, "rpgtk:/SpcMove/pulse.spc");
+  for (const label of ["Attack", "Special move"]) assert.equal(edge(`${label} sound`).target.$ref, "rpgtk:/Media/tone.wav");
+  for (const label of ["Defense", "Defeat"]) assert.equal(edge(`${label} sound`).status, "missing");
+  assert.equal(edge("Level-up program").target.$ref, "rpgtk:/Prg/start.prg");
+  assert.ok(!hero.references.outgoing.some(ref => /battle-|custom-|rest-/.test(ref.value)));
+  if (path === "Chrs/text-1-1.tem") {
+    for (const evidence of ["Walk south · frame 1 · top", "Walk west · frame 4 · bottom"]) {
+      assert.deepEqual(edge(evidence).target, { $ref: "rpgtk:/Tiles/two-tiles.tst#/data/tiles/1", tileIndex: 2 });
+    }
+  } else {
+    assert.equal(hero.data.embeddedWalking.length, 16);
+    for (let i = 0; i < 16; i++) {
+      const pixels = standaloneTilePixels({ width: 32, height: 32, pixels: hero.data.embeddedWalking[i] });
+      assert.deepEqual([...pixels.slice(0, 8)], [i + 1, 0, 0, 255, 0, 0, 0, 0]);
+    }
+  }
+  for (const suffix of ["short-graphics", "short-tail"]) assert.equal(artifacts.get(`${path}.${suffix}.tem`).decodeStatus, "error");
+}
+for (const name of ["bad-old-size", "bad-old-color", "unsupported-old-version"]) assert.equal(artifacts.get(`Chrs/${name}.tem`).decodeStatus, "error", name);
 const threaded = recordFor(artifacts.get("Boards/threaded-room.brd"), graph);
 const threadEdges = threaded.references.outgoing.filter(edge => edge.evidence.startsWith("Board thread"));
 assert.deepEqual(threadEdges.map(edge => [edge.evidence, edge.status, edge.target?.$ref]), [

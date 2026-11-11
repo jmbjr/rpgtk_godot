@@ -125,3 +125,12 @@ if (outputDirectory) {
   }
   await writeFile(join(outputDirectory, "palette-fixtures.zip"), await paletteArchive.generateAsync({ type: "nodebuffer" }));
 }
+
+if (outputDirectory) {
+  const zip = new JSZip();
+  for (const { path, bytes } of fixtures) {
+    if (/^Chrs\/text-[01]-[01]\.tem$/.test(path) || ["SpcMove/pulse.spc", "Prg/start.prg", "Media/tone.wav", "Bitmap/face.gif"].includes(path)) zip.file(path, bytes);
+  }
+  zip.file("Tiles/two-tiles.tst", await readFile(new URL("../../docs/specs/fixtures/two-tiles.tst", import.meta.url)));
+  await writeFile(join(outputDirectory, "older-tem-fixtures.zip"), await zip.generateAsync({ type: "nodebuffer" }));
+}

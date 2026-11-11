@@ -45,6 +45,7 @@ jobs:
           schemas=upstream-dodge/draft/v0.2.1/schemas
           node experiments/dodge-tiles/check.mjs "$schemas/dodge.schema.v0.2.1.json" "$RUNNER_TEMP/tile-source"
           python experiments/dodge-tiles/targets/build.py "$schemas" "$RUNNER_TEMP/tile-source" "$RUNNER_TEMP/tile-review" --source-sha "$SOURCE_SHA"
+          cp "$RUNNER_TEMP/tile-source/older-tem-fixtures.zip" "$RUNNER_TEMP/tile-review/"
           cp "$RUNNER_TEMP/tile-source/palette-fixtures.zip" "$RUNNER_TEMP/tile-review/"
           for detail in 3 4 5 6; do
             python experiments/dodge-tiles/targets/build.py "$schemas" "$RUNNER_TEMP/tile-source/palette-$detail" "$RUNNER_TEMP/tile-review/palette-$detail" --source-sha "$SOURCE_SHA"
