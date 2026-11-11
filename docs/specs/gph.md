@@ -16,7 +16,7 @@ signature without regard to case.
 | 1 | `RPGTLKIT TILE` | Signature |
 | 2 | `2` | Major format version |
 | 3 | `0` | Minor format version |
-| 4 | `1` or `2` | Detail 1 is 32 × 32. Detail 2 is 16 × 16. Both use true-color values. |
+| 4 | `1` through `6` | Odd details are 32 × 32; even details are 16 × 16. Details 1–2 are true-color, 3–6 use the [DOS palette](palette.md). |
 | 5 | `0` or `1` | Raw pixels or run-length encoding |
 | 6 onward | Decimal tokens | Pixel payload |
 
@@ -30,6 +30,8 @@ when the tile is complete. Canonical writers end the payload there.
 
 Pixels are **column-major**, with zero-based `x` increasing rightward and
 `y` increasing downward. The expanded array index is `x * height + y`.
+
+For true-color details 1–2:
 
 | Stored color | Decoded pixel |
 | --- | --- |
@@ -48,7 +50,7 @@ Format `gph`. The [success schema](tile-record.schema.json) requires
 `data.width`, `data.height`, `data.detail`, boolean `data.compressed`,
 `data.order: "column-major"`,
 `data.encoding: "Toolkit COLORREF; -1 is transparent"`, and the expanded
-`data.pixels` array of original color integers. References to a GPH point
+`data.pixels` array of COLORREF integers (normalized from indexes for details 3–6). References to a GPH point
 to the whole record. The [fixtures](fixtures/README.md) include raw and
 compressed examples with expected records.
 
@@ -60,7 +62,7 @@ compressed examples with expected records.
   corroborates header order, pixel traversal, true-color dimensions,
   transparency, and run expansion. Synthetic fixtures exercise the
   additional combinations.
-- Version 1 and indexed palette detail levels 3–6 appear in the
-  compatibility reader. They are outside this specification's supported
-  profile. Toolkit 2 Help's *Tileset Manager* distinguishes standalone
+- Indexed details 3–6 are covered by [palette fixtures and normalization](palette.md),
+  including a documented inconsistency in the pinned TK3 reader. Version 1
+  remains outside this specification's supported profile. Toolkit 2 Help's *Tileset Manager* distinguishes standalone
   GPH tiles from grouped TST tiles and describes the different detail levels.

@@ -1,3 +1,5 @@
+import { tilesetRgb } from "./tile-palette.mjs";
+
 const partialFormats = new Set(["gam", "prg", "tem", "brd", "gif", "jpg", "jpeg", "wav", "mid", "doc", "___"]);
 
 export function artifactId(path, mainFile = false) {
@@ -25,7 +27,6 @@ function edgeRecord(edge) {
 }
 
 function tilesetData(bytes, { width, height, count }) {
-  const tileSize = width * height * 3;
   return {
     width,
     height,
@@ -33,8 +34,8 @@ function tilesetData(bytes, { width, height, count }) {
     encoding: "base64 RGB24, column-major",
     transparentRgb: [0, 1, 2],
     tiles: Array.from({ length: count }, (_, i) => {
-      const offset = 6 + i * tileSize;
-      return { number: i + 1, rgb: btoa(String.fromCharCode(...bytes.subarray(offset, offset + tileSize))) };
+      const rgb = tilesetRgb({ bytes, width, height }, i + 1);
+      return { number: i + 1, rgb: btoa(String.fromCharCode(...rgb)) };
     }),
   };
 }

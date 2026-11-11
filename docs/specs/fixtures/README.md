@@ -54,3 +54,15 @@ combinations and rejection of malformed inputs.
 GPH coordinates in this table are native. The 16 × 16 viewer preview uses
 2 × 2 display pixels per native pixel. TST transparency retains the
 stored sentinel's RGB bytes when converted to RGBA.
+
+## Indexed palette fixtures
+
+`palette-3.tst` through `palette-6.tst` contain two entries each, including
+transparent 255, opaque black, distinct X/Y colors and an end-of-tile marker.
+`palette-N-0.gph` and `palette-N-1.gph` cover raw/RLE for each detail 3–6.
+Each has a matching `.expected.json` record. These are controlled fixtures,
+not files recovered from a released game. See [palette rules](../palette.md).
+
+The PR's DODGE review artifact also contains `palette-fixtures.zip`: open
+it in the website to browse all 12 palette fixtures. `palette-3/` through
+`palette-6/` each contain a generated PDF, TTS save and matching assets.

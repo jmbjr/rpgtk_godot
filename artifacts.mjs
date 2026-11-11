@@ -1,3 +1,4 @@
+import { dosPalette, tilesetRgb } from "./tile-palette.mjs";
 import { decodeProgram, indexProgram, readMainFile } from "./model.mjs";
 import { readCompoundDocument, readGif, readJpeg, readMidi, readWave } from "./media.mjs";
 
@@ -46,11 +47,11 @@ export function readTileset(bytes) {
   const version = reader.short();
   const count = reader.short();
   const detail = reader.short();
-  if (version !== 20 || ![1, 2].includes(detail)) {
-    throw new Error("This viewer supports version 20, detail 1 and 2 tilesets.");
+  if (version !== 20 || ![1, 2, 3, 4, 5, 6].includes(detail)) {
+    throw new Error("This viewer supports version 20, detail 1–6 tilesets.");
   }
-  const width = detail === 1 ? 32 : 16;
-  if (count < 0 || bytes.length !== 6 + count * width * width * 3) {
+  const width = detail % 2 ? 32 : 16;
+  if (count < 0 || bytes.length !== 6 + count * width * width * (detail <= 2 ? 3 : 1)) {
     throw new Error("The tileset size does not match its header.");
   }
   return { count, width, height: width, bytes };
@@ -59,14 +60,14 @@ export function readTileset(bytes) {
 export function tilePixels(tileset, number) {
   if (!Number.isInteger(number) || number < 1 || number > tileset.count) return null;
   const size = 32; // Preview cells use the same grid size for both tile details.
-  const { width, height, bytes } = tileset;
+  const { width, height } = tileset;
+  const bytes = tilesetRgb(tileset, number);
   const scale = size / width;
   const rgba = new Uint8ClampedArray(size * size * 4);
-  const start = 6 + (number - 1) * width * height * 3;
   for (let y = 0; y < size; y++) {
     const row = Math.floor(y / scale);
     for (let x = 0; x < size; x++) {
-      const source = start + (Math.floor(x / scale) * height + row) * 3;
+      const source = (Math.floor(x / scale) * height + row) * 3;
       const offset = (y * size + x) * 4;
       const r = bytes[source];
       const g = bytes[source + 1];
@@ -580,15 +581,15 @@ function readStandaloneTile(bytes) {
   const reader = textReader(bytes, "RPGTLKIT TILE");
   const detail = reader.number();
   const compressed = reader.number();
-  if (![1, 2].includes(detail) || ![0, 1].includes(compressed)) throw new Error("Unsupported standalone tile encoding.");
-  const size = detail === 1 ? 32 : 16;
+  if (![1, 2, 3, 4, 5, 6].includes(detail) || ![0, 1].includes(compressed)) throw new Error("Unsupported standalone tile encoding.");
+  const size = detail % 2 ? 32 : 16;
   const pixels = [];
   while (pixels.length < size * size) {
     const count = compressed ? reader.number() : 1;
     const color = reader.number();
-    if (!Number.isInteger(color) || color < -1 || color > 0xffffff) throw new Error("Invalid standalone tile color.");
+    if (!Number.isInteger(color) || color < -1 || color > (detail <= 2 ? 0xffffff : 255)) throw new Error("Invalid standalone tile color.");
     if (!Number.isInteger(count) || count < 1 || pixels.length + count > size * size) throw new Error("Invalid standalone tile run.");
-    for (let i = 0; i < count; i++) pixels.push(color);
+    for (let i = 0; i < count; i++) pixels.push(detail > 2 && color !== -1 ? dosPalette[color] : color);
   }
   return { width: size, height: size, detail, compressed: Boolean(compressed), order: "column-major", encoding: "Toolkit COLORREF; -1 is transparent", pixels };
 }
