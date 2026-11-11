@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { openGameArchive } from "../archive.mjs";
 import { readMainFile, resolveAsset } from "../model.mjs";
 import JSZip from "../vendor/jszip.min.js";
