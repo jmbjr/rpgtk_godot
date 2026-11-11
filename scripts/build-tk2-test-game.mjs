@@ -6,9 +6,16 @@ import { buildReferences, readArtifacts, tilePixels } from "../artifacts.mjs";
 import { openGameArchive } from "../archive.mjs";
 import { mainFileBindings } from "../model.mjs";
 
-const manifest = JSON.parse(await readFile(new URL("../experiments/tk2-test-game/manifest.json", import.meta.url)));
+const legacy = process.argv.includes("--legacy");
+const manifestLocation = legacy ? "../experiments/tk2-legacy-game/manifest.json" : "../experiments/tk2-test-game/manifest.json";
+const manifest = JSON.parse(await readFile(new URL(manifestLocation, import.meta.url)));
+const specimens = manifest.specimens ?? [];
+// Toolkit 2's text writers use CRLF. Conformance fixtures are LF, so normalize
+// the container's wire form without changing the checked-in source specimens.
+const gphWireText = bytes => bytes.toString("latin1").replace(/\r\n|\r|\n/g, "\r\n");
 const { name, title, files, room } = manifest;
 const project = `Game/${name}`;
+const readmePath = `Readme-${name}.txt`;
 const filename = Object.fromEntries(Object.entries(files).map(([key, path]) => [key, basename(path)]));
 const z = value => Buffer.from(value + "\0", "ascii");
 const i16 = (...values) => {
@@ -109,7 +116,7 @@ function tilesetFile() {
 }
 
 const instructions = [
-  "Toolkit 2 Test Lab",
+  title,
   "",
   "Extract this ZIP directly into your RPG Toolkit 2 installation folder.",
   `Open Main\\${filename.main} from the editor's Open Main File command.`,
@@ -118,6 +125,7 @@ const instructions = [
   "",
   "The viewer checks the archive, file layouts and references during the build.",
   "Please record your Toolkit release and whether the project opens and runs.",
+  ...specimens.map(specimen => `Tile editor check (standalone): ${specimen.path}`),
 ].join("\r\n") + "\r\n";
 
 const zip = new JSZip();
@@ -128,19 +136,40 @@ for (const folder of ["Main", "Game", project, ...["Bitmap", "Bkrounds", "Boards
   zip.file(`${folder}/`, "", { ...options, dir: true });
 }
 zip.file(files.main, mainFile(), options);
-zip.file(files.startup, '#MWin("Toolkit 2 Test Lab. Press a key to walk around.")\r\n#Wait(key$)\r\n#MWinCls()\r\n#End\r\n', options);
+zip.file(files.startup, `#MWin("${title}. Press a key to walk around.")\r\n#Wait(key$)\r\n#MWinCls()\r\n#End\r\n`, options);
 zip.file(files.board, boardFile(), options);
 zip.file(files.tiles, tilesetFile(), options);
 zip.file(files.player, characterFile(), options);
-zip.file("Readme-TK2TestLab.txt", instructions, options);
+for (const specimen of specimens) {
+  assert.equal(specimen.type, "gph");
+  assert.ok(specimen.path.startsWith(`${project}/Tiles/`), specimen.path);
+  // Preserve the fixture's fields and pixels while using editor-native CRLF.
+  const source = await readFile(new URL(`../${specimen.source}`, import.meta.url));
+  zip.file(specimen.path, gphWireText(source), options);
+}
+zip.file(readmePath, instructions, options);
 const bytes = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
 
 // Verify the exact ZIP with the same import path the site uses.
 const opened = await openGameArchive(bytes, input => JSZip.loadAsync(input));
 const catalog = JSON.parse(await readFile(new URL("../catalog.json", import.meta.url)));
 const { artifacts } = await readArtifacts(opened, catalog);
-assert.deepEqual([...artifacts.keys()].sort(), [...Object.values(files), "Readme-TK2TestLab.txt"].sort());
-for (const path of Object.values(files)) assert.equal(artifacts.get(path).decodeStatus, "decoded", path);
+const requiredPaths = [...Object.values(files), ...specimens.map(specimen => specimen.path)];
+assert.equal(new Set(requiredPaths).size, requiredPaths.length, "Duplicate manifest paths");
+assert.deepEqual([...artifacts.keys()].sort(), [...requiredPaths, readmePath].sort());
+for (const path of requiredPaths) assert.equal(artifacts.get(path).decodeStatus, "decoded", path);
+for (const specimen of specimens) {
+  const tile = artifacts.get(specimen.path);
+  assert.equal(tile.detail, specimen.detail, specimen.path);
+  assert.equal(tile.compressed, specimen.compressed, specimen.path);
+  assert.deepEqual([tile.width, tile.height], [16, 16], specimen.path);
+  assert.equal(tile.pixels.length, 256, specimen.path);
+  assert.equal(tile.pixels[0], -1, "Fixture transparency marker");
+  assert.ok(tile.pixels.slice(1).every(Number.isInteger), specimen.path);
+  const source = await readFile(new URL(`../${specimen.source}`, import.meta.url));
+  const packaged = await opened.file(specimen.path).async("string");
+  assert.equal(packaged, gphWireText(source), "Fixture content must change only in line endings");
+}
 const main = artifacts.get(files.main);
 assert.equal(main.projectPath, `Game\\${name}\\`);
 const bindings = mainFileBindings(main, [...artifacts.keys()]);
@@ -165,4 +194,4 @@ assert.ok(artifacts.get(files.player).walking.length === 16);
 const output = process.argv[2] ?? "dist/tk2-test-game.zip";
 await mkdir(dirname(output), { recursive: true });
 await writeFile(output, bytes);
-console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, and 16 walking tile references.`);
+console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references${specimens.length ? `, and ${specimens.length} standalone GPH variants` : ""}.`);

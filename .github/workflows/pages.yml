@@ -71,14 +71,23 @@ jobs:
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
           cp -R vendor/soundfont vendor/generaluser-gs vendor/piano-roll vendor/jspdf site/vendor/
           cp --parents experiments/dodge-tiles/{project,card-scene}.mjs site/
-      - name: Build and verify Toolkit 2 test game
-        run: node scripts/build-tk2-test-game.mjs site/tk2-test-game.zip
+      - name: Build and verify Toolkit 2 test games
+        run: |
+          node scripts/build-tk2-test-game.mjs site/tk2-test-game.zip
+          node scripts/build-tk2-test-game.mjs site/tk2-legacy-game.zip --legacy
       - name: Upload test game for PR review
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: tk2-test-game
           path: site/tk2-test-game.zip
+          if-no-files-found: error
+      - name: Upload legacy GPH coverage game for PR review
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tk2-legacy-game
+          path: site/tk2-legacy-game.zip
           if-no-files-found: error
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
