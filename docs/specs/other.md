@@ -1,6 +1,6 @@
 # Other archive entries
 
-Specification revision **1.0** · [conventions](README.md).
+Specification revision **1.1** · [conventions](README.md).
 
 PNG and BMP have browser image previews with `decode.status: "media"`.
 The viewer hands the bytes to the browser's image decoder and does not
@@ -11,3 +11,11 @@ Other unrecognized extensions have `decode.status: "unidentified"`.
 `format` is the lowercase extension or `unknown` when there is no
 extension. Their records describe archive identity and reference evidence.
 The viewer does not infer an internal layout.
+
+## Unsupported versions
+
+Recognized Toolkit-style headers in inventory-only files (such as TBM or ISO)
+may expose an encoding and header revision even when no decoder or verified
+layout specification is available. The inspector labels them unsupported and
+links here; it does not substitute another asset type's specification.
+Unrecognized or truncated headers have an unavailable version.

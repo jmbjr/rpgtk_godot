@@ -1,6 +1,6 @@
 # RPG Toolkit 2.x data specifications
 
-Specification revision **1.0**. These pages describe verified file layouts
+Specification revision **1.1**. These pages describe verified file layouts
 and the viewer's separate version 1 decoded JSON records. File format
 versions, this spec revision, and the JSON schema version are independent.
 
@@ -9,13 +9,13 @@ with the pinned Toolkit 3 readers and tracks evidence and remaining gaps.
 
 | Type | Spec | Covered file layout | Evidence |
 | --- | --- | --- | --- |
-| GPH | [Standalone tile](gph.md) | Text 2.0, detail 1 or 2, raw or run-length encoded | Demo fixture for detail 1 RLE. Compatibility source and synthetic examples for the other listed combinations. |
-| TST | [Tileset](tst.md) | Binary version 20, details 1 and 2 | Demo tilesets for detail 1, compatibility source and synthetic fixtures for both. |
+| GPH | [Standalone tile](gph.md) | Text 2.0, details 1–6, raw or run-length encoded | Demo detail 1 RLE; pinned palette table and raw/RLE fixtures for all details. |
+| TST | [Tileset](tst.md) | Binary version 20, details 1–6 | Demo detail 1; native-size RGB/palette fixtures and pinned compatibility source. |
 | GAM | [Main File](gam.md) | Binary 2.2 and text 2.0 startup fields | Demo.gam and DustBall main.gam |
 | PRG | [RPGCode program](prg.md) | Source and static indexing | Demo startup trace and Toolkit 2 Help |
 | TAN | [Animated tile](tan.md) | Binary 2.0 | Demo animation files |
-| TEM | [Character](tem.md) | Text 2.0/2.1/2.2 and binary 2.3/2.4 prefixes | DustBall, Demo and Cluetest characters, compatibility reader and synthetic fixtures |
-| BRD | [Board](brd.md) | Text 2.0 and 2.1 and binary 2.2 and 2.3 placement and link fields | Demo boards, Cluetest text board, compatibility readers and synthetic fixtures |
+| TEM | [Character](tem.md) | Text 2.0/2.1/2.2 and binary 2.3/2.4, walking/battle/rest/custom art | DustBall, Demo and Cluetest characters, compatibility reader and synthetic fixtures |
+| BRD | [Board](brd.md) | Text 2.0 and 2.1 and binary 2.2 and 2.3 placements, links, raw conditions and tile types | Demo boards, Cluetest text board, compatibility readers and synthetic fixtures |
 | ITM | [Item](itm.md) | Text 2.0/2.1 and binary 2.2/2.3 | DustBall and Demo items, compatibility reader and synthetic fixtures |
 | ENE | [Enemy](ene.md) | Text 2.0, two observed tails | Demo enemies |
 | BKG | [Battle background](bkg.md) | Text 2.0 | Demo backgrounds |
@@ -84,3 +84,27 @@ CRLF, LF and CR, and tries UTF-8 before Windows-1252. Use decimal values
 for numeric fields. Boolean fields are false for zero and true for
 nonzero. Unless stated otherwise, parsers reject truncation and unexpected
 headers. A read boundary in a partial format leaves later bytes uninterpreted.
+
+## Source revision metadata and inspector links
+
+Records may include `sourceFormat` alongside the existing envelope: `encoding`
+(`text`, `binary`, `source`, `unknown`), nullable string `version`, boolean
+`supported`, and optional integer `detail` for tiles. This metadata is detected
+from the source header before decoding, including unsupported/truncated inputs.
+`supported` means that the header identifies a supported layout, not that the
+payload is valid; check `decode.status` separately. Existing records without
+this optional metadata remain valid. A supplied GAM receives the same metadata
+from its verified major/minor fields.
+
+Each inspector displays the source encoding/revision and links to that revision's
+section on the format page. TST/GPH links also select the detail section.
+Unknown and unsupported revisions link to explicit coverage limits. PRG has
+no stored format revision; temporary-board version fields are unverified.
+Standard media formats use their own standards and do not acquire a Toolkit
+version from their filenames. TEM additionally labels embedded pixels versus
+filename references; no provenance or pixel-match dependency is inferred.
+
+When a decoder adds a revision or detail, update `asset-format.mjs`, the matching
+revision section, this index, the compatibility matrix and regression fixtures
+in the same PR. `scripts/check-asset-formats.mjs` checks supported-header labels
+and that every generated specification link has an existing Markdown heading.

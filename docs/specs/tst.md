@@ -1,6 +1,6 @@
 # TST · tileset
 
-Specification revision **1.0** · binary version **20**, details **1–6**.
+Specification revision **1.1** · binary version **20**, details **1–6**.
 See the [spec index](README.md) for JSON conventions.
 
 ## Original file layout
@@ -68,3 +68,37 @@ The count and sequential numbering are also checked by the
   and [one-based offsets](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/tkCommon/tkGfx/CTile.cpp#L1377-L1406).
 - Version 30 and isometric layouts appear in that
   source. They are outside this specification's supported profile.
+
+## Binary 20 detail 1
+
+The six-byte header stores literal binary version `20`, the tile count, and detail `1`. Native dimensions are 32 × 32; payload uses RGB24 (three bytes per pixel). Transparent RGB is `[0,1,2]`. Use the shared addressing and JSON rules above. Literal version 20 is not a Toolkit release number.
+
+## Binary 20 detail 2
+
+The six-byte header stores literal binary version `20`, the tile count, and detail `2`. Native dimensions are 16 × 16; payload uses RGB24 (three bytes per pixel). Transparent RGB is `[0,1,2]`. Use the shared addressing and JSON rules above. Literal version 20 is not a Toolkit release number.
+
+## Binary 20 detail 3
+
+The six-byte header stores literal binary version `20`, the tile count, and detail `3`. Native dimensions are 32 × 32; payload uses DOS palette indexes (one byte per pixel, including nominal 16-color modes). Index 255 is transparent; see [palette rules](palette.md). Use the shared addressing and JSON rules above. Literal version 20 is not a Toolkit release number.
+
+## Binary 20 detail 4
+
+The six-byte header stores literal binary version `20`, the tile count, and detail `4`. Native dimensions are 16 × 16; payload uses DOS palette indexes (one byte per pixel, including nominal 16-color modes). Index 255 is transparent; see [palette rules](palette.md). Use the shared addressing and JSON rules above. Literal version 20 is not a Toolkit release number.
+
+## Binary 20 detail 5
+
+The six-byte header stores literal binary version `20`, the tile count, and detail `5`. Native dimensions are 32 × 32; payload uses DOS palette indexes (one byte per pixel, including nominal 16-color modes). Index 255 is transparent; see [palette rules](palette.md). Use the shared addressing and JSON rules above. Literal version 20 is not a Toolkit release number.
+
+## Binary 20 detail 6
+
+The six-byte header stores literal binary version `20`, the tile count, and detail `6`. Native dimensions are 16 × 16; payload uses DOS palette indexes (one byte per pixel, including nominal 16-color modes). Index 255 is transparent; see [palette rules](palette.md). Use the shared addressing and JSON rules above. Literal version 20 is not a Toolkit release number.
+
+## Unsupported versions
+
+The revision-specific sections on this page describe only the listed, verified
+reader profiles. A different or unreadable header is reported explicitly in the
+inspector and is not interpreted using a nearby revision. Detected header
+metadata does not establish successful decoding. See the
+[compatibility matrix](compatibility-matrix.md) for gaps and source evidence.
+File-format revisions, Toolkit product releases and decoded JSON schema versions
+are separate identifiers.

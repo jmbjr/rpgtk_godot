@@ -1,6 +1,6 @@
 # GPH · standalone tile
 
-Specification revision **1.0** · Toolkit text format **2.0**.
+Specification revision **1.1** · Toolkit text format **2.0**.
 See the [spec index](README.md) for JSON conventions.
 
 ## Original file layout
@@ -66,3 +66,37 @@ compressed examples with expected records.
   including a documented inconsistency in the pinned TK3 reader. Version 1
   remains outside this specification's supported profile. Toolkit 2 Help's *Tileset Manager* distinguishes standalone
   GPH tiles from grouped TST tiles and describes the different detail levels.
+
+## Text 2.0 detail 1
+
+Line-oriented `RPGTLKIT TILE`, major 2, minor 0, detail `1`. Native dimensions are 32 × 32. Colors are COLORREF values. Both raw and RLE payloads use the common traversal above; `-1` is transparent. The detail code is separate from the header version.
+
+## Text 2.0 detail 2
+
+Line-oriented `RPGTLKIT TILE`, major 2, minor 0, detail `2`. Native dimensions are 16 × 16. Colors are COLORREF values. Both raw and RLE payloads use the common traversal above; `-1` is transparent. The detail code is separate from the header version.
+
+## Text 2.0 detail 3
+
+Line-oriented `RPGTLKIT TILE`, major 2, minor 0, detail `3`. Native dimensions are 32 × 32. Values are DOS palette indexes; see [palette rules](palette.md). Both raw and RLE payloads use the common traversal above; `-1` is transparent. The detail code is separate from the header version.
+
+## Text 2.0 detail 4
+
+Line-oriented `RPGTLKIT TILE`, major 2, minor 0, detail `4`. Native dimensions are 16 × 16. Values are DOS palette indexes; see [palette rules](palette.md). Both raw and RLE payloads use the common traversal above; `-1` is transparent. The detail code is separate from the header version.
+
+## Text 2.0 detail 5
+
+Line-oriented `RPGTLKIT TILE`, major 2, minor 0, detail `5`. Native dimensions are 32 × 32. Values are DOS palette indexes; see [palette rules](palette.md). Both raw and RLE payloads use the common traversal above; `-1` is transparent. The detail code is separate from the header version.
+
+## Text 2.0 detail 6
+
+Line-oriented `RPGTLKIT TILE`, major 2, minor 0, detail `6`. Native dimensions are 16 × 16. Values are DOS palette indexes; see [palette rules](palette.md). Both raw and RLE payloads use the common traversal above; `-1` is transparent. The detail code is separate from the header version.
+
+## Unsupported versions
+
+The revision-specific sections on this page describe only the listed, verified
+reader profiles. A different or unreadable header is reported explicitly in the
+inspector and is not interpreted using a nearby revision. Detected header
+metadata does not establish successful decoding. See the
+[compatibility matrix](compatibility-matrix.md) for gaps and source evidence.
+File-format revisions, Toolkit product releases and decoded JSON schema versions
+are separate identifiers.

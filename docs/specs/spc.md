@@ -1,6 +1,6 @@
 # SPC · special move
 
-Specification revision **1.0** · [conventions](README.md). Text 2.0,
+Specification revision **1.1** · [conventions](README.md). Text 2.0,
 signature `RPGTLKIT SPLMOVE`.
 
 After the header, read name, fight power, SMP cost, program filename,
@@ -18,3 +18,17 @@ observed Toolkit 2 editor shows Board-Driven off and Battle-Driven on.
 The later [compatibility reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vb/tkCommon/modules/CommonSpecialMove.bas#L101-L126)
 names the slots differently. The display mapping describes the tested
 editor and file, with legacy runtime semantics still unverified.
+
+## Text 2.0
+
+Line-oriented `RPGTLKIT SPLMOVE`, major 2, minor 0. Read the name, power/cost/program fields, two use flags, effect references and description in the order above. Preserve the two stored flags; their source/editor labeling caveat remains applicable.
+
+## Unsupported versions
+
+The revision-specific sections on this page describe only the listed, verified
+reader profiles. A different or unreadable header is reported explicitly in the
+inspector and is not interpreted using a nearby revision. Detected header
+metadata does not establish successful decoding. See the
+[compatibility matrix](compatibility-matrix.md) for gaps and source evidence.
+File-format revisions, Toolkit product releases and decoded JSON schema versions
+are separate identifiers.

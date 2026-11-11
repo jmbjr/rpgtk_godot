@@ -235,3 +235,7 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 .connection-filters button { align-self: end; font-size: .8rem; }
 .connection-filters button:disabled { opacity: .55; cursor: default; }
 .connection-more + .connection-more { margin-left: .35rem; }
+
+.asset-format { border-bottom: 1px solid var(--line); padding-bottom: .8rem; margin-bottom: 1rem; }
+.asset-format-version { font-weight: 700; margin: 0 0 .4rem; }
+.artwork-storage { margin-bottom: 0; color: var(--muted); }

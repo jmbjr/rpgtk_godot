@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "sourceFormat": {"encoding": "text", "version": "2.0", "detail": 2, "supported": true},
   "$id": "rpgtk:/Tiles/standalone-16.gph",
   "path": "Tiles/standalone-16.gph",
   "format": "gph",

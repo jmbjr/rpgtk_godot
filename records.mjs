@@ -1,3 +1,4 @@
+import { mainSourceFormat } from "./asset-format.mjs";
 import { tilesetRgb } from "./tile-palette.mjs";
 
 const partialFormats = new Set(["gam", "prg", "tem", "brd", "gif", "jpg", "jpeg", "wav", "mid", "doc", "___"]);
@@ -41,7 +42,7 @@ function tilesetData(bytes, { width, height, count }) {
 }
 
 export function artifactRecord(artifact, graph, { external = false, bindings = [] } = {}) {
-  const { path, type, decodeStatus, error, refs, bytes, ...data } = artifact;
+  const { path, type, decodeStatus, error, refs, bytes, sourceFormat, ...data } = artifact;
   const incoming = external ? [] : (graph.incoming.get(path) ?? []);
   const outgoing = external ? bindings.map(([evidence, binding]) => ({
     evidence, value: binding.value, status: binding.status, to: binding.path, from: path, external: true,
@@ -71,6 +72,7 @@ export function artifactRecord(artifact, graph, { external = false, bindings = [
   }
   return {
     schemaVersion: 1,
+    ...((sourceFormat || (type === "gam" && data.major !== undefined)) ? { sourceFormat: sourceFormat ?? mainSourceFormat(data) } : {}),
     $id: artifactId(path, external),
     path,
     format: type || "unknown",

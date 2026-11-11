@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "sourceFormat": {"encoding": "binary", "version": "20", "detail": 4, "supported": true},
   "$id": "rpgtk:/Tiles/palette-4.tst",
   "path": "Tiles/palette-4.tst",
   "format": "tst",

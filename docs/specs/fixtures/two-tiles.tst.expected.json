@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "sourceFormat": {"encoding": "binary", "version": "20", "detail": 1, "supported": true},
   "$id": "rpgtk:/Tiles/two-tiles.tst",
   "path": "Tiles/two-tiles.tst",
   "format": "tst",

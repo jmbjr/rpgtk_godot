@@ -1,6 +1,6 @@
 # ITM · item
 
-Specification revision **1.0** · [conventions](README.md).
+Specification revision **1.1** · [conventions](README.md).
 
 ## Binary 2.2 and 2.3
 
@@ -53,3 +53,29 @@ instead extracts the pixels into a generated tileset. Evidence includes
 75 DustBall text 2.1 items and synthetic fixtures for both graphics
 layouts. Text 2.0 uses a synthetic fixture based on the pinned converter.
 Later binary revisions remain outside this profile.
+
+## Text 2.0
+
+Line-oriented `RPGTLKIT ITEM`, major 2, minor 0. Graphics are embedded; there is no later size-code token. Use [text item layouts](#text-20-and-21), including absent-tile sentinel behavior.
+
+## Text 2.1
+
+Line-oriented `RPGTLKIT ITEM`, major 2, minor 1. The size code selects embedded pixels or referenced top/bottom tile pairs. Use [text item layouts](#text-20-and-21).
+
+## Binary 2.2
+
+Binary `RPGTLKIT ITEM`, major 2, minor 2. The numeric values selected by the shared binary profile use i16. See [binary layouts](#binary-22-and-23). Graphics use filename slots.
+
+## Binary 2.3
+
+Binary `RPGTLKIT ITEM`, major 2, minor 3. The version-dependent numeric values use i32 instead of i16; other byte flags and string slots keep their documented widths. See [binary layouts](#binary-22-and-23).
+
+## Unsupported versions
+
+The revision-specific sections on this page describe only the listed, verified
+reader profiles. A different or unreadable header is reported explicitly in the
+inspector and is not interpreted using a nearby revision. Detected header
+metadata does not establish successful decoding. See the
+[compatibility matrix](compatibility-matrix.md) for gaps and source evidence.
+File-format revisions, Toolkit product releases and decoded JSON schema versions
+are separate identifiers.
