@@ -18,9 +18,16 @@ action, and observed result. Record upgrades with the resulting file revision.
 
 **Test route** describes where to exercise a variant. The legacy coverage game
 and latest verified Toolkit 2 game are planned. The minimal baseline is
-available for review in [PR #64](https://github.com/jmbjr/rpgtk_godot/pull/64),
+available in merged [PR #64](https://github.com/jmbjr/rpgtk_godot/pull/64),
 with its [asset manifest](https://github.com/jmbjr/rpgtk_godot/blob/0562ea3aeb70aa2ea76630cb9144ec0d53aebee2/experiments/tk2-test-game/manifest.json)
 and [generator and checks](https://github.com/jmbjr/rpgtk_godot/blob/0562ea3aeb70aa2ea76630cb9144ec0d53aebee2/scripts/build-tk2-test-game.mjs).
+The first legacy coverage increment is a separate [TK2LegacyLab manifest](../../experiments/tk2-legacy-game/manifest.json)
+and [editor-open checklist](../../experiments/tk2-legacy-game/README.md). CI builds
+`tk2-legacy-game.zip` alongside the unchanged baseline `tk2-test-game.zip`.
+This increment includes four **standalone**, synthetic GPH mode 4/6 variants;
+their inclusion and viewer decoding are checked, but editor opening,
+save/reopen, and runtime usage are still unverified. Inclusion is **not** evidence
+that the game references or uses these standalone tiles.
 Each archive has one active GAM. Use separate ZIPs with the same project assets
 for alternate GAM layouts. Establish the latest Toolkit 2 release and its
 actual writer output before selecting formats for the latest game.
@@ -78,12 +85,12 @@ actual writer output before selecting formats for the latest game.
 | [GPH text 2.0 mode 2, RLE](gph.md) | [`rle-16.gph`](../../scripts/check-tile-specs.mjs#L97) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tile editor |
 | [GPH text 2.0 mode 3, raw](gph.md) | [`palette-3-0.gph`](fixtures/palette-3-0.gph) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tile editor |
 | [GPH text 2.0 mode 3, RLE](gph.md) | [`palette-3-1.gph`](fixtures/palette-3-1.gph) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tile editor |
-| [GPH text 2.0 mode 4, raw](gph.md) | [`palette-4-0.gph`](fixtures/palette-4-0.gph) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tile editor priority |
-| [GPH text 2.0 mode 4, RLE](gph.md) | [`palette-4-1.gph`](fixtures/palette-4-1.gph) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tile editor priority |
+| [GPH text 2.0 mode 4, raw](gph.md) | [`palette-4-0.gph`](fixtures/palette-4-0.gph) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | [Legacy ZIP manifest](../../experiments/tk2-legacy-game/manifest.json) · `Game/TK2LegacyLab/Tiles/palette-4-0.gph` · standalone editor-open only |
+| [GPH text 2.0 mode 4, RLE](gph.md) | [`palette-4-1.gph`](fixtures/palette-4-1.gph) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | [Legacy ZIP manifest](../../experiments/tk2-legacy-game/manifest.json) · `Game/TK2LegacyLab/Tiles/palette-4-1.gph` · standalone editor-open only |
 | [GPH text 2.0 mode 5, raw](gph.md) | [`palette-5-0.gph`](fixtures/palette-5-0.gph) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tile editor |
 | [GPH text 2.0 mode 5, RLE](gph.md) | [`palette-5-1.gph`](fixtures/palette-5-1.gph) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tile editor |
-| [GPH text 2.0 mode 6, raw](gph.md) | [`palette-6-0.gph`](fixtures/palette-6-0.gph) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tile editor priority |
-| [GPH text 2.0 mode 6, RLE](gph.md) | [`palette-6-1.gph`](fixtures/palette-6-1.gph) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | Legacy tile editor priority |
+| [GPH text 2.0 mode 6, raw](gph.md) | [`palette-6-0.gph`](fixtures/palette-6-0.gph) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | [Legacy ZIP manifest](../../experiments/tk2-legacy-game/manifest.json) · `Game/TK2LegacyLab/Tiles/palette-6-0.gph` · standalone editor-open only |
+| [GPH text 2.0 mode 6, RLE](gph.md) | [`palette-6-1.gph`](fixtures/palette-6-1.gph) | Decode pixels and transparency. [Check](../../scripts/check-tile-specs.mjs) | Pending | [Legacy ZIP manifest](../../experiments/tk2-legacy-game/manifest.json) · `Game/TK2LegacyLab/Tiles/palette-6-1.gph` · standalone editor-open only |
 | [TAN binary 2.0](tan.md) | [`Tiles/water.tan`](fixtures/format-fixtures.mjs#L35) | Decode timing and ordered frame references. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy animated tile |
 | [ANM text 2.0](anm.md) | [`Misc/effect.anm`](fixtures/format-fixtures.mjs#L252) | Decode frames, timing, and audio slots. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy effect animation |
 | [FNT text 2.0](fnt.md) | [`Font/one.fnt`](fixtures/format-fixtures.mjs#L258) | Decode 256 glyphs. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy font editor |
