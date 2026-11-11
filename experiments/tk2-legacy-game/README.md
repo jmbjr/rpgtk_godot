@@ -1,10 +1,50 @@
 # Toolkit 2 Legacy Test Lab · incremental format coverage
 
-This is the growing legacy coverage game for [issue #63](https://github.com/jmbjr/rpgtk_godot/issues/63), not yet an all-variants project. It keeps the verified minimal room from TK2TestLab under a **different project name**. The first slice included four standalone 16 × 16 GPH samples (modes 4 and 6, raw and RLE). The second included TST format 20 modes 2–6 and a separate binary BRD 2.2 gallery for each mode. The third adds historical BRD text 2.0/2.1 and binary 2.3 board specimens.
+This is the growing legacy coverage game for [issue #63](https://github.com/jmbjr/rpgtk_godot/issues/63), not yet an all-variants project. It keeps the verified minimal room from TK2TestLab under a **different project name**. The first slice included four standalone 16 × 16 GPH samples (modes 4 and 6, raw and RLE). The second included TST format 20 modes 2–6 and a separate binary BRD 2.2 gallery for each mode. The third adds historical BRD text 2.0/2.1 and binary 2.3 board specimens. The fourth adds seven distinct TEM character-format variants spanning text 2.0–2.2 and binary 2.3–2.4.
 
 ## Install and baseline smoke test
 
 Extract `tk2-legacy-game.zip` into the directory containing the existing Toolkit 2 `Main` and `Game` folders. In RPG Toolkit Development System 2.2, open `Main/TK2LegacyLab.gam`. Run the startup message, dismiss it, walk in all four directions, and test the central blocking tile. The game uses **Default Resolution**, not Set Resolution; no full-screen mode is selected.
+
+## Test historical TEM text 2.0–2.2 and binary 2.3–2.4 characters
+
+These seven **synthetic, source-backed format fixtures** are copied byte-for-byte from
+[format-fixtures.mjs](../../docs/specs/fixtures/format-fixtures.mjs) into `Game/TK2LegacyLab/Chrs/`.
+They are **not active player characters** and their presence is not a claim the
+Toolkit 2 desktop editor will accept or write every variant.
+
+| Character file (inside `Chrs/`) | Layout | Artwork check |
+| --- | --- | --- |
+| `tem-text-20-embedded.tem` | Text 2.0; implicit size 0 | Embedded 32 × 32 walking, battle, rest and custom pixels |
+| `tem-text-21-embedded.tem` | Text 2.1; size 0 | Embedded artwork, explicit size field |
+| `tem-text-21-referenced.tem` | Text 2.1; size 1 | External walking tiles, 32 × 64 battle/rest slots |
+| `tem-text-22-embedded.tem` | Text 2.2; size 0 | Embedded artwork; palette and transparency |
+| `tem-text-22-referenced.tem` | Text 2.2; size 1 | External walking tiles, 64 × 64 battle/rest slots |
+| `tem-binary-23.tem` | Binary 2.3 | External tile-reference slots and one-byte level type |
+| `tem-binary-24.tem` | Binary 2.4 | External tile-reference slots and four-byte level type |
+
+In the [browser viewer](https://jmbjr.github.io/rpgtk_godot/),
+open each character to inspect the 16 walking frames and 27 Attack/Defense/
+Special move/Defeat/Rest/Custom artwork slots. Confirm embedded variants show
+stored pixels rather than tile filenames. For referenced variants, inspect the
+walking tile references, including the available `two-tiles.tst2`.
+
+In Toolkit 2, open **each character independently** in the character editor,
+check its name, stats, graphics and warnings, and save **a copy**, then reopen
+it. Record the exact editor release, whether it accepted the file, and whether
+it rewrote the format or changed embedded/referenced artwork. Do not assign an
+older specimen to the main GAM or mark it runtime-tested from the main room.
+
+The ZIP supplies the existing synthetic `face.gif`, `two-tiles.tst`,
+`tone.wav`, `pulse.spc`, `slow.ste` and `effect.anm` references
+where applicable. Some historical `battle-*.gph` filenames and
+`missing-*.wav` sound references intentionally **remain absent**, because the
+fixture set does not contain attributable artwork or sound bytes for them.
+Do not interpret those missing references as a successful rendered battle
+frame. The viewer reports them as missing; the editor may reject or
+substitute them.
+
+**Desktop editor opening, save/reopen and runtime acceptance remain pending.**
 
 ## Test historical BRD 2.0/2.1 and 2.3 boards
 
@@ -60,4 +100,4 @@ The [manifest](manifest.json) lists exact ZIP locations, source fixture paths, m
 node scripts/build-tk2-test-game.mjs dist/tk2-legacy-game.zip --legacy
 ```
 
-The generator normalizes the checked-in GPH text fixtures to CRLF, preserving their decoded values; checks each GPH's declared mode/compression; copies the TST binary fixtures *byte-for-byte*; builds the five gallery boards and validates both tile-reference edges for each; copies four historical board fixtures and their reference targets without byte changes; validates board dimensions, tile references and thread slots; and checks the full ZIP inventory plus original baseline project bindings. CI uploads this ZIP separately from the unchanged `tk2-test-game.zip` baseline.
+The generator normalizes the checked-in GPH text fixtures to CRLF, preserving their decoded values; checks each GPH's declared mode/compression; copies the TST binary fixtures *byte-for-byte*; builds the five gallery boards and validates both tile-reference edges for each; copies four historical board fixtures and their reference targets without byte changes; validates board dimensions, tile references and thread slots; packages seven historical TEM character variants and four additional dependency assets byte-for-byte; checks character names, walking/artwork layout, embedded pixel arrays, tile/portrait/sound/program links and intentionally missing battle art; and checks the full ZIP inventory plus original baseline project bindings. CI uploads this ZIP separately from the unchanged `tk2-test-game.zip` baseline.
