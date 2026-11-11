@@ -312,10 +312,14 @@ for (const characterSpec of legacyCharacters) {
     for (const [evidence, path] of [
       ["Special move slot 0", expectedCharacterDependencies.specialMove],
       ["Attack sound", expectedCharacterDependencies.sound],
-      ["Special move sound", expectedCharacterDependencies.sound],
       ["Level-up program", expectedCharacterDependencies.program],
     ]) assert.ok(edges.some(edge => edge.evidence === evidence && edge.to === path),
       `${characterSpec.path}: missing resolved ${evidence}`);
+    // Text 2.0/2.1 fixtures supply a special-move sound; text 2.2 deliberately leaves it blank.
+    if (["2.0", "2.1"].includes(characterSpec.revision)) {
+      assert.ok(edges.some(edge => edge.evidence === "Special move sound" &&
+        edge.to === expectedCharacterDependencies.sound), `${characterSpec.path}: special-move sound`);
+    }
   }
   const tileEdges = edges.filter(edge => edge.to === expectedCharacterDependencies.tileset &&
     edge.tile === 2 && edge.evidence.startsWith("Walk "));
