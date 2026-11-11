@@ -56,5 +56,57 @@
       "compressed": true,
       "usage": "standalone editor-open check; not referenced by running game"
     }
+  ],
+  "tilesets": [
+    {
+      "path": "Game/TK2LegacyLab/Tiles/two-tiles-16.tst",
+      "source": "docs/specs/fixtures/two-tiles-16.tst",
+      "board": "Game/TK2LegacyLab/Boards/test-tst-mode-2.brd",
+      "type": "tst",
+      "format": 20,
+      "detail": 2,
+      "count": 2,
+      "usage": "two tiles placed on an independent BRD 2.2 gallery board; not linked from the startup main file"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Tiles/palette-3.tst",
+      "source": "docs/specs/fixtures/palette-3.tst",
+      "board": "Game/TK2LegacyLab/Boards/test-tst-mode-3.brd",
+      "type": "tst",
+      "format": 20,
+      "detail": 3,
+      "count": 2,
+      "usage": "two tiles placed on an independent BRD 2.2 gallery board; not linked from the startup main file"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Tiles/palette-4.tst",
+      "source": "docs/specs/fixtures/palette-4.tst",
+      "board": "Game/TK2LegacyLab/Boards/test-tst-mode-4.brd",
+      "type": "tst",
+      "format": 20,
+      "detail": 4,
+      "count": 2,
+      "usage": "two tiles placed on an independent BRD 2.2 gallery board; not linked from the startup main file"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Tiles/palette-5.tst",
+      "source": "docs/specs/fixtures/palette-5.tst",
+      "board": "Game/TK2LegacyLab/Boards/test-tst-mode-5.brd",
+      "type": "tst",
+      "format": 20,
+      "detail": 5,
+      "count": 2,
+      "usage": "two tiles placed on an independent BRD 2.2 gallery board; not linked from the startup main file"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Tiles/palette-6.tst",
+      "source": "docs/specs/fixtures/palette-6.tst",
+      "board": "Game/TK2LegacyLab/Boards/test-tst-mode-6.brd",
+      "type": "tst",
+      "format": 20,
+      "detail": 6,
+      "count": 2,
+      "usage": "two tiles placed on an independent BRD 2.2 gallery board; not linked from the startup main file"
+    }
   ]
 }
