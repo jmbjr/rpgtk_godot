@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname } from "node:path";
 import JSZip from "../vendor/jszip.min.js";
 import { fixtures as formatFixtures } from "../docs/specs/fixtures/format-fixtures.mjs";
+import { visualCharacterBytes, visualTileBytes, diagnosticStyle } from "../docs/specs/fixtures/visual-character-fixtures.mjs";
 import { buildReferences, readArtifacts, tilePixels } from "../artifacts.mjs";
 import { openGameArchive } from "../archive.mjs";
 import { mainFileBindings } from "../model.mjs";
@@ -16,8 +17,17 @@ const legacyBoards = manifest.legacyBoards ?? [];
 const legacyBoardAssets = manifest.legacyBoardAssets ?? [];
 const legacyCharacters = manifest.legacyCharacters ?? [];
 const legacyCharacterAssets = manifest.legacyCharacterAssets ?? [];
+const visualSpriteKit = manifest.visualSpriteKit ?? null;
 const fixtureByPath = new Map(formatFixtures.map(fixture => [fixture.path, fixture.bytes]));
 const sourceBytes = async specimen => {
+  if (specimen.visualStyle) {
+    assert.equal(specimen.visualStyle, diagnosticStyle.id);
+    assert.ok(specimen.fixture && !specimen.source, "Diagnostic TEM needs its historical reference fixture");
+    assert.ok(fixtureByPath.has(specimen.fixture), "Original format fixture must be retained");
+    const bytes = visualCharacterBytes.get(specimen.fixture);
+    assert.ok(bytes, `Unknown diagnostic TEM source: ${specimen.fixture}`);
+    return bytes;
+  }
   assert.ok(Boolean(specimen.fixture) !== Boolean(specimen.source), "Specify exactly one fixture or source");
   if (specimen.fixture) {
     const bytes = fixtureByPath.get(specimen.fixture);
@@ -149,7 +159,13 @@ const instructions = [
   ...specimens.map(specimen => `Tile editor check (standalone): ${specimen.path}`),
   ...tilesetSpecimens.map(set => `Tileset mode ${set.detail}: ${set.path} | Board editor: ${set.board}`),
   ...legacyBoards.map(board => `Older board ${board.format} ${board.revision}: ${board.path} | Open in board editor; save a copy`),
-  ...legacyCharacters.map(character => `TEM ${character.format} ${character.revision} ${character.graphics}: ${character.path} | Open in character editor; save a copy`),
+  ...(visualSpriteKit ? [
+    "Visual standard diagnostic-v1: transparent outer corner, bright border, white top-left and bottom-right, dark interior.",
+    "Every TEM walk and artwork slot must be visibly populated. Direction colors South=green, East=orange, North=blue, West=violet.",
+    "Action colors Attack=coral, Defense=blue, Special=purple, Defeat=gray, Rest=teal, Custom=yellow.",
+    "Referenced walking uses top/bottom parts, not a single embedded 32x32 sprite. Blank diagnostic artwork is a failure.",
+  ] : []),
+  ...legacyCharacters.map(character => `TEM ${character.format} ${character.revision} ${character.graphics}: ${character.path} | Diagnostic colors and visible pixels; save a copy`),
 ].join("\r\n") + "\r\n";
 
 const zip = new JSZip();
@@ -173,6 +189,12 @@ for (const set of tilesetSpecimens) {
   const source = await readFile(new URL(`../${set.source}`, import.meta.url));
   zip.file(set.path, source, options); // Preserve exact binary fixture bytes.
   zip.file(set.board, boardFile(set), options); // Separate, unlinked editor-test room.
+}
+if (visualSpriteKit) {
+  assert.equal(visualSpriteKit.style, diagnosticStyle.id);
+  assert.equal(visualSpriteKit.tileCount, visualTileBytes.size);
+  assert.equal(legacyCharacters.length, diagnosticStyle.characterCount);
+  for (const [tile, pixels] of visualTileBytes) zip.file(`${project}/Tiles/${tile}`, pixels, options);
 }
 for (const specimen of [...legacyBoardAssets, ...legacyBoards, ...legacyCharacterAssets, ...legacyCharacters]) {
   assert.ok(specimen.path.startsWith(project + "/"), specimen.path);
@@ -198,10 +220,24 @@ const requiredPaths = [...Object.values(files), ...specimens.map(specimen => spe
   ...tilesetSpecimens.flatMap(set => [set.path, set.board]),
   ...legacyBoards.map(board => board.path), ...legacyBoardAssets.map(asset => asset.path),
   ...legacyCharacters.map(character => character.path),
-  ...legacyCharacterAssets.map(asset => asset.path)];
+  ...legacyCharacterAssets.map(asset => asset.path),
+  ...(visualSpriteKit ? [...visualTileBytes.keys()].map(tile => `${project}/Tiles/${tile}`) : [])];
 assert.equal(new Set(requiredPaths).size, requiredPaths.length, "Duplicate manifest paths");
 assert.deepEqual([...artifacts.keys()].sort(), [...requiredPaths, readmePath].sort());
 for (const path of requiredPaths) assert.equal(artifacts.get(path).decodeStatus, "decoded", path);
+if (visualSpriteKit) {
+  for (const [name, bytes] of visualTileBytes) {
+    const path = `${project}/Tiles/${name}`;
+    assert.deepEqual(Buffer.from(await opened.file(path).async("uint8array")), bytes, path);
+    const tile = artifacts.get(path);
+    assert.deepEqual([tile.width, tile.height, tile.detail, tile.compressed], [32, 32, 1, false]);
+    assert.equal(tile.pixels.length, 1024);
+    assert.equal(tile.pixels[0], diagnosticStyle.transparentCorner);
+    assert.equal(tile.pixels[2 * 32 + 2], diagnosticStyle.corners.topLeft);
+    assert.equal(tile.pixels[29 * 32 + 29], diagnosticStyle.corners.bottomRight);
+    assert.ok(tile.pixels.filter(value => value !== -1).length > 500, `${path}: must be visually substantial`);
+  }
+}
 for (const specimen of specimens) {
   const tile = artifacts.get(specimen.path);
   assert.equal(tile.detail, specimen.detail, specimen.path);
@@ -299,11 +335,18 @@ for (const characterSpec of legacyCharacters) {
     assert.equal(asset.embeddedWalking.length, 16, characterSpec.path);
     assert.ok(asset.embeddedWalking.every(pixels => pixels.length === 1024), characterSpec.path);
     assert.ok(asset.embeddedWalking.some(pixels => pixels.includes(-1)), characterSpec.path);
+    assert.ok(asset.embeddedWalking.every(pixels => pixels.filter(value => value !== -1).length > 500),
+      `${characterSpec.path}: all walking frames must show substantial diagnostic art`);
     assert.ok(asset.artwork.every(frame => frame.pixels?.length === 1024), characterSpec.path);
+    assert.ok(asset.artwork.every(frame => frame.pixels.filter(value => value !== -1).length > 500),
+      `${characterSpec.path}: all action/rest/custom frames must be visible`);
   } else {
     assert.equal(asset.embeddedWalking, undefined, characterSpec.path);
     assert.ok(asset.artwork.every(frame => Array.isArray(frame.parts)), characterSpec.path);
-    assert.ok(asset.artwork[0].parts.length > 0, characterSpec.path);
+    assert.ok(asset.artwork.every(frame => frame.parts.length > 0 && frame.parts.every(part => part.value)),
+      `${characterSpec.path}: all referenced art frames have filled graphic slots`);
+    assert.ok(asset.walking.every(frame => frame.parts.length === 2 && frame.parts.every(part => part.value)),
+      `${characterSpec.path}: all walking frames have top and bottom`);
   }
   const edges = graph.outgoing.get(characterSpec.path) ?? [];
   assert.ok(edges.some(edge => edge.evidence === "Character portrait" &&
@@ -325,10 +368,15 @@ for (const characterSpec of legacyCharacters) {
     edge.tile === 2 && edge.evidence.startsWith("Walk "));
   assert.equal(tileEdges.length > 0, characterSpec.expectedTilesetReference,
     `${characterSpec.path}: walking tile-reference presence`);
+  if (characterSpec.visualStyle === diagnosticStyle.id && characterSpec.graphics === "referenced") {
+    const diagEdges = edges.filter(edge => edge.to?.startsWith(`${project}/Tiles/diag-`));
+    const expectedReferences = asset.walking.reduce((n, frame) => n + frame.parts.length, 0) +
+      asset.artwork.reduce((n, frame) => n + frame.parts.length, 0);
+    assert.equal(diagEdges.length, expectedReferences, `${characterSpec.path}: every visual art slot must resolve`);
+    assert.ok(diagEdges.every(edge => artifacts.get(edge.to)?.type === "gph"), characterSpec.path);
+  }
   if (characterSpec.revision === "2.1" && characterSpec.graphics === "referenced") {
     assert.equal(asset.artwork[0].parts.length, 2, "Text 2.1 referenced battle frames use one tile column");
-    assert.ok(edges.some(edge => edge.value === "battle-0.gph" && !edge.to),
-      "Unavailable historic battle art remains explicitly unresolved");
   }
 }
 for (const path of [files.board, files.player]) {
@@ -349,4 +397,4 @@ assert.ok(artifacts.get(files.player).walking.length === 16);
 const output = process.argv[2] ?? "dist/tk2-test-game.zip";
 await mkdir(dirname(output), { recursive: true });
 await writeFile(output, bytes);
-console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards; ${legacyBoards.length} historical boards; ${legacyCharacters.length} historical TEM profiles.`);
+console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards; ${legacyBoards.length} historical boards; ${legacyCharacters.length} historical TEM profiles; ${visualSpriteKit ? visualTileBytes.size : 0} diagnostic art tiles.`);

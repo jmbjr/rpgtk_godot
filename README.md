@@ -67,10 +67,9 @@ On some Android devices, ZIP downloads appear in the file picker as an unknown
 file type. The **Game archive** picker intentionally does not filter by MIME
 type or extension: choose the downloaded ZIP even if Android labels it
 generically. The archive parser checks the actual bytes and reports invalid
-ZIPs. You can also bypass downloads entirely by choosing **Open legacy game in
-viewer** or **Open baseline game in viewer**, which fetch the generated ZIP
-directly from the same origin. For PR-specific artifacts that have not been
-merged/deployed, download the PR artifact and select it locally.
+ZIPs. Download the ZIP and select it locally in **Game archive**. For
+PR-specific artifacts, download the GitHub Actions artifact ZIP directly
+and choose that outer ZIP in the viewer.
 
 The viewer also recognizes the Toolkit installer layout with `setup.inf`
 and `zip.zip`, and reads the ZIP payload identified by the `CMP1` footer

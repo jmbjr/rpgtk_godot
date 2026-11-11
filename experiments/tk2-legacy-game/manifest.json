@@ -208,7 +208,8 @@
         32
       ],
       "expectedTilesetReference": false,
-      "usage": "standalone character editor/open-save-copy inspection; not active GAM character"
+      "usage": "generated diagnostic edition of the source conformance fixture; open character editor and save a copy; not the active GAM player",
+      "visualStyle": "diagnostic-v1"
     },
     {
       "path": "Game/TK2LegacyLab/Chrs/tem-text-21-embedded.tem",
@@ -222,7 +223,8 @@
         32
       ],
       "expectedTilesetReference": false,
-      "usage": "standalone character editor/open-save-copy inspection; not active GAM character"
+      "usage": "generated diagnostic edition of the source conformance fixture; open character editor and save a copy; not the active GAM player",
+      "visualStyle": "diagnostic-v1"
     },
     {
       "path": "Game/TK2LegacyLab/Chrs/tem-text-21-referenced.tem",
@@ -235,8 +237,9 @@
         32,
         64
       ],
-      "expectedTilesetReference": true,
-      "usage": "standalone character editor/open-save-copy inspection; not active GAM character"
+      "expectedTilesetReference": false,
+      "usage": "generated diagnostic edition of the source conformance fixture; open character editor and save a copy; not the active GAM player",
+      "visualStyle": "diagnostic-v1"
     },
     {
       "path": "Game/TK2LegacyLab/Chrs/tem-text-22-embedded.tem",
@@ -250,7 +253,8 @@
         32
       ],
       "expectedTilesetReference": false,
-      "usage": "standalone character editor/open-save-copy inspection; not active GAM character"
+      "usage": "generated diagnostic edition of the source conformance fixture; open character editor and save a copy; not the active GAM player",
+      "visualStyle": "diagnostic-v1"
     },
     {
       "path": "Game/TK2LegacyLab/Chrs/tem-text-22-referenced.tem",
@@ -263,8 +267,9 @@
         64,
         64
       ],
-      "expectedTilesetReference": true,
-      "usage": "standalone character editor/open-save-copy inspection; not active GAM character"
+      "expectedTilesetReference": false,
+      "usage": "generated diagnostic edition of the source conformance fixture; open character editor and save a copy; not the active GAM player",
+      "visualStyle": "diagnostic-v1"
     },
     {
       "path": "Game/TK2LegacyLab/Chrs/tem-binary-23.tem",
@@ -278,7 +283,8 @@
         64
       ],
       "expectedTilesetReference": false,
-      "usage": "standalone character editor/open-save-copy inspection; not active GAM character"
+      "usage": "generated diagnostic edition of the source conformance fixture; open character editor and save a copy; not the active GAM player",
+      "visualStyle": "diagnostic-v1"
     },
     {
       "path": "Game/TK2LegacyLab/Chrs/tem-binary-24.tem",
@@ -291,8 +297,9 @@
         64,
         64
       ],
-      "expectedTilesetReference": true,
-      "usage": "standalone character editor/open-save-copy inspection; not active GAM character"
+      "expectedTilesetReference": false,
+      "usage": "generated diagnostic edition of the source conformance fixture; open character editor and save a copy; not the active GAM player",
+      "visualStyle": "diagnostic-v1"
     }
   ],
   "legacyCharacterAssets": [
@@ -316,5 +323,12 @@
       "fixture": "Misc/effect.anm",
       "usage": "synthetic animation referenced by pulse.spc"
     }
-  ]
+  ],
+  "visualSpriteKit": {
+    "style": "diagnostic-v1",
+    "source": "docs/specs/fixtures/visual-character-fixtures.mjs",
+    "tileCount": 35,
+    "expectedAllFramesVisible": true,
+    "usage": "Purpose-built high contrast GPH art backing historical TEM diagnosis; not editor-saved source evidence"
+  }
 }
