@@ -141,7 +141,7 @@ function textCharacter(minor, embedded, name) {
   const fields = ["RPGTLKIT CHAR", 2, minor, name, ...fill(9, ""), 10, 7, 9, 2, 3, 4, 6, 1,
     "face.gif", "pulse.spc", ...fill(201 * 5 - 1, ""), "", 0,
     ...(minor ? [embedded ? 0 : 1] : []), ...graphics,
-    ...fill(23, 0), "tone.wav", "", "", "", "start.prg", 0];
+    ...fill(23, 0), "tone.wav", "", minor <= 1 ? "tone.wav" : "", "", "start.prg", 0];
   return text(fields);
 }
 
