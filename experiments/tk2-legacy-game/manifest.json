@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "name": "TK2LegacyLab",
+  "title": "Toolkit 2 Legacy Test Lab",
+  "files": {
+    "main": "Main/TK2LegacyLab.gam",
+    "startup": "Game/TK2LegacyLab/Prg/start.prg",
+    "board": "Game/TK2LegacyLab/Boards/room.brd",
+    "tiles": "Game/TK2LegacyLab/Tiles/lab.tst",
+    "player": "Game/TK2LegacyLab/Chrs/player.tem"
+  },
+  "room": {
+    "width": 19,
+    "height": 11,
+    "layers": 8,
+    "start": {
+      "x": 6,
+      "y": 5,
+      "layer": 1
+    }
+  },
+  "specimens": [
+    {
+      "path": "Game/TK2LegacyLab/Tiles/palette-4-0.gph",
+      "source": "docs/specs/fixtures/palette-4-0.gph",
+      "type": "gph",
+      "format": "text 2.0",
+      "detail": 4,
+      "compressed": false,
+      "usage": "standalone editor-open check; not referenced by running game"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Tiles/palette-4-1.gph",
+      "source": "docs/specs/fixtures/palette-4-1.gph",
+      "type": "gph",
+      "format": "text 2.0",
+      "detail": 4,
+      "compressed": true,
+      "usage": "standalone editor-open check; not referenced by running game"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Tiles/palette-6-0.gph",
+      "source": "docs/specs/fixtures/palette-6-0.gph",
+      "type": "gph",
+      "format": "text 2.0",
+      "detail": 6,
+      "compressed": false,
+      "usage": "standalone editor-open check; not referenced by running game"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Tiles/palette-6-1.gph",
+      "source": "docs/specs/fixtures/palette-6-1.gph",
+      "type": "gph",
+      "format": "text 2.0",
+      "detail": 6,
+      "compressed": true,
+      "usage": "standalone editor-open check; not referenced by running game"
+    }
+  ]
+}
