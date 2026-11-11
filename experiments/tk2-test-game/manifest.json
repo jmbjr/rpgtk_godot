@@ -1,0 +1,17 @@
+{
+  "name": "TK2TestLab",
+  "title": "Toolkit 2 Test Lab",
+  "files": {
+    "main": "Main/TK2TestLab.gam",
+    "startup": "Game/TK2TestLab/Prg/start.prg",
+    "board": "Game/TK2TestLab/Boards/room.brd",
+    "tiles": "Game/TK2TestLab/Tiles/lab.tst",
+    "player": "Game/TK2TestLab/Chrs/player.tem"
+  },
+  "room": {
+    "width": 19,
+    "height": 11,
+    "layers": 8,
+    "start": { "x": 6, "y": 5, "layer": 1 }
+  }
+}

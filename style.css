@@ -33,8 +33,8 @@ p { color: var(--muted); }
 label { display: grid; grid-template-columns: 1fr auto; gap: .45rem; font-weight: 650; }
 label span, .section-head span { color: var(--muted); font-size: .78rem; }
 .pickers input { grid-column: 1 / -1; width: 100%; min-width: 0; padding: .4rem; border: 1px solid var(--line); border-radius: 4px; font: inherit; }
-input::file-selector-button, button { font: inherit; color: var(--gold); border: 1px solid var(--line); background: #242028; border-radius: 4px; cursor: pointer; padding: .35rem .55rem; }
-button:hover, button[aria-pressed="true"] { background: #352b29; border-color: #9b8c75; }
+input::file-selector-button, button, .download-button { font: inherit; color: var(--gold); border: 1px solid var(--line); background: #242028; border-radius: 4px; cursor: pointer; padding: .35rem .55rem; }
+button:hover, button[aria-pressed="true"], .download-button:hover { background: #352b29; border-color: #9b8c75; }
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .statuses p { margin: 0; padding-left: .65rem; border-left: 2px solid #9b8c75; font-size: .85rem; }
 .statuses .error { border-color: #e08b7b; color: #f2b9ac; }
@@ -243,3 +243,5 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 .frame-matches { max-width: 12rem; overflow-wrap: anywhere; }
 .frame-matches .edge-list { margin-block: .25rem 0; padding-inline-start: 0; list-style: none; }
 .frame-matches button { max-width: 100%; overflow-wrap: anywhere; }
+
+.download-button { text-decoration: none; }
