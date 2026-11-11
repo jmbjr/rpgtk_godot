@@ -511,28 +511,31 @@ function renderAsset(artifact) {
     panel.append(stats);
     const matchRows = [];
     if (artifact.embeddedWalking) panel.append(artworkMatchControl(matchRows));
-    const walking = el("div", "", "sprite-strip");
-    const moreWalking = el("details");
-    const otherFrames = el("div", "", "sprite-strip");
-    moreWalking.append(el("summary", "More walking frames"), otherFrames);
-    for (const [index, frame] of artifact.walking.entries()) {
-      const embedded = artifact.embeddedWalking?.[index];
-      const label = `${frame.direction} · Frame ${frame.frame}`;
-      const sprite = characterArtworkSprite(artifact, {
-        pixels: embedded,
-        width: 32,
-        height: 64,
-        parts: frame.parts.map((part, y) => ({ ...part, x: 0, y })),
-      }, artifacts, references);
-      const canvas = spriteCanvas(label);
-      drawSprite(canvas, sprite);
-      canvas.style.width = "32px";
-      const entry = el("div");
-      entry.append(canvas, el("span", label));
-      appendCharacterTileInfo(entry, sprite, embedded, matchRows);
-      (frame.frame === 1 ? walking : otherFrames).append(entry);
+    const walkingFrames = [...artifact.walking.entries()];
+    for (const direction of ["North", "South", "East", "West"]) {
+      const frames = walkingFrames.filter(([, frame]) => frame.direction === direction);
+      const section = el("details", "", "character-artwork");
+      const strip = el("div", "", "sprite-strip");
+      section.append(el("summary", `Walking ${direction} (${frames.length})`), strip);
+      for (const [index, frame] of frames) {
+        const embedded = artifact.embeddedWalking?.[index];
+        const label = `${frame.direction} · Frame ${frame.frame}`;
+        const sprite = characterArtworkSprite(artifact, {
+          pixels: embedded,
+          width: 32,
+          height: 64,
+          parts: frame.parts.map((part, y) => ({ ...part, x: 0, y })),
+        }, artifacts, references);
+        const canvas = spriteCanvas(label);
+        drawSprite(canvas, sprite);
+        canvas.style.width = "32px";
+        const entry = el("div");
+        entry.append(canvas, el("span", label));
+        appendCharacterTileInfo(entry, sprite, embedded, matchRows);
+        strip.append(entry);
+      }
+      panel.append(section);
     }
-    panel.append(walking, moreWalking);
     for (const kind of ["Attack", "Defense", "Special move", "Defeat", "Rest", "Custom"]) {
       const frames = artifact.artwork.filter(frame => frame.kind === kind);
       const section = el("details", "", "character-artwork");
