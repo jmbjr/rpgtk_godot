@@ -108,5 +108,91 @@
       "count": 2,
       "usage": "two tiles placed on an independent BRD 2.2 gallery board; not linked from the startup main file"
     }
+  ],
+  "legacyBoards": [
+    {
+      "path": "Game/TK2LegacyLab/Boards/legacy-text-20.brd",
+      "fixture": "Boards/fixed-room.brd",
+      "format": "text",
+      "revision": "2.0",
+      "width": 19,
+      "height": 11,
+      "layers": 8,
+      "expectedTileNumbers": [
+        1,
+        2
+      ],
+      "usage": "individual board-editor open/save-copy test, not active GAM board"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Boards/legacy-text-21.brd",
+      "fixture": "Boards/text-room.brd",
+      "format": "text",
+      "revision": "2.1",
+      "width": 2,
+      "height": 3,
+      "layers": 8,
+      "expectedTileNumbers": [
+        1,
+        2
+      ],
+      "usage": "individual board-editor open/save-copy test, not active GAM board"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Boards/legacy-binary-23-empty.brd",
+      "fixture": "Boards/no-threads.brd",
+      "format": "binary",
+      "revision": "2.3",
+      "width": 1,
+      "height": 1,
+      "layers": 1,
+      "expectedTileNumbers": [
+        2
+      ],
+      "threads": [],
+      "coordinateType": 0,
+      "usage": "individual board-editor open/save-copy test, not active GAM board"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Boards/legacy-binary-23-threads.brd",
+      "fixture": "Boards/threaded-room.brd",
+      "format": "binary",
+      "revision": "2.3",
+      "width": 1,
+      "height": 1,
+      "layers": 1,
+      "expectedTileNumbers": [
+        2
+      ],
+      "threads": [
+        "start.prg",
+        "",
+        "absent.prg"
+      ],
+      "coordinateType": 1,
+      "usage": "individual board-editor open/save-copy test; coordinateType 1 not proof of correct isometric rendering"
+    }
+  ],
+  "legacyBoardAssets": [
+    {
+      "path": "Game/TK2LegacyLab/Tiles/two-tiles.tst",
+      "source": "docs/specs/fixtures/two-tiles.tst",
+      "usage": "2-tile reference target for historical BRD fixtures"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Item/token-2.itm",
+      "fixture": "Item/token-2.itm",
+      "usage": "board item reference target"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Bitmap/face.gif",
+      "fixture": "Bitmap/face.gif",
+      "usage": "board background image reference target"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Media/note.mid",
+      "fixture": "Media/note.mid",
+      "usage": "board music reference target"
+    }
   ]
 }

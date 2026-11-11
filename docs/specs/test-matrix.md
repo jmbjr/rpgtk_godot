@@ -33,6 +33,13 @@ references. None of these gallery boards is linked from the active GAM or
 startup script. Viewer decoding and static reference resolution are verified,
 but **desktop editor opening, save/reopen, and runtime usage remain pending**.
 Do not infer runtime acceptance from the main test room loading.
+The next increment packages synthetic BRD text 2.0/2.1 and binary 2.3
+fixtures (with zero and three thread slots), plus the source-controlled
+tileset, item, background and MIDI reference targets. Each board is
+available for independent editor-open/save/reopen tests. The ZIP generator
+checks the exact board bytes, dimensions, resolved tile/asset references and
+thread slots; desktop/editor and runtime acceptance remain pending. The
+binary 2.3 raw coordinate flag does not establish isometric geometry.
 Each archive has one active GAM. Use separate ZIPs with the same project assets
 for alternate GAM layouts. Establish the latest Toolkit 2 release and its
 actual writer output before selecting formats for the latest game.
@@ -44,10 +51,10 @@ actual writer output before selecting formats for the latest game.
 | --- | --- | --- | --- | --- |
 | [GAM text 2.0](gam.md) | [`legacy.gam`](fixtures/format-fixtures.mjs#L27) | Partial startup bindings. [Check](../../scripts/check-format-specs.mjs) | Pending | Alternate GAM ZIP |
 | [GAM binary 2.2](gam.md) | [`main.gam`](fixtures/format-fixtures.mjs#L23) | Partial title, project path, and startup bindings. [Check](../../scripts/check-format-specs.mjs) | Pending | Baseline and legacy main file |
-| [BRD text 2.0](brd.md) | [`Boards/fixed-room.brd`](fixtures/format-fixtures.mjs#L170) | Partial fixed grid, conditions, and links. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy board |
-| [BRD text 2.1](brd.md) | [`Boards/text-room.brd`](fixtures/format-fixtures.mjs#L146) | Partial dimensioned grid, conditions, and links. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy board |
+| [BRD text 2.0](brd.md) | [`Boards/fixed-room.brd`](fixtures/format-fixtures.mjs#L170) | Partial fixed grid, conditions, and links. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy board inventory](../../experiments/tk2-legacy-game/manifest.json) · `Boards/legacy-text-20.brd` · individual editor-open, not active GAM board |
+| [BRD text 2.1](brd.md) | [`Boards/text-room.brd`](fixtures/format-fixtures.mjs#L146) | Partial dimensioned grid, conditions, and links. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy board inventory](../../experiments/tk2-legacy-game/manifest.json) · `Boards/legacy-text-21.brd` · individual editor-open, not active GAM board |
 | [BRD binary 2.2](brd.md) | [`Boards/types-2.brd`](fixtures/detail-fixtures.mjs#L64) | Partial binary grid, placement conditions, and tile types. [Check](../../scripts/check-character-board-details.mjs) | Pending | Baseline and [five mode-specific TST gallery boards](../../experiments/tk2-legacy-game/manifest.json); desktop editor checks pending |
-| [BRD binary 2.3, thread slots](brd.md) | [`Boards/threaded-room.brd`](fixtures/format-fixtures.mjs#L121) and [`Boards/no-threads.brd`](fixtures/format-fixtures.mjs#L122) | Partial thread names and raw coordinate byte. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy board |
+| [BRD binary 2.3, thread slots](brd.md) | [`Boards/threaded-room.brd`](fixtures/format-fixtures.mjs#L121) and [`Boards/no-threads.brd`](fixtures/format-fixtures.mjs#L122) | Partial thread names and raw coordinate byte. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy board inventory](../../experiments/tk2-legacy-game/manifest.json) · `Boards/legacy-binary-23-empty.brd` and `Boards/legacy-binary-23-threads.brd` · independent editor-open and thread-slot inspection |
 | [BRD binary 2.3, isometric coordinates](brd.md) | [Legacy reader evidence](compatibility-matrix.md#project-boards-and-scripts). Need a real isometric specimen. | Raw coordinate byte retained. Geometry verification pending. | Pending | Acquire sample |
 | [PRG unversioned RPGCode](prg.md) | [`Prg/start.prg`](fixtures/format-fixtures.mjs#L30) | Partial source and static references. [Check](../../scripts/check-format-specs.mjs) | Pending | Baseline startup and legacy scripts |
 

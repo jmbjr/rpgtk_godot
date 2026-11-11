@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname } from "node:path";
 import JSZip from "../vendor/jszip.min.js";
+import { fixtures as formatFixtures } from "../docs/specs/fixtures/format-fixtures.mjs";
 import { buildReferences, readArtifacts, tilePixels } from "../artifacts.mjs";
 import { openGameArchive } from "../archive.mjs";
 import { mainFileBindings } from "../model.mjs";
@@ -11,6 +12,19 @@ const manifestLocation = legacy ? "../experiments/tk2-legacy-game/manifest.json"
 const manifest = JSON.parse(await readFile(new URL(manifestLocation, import.meta.url)));
 const specimens = manifest.specimens ?? [];
 const tilesetSpecimens = manifest.tilesets ?? [];
+const legacyBoards = manifest.legacyBoards ?? [];
+const legacyBoardAssets = manifest.legacyBoardAssets ?? [];
+const fixtureByPath = new Map(formatFixtures.map(fixture => [fixture.path, fixture.bytes]));
+const sourceBytes = async specimen => {
+  assert.ok(Boolean(specimen.fixture) !== Boolean(specimen.source), "Specify exactly one fixture or source");
+  if (specimen.fixture) {
+    const bytes = fixtureByPath.get(specimen.fixture);
+    assert.ok(bytes, `Missing conformance fixture: ${specimen.fixture}`);
+    return bytes;
+  }
+  assert.ok(specimen.source.startsWith("docs/specs/fixtures/"), specimen.source);
+  return readFile(new URL(`../${specimen.source}`, import.meta.url));
+};
 // Toolkit 2's text writers use CRLF. Conformance fixtures are LF, so normalize
 // the container's wire form without changing the checked-in source specimens.
 const gphWireText = bytes => bytes.toString("latin1").replace(/\r\n|\r|\n/g, "\r\n");
@@ -132,6 +146,7 @@ const instructions = [
   "Please record your Toolkit release and whether the project opens and runs.",
   ...specimens.map(specimen => `Tile editor check (standalone): ${specimen.path}`),
   ...tilesetSpecimens.map(set => `Tileset mode ${set.detail}: ${set.path} | Board editor: ${set.board}`),
+  ...legacyBoards.map(board => `Older board ${board.format} ${board.revision}: ${board.path} | Open in board editor; save a copy`),
 ].join("\r\n") + "\r\n";
 
 const zip = new JSZip();
@@ -156,6 +171,11 @@ for (const set of tilesetSpecimens) {
   zip.file(set.path, source, options); // Preserve exact binary fixture bytes.
   zip.file(set.board, boardFile(set), options); // Separate, unlinked editor-test room.
 }
+for (const specimen of [...legacyBoardAssets, ...legacyBoards]) {
+  assert.ok(specimen.path.startsWith(project + "/"), specimen.path);
+  if (legacyBoards.includes(specimen)) assert.ok(specimen.path.startsWith(project + "/Boards/"), specimen.path);
+  zip.file(specimen.path, await sourceBytes(specimen), options); // Byte-for-byte controlled specimen.
+}
 for (const specimen of specimens) {
   assert.equal(specimen.type, "gph");
   assert.ok(specimen.path.startsWith(`${project}/Tiles/`), specimen.path);
@@ -171,7 +191,8 @@ const opened = await openGameArchive(bytes, input => JSZip.loadAsync(input));
 const catalog = JSON.parse(await readFile(new URL("../catalog.json", import.meta.url)));
 const { artifacts } = await readArtifacts(opened, catalog);
 const requiredPaths = [...Object.values(files), ...specimens.map(specimen => specimen.path),
-  ...tilesetSpecimens.flatMap(set => [set.path, set.board])];
+  ...tilesetSpecimens.flatMap(set => [set.path, set.board]),
+  ...legacyBoards.map(board => board.path), ...legacyBoardAssets.map(asset => asset.path)];
 assert.equal(new Set(requiredPaths).size, requiredPaths.length, "Duplicate manifest paths");
 assert.deepEqual([...artifacts.keys()].sort(), [...requiredPaths, readmePath].sort());
 for (const path of requiredPaths) assert.equal(artifacts.get(path).decodeStatus, "decoded", path);
@@ -215,6 +236,41 @@ for (const set of tilesetSpecimens) {
   assert.deepEqual(edges.map(edge => [edge.to, edge.tile]).sort((a, b) => a[1] - b[1]),
     [[set.path, 1], [set.path, 2]], `${set.board}: both tile references resolve`);
 }
+for (const specimen of [...legacyBoardAssets, ...legacyBoards]) {
+  const packaged = Buffer.from(await opened.file(specimen.path).async("uint8array"));
+  assert.deepEqual(packaged, await sourceBytes(specimen), `${specimen.path}: source bytes changed`);
+}
+const boardDependencyPaths = {
+  tiles: `${project}/Tiles/two-tiles.tst`,
+  item: `${project}/Item/token-2.itm`,
+  image: `${project}/Bitmap/face.gif`,
+  music: `${project}/Media/note.mid`,
+};
+for (const boardSpec of legacyBoards) {
+  const board = artifacts.get(boardSpec.path);
+  assert.deepEqual([board.width, board.height, board.layers],
+    [boardSpec.width, boardSpec.height, boardSpec.layers], boardSpec.path);
+  const edges = graph.outgoing.get(boardSpec.path) ?? [];
+  const tileNumbers = [...new Set(edges.filter(edge => edge.to === boardDependencyPaths.tiles)
+    .map(edge => edge.tile).filter(Number.isInteger))].sort((a, b) => a - b);
+  assert.deepEqual(tileNumbers, boardSpec.expectedTileNumbers, `${boardSpec.path}: exact tile references`);
+  if (boardSpec.format === "text") {
+    for (const path of [boardDependencyPaths.item, boardDependencyPaths.image, boardDependencyPaths.music, files.startup]) {
+      assert.ok(edges.some(edge => edge.to === path), `${boardSpec.path}: unresolved expected ref ${path}`);
+    }
+  }
+  if (boardSpec.format === "binary") {
+    assert.deepEqual(board.threads, boardSpec.threads, boardSpec.path);
+    assert.equal(board.coordinateType, boardSpec.coordinateType, boardSpec.path);
+    const threadEdges = edges.filter(edge => edge.evidence.startsWith("Board thread"));
+    assert.deepEqual(threadEdges.map(edge => edge.value),
+      boardSpec.threads.filter(Boolean), `${boardSpec.path}: thread reference slots`);
+    if (boardSpec.threads.includes("absent.prg")) {
+      assert.ok(threadEdges.some(edge => edge.value === "absent.prg" && !edge.to),
+        `${boardSpec.path}: unresolved thread deliberately preserved`);
+    }
+  }
+}
 for (const path of [files.board, files.player]) {
   const edges = graph.outgoing.get(path);
   assert.equal(edges.length, path === files.board ? 6 : 16);
@@ -233,4 +289,4 @@ assert.ok(artifacts.get(files.player).walking.length === 16);
 const output = process.argv[2] ?? "dist/tk2-test-game.zip";
 await mkdir(dirname(output), { recursive: true });
 await writeFile(output, bytes);
-console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards.`);
+console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards; ${legacyBoards.length} historical boards.`);
