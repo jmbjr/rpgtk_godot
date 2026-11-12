@@ -77,8 +77,27 @@ jobs:
         run: |
           node scripts/build-tk2-test-game.mjs site/tk2-test-game.zip
           node scripts/build-tk2-test-game.mjs site/tk2-legacy-game.zip --legacy
+          node scripts/build-tk2-test-game.mjs site/tk2-text-gam-game.zip --text-gam
       - name: Build and verify synthetic CMP1 wrapper
         run: node scripts/build-tk2-installer-fixture.mjs site/tk2-legacy-game.zip dist/tk2-legacy-cmp1-test-wrapper.zip
+      - name: Compare alternate GAM and validate all 57 matrix rows
+        run: |
+          node scripts/check-alternate-gam.mjs site/tk2-legacy-game.zip site/tk2-text-gam-game.zip
+          node scripts/check-legacy-coverage-audit.mjs site/tk2-legacy-game.zip site/tk2-text-gam-game.zip dist/tk2-legacy-cmp1-test-wrapper.zip dist/tk2-coverage-audit-results.json
+      - name: Upload alternate text GAM game for PR review
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tk2-text-gam-game
+          path: site/tk2-text-gam-game.zip
+          if-no-files-found: error
+      - name: Upload matrix evidence audit for PR review
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tk2-coverage-audit
+          path: dist/tk2-coverage-audit-results.json
+          if-no-files-found: error
       - name: Upload synthetic CMP1 wrapper for PR review
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4

@@ -98,6 +98,19 @@ editor/runtime validity or complete JPEG/DOC rendering.
 [legacy checklist](../../experiments/tk2-legacy-game/README.md).
 Desktop/editor acceptance remains **pending**.
 
+The third completion batch adds a **separate text GAM 2.0 game ZIP**
+(`tk2-text-gam-game.zip`) that shares the legacy coverage inventory under
+the distinct `TK2TextGamLab` project root. Its single active GAM has the
+three source-backed startup/board/character field positions; CI compares
+every other asset byte-for-byte with the legacy ZIP.
+The [57-row machine-readable audit](legacy-coverage-audit.json) records
+**52 included/viewer-checked**, **3 included but partial-metadata**, and
+**2 evidence-blocked** rows, with all desktop acceptance deferred.
+The [primary-source evidence review](unresolved-historical-evidence.md)
+does **not** promote the synthetic raw isometric BRD coordinate flag to
+verified geometry, nor the observed DustBall scratch parse failure to a
+supported format.
+
 Each archive has one active GAM. Use separate ZIPs with the same project assets
 for alternate GAM layouts. Establish the latest Toolkit 2 release and its
 actual writer output before selecting formats for the latest game.
@@ -107,13 +120,13 @@ actual writer output before selecting formats for the latest game.
 
 | Type and variant | Repository evidence | Viewer | Desktop open / save / run | Test route |
 | --- | --- | --- | --- | --- |
-| [GAM text 2.0](gam.md) | [`legacy.gam`](fixtures/format-fixtures.mjs#L27) | Partial startup bindings. [Check](../../scripts/check-format-specs.mjs) | Pending | Alternate GAM ZIP |
+| [GAM text 2.0](gam.md) | [`legacy.gam`](fixtures/format-fixtures.mjs#L27) | Partial startup bindings. [Check](../../scripts/check-format-specs.mjs) | Pending | [Separate text 2.0 project](../../experiments/tk2-text-gam-game/manifest.json) · `Main/TK2TextGamLab.gam` · [byte-identical shared asset test](../../scripts/check-alternate-gam.mjs); reader checks startup/board/character only; desktop pending |
 | [GAM binary 2.2](gam.md) | [`main.gam`](fixtures/format-fixtures.mjs#L23) | Partial title, project path, and startup bindings. [Check](../../scripts/check-format-specs.mjs) | Pending | Baseline and legacy main file |
 | [BRD text 2.0](brd.md) | [`Boards/fixed-room.brd`](fixtures/format-fixtures.mjs#L170) | Partial fixed grid, conditions, and links. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy board inventory](../../experiments/tk2-legacy-game/manifest.json) · `Boards/legacy-text-20.brd` · individual editor-open, not active GAM board |
 | [BRD text 2.1](brd.md) | [`Boards/text-room.brd`](fixtures/format-fixtures.mjs#L146) | Partial dimensioned grid, conditions, and links. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy board inventory](../../experiments/tk2-legacy-game/manifest.json) · `Boards/legacy-text-21.brd` · individual editor-open, not active GAM board |
 | [BRD binary 2.2](brd.md) | [`Boards/types-2.brd`](fixtures/detail-fixtures.mjs#L64) | Partial binary grid, placement conditions, and tile types. [Check](../../scripts/check-character-board-details.mjs) | Pending | Baseline and [five mode-specific TST gallery boards](../../experiments/tk2-legacy-game/manifest.json); desktop editor checks pending |
 | [BRD binary 2.3, thread slots](brd.md) | [`Boards/threaded-room.brd`](fixtures/format-fixtures.mjs#L121) and [`Boards/no-threads.brd`](fixtures/format-fixtures.mjs#L122) | Partial thread names and raw coordinate byte. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy board inventory](../../experiments/tk2-legacy-game/manifest.json) · `Boards/legacy-binary-23-empty.brd` and `Boards/legacy-binary-23-threads.brd` · independent editor-open and thread-slot inspection |
-| [BRD binary 2.3, isometric coordinates](brd.md) | [Legacy reader evidence](compatibility-matrix.md#project-boards-and-scripts). Need a real isometric specimen. | Raw coordinate byte retained. Geometry verification pending. | Pending | Acquire sample |
+| [BRD binary 2.3, isometric coordinates](brd.md) | [Legacy reader evidence](compatibility-matrix.md#project-boards-and-scripts). Need a real isometric specimen. | Raw coordinate byte retained. Geometry verification pending. | Pending | [Evidence blocker](unresolved-historical-evidence.md#1-brd-binary-23-isometric-coordinates--evidence-blocked) · verified writer `isIsometric` byte and raw-value fixture, **no verified rendered isometric specimen**; do not treat as viewer-geometry coverage |
 | [PRG unversioned RPGCode](prg.md) | [`Prg/start.prg`](fixtures/format-fixtures.mjs#L30) | Partial source and static references. [Check](../../scripts/check-format-specs.mjs) | Pending | Baseline startup and legacy scripts |
 
 ## Characters, items, and combat
@@ -170,7 +183,7 @@ actual writer output before selecting formats for the latest game.
 | Type and variant | Repository evidence | Viewer | Desktop open / save / run | Test route |
 | --- | --- | --- | --- | --- |
 | [Temporary board scratch text (.___)](temporary-board.md) | [`Boards/temp.___`](fixtures/format-fixtures.mjs#L261) | Partial observed Demo shape. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy ZIP manifest](../../experiments/tk2-legacy-game/manifest.json) · `Boards/temp.___` · observed partial text record; not a BRD/editor test |
-| [Temporary board scratch, DustBall shape](temporary-board.md) | [DustBall observation](compatibility-matrix.md#packaging-media-and-project-extras). Need a redistributable specimen. | Existing sample fails observed-shape validation. | Pending | Acquire sample |
+| [Temporary board scratch, DustBall shape](temporary-board.md) | [DustBall observation](compatibility-matrix.md#packaging-media-and-project-extras). Need a redistributable specimen. | Existing sample fails observed-shape validation. | Pending | [Evidence blocker](unresolved-historical-evidence.md#2-dustball-boardstemp___--evidence-blocked) · Demo-shaped scratch fixture is not equivalent to DustBall; source bytes/provenance required |
 | [Plain ZIP](other.md) | [Synthetic archive cases](../../scripts/check-game-archive.mjs) | Open project entries. [Check](../../scripts/check-game-archive.mjs) | Pending | Baseline + legacy game ZIPs; [CMP1 byte-level round-trip test](../../scripts/build-tk2-installer-fixture.mjs); desktop pending |
 | [Toolkit installer ZIP with CMP1 payload](other.md) | [Synthetic wrapper cases](../../scripts/check-game-archive.mjs) | Extract nested game archive. [Check](../../scripts/check-game-archive.mjs) | Pending | [Separate CMP1 CI artifact](../../scripts/build-tk2-installer-fixture.mjs) · `tk2-legacy-cmp1-test-wrapper.zip` · viewer-only synthetic MZ wrapper; every restored game file compared byte-for-byte; not a runnable installer |
 | [GIF89a](gif.md) | [`Bitmap/face.gif`](fixtures/format-fixtures.mjs#L266) | Decode GIF metadata. [Check](../../scripts/check-format-specs.mjs) | Pending | Companion asset check |

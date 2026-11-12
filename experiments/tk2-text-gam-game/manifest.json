@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "name": "TK2TextGamLab",
+  "title": "Toolkit 2 Text GAM Legacy Lab",
+  "gamEncoding": "text-2.0",
+  "basedOn": "../tk2-legacy-game/manifest.json",
+  "files": {
+    "main": "Main/TK2TextGamLab.gam",
+    "startup": "Game/TK2TextGamLab/Prg/start.prg",
+    "board": "Game/TK2TextGamLab/Boards/room.brd",
+    "tiles": "Game/TK2TextGamLab/Tiles/lab.tst",
+    "player": "Game/TK2TextGamLab/Chrs/player.tem"
+  },
+  "comparison": {
+    "expectedByteIdenticalExcept": ["Main/TK2TextGamLab.gam", "Game/TK2TextGamLab/Prg/start.prg", "Readme-TK2TextGamLab.txt"],
+    "reason": "Main format differs; startup text and README use the new title. All remaining assets should match exactly after replacing the project root."
+  },
+  "usage": "Third distinct game ZIP, single active GAM text 2.0 with same legacy asset inventory; not proof Toolkit 2 editor accepts historical GAM"
+}

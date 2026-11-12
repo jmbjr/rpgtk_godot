@@ -1,0 +1,527 @@
+{
+  "schemaVersion": 1,
+  "matrix": "docs/specs/test-matrix.md",
+  "scope": "57 source-backed and synthetic matrix rows; inclusion and viewer/static checks only, not desktop/runtime acceptance",
+  "output": {
+    "legacy": "site/tk2-legacy-game.zip",
+    "alternateTextGam": "site/tk2-text-gam-game.zip",
+    "cmp1": "dist/tk2-legacy-cmp1-test-wrapper.zip"
+  },
+  "records": [
+    {
+      "variant": "GAM text 2.0",
+      "status": "included-viewer-checked",
+      "archive": "text",
+      "paths": [
+        "Main/TK2TextGamLab.gam"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "GAM binary 2.2",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Main/TK2LegacyLab.gam"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "BRD text 2.0",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Boards/legacy-text-20.brd"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "BRD text 2.1",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Boards/legacy-text-21.brd"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "BRD binary 2.2",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Boards/room.brd",
+        "Game/TK2LegacyLab/Boards/test-tst-mode-2.brd"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "BRD binary 2.3, thread slots",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Boards/legacy-binary-23-empty.brd",
+        "Game/TK2LegacyLab/Boards/legacy-binary-23-threads.brd"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "BRD binary 2.3, isometric coordinates",
+      "status": "evidence-blocked",
+      "archive": "blocked",
+      "paths": [],
+      "desktop": "pending",
+      "blocker": "Binary BRD 2.3 coordinateType=1 already has raw-byte evidence, but there is no verified Toolkit 2-authored isometric sample, geometry projection, or editor observation."
+    },
+    {
+      "variant": "PRG unversioned RPGCode",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Prg/start.prg"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "TEM text 2.0 embedded",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Chrs/tem-text-20-embedded.tem"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "TEM text 2.1 embedded",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Chrs/tem-text-21-embedded.tem"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "TEM text 2.1 referenced",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Chrs/tem-text-21-referenced.tem"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "TEM text 2.2 embedded",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Chrs/tem-text-22-embedded.tem"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "TEM text 2.2 referenced",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Chrs/tem-text-22-referenced.tem"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "TEM binary 2.3",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Chrs/tem-binary-23.tem"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "TEM binary 2.4",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Chrs/tem-binary-24.tem"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "ITM text 2.0 embedded",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Item/itm-text-20-embedded.itm"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "ITM text 2.1 embedded",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Item/itm-text-21-embedded.itm"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "ITM text 2.1 referenced",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Item/itm-text-21-referenced.itm"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "ITM binary 2.2",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Item/itm-binary-22.itm"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "ITM binary 2.3",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Item/itm-binary-23.itm"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "ENE text 2.0 short tail",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Enemy/ene-text-20-short.ene"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "ENE text 2.0 animation tail",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Enemy/ene-text-20-animated.ene"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "BKG text 2.0",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Bkrounds/bkg-text-20-diagnostic.bkg"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "SPC text 2.0",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/SpcMove/pulse.spc"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "STE text 2.0",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/StatusE/ste-text-20.ste"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "STE binary 2.2",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/StatusE/slow.ste"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "TST binary 20 mode 1",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/lab.tst"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "TST binary 20 mode 2",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/two-tiles-16.tst"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "TST binary 20 mode 3",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/palette-3.tst"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "TST binary 20 mode 4",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/palette-4.tst"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "TST binary 20 mode 5",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/palette-5.tst"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "TST binary 20 mode 6",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/palette-6.tst"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "GPH text 2.0 mode 1, raw",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/mode-1-raw.gph"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "GPH text 2.0 mode 1, RLE",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/standalone-32-rle.gph"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "GPH text 2.0 mode 2, raw",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/standalone-16.gph"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "GPH text 2.0 mode 2, RLE",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/mode-2-rle.gph"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "GPH text 2.0 mode 3, raw",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/palette-3-0.gph"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "GPH text 2.0 mode 3, RLE",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/palette-3-1.gph"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "GPH text 2.0 mode 4, raw",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/palette-4-0.gph"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "GPH text 2.0 mode 4, RLE",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/palette-4-1.gph"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "GPH text 2.0 mode 5, raw",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/palette-5-0.gph"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "GPH text 2.0 mode 5, RLE",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/palette-5-1.gph"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "GPH text 2.0 mode 6, raw",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/palette-6-0.gph"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "GPH text 2.0 mode 6, RLE",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/palette-6-1.gph"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "TAN binary 2.0",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Tiles/tan-binary-20-diagnostic.tan"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "ANM text 2.0",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Misc/effect.anm"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "FNT text 2.0",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Font/fnt-text-20-diagnostic.fnt"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "Temporary board scratch text (.___)",
+      "status": "included-partial-metadata",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Boards/temp.___"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "Temporary board scratch, DustBall shape",
+      "status": "evidence-blocked",
+      "archive": "blocked",
+      "paths": [],
+      "desktop": "pending",
+      "blocker": "The observed DustBall temp.___ record does not conform to the Demo-specific text shape; no redistributable attributable DustBall scratch bytes are checked into this repo."
+    },
+    {
+      "variant": "Plain ZIP",
+      "status": "included-viewer-checked",
+      "archive": "package",
+      "paths": [
+        "site/tk2-legacy-game.zip",
+        "site/tk2-text-gam-game.zip"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "Toolkit installer ZIP with CMP1 payload",
+      "status": "included-viewer-checked",
+      "archive": "package",
+      "paths": [
+        "dist/tk2-legacy-cmp1-test-wrapper.zip"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "GIF89a",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Bitmap/face.gif"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "JPEG SOF",
+      "status": "included-partial-metadata",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Bitmap/header.jpg"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "RIFF/WAVE PCM",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Media/tone.wav"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "SMF format 0",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Media/note.mid"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "Compound DOC",
+      "status": "included-partial-metadata",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Media/empty.doc"
+      ],
+      "desktop": "pending"
+    },
+    {
+      "variant": "PNG/BMP browser image entries",
+      "status": "included-viewer-checked",
+      "archive": "legacy",
+      "paths": [
+        "Game/TK2LegacyLab/Bitmap/diagnostic-16.png",
+        "Game/TK2LegacyLab/Bitmap/diagnostic-16.bmp"
+      ],
+      "desktop": "pending"
+    }
+  ]
+}
