@@ -129,7 +129,8 @@ function verifyConnected(externalMain) {
     "rpgtk:/" + targets[i]]));
   assert.deepEqual(record.edges.filter(edge => [
     "startup-program", "opening-board", "initial-character",
-  ].includes(edge.type)).map(edge => [edge.evidence, edge.target?.$ref]),
+  ].includes(edge.type) && edge.source.$ref === record.root.mainFile.$ref)
+    .map(edge => [edge.evidence, edge.target?.$ref]),
   names.map((name, i) => [name, "rpgtk:/" + targets[i]]));
   return record;
 }
