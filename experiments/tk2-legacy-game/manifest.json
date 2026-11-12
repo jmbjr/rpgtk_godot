@@ -395,5 +395,39 @@
     "expectedWalkingFrames": 16,
     "expectedRestFrames": 1,
     "usage": "Colorful frame-indexed relics, populated graphics for five ITM revisions; preserves untouched source fixtures"
+  },
+  "legacyEnemies": [
+    {
+      "path": "Game/TK2LegacyLab/Enemy/ene-text-20-short.ene",
+      "fixture": "Enemy/foe.ene",
+      "format": "text",
+      "revision": "2.0",
+      "tail": "sounds-only",
+      "expectedName": "Foe Short Diagnostic",
+      "expectedAnimations": 0,
+      "visualStyle": "diagnostic-v1",
+      "usage": "Standalone enemy editor-open/save-copy and 2x2 graphic check; no runtime encounter"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Enemy/ene-text-20-animated.ene",
+      "fixture": "Enemy/animated.ene",
+      "format": "text",
+      "revision": "2.0",
+      "tail": "sounds-and-animations",
+      "expectedName": "Foe Animated Diagnostic",
+      "expectedAnimations": 4,
+      "visualStyle": "diagnostic-v1",
+      "usage": "Standalone enemy editor-open/save-copy and animation-tail inspection; no runtime encounter"
+    }
+  ],
+  "visualEnemyKit": {
+    "style": "diagnostic-v1",
+    "source": "docs/specs/fixtures/visual-enemy-fixtures.mjs",
+    "tileCount": 8,
+    "expectedDimensions": [
+      2,
+      2
+    ],
+    "usage": "Two high contrast 2x2 enemy sprites; short tail and four-slot animation tail; original sparse conformance files unchanged"
   }
 }
