@@ -32,7 +32,7 @@ verify their existing program, sound and animation references explicitly.
 All specimens are standalone/editor-open or reference coverage, **not**
 new startup room mechanics.
 
-## PR 2 · Packaging and companion media — in progress
+## PR 2 · Packaging and companion media — completed in merged PR #77
 
 Target **five matrix rows**:
 
@@ -59,7 +59,7 @@ header**: both are deliberately *metadata-only*, not renderable full files.
 The scratch-board sample is an observed, partial reader fixture, not
 a valid BRD claim. CI success does not change those evidence limitations.
 
-## PR 3 · Alternate GAM and explicit evidence gaps — pending
+## PR 3 · Alternate GAM and explicit evidence gaps — implementation in PR #78
 
 Targets **three matrix rows**, with only one guaranteed to become a
 tested asset unless new primary evidence emerges:
@@ -75,10 +75,15 @@ tested asset unless new primary evidence emerges:
   sample; if unavailable, record an explicit blocker and reproducible
   attempted validation, not a manufactured passing fixture.
 
-Add a final automated inventory audit that classifies every known matrix
-row as *included and viewer-checked*, *source-only*, *blocked for evidence*,
-or *desktop pending*, without conflating those statuses. The last two
-rows can remain evidence-blocked; that is an honest result.
+The [versioned 57-row ledger](legacy-coverage-audit.json) distinguishes
+**52 rows with file-backed viewer/static checks**, **3 included but
+metadata-only/partial rows**, and **2 evidence-blocked rows**.
+[CI checks](../../scripts/check-legacy-coverage-audit.mjs) verify exact
+matrix-row identities, file paths and parser statuses against the output
+archives; they do not claim desktop or runtime acceptance.
+The [blocker writeup](unresolved-historical-evidence.md) records upstream
+pinned source evidence, missing isometric geometry, and the unavailable
+DustBall scratch specimen. Do not invent samples for these gaps.
 
 ## Definition of done for this three-PR series
 
