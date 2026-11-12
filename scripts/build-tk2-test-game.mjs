@@ -17,8 +17,25 @@ import { openGameArchive } from "../archive.mjs";
 import { mainFileBindings } from "../model.mjs";
 
 const legacy = process.argv.includes("--legacy");
-const manifestLocation = legacy ? "../experiments/tk2-legacy-game/manifest.json" : "../experiments/tk2-test-game/manifest.json";
-const manifest = JSON.parse(await readFile(new URL(manifestLocation, import.meta.url)));
+const textGam = process.argv.includes("--text-gam");
+assert.ok(!(legacy && textGam), "Select only one game variant");
+const manifestLocation = textGam ? "../experiments/tk2-text-gam-game/manifest.json" :
+  legacy ? "../experiments/tk2-legacy-game/manifest.json" : "../experiments/tk2-test-game/manifest.json";
+const configuration = JSON.parse(await readFile(new URL(manifestLocation, import.meta.url)));
+let manifest = configuration;
+if (textGam) {
+  // Do not fork 146+ asset definitions. Clone the legacy source inventory and
+  // replace its project root; leave the source fixture bytes untouched.
+  assert.equal(configuration.schemaVersion, 1);
+  assert.equal(configuration.basedOn, "../tk2-legacy-game/manifest.json");
+  assert.equal(configuration.gamEncoding, "text-2.0");
+  const base = JSON.parse(await readFile(new URL("../experiments/tk2-legacy-game/manifest.json", import.meta.url)));
+  assert.equal(base.name, "TK2LegacyLab");
+  manifest = JSON.parse(JSON.stringify(base).replaceAll(base.name, configuration.name));
+  assert.deepEqual(manifest.files, configuration.files, "Text GAM project paths must match the manifest");
+  manifest.title = configuration.title;
+  manifest.gamEncoding = configuration.gamEncoding;
+}
 const specimens = manifest.specimens ?? [];
 const tilesetSpecimens = manifest.tilesets ?? [];
 const legacyBoards = manifest.legacyBoards ?? [];
@@ -82,6 +99,15 @@ const header = (type, minor) => join(`RPGTLKIT ${type}`, i16(2, minor));
 const empty = count => Buffer.alloc(count);
 
 function mainFile() {
+  if (manifest.gamEncoding === "text-2.0") {
+    // Historical text 2.0 MAIN profile. The source conformance fixture
+    // establishes these 1-based field positions, NOT the meaning of every
+    // unparsed legacy setting. Do not claim full editor configuration parity.
+    return Buffer.from([
+      "RPGTLKIT MAIN", 2, 0, 1, filename.startup, "", 0, 0, 27, 13,
+      filename.board, filename.player, "",
+    ].join("\r\n"), "ascii");
+  }
   // Binary 2.2 layout. Use the desktop resolution and leave full screen off.
   return join(header("MAIN", 2), i16(0), "NOCODE",
     `Game\\${name}\\`, title, i16(0, 0, 0, 2, 0), "0english.lng",
@@ -190,6 +216,10 @@ const instructions = [
   ...legacyCharacters.map(character => `TEM ${character.format} ${character.revision} ${character.graphics}: ${character.path} | Diagnostic colors and visible pixels; save a copy`),
   ...legacyItems.map(item => `ITM ${item.format} ${item.revision} ${item.graphics}: ${item.path} | Every walking frame and rest pose should show a colored relic`),
   ...legacyEnemies.map(enemy => `ENE ${enemy.revision} ${enemy.tail}: ${enemy.path} | Distinct 2x2 enemy art; inspect animation tail; save a copy`),
+  ...(textGam ? [
+    "Alternate GAM text 2.0: this is a separate project/ZIP. The main file has exactly one active GAM.",
+    "Only startup, opening board and initial character are reader-verified; other legacy settings are not proven.",
+  ] : []),
   ...generatedCompletionAssets.map(asset => `Graphics/combat batch 1: ${asset.path} | Individual editor-open; no runtime claim`),
   ...companionMedia.map(asset => `Packaging/media batch 2: ${asset.path} | ${asset.usage}`),
 ].join("\r\n") + "\r\n";
@@ -401,7 +431,22 @@ for (const specimen of specimens) {
   assert.equal(packaged, gphWireText(source), "Fixture content must change only in line endings");
 }
 const main = artifacts.get(files.main);
-assert.equal(main.projectPath, `Game\\${name}\\`);
+if (textGam) {
+  assert.deepEqual([main.major, main.minor, main.startup, main.board, main.character],
+    [2, 0, filename.startup, filename.board, filename.player]);
+  assert.equal(main.projectPath, undefined);
+  assert.equal(main.sourceFormat?.encoding, "text");
+  assert.equal(main.sourceFormat?.version, "2.0");
+  const originalText = Buffer.from(await opened.file(files.main).async("uint8array")).toString("ascii");
+  const rows = originalText.split("\r\n");
+  assert.equal(rows[0], "RPGTLKIT MAIN");
+  assert.deepEqual([rows[1], rows[2], rows[4], rows[10], rows[11]],
+    ["2", "0", filename.startup, filename.board, filename.player],
+    "GAM text 2.0 stores startup, board and character at their source-backed positions");
+} else {
+  assert.equal(main.projectPath, `Game\\${name}\\`);
+  assert.deepEqual([main.major, main.minor], [2, 2]);
+}
 const bindings = mainFileBindings(main, [...artifacts.keys()]);
 assert.deepEqual(bindings.map(([, binding]) => [binding.status, binding.path]),
   ["startup", "board", "player"].map(key => ["resolved", files[key]]));
@@ -703,4 +748,4 @@ assert.ok(artifacts.get(files.player).walking.length === 16);
 const output = process.argv[2] ?? "dist/tk2-test-game.zip";
 await mkdir(dirname(output), { recursive: true });
 await writeFile(output, bytes);
-console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards; ${legacyBoards.length} historical boards; ${legacyCharacters.length} historical TEM profiles; ${visualSpriteKit ? visualTileBytes.size : 0} TEM diagnostic GPHs; ${legacyItems.length} historical ITMs; ${visualItemKit ? visualItemTileBytes.size : 0} ITM diagnostic GPHs; ${legacyEnemies.length} ENE variants; ${visualEnemyKit ? visualEnemyTileBytes.size : 0} ENE diagnostic GPHs; ${generatedCompletionAssets.length} graphics/combat completion assets and ${graphicsCompletion ? graphicsCompletion.graphicTiles.length : 0} supporting GPH tiles; ${companionMedia.length} packaging/media specimens.`);
+console.log(`Verified ${output}: project paths, ${textGam ? "text GAM 2.0" : "binary GAM 2.2"}, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards; ${legacyBoards.length} historical boards; ${legacyCharacters.length} historical TEM profiles; ${visualSpriteKit ? visualTileBytes.size : 0} TEM diagnostic GPHs; ${legacyItems.length} historical ITMs; ${visualItemKit ? visualItemTileBytes.size : 0} ITM diagnostic GPHs; ${legacyEnemies.length} ENE variants; ${visualEnemyKit ? visualEnemyTileBytes.size : 0} ENE diagnostic GPHs; ${generatedCompletionAssets.length} graphics/combat completion assets and ${graphicsCompletion ? graphicsCompletion.graphicTiles.length : 0} supporting GPH tiles; ${companionMedia.length} packaging/media specimens.`);
