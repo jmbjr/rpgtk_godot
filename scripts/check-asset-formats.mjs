@@ -13,7 +13,7 @@ const binary = (signature, major, minor) => {
 };
 const cases=[];
 for(const [type,signature,textVersions,binaryVersions] of [
-  ["gam","MAIN",[0],[2]], ["tem","CHAR",[0,1,2],[3,4]], ["brd","BOARD",[0,1],[2,3]],
+  ["gam","MAIN",[0],[2,9]], ["tem","CHAR",[0,1,2],[3,4]], ["brd","BOARD",[0,1],[2,3]],
   ["itm","ITEM",[0,1],[2,3]], ["ste","STATUSE",[0],[2]], ["tan","TILEANIM",[],[0]],
   ["ene","ENEMY",[0],[]], ["bkg","BKG",[0],[]], ["spc","SPLMOVE",[0],[]],
   ["anm","ANIM",[0],[]], ["fnt","FONT",[0],[]],
@@ -54,6 +54,7 @@ assert.match(formatSummary({type:"prg",sourceFormat:detectSourceFormat("prg",byt
 assert.equal(formatSpecTarget({type:"___"}).anchor,"#unversioned-observed-layout");
 assert.deepEqual(mainSourceFormat({major:2,minor:0}),{encoding:"text",version:"2.0",supported:true});
 assert.deepEqual(mainSourceFormat({major:2,minor:2}),{encoding:"binary",version:"2.2",supported:true});
+assert.deepEqual(mainSourceFormat({major:2,minor:9}),{encoding:"binary",version:"2.9",supported:true});
 // Follow every generated native spec target, including stable links to renamed sections.
 const targets=cases.map(({type,expected})=>formatSpecTarget({type,sourceFormat:expected}));
 for(const type of ["prg","___","tem","brd","itm","gam","gph","tst","tan","ene","bkg","spc","ste","anm","fnt","tbm","iso"]) targets.push(formatSpecTarget({type}));
