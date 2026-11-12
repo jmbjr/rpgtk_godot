@@ -1,10 +1,49 @@
 # Toolkit 2 Legacy Test Lab · incremental format coverage
 
-This is the growing legacy coverage game for [issue #63](https://github.com/jmbjr/rpgtk_godot/issues/63), not yet an all-variants project. It keeps the verified minimal room from TK2TestLab under a **different project name**. The first slice included four standalone 16 × 16 GPH samples (modes 4 and 6, raw and RLE). The second included TST format 20 modes 2–6 and a separate binary BRD 2.2 gallery for each mode. The third adds historical BRD text 2.0/2.1 and binary 2.3 board specimens. The fourth adds seven distinct TEM character-format variants spanning text 2.0–2.2 and binary 2.3–2.4. The fifth adds five visibly diagnostic ITM item layouts (text 2.0/2.1 and binary 2.2/2.3).
+This is the growing legacy coverage game for [issue #63](https://github.com/jmbjr/rpgtk_godot/issues/63), not yet an all-variants project. It keeps the verified minimal room from TK2TestLab under a **different project name**. The first slice included four standalone 16 × 16 GPH samples (modes 4 and 6, raw and RLE). The second included TST format 20 modes 2–6 and a separate binary BRD 2.2 gallery for each mode. The third adds historical BRD text 2.0/2.1 and binary 2.3 board specimens. The fourth adds seven distinct TEM character-format variants spanning text 2.0–2.2 and binary 2.3–2.4. The fifth adds five visibly diagnostic ITM item layouts (text 2.0/2.1 and binary 2.2/2.3). The sixth adds two ENE text 2.0 enemy-tail variants with individually checkable 2×2 enemy art.
 
 ## Install and baseline smoke test
 
 Extract `tk2-legacy-game.zip` into the directory containing the existing Toolkit 2 `Main` and `Game` folders. In RPG Toolkit Development System 2.2, open `Main/TK2LegacyLab.gam`. Run the startup message, dismiss it, walk in all four directions, and test the central blocking tile. The game uses **Default Resolution**, not Set Resolution; no full-screen mode is selected.
+
+## Test historical ENE text 2.0 enemy tails
+
+The Toolkit 2 ENE 2.0 format has **two documented endings** under the
+same header revision: four sound filename slots only, or four sound slots
+**followed by four animation filename slots**. The legacy ZIP now provides
+two generated diagnostic editions built from the original synthetic
+[short and extended format fixtures](../../docs/specs/fixtures/format-fixtures.mjs),
+which remain unchanged in the source repository.
+
+| Enemy under `Game/TK2LegacyLab/Enemy/` | Tail variant | What you should see |
+| --- | --- | --- |
+| `ene-text-20-short.ene` | Short · sounds only | Coral 2×2 enemy with a diagonal facial scar, **no animation slots** |
+| `ene-text-20-animated.ene` | Extended · sounds and animations | Violet 2×2 enemy with a crown, **four animation slots** all set to `effect.anm` |
+
+Every enemy image is composed from **four different** 32×32 GPH tile
+quadrants at grid coordinates (0,0), (0,1), (1,0) and (1,1). Both
+should form a single recognizable face with two eyes, horns and mouth.
+Transparent outer corners and asymmetric eyes/marks expose wrong tile
+order, clipping, orientation, and missing references. The enemy uses
+**2×2 of the available 19×7 grid**, not all 133 slots.
+[Diagnostic-v1 expectations](../../docs/specs/visual-fixture-standard.md)
+apply, including no unexpected blank quadrants.
+
+To test in [Game Explorer](https://jmbjr.github.io/rpgtk_godot/),
+open each of the two `ene-*` enemy files. Compare their colors, inspect
+the **2×2 sprite**, and check the optional `animations` data:
+the short version should have *none*, while the extended version
+should have named Attack, Defense, Special move and Defeat references
+to the existing `effect.anm`. Verify both use `tone.wav` for
+Attack sound and reference `pulse.spc` as their first special move.
+
+In Toolkit 2, open each enemy **individually in the enemy editor**,
+verify the 2×2 art and any animation controls the editor exposes,
+then save a **copy**, reopen it, and record any compatibility issues or
+format changes. The enemy assets are **not placed in a battle** and
+the existing startup room does not trigger an encounter. Desktop
+editor and runtime acceptance remain pending. Distinct graphics and
+completed viewer checks do not imply an animation ran in Toolkit 2.
 
 ## Test historical ITM text 2.0/2.1 and binary 2.2/2.3 items
 
@@ -143,4 +182,4 @@ The [manifest](manifest.json) lists exact ZIP locations, source fixture paths, m
 node scripts/build-tk2-test-game.mjs dist/tk2-legacy-game.zip --legacy
 ```
 
-The generator normalizes the checked-in GPH text fixtures to CRLF, preserving their decoded values; checks each GPH's declared mode/compression; copies the TST binary fixtures *byte-for-byte*; builds the five gallery boards and validates both tile-reference edges for each; copies four historical board fixtures and their reference targets without byte changes; validates board dimensions, tile references and thread slots; packages seven generated historical TEM visual diagnostic editions and their 35 GPH tiles; checks character revisions, walking/artwork geometry, transparent and opaque pixel signatures, resolved tile references and shared support assets; adds five synthetic diagnostic ITM files and 34 distinguishable item GPHs with pixel, rendering, and reference checks; and checks the full ZIP inventory plus original baseline project bindings. The source-only format fixtures remain separately unmodified. CI uploads this ZIP separately from the unchanged `tk2-test-game.zip` baseline.
+The generator normalizes the checked-in GPH text fixtures to CRLF, preserving their decoded values; checks each GPH's declared mode/compression; copies the TST binary fixtures *byte-for-byte*; builds the five gallery boards and validates both tile-reference edges for each; copies four historical board fixtures and their reference targets without byte changes; validates board dimensions, tile references and thread slots; packages seven generated historical TEM visual diagnostic editions and their 35 GPH tiles; checks character revisions, walking/artwork geometry, transparent and opaque pixel signatures, resolved tile references and shared support assets; adds five synthetic diagnostic ITM files and 34 distinguishable item GPHs; adds two text ENE tail variants and eight quadrant GPHs with exact byte, tile-order, alpha, animation-tail and reference checks; and checks the full ZIP inventory plus original baseline project bindings. The source-only format fixtures remain separately unmodified. CI uploads this ZIP separately from the unchanged `tk2-test-game.zip` baseline.
