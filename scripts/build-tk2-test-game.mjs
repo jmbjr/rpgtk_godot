@@ -4,6 +4,8 @@ import { basename, dirname } from "node:path";
 import JSZip from "../vendor/jszip.min.js";
 import { fixtures as formatFixtures } from "../docs/specs/fixtures/format-fixtures.mjs";
 import { visualCharacterBytes, visualTileBytes, diagnosticStyle } from "../docs/specs/fixtures/visual-character-fixtures.mjs";
+import { visualItemBytes, visualItemTileBytes, itemDiagnosticStyle } from "../docs/specs/fixtures/visual-item-fixtures.mjs";
+import { itemSprites, standaloneTilePixels } from "../sprites.mjs";
 import { buildReferences, readArtifacts, tilePixels } from "../artifacts.mjs";
 import { openGameArchive } from "../archive.mjs";
 import { mainFileBindings } from "../model.mjs";
@@ -18,6 +20,8 @@ const legacyBoardAssets = manifest.legacyBoardAssets ?? [];
 const legacyCharacters = manifest.legacyCharacters ?? [];
 const legacyCharacterAssets = manifest.legacyCharacterAssets ?? [];
 const visualSpriteKit = manifest.visualSpriteKit ?? null;
+const legacyItems = manifest.legacyItems ?? [];
+const visualItemKit = manifest.visualItemKit ?? null;
 const fixtureByPath = new Map(formatFixtures.map(fixture => [fixture.path, fixture.bytes]));
 const sourceBytes = async specimen => {
   if (specimen.visualStyle) {
@@ -166,6 +170,7 @@ const instructions = [
     "Referenced walking uses top/bottom parts, not a single embedded 32x32 sprite. Blank diagnostic artwork is a failure.",
   ] : []),
   ...legacyCharacters.map(character => `TEM ${character.format} ${character.revision} ${character.graphics}: ${character.path} | Diagnostic colors and visible pixels; save a copy`),
+  ...legacyItems.map(item => `ITM ${item.format} ${item.revision} ${item.graphics}: ${item.path} | Every walking frame and rest pose should show a colored relic`),
 ].join("\r\n") + "\r\n";
 
 const zip = new JSZip();
@@ -196,6 +201,20 @@ if (visualSpriteKit) {
   assert.equal(legacyCharacters.length, diagnosticStyle.characterCount);
   for (const [tile, pixels] of visualTileBytes) zip.file(`${project}/Tiles/${tile}`, pixels, options);
 }
+if (visualItemKit) {
+  assert.equal(visualItemKit.style, itemDiagnosticStyle.id);
+  assert.equal(visualItemKit.tileCount, visualItemTileBytes.size);
+  assert.equal(legacyItems.length, itemDiagnosticStyle.count);
+  for (const [name, bytes] of visualItemTileBytes) zip.file(`${project}/Tiles/${name}`, bytes, options);
+  for (const item of legacyItems) {
+    assert.equal(item.visualStyle, itemDiagnosticStyle.id);
+    assert.ok(item.path.startsWith(project + "/Item/") && item.path.endsWith(".itm"), item.path);
+    assert.ok(fixtureByPath.has(item.fixture), `${item.path}: source evidence missing`);
+    const bytes = visualItemBytes.get(item.fixture);
+    assert.ok(bytes, `${item.path}: generator specimen missing`);
+    zip.file(item.path, bytes, options);
+  }
+}
 for (const specimen of [...legacyBoardAssets, ...legacyBoards, ...legacyCharacterAssets, ...legacyCharacters]) {
   assert.ok(specimen.path.startsWith(project + "/"), specimen.path);
   if (legacyBoards.includes(specimen)) assert.ok(specimen.path.startsWith(project + "/Boards/"), specimen.path);
@@ -221,7 +240,9 @@ const requiredPaths = [...Object.values(files), ...specimens.map(specimen => spe
   ...legacyBoards.map(board => board.path), ...legacyBoardAssets.map(asset => asset.path),
   ...legacyCharacters.map(character => character.path),
   ...legacyCharacterAssets.map(asset => asset.path),
-  ...(visualSpriteKit ? [...visualTileBytes.keys()].map(tile => `${project}/Tiles/${tile}`) : [])];
+  ...(visualSpriteKit ? [...visualTileBytes.keys()].map(tile => `${project}/Tiles/${tile}`) : []),
+  ...legacyItems.map(item => item.path),
+  ...(visualItemKit ? [...visualItemTileBytes.keys()].map(tile => `${project}/Tiles/${tile}`) : [])];
 assert.equal(new Set(requiredPaths).size, requiredPaths.length, "Duplicate manifest paths");
 assert.deepEqual([...artifacts.keys()].sort(), [...requiredPaths, readmePath].sort());
 for (const path of requiredPaths) assert.equal(artifacts.get(path).decodeStatus, "decoded", path);
@@ -236,6 +257,20 @@ if (visualSpriteKit) {
     assert.equal(tile.pixels[2 * 32 + 2], diagnosticStyle.corners.topLeft);
     assert.equal(tile.pixels[29 * 32 + 29], diagnosticStyle.corners.bottomRight);
     assert.ok(tile.pixels.filter(value => value !== -1).length > 500, `${path}: must be visually substantial`);
+  }
+}
+if (visualItemKit) {
+  for (const [name, raw] of visualItemTileBytes) {
+    const path = `${project}/Tiles/${name}`;
+    assert.deepEqual(Buffer.from(await opened.file(path).async("uint8array")), raw, path);
+    const tile = artifacts.get(path);
+    assert.deepEqual([tile.width, tile.height, tile.detail, tile.compressed], [32, 32, 1, false], path);
+    assert.equal(tile.pixels[0], -1, path);
+    assert.equal(tile.pixels[2 * 32 + 2], diagnosticStyle.corners.topLeft, path);
+    assert.ok(tile.pixels.filter(value => value !== -1).length > 500, path);
+    const rgba = standaloneTilePixels(tile);
+    assert.deepEqual([...rgba.slice(0, 4)], [0, 0, 0, 0], path);
+    assert.equal(rgba[(16 * 32 + 16) * 4 + 3], 255, path);
   }
 }
 for (const specimen of specimens) {
@@ -379,6 +414,39 @@ for (const characterSpec of legacyCharacters) {
     assert.equal(asset.artwork[0].parts.length, 2, "Text 2.1 referenced battle frames use one tile column");
   }
 }
+for (const itemSpec of legacyItems) {
+  const bytes = visualItemBytes.get(itemSpec.fixture);
+  assert.deepEqual(Buffer.from(await opened.file(itemSpec.path).async("uint8array")), bytes, itemSpec.path);
+  const item = artifacts.get(itemSpec.path);
+  assert.deepEqual([item.version, item.name], [itemSpec.version, itemSpec.expectedName], itemSpec.path);
+  const embedded = itemSpec.graphics === "embedded";
+  assert.equal(Boolean(item.embeddedGraphics), embedded, itemSpec.path);
+  if (embedded) {
+    assert.equal(item.embeddedGraphics.walking.length, 16, itemSpec.path);
+    assert.ok(item.embeddedGraphics.walking.every(frame =>
+      frame?.length === 1024 && frame.filter(value => value !== -1).length > 500), itemSpec.path);
+    assert.equal(item.embeddedGraphics.rest.length, 1024, itemSpec.path);
+  } else {
+    assert.ok(item.walking.every(frame => frame.length === 2 && frame.every(Boolean)), itemSpec.path);
+    assert.ok(item.rest.every(Boolean), itemSpec.path);
+  }
+  const sprites = itemSprites(item, artifacts, graph);
+  assert.ok(sprites.rest && sprites.rest.pixels.some(value => value !== 0), itemSpec.path);
+  const frames = sprites.walking.flatMap(direction => direction.frames);
+  assert.equal(frames.length, 16, itemSpec.path);
+  assert.ok(frames.every(frame => frame && frame.missing.length === 0 && frame.pixels[(16 * frame.width + 16) * 4 + 3] === 255),
+    `${itemSpec.path}: every walking frame must be visible with no missing assets`);
+  assert.equal(new Set(frames.map(frame => Buffer.from(frame.pixels).toString("base64"))).size, 16,
+    `${itemSpec.path}: all 16 walking frames must be visually distinguishable`);
+  const edges = graph.outgoing.get(itemSpec.path) ?? [];
+  assert.ok(edges.some(edge => edge.evidence === "Equip program" && edge.to === files.startup), itemSpec.path);
+  assert.ok(edges.some(edge => edge.evidence === "Item animation" &&
+    edge.to === `${project}/Misc/effect.anm`), itemSpec.path);
+  if (!embedded) {
+    assert.equal(edges.filter(edge => edge.to?.startsWith(`${project}/Tiles/diag-item-`)).length, 34,
+      `${itemSpec.path}: 32 walking and 2 rest source references must resolve`);
+  }
+}
 for (const path of [files.board, files.player]) {
   const edges = graph.outgoing.get(path);
   assert.equal(edges.length, path === files.board ? 6 : 16);
@@ -397,4 +465,4 @@ assert.ok(artifacts.get(files.player).walking.length === 16);
 const output = process.argv[2] ?? "dist/tk2-test-game.zip";
 await mkdir(dirname(output), { recursive: true });
 await writeFile(output, bytes);
-console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards; ${legacyBoards.length} historical boards; ${legacyCharacters.length} historical TEM profiles; ${visualSpriteKit ? visualTileBytes.size : 0} diagnostic art tiles.`);
+console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards; ${legacyBoards.length} historical boards; ${legacyCharacters.length} historical TEM profiles; ${visualSpriteKit ? visualTileBytes.size : 0} TEM diagnostic GPHs; ${legacyItems.length} historical ITMs; ${visualItemKit ? visualItemTileBytes.size : 0} ITM diagnostic GPHs.`);

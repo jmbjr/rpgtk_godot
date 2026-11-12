@@ -55,6 +55,16 @@ are **generated diagnostic editions**, not exact copies of the sparse original
 or action frames, and resolvable graphic parts. The original conformance
 fixtures remain unchanged in the repo. CI verifies rendered sprites and
 image/pixel signatures; desktop acceptance is still **pending**.
+The next slice adds five synthetic **ITM diagnostic editions** across
+text 2.0/2.1 (embedded/referenced) and binary 2.2/2.3 (referenced).
+All 16 walking frames and the resting pose are visible, with 34 generated
+relic GPH sources backing referenced variants. Frame markers and a diamond
+shift make the four animation frames visibly different. The original sparse
+ITM fixtures and the previously included board reference item are not
+overwritten. [Visual contract](visual-fixture-standard.md) ·
+[Legacy item checklist](../../experiments/tk2-legacy-game/README.md).
+Desktop/editor and runtime acceptance are **pending**.
+
 Each archive has one active GAM. Use separate ZIPs with the same project assets
 for alternate GAM layouts. Establish the latest Toolkit 2 release and its
 actual writer output before selecting formats for the latest game.
@@ -84,11 +94,11 @@ actual writer output before selecting formats for the latest game.
 | [TEM text 2.2 referenced](tem.md) | [`Chrs/text-hero-1.tem`](fixtures/format-fixtures.mjs#L68) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy TEM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Chrs/tem-text-22-referenced.tem` · [diagnostic-v1 expected visuals](visual-fixture-standard.md) · independent editor-open; not active GAM player |
 | [TEM binary 2.3](tem.md) | [`Chrs/hero.tem`](fixtures/format-fixtures.mjs#L41) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy TEM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Chrs/tem-binary-23.tem` · [diagnostic-v1 expected visuals](visual-fixture-standard.md) · independent editor-open; not active GAM player |
 | [TEM binary 2.4](tem.md) | [`Chrs/walker.tem`](fixtures/format-fixtures.mjs#L52) · [Artwork specimens](fixtures/detail-fixtures.mjs#L22) | Partial stats, graphics, and references. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy TEM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Chrs/tem-binary-24.tem` · [diagnostic-v1 expected visuals](visual-fixture-standard.md) · independent editor-open; not active GAM player |
-| [ITM text 2.0 embedded](itm.md) | [`Item/text-20-item.itm`](fixtures/format-fixtures.mjs#L200) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy item |
-| [ITM text 2.1 embedded](itm.md) | [`Item/text-item-0.itm`](fixtures/format-fixtures.mjs#L200) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy item |
-| [ITM text 2.1 referenced](itm.md) | [`Item/text-item-1.itm`](fixtures/format-fixtures.mjs#L200) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy item |
-| [ITM binary 2.2](itm.md) | [`Item/token-2.itm`](fixtures/format-fixtures.mjs#L184) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy item |
-| [ITM binary 2.3](itm.md) | [`Item/token-3.itm`](fixtures/format-fixtures.mjs#L184) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy item |
+| [ITM text 2.0 embedded](itm.md) | [`Item/text-20-item.itm`](fixtures/format-fixtures.mjs#L200) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy ITM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Item/itm-text-20-embedded.itm` · [diagnostic-v1 expected visuals](visual-fixture-standard.md); standalone editor-open, not runtime-tested |
+| [ITM text 2.1 embedded](itm.md) | [`Item/text-item-0.itm`](fixtures/format-fixtures.mjs#L200) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy ITM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Item/itm-text-21-embedded.itm` · [diagnostic-v1 expected visuals](visual-fixture-standard.md); standalone editor-open, not runtime-tested |
+| [ITM text 2.1 referenced](itm.md) | [`Item/text-item-1.itm`](fixtures/format-fixtures.mjs#L200) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy ITM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Item/itm-text-21-referenced.itm` · [diagnostic-v1 expected visuals](visual-fixture-standard.md); standalone editor-open, not runtime-tested |
+| [ITM binary 2.2](itm.md) | [`Item/token-2.itm`](fixtures/format-fixtures.mjs#L184) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy ITM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Item/itm-binary-22.itm` · [diagnostic-v1 expected visuals](visual-fixture-standard.md); standalone editor-open, not runtime-tested |
+| [ITM binary 2.3](itm.md) | [`Item/token-3.itm`](fixtures/format-fixtures.mjs#L184) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy ITM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Item/itm-binary-23.itm` · [diagnostic-v1 expected visuals](visual-fixture-standard.md); standalone editor-open, not runtime-tested |
 | [ENE text 2.0 short tail](ene.md) | [`Enemy/foe.ene`](fixtures/format-fixtures.mjs#L230) | Decode enemy without animation slots. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy enemy |
 | [ENE text 2.0 animation tail](ene.md) | [`Enemy/animated.ene`](fixtures/format-fixtures.mjs#L231) | Decode enemy and animation slots. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy enemy |
 | [BKG text 2.0](bkg.md) | [`Bkrounds/room.bkg`](fixtures/format-fixtures.mjs#L234) | Decode battle background tile grid. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy battle background |

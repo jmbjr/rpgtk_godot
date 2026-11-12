@@ -330,5 +330,70 @@
     "tileCount": 35,
     "expectedAllFramesVisible": true,
     "usage": "Purpose-built high contrast GPH art backing historical TEM diagnosis; not editor-saved source evidence"
+  },
+  "legacyItems": [
+    {
+      "path": "Game/TK2LegacyLab/Item/itm-text-20-embedded.itm",
+      "fixture": "Item/text-20-item.itm",
+      "format": "text",
+      "revision": "2.0",
+      "graphics": "embedded",
+      "version": 0,
+      "expectedName": "Relic",
+      "visualStyle": "diagnostic-v1",
+      "usage": "independent item-editor open/save-copy test; not a placed board item or gameplay item"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Item/itm-text-21-embedded.itm",
+      "fixture": "Item/text-item-0.itm",
+      "format": "text",
+      "revision": "2.1",
+      "graphics": "embedded",
+      "version": 1,
+      "expectedName": "Relic",
+      "visualStyle": "diagnostic-v1",
+      "usage": "independent item-editor open/save-copy test; not a placed board item or gameplay item"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Item/itm-text-21-referenced.itm",
+      "fixture": "Item/text-item-1.itm",
+      "format": "text",
+      "revision": "2.1",
+      "graphics": "referenced",
+      "version": 1,
+      "expectedName": "Relic",
+      "visualStyle": "diagnostic-v1",
+      "usage": "independent item-editor open/save-copy test; not a placed board item or gameplay item"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Item/itm-binary-22.itm",
+      "fixture": "Item/token-2.itm",
+      "format": "binary",
+      "revision": "2.2",
+      "graphics": "referenced",
+      "version": 2,
+      "expectedName": "Relic",
+      "visualStyle": "diagnostic-v1",
+      "usage": "independent item-editor open/save-copy test; not a placed board item or gameplay item"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Item/itm-binary-23.itm",
+      "fixture": "Item/token-3.itm",
+      "format": "binary",
+      "revision": "2.3",
+      "graphics": "referenced",
+      "version": 3,
+      "expectedName": "Relic",
+      "visualStyle": "diagnostic-v1",
+      "usage": "independent item-editor open/save-copy test; not a placed board item or gameplay item"
+    }
+  ],
+  "visualItemKit": {
+    "style": "diagnostic-v1",
+    "source": "docs/specs/fixtures/visual-item-fixtures.mjs",
+    "tileCount": 34,
+    "expectedWalkingFrames": 16,
+    "expectedRestFrames": 1,
+    "usage": "Colorful frame-indexed relics, populated graphics for five ITM revisions; preserves untouched source fixtures"
   }
 }
