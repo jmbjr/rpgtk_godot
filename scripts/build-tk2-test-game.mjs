@@ -6,6 +6,9 @@ import { fixtures as formatFixtures } from "../docs/specs/fixtures/format-fixtur
 import { visualCharacterBytes, visualTileBytes, diagnosticStyle } from "../docs/specs/fixtures/visual-character-fixtures.mjs";
 import { visualItemBytes, visualItemTileBytes, itemDiagnosticStyle } from "../docs/specs/fixtures/visual-item-fixtures.mjs";
 import { visualEnemyBytes, visualEnemyTileBytes, enemyDiagnosticStyle } from "../docs/specs/fixtures/visual-enemy-fixtures.mjs";
+import { extraGphBytes, backgroundGrid, backgroundShading, backgroundBytes,
+  animationFrames, animatedTileBytes, fontGlyphs, fontBytes
+} from "../docs/specs/fixtures/remaining-graphics-fixtures.mjs";
 import { enemySprite, itemSprites, standaloneTilePixels } from "../sprites.mjs";
 import { buildReferences, readArtifacts, tilePixels } from "../artifacts.mjs";
 import { openGameArchive } from "../archive.mjs";
@@ -25,6 +28,14 @@ const legacyItems = manifest.legacyItems ?? [];
 const visualItemKit = manifest.visualItemKit ?? null;
 const legacyEnemies = manifest.legacyEnemies ?? [];
 const visualEnemyKit = manifest.visualEnemyKit ?? null;
+const graphicsCompletion = manifest.graphicsCompletion ?? null;
+const generatedCompletionAssets = graphicsCompletion ? [
+  graphicsCompletion.background, graphicsCompletion.tileAnimation,
+  graphicsCompletion.font, graphicsCompletion.statusEffect,
+] : [];
+const completionBytes = {
+  background: backgroundBytes, animatedTile: animatedTileBytes, font: fontBytes,
+};
 const fixtureByPath = new Map(formatFixtures.map(fixture => [fixture.path, fixture.bytes]));
 const sourceBytes = async specimen => {
   if (specimen.visualStyle) {
@@ -175,6 +186,7 @@ const instructions = [
   ...legacyCharacters.map(character => `TEM ${character.format} ${character.revision} ${character.graphics}: ${character.path} | Diagnostic colors and visible pixels; save a copy`),
   ...legacyItems.map(item => `ITM ${item.format} ${item.revision} ${item.graphics}: ${item.path} | Every walking frame and rest pose should show a colored relic`),
   ...legacyEnemies.map(enemy => `ENE ${enemy.revision} ${enemy.tail}: ${enemy.path} | Distinct 2x2 enemy art; inspect animation tail; save a copy`),
+  ...generatedCompletionAssets.map(asset => `Graphics/combat batch 1: ${asset.path} | Individual editor-open; no runtime claim`),
 ].join("\r\n") + "\r\n";
 
 const zip = new JSZip();
@@ -239,11 +251,29 @@ for (const specimen of [...legacyBoardAssets, ...legacyBoards, ...legacyCharacte
   if (legacyCharacters.includes(specimen)) assert.ok(specimen.path.startsWith(project + "/Chrs/"), specimen.path);
   zip.file(specimen.path, await sourceBytes(specimen), options); // Byte-for-byte controlled specimen.
 }
+if (graphicsCompletion) {
+  const available = graphicsCompletion.graphicTiles;
+  assert.equal(available.length, 6, "Expected two BKG and four TAN art tiles");
+  for (const path of available) {
+    assert.ok(path.startsWith(project + "/Tiles/"), path);
+    const data = extraGphBytes.get(basename(path));
+    assert.ok(data, `${path}: generated GPH missing`);
+    zip.file(path, data, options);
+  }
+  for (const asset of generatedCompletionAssets) {
+    assert.ok(asset.path.startsWith(project + "/"), asset.path);
+    const bytes = asset.generated ? completionBytes[asset.generated] : fixtureByPath.get(asset.fixture);
+    assert.ok(bytes, `${asset.path}: missing completion source`);
+    zip.file(asset.path, bytes, options);
+  }
+}
 for (const specimen of specimens) {
   assert.equal(specimen.type, "gph");
   assert.ok(specimen.path.startsWith(`${project}/Tiles/`), specimen.path);
-  // Preserve the fixture's fields and pixels while using editor-native CRLF.
-  const source = await readFile(new URL(`../${specimen.source}`, import.meta.url));
+  // Preserve checked-in fixtures; generated entries cover two missing raw/RLE combinations.
+  const source = specimen.generated ? extraGphBytes.get(specimen.generated) :
+    await readFile(new URL(`../${specimen.source}`, import.meta.url));
+  assert.ok(source, `${specimen.path}: unknown generated GPH`);
   zip.file(specimen.path, gphWireText(source), options);
 }
 zip.file(readmePath, instructions, options);
@@ -262,7 +292,9 @@ const requiredPaths = [...Object.values(files), ...specimens.map(specimen => spe
   ...legacyItems.map(item => item.path),
   ...(visualItemKit ? [...visualItemTileBytes.keys()].map(tile => `${project}/Tiles/${tile}`) : []),
   ...legacyEnemies.map(enemy => enemy.path),
-  ...(visualEnemyKit ? [...visualEnemyTileBytes.keys()].map(tile => `${project}/Tiles/${tile}`) : [])];
+  ...(visualEnemyKit ? [...visualEnemyTileBytes.keys()].map(tile => `${project}/Tiles/${tile}`) : []),
+  ...generatedCompletionAssets.map(asset => asset.path),
+  ...(graphicsCompletion ? graphicsCompletion.graphicTiles : [])];
 assert.equal(new Set(requiredPaths).size, requiredPaths.length, "Duplicate manifest paths");
 assert.deepEqual([...artifacts.keys()].sort(), [...requiredPaths, readmePath].sort());
 for (const path of requiredPaths) assert.equal(artifacts.get(path).decodeStatus, "decoded", path);
@@ -311,11 +343,13 @@ for (const specimen of specimens) {
   const tile = artifacts.get(specimen.path);
   assert.equal(tile.detail, specimen.detail, specimen.path);
   assert.equal(tile.compressed, specimen.compressed, specimen.path);
-  assert.deepEqual([tile.width, tile.height], [16, 16], specimen.path);
-  assert.equal(tile.pixels.length, 256, specimen.path);
+  const expectedSize = specimen.detail % 2 ? 32 : 16;
+  assert.deepEqual([tile.width, tile.height], [expectedSize, expectedSize], specimen.path);
+  assert.equal(tile.pixels.length, expectedSize * expectedSize, specimen.path);
   assert.equal(tile.pixels[0], -1, "Fixture transparency marker");
   assert.ok(tile.pixels.slice(1).every(Number.isInteger), specimen.path);
-  const source = await readFile(new URL(`../${specimen.source}`, import.meta.url));
+  const source = specimen.generated ? extraGphBytes.get(specimen.generated) :
+    await readFile(new URL(`../${specimen.source}`, import.meta.url));
   const packaged = await opened.file(specimen.path).async("string");
   assert.equal(packaged, gphWireText(source), "Fixture content must change only in line endings");
 }
@@ -380,6 +414,83 @@ for (const boardSpec of legacyBoards) {
       assert.ok(threadEdges.some(edge => edge.value === "absent.prg" && !edge.to),
         `${boardSpec.path}: unresolved thread deliberately preserved`);
     }
+  }
+}
+if (graphicsCompletion) {
+  // Validate the independently inspectable 19x11 BKG, not merely its header.
+  const bgSpec = graphicsCompletion.background;
+  const bg = artifacts.get(bgSpec.path);
+  assert.deepEqual([bg.width, bg.height], [19, 11]);
+  assert.deepEqual(bg.tiles, backgroundGrid);
+  assert.deepEqual(bg.shading, backgroundShading);
+  assert.equal(bg.tiles.length, 209);
+  assert.equal(new Set(bg.tiles).size, 2);
+  assert.equal(bg.audio.Music, "note.mid");
+  assert.equal(bg.audio["Select sound"], "tone.wav");
+  const bgEdges = graph.outgoing.get(bgSpec.path) ?? [];
+  assert.equal(bgEdges.filter(edge => edge.evidence.startsWith("Background tile (") &&
+    edge.to?.startsWith(project + "/Tiles/diag-bkg-")).length, 209,
+    "Every BKG tile placement must resolve");
+  for (const [evidence, destination] of [
+    ["Music", project + "/Media/note.mid"],
+    ["Select sound", project + "/Media/tone.wav"],
+  ]) assert.ok(bgEdges.some(edge => edge.evidence === evidence && edge.to === destination),
+    `${bgSpec.path}: ${evidence} reference`);
+
+  // TAN frames reference four different, readily recognizable raw GPH files.
+  const tanSpec = graphicsCompletion.tileAnimation;
+  const tan = artifacts.get(tanSpec.path);
+  assert.equal(tan.speed, 8);
+  assert.equal(tan.refs.length, 4);
+  assert.deepEqual(tan.refs.map(ref => ref.value), animationFrames);
+  assert.deepEqual((graph.outgoing.get(tanSpec.path) ?? []).map(edge => edge.to),
+    animationFrames.map(frame => project + "/Tiles/" + frame));
+
+  // Every one of 256 font glyph records is retained, not a sparse placeholder.
+  const fntSpec = graphicsCompletion.font;
+  const font = artifacts.get(fntSpec.path);
+  assert.deepEqual([font.width, font.height], [8, 8]);
+  assert.deepEqual(font.glyphs, fontGlyphs);
+  assert.equal(font.glyphs.length, 256);
+  assert.deepEqual(font.glyphs[65], [24, 36, 66, 126, 66, 66, 66, 0]);
+  assert.ok(font.glyphs.filter(glyph => glyph.some(Boolean)).length > 200);
+
+  // STE text 2.0 is distinct from the already-packaged binary 2.2 slow.ste.
+  const steSpec = graphicsCompletion.statusEffect;
+  const ste = artifacts.get(steSpec.path);
+  assert.deepEqual([ste.version, ste.name, ste.rounds, ste.hpAmount],
+    [0, "Old effect", 3, -50]);
+  assert.deepEqual([ste.speed, ste.slow, ste.disable, ste.removeHp, ste.removeSmp],
+    [true, false, true, true, true]);
+  const steEdges = graph.outgoing.get(steSpec.path) ?? [];
+  assert.ok(steEdges.some(edge => edge.to === files.startup), "STE source program reference");
+
+  // Preserve the existing linked special move and effect animation as separate
+  // coverage entries; do not claim they are combat runtime-tested.
+  const spc = project + "/SpcMove/pulse.spc";
+  const spcEdges = graph.outgoing.get(spc) ?? [];
+  for (const target of [files.startup, project + "/StatusE/slow.ste",
+    project + "/Misc/effect.anm"]) {
+    assert.ok(spcEdges.some(edge => edge.to === target), `${spc}: ${target}`);
+  }
+  const anm = project + "/Misc/effect.anm";
+  const anmEdges = graph.outgoing.get(anm) ?? [];
+  for (const target of [project + "/Bitmap/face.gif", project + "/Media/tone.wav"])
+    assert.ok(anmEdges.some(edge => edge.to === target), `${anm}: ${target}`);
+
+  for (const asset of generatedCompletionAssets) {
+    const source = asset.generated ? completionBytes[asset.generated] : fixtureByPath.get(asset.fixture);
+    assert.deepEqual(Buffer.from(await opened.file(asset.path).async("uint8array")),
+      source, `${asset.path}: generated/source bytes`);
+  }
+  for (const path of graphicsCompletion.graphicTiles) {
+    const data = extraGphBytes.get(basename(path));
+    assert.deepEqual(Buffer.from(await opened.file(path).async("uint8array")), data, path);
+    const tile = artifacts.get(path);
+    assert.deepEqual([tile.width, tile.height, tile.detail, tile.compressed], [32, 32, 1, false]);
+    assert.equal(tile.pixels.length, 1024);
+    assert.equal(tile.pixels[0], -1);
+    assert.ok(tile.pixels.filter(value => value !== -1).length > 500, path);
   }
 }
 const expectedCharacterDependencies = {
@@ -545,4 +656,4 @@ assert.ok(artifacts.get(files.player).walking.length === 16);
 const output = process.argv[2] ?? "dist/tk2-test-game.zip";
 await mkdir(dirname(output), { recursive: true });
 await writeFile(output, bytes);
-console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards; ${legacyBoards.length} historical boards; ${legacyCharacters.length} historical TEM profiles; ${visualSpriteKit ? visualTileBytes.size : 0} TEM diagnostic GPHs; ${legacyItems.length} historical ITMs; ${visualItemKit ? visualItemTileBytes.size : 0} ITM diagnostic GPHs; ${legacyEnemies.length} ENE variants; ${visualEnemyKit ? visualEnemyTileBytes.size : 0} ENE diagnostic GPHs.`);
+console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards; ${legacyBoards.length} historical boards; ${legacyCharacters.length} historical TEM profiles; ${visualSpriteKit ? visualTileBytes.size : 0} TEM diagnostic GPHs; ${legacyItems.length} historical ITMs; ${visualItemKit ? visualItemTileBytes.size : 0} ITM diagnostic GPHs; ${legacyEnemies.length} ENE variants; ${visualEnemyKit ? visualEnemyTileBytes.size : 0} ENE diagnostic GPHs; ${generatedCompletionAssets.length} graphics/combat completion assets and ${graphicsCompletion ? graphicsCompletion.graphicTiles.length : 0} supporting GPH tiles.`);
