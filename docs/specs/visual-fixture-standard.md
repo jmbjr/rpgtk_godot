@@ -26,6 +26,30 @@ Referenced walking art separates the head/top and uniform/bottom into two vertic
 
 Actions use large bright emblems and a small white frame counter; the four action categories use different accent colors. The ten Custom slots have distinct dot counts. Referenced walking frames 1–4 intentionally reuse their direction's top/bottom artwork; the goal is to test the file references, not run animation. Source geometry still varies by format: text 2.1 referenced battle/rest = 32 × 64; text 2.2 and binary 2.3/2.4 referenced battle/rest = 64 × 64; embedded art = 32 × 32.
 
+## Item diagnostics (same visual contract)
+
+The five [legacy ITM test editions](../../experiments/tk2-legacy-game/manifest.json)
+use the same diagnostic-v1 transparent outer pixel, dark opaque background,
+asymmetric white corner marks and four direction colors as the TEMs.
+Unlike character faces, each item is a **pink diamond-shaped relic** with
+a bright glint; it should never be mistaken for a humanoid sprite.
+
+Each of the 16 walking frames must show an opaque relic, with a shifting
+diamond center and an increasingly long white frame marker for frames 1–4.
+The same direction has four visually **different** frames. The Rest tile
+has a teal border. Text 2.0/2.1 embedded variants store one 32×32 frame
+per walking slot and Rest. Text 2.1 referenced and binary 2.2/2.3
+variants resolve **two GPH sources per slot**, displayed as a taller
+32×64 composition. The 34 generated GPHs consist of 32 direction/frame
+top/bottom parts plus two Rest parts.
+
+A completely blank graphic, repeated frame, unresolved GPH, opaque outer
+corner or wrong item geometry is **a test failure** for these diagnostic
+editions. The older sparse source fixtures and the separate
+`Item/token-2.itm` historical board dependency *are not* visual
+acceptance specimens and may intentionally contain empty frames.
+Desktop editor open/save and gameplay results remain unverified.
+
 ## Acceptance checklist
 
 | Inspect | Expected | Fail condition |
