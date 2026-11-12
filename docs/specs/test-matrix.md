@@ -65,6 +65,16 @@ overwritten. [Visual contract](visual-fixture-standard.md) ·
 [Legacy item checklist](../../experiments/tk2-legacy-game/README.md).
 Desktop/editor and runtime acceptance are **pending**.
 
+The following ENE coverage slice contains **two synthetic text 2.0
+diagnostic editions**: short sound-only tail and the extended four-animation
+tail. Both display a distinct 2×2 enemy from eight checked diagnostic
+GPH quadrants; the extended specimen resolves all four animation slots
+to an existing ANM. The source conformance fixtures remain unmodified.
+[Visual standard](visual-fixture-standard.md) ·
+[Legacy enemy checklist](../../experiments/tk2-legacy-game/README.md).
+Viewer decoding and reference integrity are checked in CI; desktop
+editor and runtime results remain **pending**.
+
 Each archive has one active GAM. Use separate ZIPs with the same project assets
 for alternate GAM layouts. Establish the latest Toolkit 2 release and its
 actual writer output before selecting formats for the latest game.
@@ -99,8 +109,8 @@ actual writer output before selecting formats for the latest game.
 | [ITM text 2.1 referenced](itm.md) | [`Item/text-item-1.itm`](fixtures/format-fixtures.mjs#L200) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy ITM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Item/itm-text-21-referenced.itm` · [diagnostic-v1 expected visuals](visual-fixture-standard.md); standalone editor-open, not runtime-tested |
 | [ITM binary 2.2](itm.md) | [`Item/token-2.itm`](fixtures/format-fixtures.mjs#L184) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy ITM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Item/itm-binary-22.itm` · [diagnostic-v1 expected visuals](visual-fixture-standard.md); standalone editor-open, not runtime-tested |
 | [ITM binary 2.3](itm.md) | [`Item/token-3.itm`](fixtures/format-fixtures.mjs#L184) | Decode item fields and graphics. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy ITM manifest](../../experiments/tk2-legacy-game/manifest.json) · `Item/itm-binary-23.itm` · [diagnostic-v1 expected visuals](visual-fixture-standard.md); standalone editor-open, not runtime-tested |
-| [ENE text 2.0 short tail](ene.md) | [`Enemy/foe.ene`](fixtures/format-fixtures.mjs#L230) | Decode enemy without animation slots. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy enemy |
-| [ENE text 2.0 animation tail](ene.md) | [`Enemy/animated.ene`](fixtures/format-fixtures.mjs#L231) | Decode enemy and animation slots. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy enemy |
+| [ENE text 2.0 short tail](ene.md) | [`Enemy/foe.ene`](fixtures/format-fixtures.mjs#L230) | Decode enemy without animation slots. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy ENE manifest](../../experiments/tk2-legacy-game/manifest.json) · `Enemy/ene-text-20-short.ene` · [diagnostic-v1 expectations](visual-fixture-standard.md); standalone editor-open and 2×2 visual check, not runtime-tested |
+| [ENE text 2.0 animation tail](ene.md) | [`Enemy/animated.ene`](fixtures/format-fixtures.mjs#L231) | Decode enemy and animation slots. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy ENE manifest](../../experiments/tk2-legacy-game/manifest.json) · `Enemy/ene-text-20-animated.ene` · [diagnostic-v1 expectations](visual-fixture-standard.md); standalone editor-open and 2×2 visual check, not runtime-tested |
 | [BKG text 2.0](bkg.md) | [`Bkrounds/room.bkg`](fixtures/format-fixtures.mjs#L234) | Decode battle background tile grid. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy battle background |
 | [SPC text 2.0](spc.md) | [`SpcMove/pulse.spc`](fixtures/format-fixtures.mjs#L240) | Decode move and preserve use flags. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy special move |
 | [STE text 2.0](ste.md) | [`StatusE/text-ste.ste`](fixtures/format-fixtures.mjs#L248) | Decode flags, amounts, and program. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy status effect |
