@@ -59,7 +59,7 @@ reconstruction. [Fixture index](fixtures/README.md)
 | --- | --- | --- | --- |
 | GPH | [Standalone tile](gph.md) | Text 2.0, details 1–6, raw or run-length encoded | Demo detail 1 RLE; pinned palette table and raw/RLE fixtures for all details. |
 | TST | [Tileset](tst.md) | Binary version 20, details 1–6 | Demo detail 1; native-size RGB/palette fixtures and pinned compatibility source. |
-| GAM | [Main File](gam.md) | Binary 2.2 and text 2.0 startup fields | Demo.gam and DustBall main.gam |
+| GAM | [Main File](gam.md) | Toolkit 2 text 2.0 / binary 2.2, plus Toolkit 3 binary 2.9 startup prefix | Demo.gam, DustBall main.gam, pinned Toolkit 3 reader, BSTW issue #79 inventory, synthetic 2.9 fixture |
 | PRG | [RPGCode program](prg.md) | Source and static indexing | Demo startup trace and Toolkit 2 Help |
 | TAN | [Animated tile](tan.md) | Binary 2.0 | Demo animation files |
 | TEM | [Character](tem.md) | Text 2.0/2.1/2.2 and binary 2.3/2.4, walking/battle/rest/custom art | DustBall, Demo and Cluetest characters, compatibility reader and synthetic fixtures |
@@ -134,6 +134,9 @@ nonzero. Unless stated otherwise, parsers reject truncation and unexpected
 headers. A read boundary in a partial format leaves later bytes uninterpreted.
 
 ## Source revision metadata and inspector links
+
+The Toolkit 3 binary GAM 2.9 startup prefix is separately supported as a
+partial reader (issue #80); this does not extend BRD/TEM decoding to Toolkit 3.
 
 Records may include `sourceFormat` alongside the existing envelope: `encoding`
 (`text`, `binary`, `source`, `unknown`), nullable string `version`, boolean
