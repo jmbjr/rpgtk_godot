@@ -7,7 +7,7 @@ const signatures = {
   fnt: ["RPGTLKIT FONT"], gph: ["RPGTLKIT TILE"], tan: ["RPGTLKIT TILEANIM"],
 };
 const revisions = {
-  gam: { text: ["2.0"], binary: ["2.2"] }, tem: { text: ["2.0", "2.1", "2.2"], binary: ["2.3", "2.4"] },
+  gam: { text: ["2.0"], binary: ["2.2", "2.9"] }, tem: { text: ["2.0", "2.1", "2.2"], binary: ["2.3", "2.4"] },
   brd: { text: ["2.0", "2.1"], binary: ["2.2", "2.3"] }, itm: { text: ["2.0", "2.1"], binary: ["2.2", "2.3"] },
   ste: { text: ["2.0"], binary: ["2.2"] }, tan: { binary: ["2.0"] },
 };
@@ -55,7 +55,7 @@ export function detectSourceFormat(type, bytes) {
 }
 
 export function mainSourceFormat(file) {
-  return file.sourceFormat ?? { encoding: file.minor === 0 ? "text" : "binary", version: `${file.major}.${file.minor}`, supported: file.major === 2 && [0, 2].includes(file.minor) };
+  return file.sourceFormat ?? { encoding: file.minor === 0 ? "text" : "binary", version: `${file.major}.${file.minor}`, supported: file.major === 2 && [0, 2, 9].includes(file.minor) };
 }
 
 export const isTileFormat = type => type === "tst" || type === "gph";

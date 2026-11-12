@@ -224,7 +224,7 @@
       "properties": {
         "byteLength": {"type": "integer", "minimum": 0},
         "major": {"const": 2},
-        "minor": {"enum": [0, 2]},
+        "minor": {"enum": [0, 2, 9]},
         "startup": {"type": "string"},
         "board": {"type": "string"},
         "character": {"type": "string"},

@@ -57,6 +57,7 @@ jobs:
           node scripts/check-tile-specs.mjs
           node scripts/check-format-specs.mjs
           node scripts/check-asset-formats.mjs
+          node scripts/check-bstw-gam-29.mjs
           node scripts/check-companion-media.mjs
           node scripts/check-character-board-details.mjs
           node scripts/check-visual-diagnostics.mjs

@@ -34,12 +34,16 @@ export function readMainFile(bytes) {
   if (string() !== "RPGTLKIT MAIN") throw new Error("This file does not have a Toolkit Main File signature.");
   const major = integer();
   const minor = integer();
-  if (major !== 2 || minor !== 2) throw new Error(`Main File format ${major}.${minor} is outside this viewer’s supported format 2.2.`);
+  if (major !== 2 || ![2, 9].includes(minor)) {
+    throw new Error(`Main File format ${major}.${minor} is outside this viewer’s supported binary formats 2.2 and 2.9.`);
+  }
   integer();
   string();
   const projectPath = string();
   const title = string();
-  for (let i = 0; i < 5; i++) integer();
+  // 2.2 includes a legacy parallax i16 before registration protection.
+  // Toolkit 3 GAM 2.9 omits it: reading five values shifts every link.
+  for (let i = 0; i < (minor < 3 ? 5 : 4); i++) integer();
   const language = string();
   return { major, minor, projectPath, title, language, startup: string(), board: string(), character: string() };
 }
