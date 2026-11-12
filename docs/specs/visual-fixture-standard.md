@@ -50,6 +50,28 @@ editions. The older sparse source fixtures and the separate
 acceptance specimens and may intentionally contain empty frames.
 Desktop editor open/save and gameplay results remain unverified.
 
+## Enemy diagnostics (same visual contract)
+
+The two [legacy ENE test editions](../../experiments/tk2-legacy-game/manifest.json)
+exercise the **short** and **four-animation-slot** tails of the same
+text 2.0 format. Both render as a complete 64×64 enemy made from four
+unique 32×32 GPH parts placed in a **2×2 sprite** using ENE's
+`x * 7 + y` tile-grid index, with the other 129 grid slots empty.
+
+The **coral short-tail monster** has asymmetric horns, eyes, a scar and a
+mouth. The **violet extended-tail monster** has different markings and
+a crown. Both retain transparent outer corners and opaque interior.
+The color difference makes variant selection obvious, while the asymmetry
+makes swapped, mirrored or missing tile quadrants apparent.
+
+Every GPH part must resolve, the four composed quadrants must be visible,
+and the short-tail enemy must have **zero animation fields**. The
+extended-tail variant must have the **four named animation fields**:
+Attack, Defense, Special move, Defeat, all linked to `effect.anm`.
+This tests serialization and graph references, *not the behavior of a
+played animation*. The existing format-conformance ENE fixtures remain
+unchanged and distinct from these diagnostic editions.
+
 ## Acceptance checklist
 
 | Inspect | Expected | Fail condition |

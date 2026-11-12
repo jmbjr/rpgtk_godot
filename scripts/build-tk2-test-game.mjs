@@ -5,7 +5,8 @@ import JSZip from "../vendor/jszip.min.js";
 import { fixtures as formatFixtures } from "../docs/specs/fixtures/format-fixtures.mjs";
 import { visualCharacterBytes, visualTileBytes, diagnosticStyle } from "../docs/specs/fixtures/visual-character-fixtures.mjs";
 import { visualItemBytes, visualItemTileBytes, itemDiagnosticStyle } from "../docs/specs/fixtures/visual-item-fixtures.mjs";
-import { itemSprites, standaloneTilePixels } from "../sprites.mjs";
+import { visualEnemyBytes, visualEnemyTileBytes, enemyDiagnosticStyle } from "../docs/specs/fixtures/visual-enemy-fixtures.mjs";
+import { enemySprite, itemSprites, standaloneTilePixels } from "../sprites.mjs";
 import { buildReferences, readArtifacts, tilePixels } from "../artifacts.mjs";
 import { openGameArchive } from "../archive.mjs";
 import { mainFileBindings } from "../model.mjs";
@@ -22,6 +23,8 @@ const legacyCharacterAssets = manifest.legacyCharacterAssets ?? [];
 const visualSpriteKit = manifest.visualSpriteKit ?? null;
 const legacyItems = manifest.legacyItems ?? [];
 const visualItemKit = manifest.visualItemKit ?? null;
+const legacyEnemies = manifest.legacyEnemies ?? [];
+const visualEnemyKit = manifest.visualEnemyKit ?? null;
 const fixtureByPath = new Map(formatFixtures.map(fixture => [fixture.path, fixture.bytes]));
 const sourceBytes = async specimen => {
   if (specimen.visualStyle) {
@@ -171,6 +174,7 @@ const instructions = [
   ] : []),
   ...legacyCharacters.map(character => `TEM ${character.format} ${character.revision} ${character.graphics}: ${character.path} | Diagnostic colors and visible pixels; save a copy`),
   ...legacyItems.map(item => `ITM ${item.format} ${item.revision} ${item.graphics}: ${item.path} | Every walking frame and rest pose should show a colored relic`),
+  ...legacyEnemies.map(enemy => `ENE ${enemy.revision} ${enemy.tail}: ${enemy.path} | Distinct 2x2 enemy art; inspect animation tail; save a copy`),
 ].join("\r\n") + "\r\n";
 
 const zip = new JSZip();
@@ -215,6 +219,20 @@ if (visualItemKit) {
     zip.file(item.path, bytes, options);
   }
 }
+if (visualEnemyKit) {
+  assert.equal(visualEnemyKit.style, enemyDiagnosticStyle.id);
+  assert.equal(visualEnemyKit.tileCount, visualEnemyTileBytes.size);
+  assert.equal(legacyEnemies.length, enemyDiagnosticStyle.count);
+  for (const [name, bytes] of visualEnemyTileBytes) zip.file(`${project}/Tiles/${name}`, bytes, options);
+  for (const enemy of legacyEnemies) {
+    assert.equal(enemy.visualStyle, enemyDiagnosticStyle.id);
+    assert.ok(enemy.path.startsWith(project + "/Enemy/") && enemy.path.endsWith(".ene"), enemy.path);
+    assert.ok(fixtureByPath.has(enemy.fixture), `${enemy.path}: source evidence missing`);
+    const bytes = visualEnemyBytes.get(enemy.fixture);
+    assert.ok(bytes, `${enemy.path}: generated specimen missing`);
+    zip.file(enemy.path, bytes, options);
+  }
+}
 for (const specimen of [...legacyBoardAssets, ...legacyBoards, ...legacyCharacterAssets, ...legacyCharacters]) {
   assert.ok(specimen.path.startsWith(project + "/"), specimen.path);
   if (legacyBoards.includes(specimen)) assert.ok(specimen.path.startsWith(project + "/Boards/"), specimen.path);
@@ -242,7 +260,9 @@ const requiredPaths = [...Object.values(files), ...specimens.map(specimen => spe
   ...legacyCharacterAssets.map(asset => asset.path),
   ...(visualSpriteKit ? [...visualTileBytes.keys()].map(tile => `${project}/Tiles/${tile}`) : []),
   ...legacyItems.map(item => item.path),
-  ...(visualItemKit ? [...visualItemTileBytes.keys()].map(tile => `${project}/Tiles/${tile}`) : [])];
+  ...(visualItemKit ? [...visualItemTileBytes.keys()].map(tile => `${project}/Tiles/${tile}`) : []),
+  ...legacyEnemies.map(enemy => enemy.path),
+  ...(visualEnemyKit ? [...visualEnemyTileBytes.keys()].map(tile => `${project}/Tiles/${tile}`) : [])];
 assert.equal(new Set(requiredPaths).size, requiredPaths.length, "Duplicate manifest paths");
 assert.deepEqual([...artifacts.keys()].sort(), [...requiredPaths, readmePath].sort());
 for (const path of requiredPaths) assert.equal(artifacts.get(path).decodeStatus, "decoded", path);
@@ -271,6 +291,20 @@ if (visualItemKit) {
     const rgba = standaloneTilePixels(tile);
     assert.deepEqual([...rgba.slice(0, 4)], [0, 0, 0, 0], path);
     assert.equal(rgba[(16 * 32 + 16) * 4 + 3], 255, path);
+  }
+}
+if (visualEnemyKit) {
+  for (const [name, raw] of visualEnemyTileBytes) {
+    const path = `${project}/Tiles/${name}`;
+    assert.deepEqual(Buffer.from(await opened.file(path).async("uint8array")), raw, path);
+    const tile = artifacts.get(path);
+    assert.deepEqual([tile.width, tile.height, tile.detail, tile.compressed],
+      [32, 32, 1, false], path);
+    assert.equal(tile.pixels.length, 1024, path);
+    assert.ok(tile.pixels.includes(-1), `${path}: transparent margin expected`);
+    assert.ok(tile.pixels.filter(pixel => pixel !== -1).length > 500,
+      `${path}: mostly nonblank enemy quadrant expected`);
+    assert.notEqual(tile.pixels[16 * 32 + 16], -1, `${path}: nontransparent center`);
   }
 }
 for (const specimen of specimens) {
@@ -447,6 +481,52 @@ for (const itemSpec of legacyItems) {
       `${itemSpec.path}: 32 walking and 2 rest source references must resolve`);
   }
 }
+for (const enemySpec of legacyEnemies) {
+  const fixture = visualEnemyBytes.get(enemySpec.fixture);
+  assert.deepEqual(Buffer.from(await opened.file(enemySpec.path).async("uint8array")),
+    fixture, enemySpec.path);
+  const enemy = artifacts.get(enemySpec.path);
+  assert.equal(enemy.name, enemySpec.expectedName, enemySpec.path);
+  assert.deepEqual([enemy.width, enemy.height, enemy.tileStride], [2, 2, 7], enemySpec.path);
+  assert.deepEqual(enemy.stats, { HP: 14, "Special power": 5, Fight: 4, Defense: 3 });
+  assert.equal(enemy.tiles.length, 133, enemySpec.path);
+  const prefix = enemySpec.expectedAnimations === 4 ? "animated" : "short";
+  const expected = Array.from({ length: 2 }, (_, x) =>
+    Array.from({ length: 2 }, (_, y) => `diag-enemy-${prefix}-${x}-${y}.gph`));
+  for (let x = 0; x < 2; x++) for (let y = 0; y < 2; y++)
+    assert.equal(enemy.tiles[x * 7 + y], expected[x][y], `${enemySpec.path}: quadrant x=${x} y=${y}`);
+  assert.equal(enemy.tiles.filter(Boolean).length, 4, enemySpec.path);
+  const frame = enemySprite(enemy, artifacts, graph);
+  assert.ok(frame, `${enemySpec.path}: enemy sprite must render`);
+  assert.deepEqual([frame.width, frame.height], [64, 64]);
+  assert.deepEqual(frame.missing, [], `${enemySpec.path}: all quadrants must resolve`);
+  const alpha = (x, y) => frame.pixels[(y * frame.width + x) * 4 + 3];
+  assert.equal(alpha(0, 0), 0, `${enemySpec.path}: transparent outer corner`);
+  assert.equal(alpha(63, 63), 0, `${enemySpec.path}: transparent opposite corner`);
+  for (const [x, y] of [[16, 16], [16, 48], [48, 16], [48, 48]])
+    assert.equal(alpha(x, y), 255, `${enemySpec.path}: quadrant ${x},${y} must be visible`);
+  const edges = graph.outgoing.get(enemySpec.path) ?? [];
+  assert.equal(edges.filter(edge => edge.evidence.startsWith("Enemy tile · slot") &&
+    edge.to?.startsWith(`${project}/Tiles/diag-enemy-`)).length, 4,
+    `${enemySpec.path}: four graphic references must resolve`);
+  for (const [label, destination] of [
+    ["Victory program", files.startup], ["Attack sound", `${project}/Media/tone.wav`],
+    ["Special move · slot 1", `${project}/SpcMove/pulse.spc`],
+  ]) assert.ok(edges.some(edge => edge.evidence === label && edge.to === destination),
+    `${enemySpec.path}: missing ${label} reference`);
+  assert.equal(Object.keys(enemy.animations).length, enemySpec.expectedAnimations,
+    `${enemySpec.path}: optional animation-tail shape`);
+  const actions = ["Attack", "Defense", "Special move", "Defeat"];
+  const animationEdges = edges.filter(edge => edge.evidence.endsWith(" animation"));
+  assert.equal(animationEdges.length, enemySpec.expectedAnimations, enemySpec.path);
+  if (enemySpec.expectedAnimations) for (const action of actions) {
+    assert.equal(enemy.animations[action], "effect.anm");
+    assert.ok(animationEdges.some(edge => edge.evidence === `${action} animation` &&
+      edge.to === `${project}/Misc/effect.anm`), `${enemySpec.path}: ${action} animation must resolve`);
+  } else {
+    assert.deepEqual(enemy.animations, {}, `${enemySpec.path}: short tail must have no animation fields`);
+  }
+}
 for (const path of [files.board, files.player]) {
   const edges = graph.outgoing.get(path);
   assert.equal(edges.length, path === files.board ? 6 : 16);
@@ -465,4 +545,4 @@ assert.ok(artifacts.get(files.player).walking.length === 16);
 const output = process.argv[2] ?? "dist/tk2-test-game.zip";
 await mkdir(dirname(output), { recursive: true });
 await writeFile(output, bytes);
-console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards; ${legacyBoards.length} historical boards; ${legacyCharacters.length} historical TEM profiles; ${visualSpriteKit ? visualTileBytes.size : 0} TEM diagnostic GPHs; ${legacyItems.length} historical ITMs; ${visualItemKit ? visualItemTileBytes.size : 0} ITM diagnostic GPHs.`);
+console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards; ${legacyBoards.length} historical boards; ${legacyCharacters.length} historical TEM profiles; ${visualSpriteKit ? visualTileBytes.size : 0} TEM diagnostic GPHs; ${legacyItems.length} historical ITMs; ${visualItemKit ? visualItemTileBytes.size : 0} ITM diagnostic GPHs; ${legacyEnemies.length} ENE variants; ${visualEnemyKit ? visualEnemyTileBytes.size : 0} ENE diagnostic GPHs.`);
