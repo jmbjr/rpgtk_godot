@@ -57,6 +57,7 @@ jobs:
           node scripts/check-tile-specs.mjs
           node scripts/check-format-specs.mjs
           node scripts/check-asset-formats.mjs
+          node scripts/check-companion-media.mjs
           node scripts/check-character-board-details.mjs
           node scripts/check-visual-diagnostics.mjs
           node scripts/check-tile-matches.mjs
@@ -76,6 +77,15 @@ jobs:
         run: |
           node scripts/build-tk2-test-game.mjs site/tk2-test-game.zip
           node scripts/build-tk2-test-game.mjs site/tk2-legacy-game.zip --legacy
+      - name: Build and verify synthetic CMP1 wrapper
+        run: node scripts/build-tk2-installer-fixture.mjs site/tk2-legacy-game.zip dist/tk2-legacy-cmp1-test-wrapper.zip
+      - name: Upload synthetic CMP1 wrapper for PR review
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tk2-legacy-cmp1-wrapper
+          path: dist/tk2-legacy-cmp1-test-wrapper.zip
+          if-no-files-found: error
       - name: Upload test game for PR review
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
