@@ -22,7 +22,7 @@
       "status": "included-viewer-checked",
       "archive": "legacy",
       "paths": [
-        "Game/TK2LegacyLab/Main/TK2LegacyLab.gam"
+        "Main/TK2LegacyLab.gam"
       ],
       "desktop": "pending"
     },
