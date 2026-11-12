@@ -1,10 +1,45 @@
 # Toolkit 2 Legacy Test Lab · incremental format coverage
 
-This is the growing legacy coverage game for [issue #63](https://github.com/jmbjr/rpgtk_godot/issues/63), not yet an all-variants project. It keeps the verified minimal room from TK2TestLab under a **different project name**. The first slice included four standalone 16 × 16 GPH samples (modes 4 and 6, raw and RLE). The second included TST format 20 modes 2–6 and a separate binary BRD 2.2 gallery for each mode. The third adds historical BRD text 2.0/2.1 and binary 2.3 board specimens. The fourth adds seven distinct TEM character-format variants spanning text 2.0–2.2 and binary 2.3–2.4.
+This is the growing legacy coverage game for [issue #63](https://github.com/jmbjr/rpgtk_godot/issues/63), not yet an all-variants project. It keeps the verified minimal room from TK2TestLab under a **different project name**. The first slice included four standalone 16 × 16 GPH samples (modes 4 and 6, raw and RLE). The second included TST format 20 modes 2–6 and a separate binary BRD 2.2 gallery for each mode. The third adds historical BRD text 2.0/2.1 and binary 2.3 board specimens. The fourth adds seven distinct TEM character-format variants spanning text 2.0–2.2 and binary 2.3–2.4. The fifth adds five visibly diagnostic ITM item layouts (text 2.0/2.1 and binary 2.2/2.3).
 
 ## Install and baseline smoke test
 
 Extract `tk2-legacy-game.zip` into the directory containing the existing Toolkit 2 `Main` and `Game` folders. In RPG Toolkit Development System 2.2, open `Main/TK2LegacyLab.gam`. Run the startup message, dismiss it, walk in all four directions, and test the central blocking tile. The game uses **Default Resolution**, not Set Resolution; no full-screen mode is selected.
+
+## Test historical ITM text 2.0/2.1 and binary 2.2/2.3 items
+
+The five `Item/itm-*.itm` specimens are **generated diagnostic editions**
+of the [original format fixtures](../../docs/specs/fixtures/format-fixtures.mjs);
+those original sparse or absent-frame fixtures remain unchanged. Their artwork
+comes from the [visual-item-fixtures generator](../../docs/specs/fixtures/visual-item-fixtures.mjs).
+Unlike the sparse reference `Item/token-2.itm` already included for the older
+board tests, **all five `itm-*` test items are deliberately filled**.
+
+| Item under `Game/TK2LegacyLab/Item/` | Stored ITM revision | Expected visual |
+| --- | --- | --- |
+| `itm-text-20-embedded.itm` | Text 2.0 embedded | 16 vivid 32×32 walking relics + 1 Rest |
+| `itm-text-21-embedded.itm` | Text 2.1 embedded | Same complete embedded graphics, explicit size mode |
+| `itm-text-21-referenced.itm` | Text 2.1 referenced | 16 32×64 top/bottom GPH pairs + 1 Rest pair |
+| `itm-binary-22.itm` | Binary 2.2 referenced | 16 GPH pairs + Rest; i16 numeric fields |
+| `itm-binary-23.itm` | Binary 2.3 referenced | 16 GPH pairs + Rest; i32 numeric fields |
+
+Each frame is a diamond-shaped pink **relic**, with a different direction
+accent (South green, East orange, North blue, West violet), a dark opaque field,
+white registration corners and a transparent outer margin. A small frame
+marker and a shifting diamond distinguish frames 1–4. Rest is teal. The
+referenced forms are deliberately taller due to the two stacked 32×32
+GPH halves. The [diagnostic-v1 contract](../../docs/specs/visual-fixture-standard.md)
+documents the exact pass/fail signals.
+
+To test: open the new legacy ZIP in Game Explorer. In the **Item** folder,
+select each `itm-*` file, not the older `token-2.itm` dependency, and
+inspect all 16 walking slots plus Rest. **None should be blank or missing**.
+Verify the embedded-versus-referenced graphics modes and that the walking
+frames show four different positions per direction. Then open each ITM
+**individually in Toolkit 2's item editor**, inspect it, save a *copy* and
+reopen the copy. Record its editor release and any conversion or rejection.
+These items are **not assigned to gameplay or placed on a board**; editor
+open/save and runtime acceptance remain unverified.
 
 ## Test historical TEM text 2.0–2.2 and binary 2.3–2.4 characters
 
@@ -108,4 +143,4 @@ The [manifest](manifest.json) lists exact ZIP locations, source fixture paths, m
 node scripts/build-tk2-test-game.mjs dist/tk2-legacy-game.zip --legacy
 ```
 
-The generator normalizes the checked-in GPH text fixtures to CRLF, preserving their decoded values; checks each GPH's declared mode/compression; copies the TST binary fixtures *byte-for-byte*; builds the five gallery boards and validates both tile-reference edges for each; copies four historical board fixtures and their reference targets without byte changes; validates board dimensions, tile references and thread slots; packages seven generated historical TEM visual diagnostic editions and their 35 GPH tiles; checks character revisions, walking/artwork geometry, transparent and opaque pixel signatures, resolved tile references and shared support assets; and checks the full ZIP inventory plus original baseline project bindings. The source-only format fixtures remain separately unmodified. CI uploads this ZIP separately from the unchanged `tk2-test-game.zip` baseline.
+The generator normalizes the checked-in GPH text fixtures to CRLF, preserving their decoded values; checks each GPH's declared mode/compression; copies the TST binary fixtures *byte-for-byte*; builds the five gallery boards and validates both tile-reference edges for each; copies four historical board fixtures and their reference targets without byte changes; validates board dimensions, tile references and thread slots; packages seven generated historical TEM visual diagnostic editions and their 35 GPH tiles; checks character revisions, walking/artwork geometry, transparent and opaque pixel signatures, resolved tile references and shared support assets; adds five synthetic diagnostic ITM files and 34 distinguishable item GPHs with pixel, rendering, and reference checks; and checks the full ZIP inventory plus original baseline project bindings. The source-only format fixtures remain separately unmodified. CI uploads this ZIP separately from the unchanged `tk2-test-game.zip` baseline.
