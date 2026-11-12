@@ -85,6 +85,19 @@ receive additional explicit static-reference checks. **Desktop editor and
 runtime acceptance are intentionally deferred**, and old source fixtures
 are preserved independently of synthetic diagnostic editions.
 
+The packaging/media batch adds five matrix routes. The legacy game ZIP
+contains a **partial** temporary `.___` scratch shape, synthetic **header-only**
+JPEG SOF and CFB DOC metadata samples, plus two **fully renderable** RGB
+16×16 diagnostic images in PNG and BMP. A **separate** viewer-only synthetic
+CMP1 test ZIP contains an inert MZ-prefixed payload (not an executable
+installer); CI checks that opening the CMP1 wrapper restores every original
+game file byte-for-byte. This evidence does **not** establish historical
+editor/runtime validity or complete JPEG/DOC rendering.
+[Companion-media fixture generator](fixtures/companion-media-fixtures.mjs) ·
+[CMP1 round-trip test](../../scripts/build-tk2-installer-fixture.mjs) ·
+[legacy checklist](../../experiments/tk2-legacy-game/README.md).
+Desktop/editor acceptance remains **pending**.
+
 Each archive has one active GAM. Use separate ZIPs with the same project assets
 for alternate GAM layouts. Establish the latest Toolkit 2 release and its
 actual writer output before selecting formats for the latest game.
@@ -156,16 +169,16 @@ actual writer output before selecting formats for the latest game.
 
 | Type and variant | Repository evidence | Viewer | Desktop open / save / run | Test route |
 | --- | --- | --- | --- | --- |
-| [Temporary board scratch text (.___)](temporary-board.md) | [`Boards/temp.___`](fixtures/format-fixtures.mjs#L261) | Partial observed Demo shape. [Check](../../scripts/check-format-specs.mjs) | Pending | Legacy scratch sample |
+| [Temporary board scratch text (.___)](temporary-board.md) | [`Boards/temp.___`](fixtures/format-fixtures.mjs#L261) | Partial observed Demo shape. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy ZIP manifest](../../experiments/tk2-legacy-game/manifest.json) · `Boards/temp.___` · observed partial text record; not a BRD/editor test |
 | [Temporary board scratch, DustBall shape](temporary-board.md) | [DustBall observation](compatibility-matrix.md#packaging-media-and-project-extras). Need a redistributable specimen. | Existing sample fails observed-shape validation. | Pending | Acquire sample |
-| [Plain ZIP](other.md) | [Synthetic archive cases](../../scripts/check-game-archive.mjs) | Open project entries. [Check](../../scripts/check-game-archive.mjs) | Pending | Both game ZIPs |
-| [Toolkit installer ZIP with CMP1 payload](other.md) | [Synthetic wrapper cases](../../scripts/check-game-archive.mjs) | Extract nested game archive. [Check](../../scripts/check-game-archive.mjs) | Pending | Separate package fixture |
+| [Plain ZIP](other.md) | [Synthetic archive cases](../../scripts/check-game-archive.mjs) | Open project entries. [Check](../../scripts/check-game-archive.mjs) | Pending | Baseline + legacy game ZIPs; [CMP1 byte-level round-trip test](../../scripts/build-tk2-installer-fixture.mjs); desktop pending |
+| [Toolkit installer ZIP with CMP1 payload](other.md) | [Synthetic wrapper cases](../../scripts/check-game-archive.mjs) | Extract nested game archive. [Check](../../scripts/check-game-archive.mjs) | Pending | [Separate CMP1 CI artifact](../../scripts/build-tk2-installer-fixture.mjs) · `tk2-legacy-cmp1-test-wrapper.zip` · viewer-only synthetic MZ wrapper; every restored game file compared byte-for-byte; not a runnable installer |
 | [GIF89a](gif.md) | [`Bitmap/face.gif`](fixtures/format-fixtures.mjs#L266) | Decode GIF metadata. [Check](../../scripts/check-format-specs.mjs) | Pending | Companion asset check |
-| [JPEG SOF](jpg.md) | [`Bitmap/header.jpg`](fixtures/format-fixtures.mjs#L273) | Decode frame dimensions. [Check](../../scripts/check-format-specs.mjs) | Pending | Companion asset check |
+| [JPEG SOF](jpg.md) | [`Bitmap/header.jpg`](fixtures/format-fixtures.mjs#L273) | Decode frame dimensions. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy ZIP manifest](../../experiments/tk2-legacy-game/manifest.json) · `Bitmap/header.jpg` · SOF **metadata only**; not an image preview |
 | [RIFF/WAVE PCM](wav.md) | [`Media/tone.wav`](fixtures/format-fixtures.mjs#L278) | Decode audio metadata. [Check](../../scripts/check-format-specs.mjs) | Pending | Companion asset check |
 | [SMF format 0](mid.md) | [`Media/note.mid`](fixtures/format-fixtures.mjs#L283) | Decode MIDI tracks. [Check](../../scripts/check-format-specs.mjs) | Pending | Companion asset check |
-| [Compound DOC](doc.md) | [`Media/empty.doc`](fixtures/format-fixtures.mjs#L293) | Read compound directory metadata. [Check](../../scripts/check-format-specs.mjs) | Pending | Companion asset check |
-| [PNG/BMP browser image entries](other.md) | [PNG routing fixture](../../scripts/check-format-specs.mjs#L33). Need renderable PNG and BMP samples. | Browser image routing. [Check](../../scripts/check-format-specs.mjs) | Pending | Companion asset check |
+| [Compound DOC](doc.md) | [`Media/empty.doc`](fixtures/format-fixtures.mjs#L293) | Read compound directory metadata. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy ZIP manifest](../../experiments/tk2-legacy-game/manifest.json) · `Media/empty.doc` · synthetic CFB **header only**, no complete document |
+| [PNG/BMP browser image entries](other.md) | [PNG routing fixture](../../scripts/check-format-specs.mjs#L33). Need renderable PNG and BMP samples. | Browser image routing. [Check](../../scripts/check-format-specs.mjs) | Pending | [Legacy ZIP manifest](../../experiments/tk2-legacy-game/manifest.json) · `Bitmap/diagnostic-16.png` and `.bmp` · [full pixel/CRC test](../../scripts/check-companion-media.mjs); 16×16 identical renderable patterns |
 
 ## Open inventory gaps
 

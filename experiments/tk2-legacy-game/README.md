@@ -1,10 +1,51 @@
 # Toolkit 2 Legacy Test Lab · incremental format coverage
 
-This is the growing legacy coverage game for [issue #63](https://github.com/jmbjr/rpgtk_godot/issues/63), not yet an all-variants project. It keeps the verified minimal room from TK2TestLab under a **different project name**. The first slice included four standalone 16 × 16 GPH samples (modes 4 and 6, raw and RLE). The second included TST format 20 modes 2–6 and a separate binary BRD 2.2 gallery for each mode. The third adds historical BRD text 2.0/2.1 and binary 2.3 board specimens. The fourth adds seven distinct TEM character-format variants spanning text 2.0–2.2 and binary 2.3–2.4. The fifth adds five visibly diagnostic ITM item layouts (text 2.0/2.1 and binary 2.2/2.3). The sixth adds two ENE text 2.0 enemy-tail variants with individually checkable 2×2 enemy art. The current graphics-and-combat batch adds the remaining eight standalone GPH combinations plus BKG 2.0, TAN 2.0, FNT 2.0 and STE text 2.0. [Three-PR completion plan](../../docs/specs/legacy-coverage-three-pr-plan.md).
+This is the growing legacy coverage game for [issue #63](https://github.com/jmbjr/rpgtk_godot/issues/63), not yet an all-variants project. It keeps the verified minimal room from TK2TestLab under a **different project name**. The first slice included four standalone 16 × 16 GPH samples (modes 4 and 6, raw and RLE). The second included TST format 20 modes 2–6 and a separate binary BRD 2.2 gallery for each mode. The third adds historical BRD text 2.0/2.1 and binary 2.3 board specimens. The fourth adds seven distinct TEM character-format variants spanning text 2.0–2.2 and binary 2.3–2.4. The fifth adds five visibly diagnostic ITM item layouts (text 2.0/2.1 and binary 2.2/2.3). The sixth adds two ENE text 2.0 enemy-tail variants with individually checkable 2×2 enemy art. The graphics-and-combat batch added the remaining eight standalone GPH combinations plus BKG 2.0, TAN 2.0, FNT 2.0 and STE text 2.0. The packaging/media batch adds temporary scratch-board evidence, JPEG/DOC metadata specimens, two valid images and an external synthetic CMP1 wrapper. [Three-PR completion plan](../../docs/specs/legacy-coverage-three-pr-plan.md).
 
 ## Install and baseline smoke test
 
 Extract `tk2-legacy-game.zip` into the directory containing the existing Toolkit 2 `Main` and `Game` folders. In RPG Toolkit Development System 2.2, open `Main/TK2LegacyLab.gam`. Run the startup message, dismiss it, walk in all four directions, and test the central blocking tile. The game uses **Default Resolution**, not Set Resolution; no full-screen mode is selected.
+
+## Test packaging and companion media batch
+
+**No desktop testing is required during this implementation batch.**
+The existing playable GAM, player, board and startup program are unchanged.
+The table below describes what you should see **in the browser viewer**.
+
+| Test file in `Game/TK2LegacyLab/` | Expected evidence | Important limitation |
+| --- | --- | --- |
+| `Boards/temp.___` | Five integer header fields `1,2,3,4,5` and one record referencing `two-tiles.tst2` | **Unversioned partial observed scratch format**; not a normal BRD and not proof of board editor acceptance |
+| `Bitmap/header.jpg` | JPEG SOF metadata reports 3×2 and 8-bit precision | **Only a synthetic JPEG frame header**. It need not show a picture; a failed browser photo decode is expected |
+| `Media/empty.doc` | CFB compound container, 512-byte sector size, no directory entries | **Only a CFB header**, not a complete Microsoft Word document |
+| `Bitmap/diagnostic-16.png` | Fully rendered 16×16 image with colored corners and a white cross | Real PNG RGB8 compression; blank image is a test failure |
+| `Bitmap/diagnostic-16.bmp` | Same rendered 16×16 picture as the PNG | Real uncompressed Windows BMP24; upside-down, mirrored or different colors is a test failure |
+
+The PNG and BMP share **identical pixels** and bright corner markers:
+upper-left red, upper-right green, lower-left blue, lower-right yellow.
+Both have a violet outside border, a dark/light checker field and an
+opaque white cross through their center. Automated tests validate PNG
+chunk CRCs and decompressed scanlines, BMP bottom-up row ordering, all
+four corners and matching RGB values at all 256 positions. The samples
+are newly generated, not historical Toolkit editor outputs.
+
+**CMP1 installer-wrapper check (separate download):** GitHub Actions
+also produces `tk2-legacy-cmp1-wrapper` containing
+`tk2-legacy-cmp1-test-wrapper.zip`. This is an **inert viewer-import
+fixture**, not a functioning Toolkit installer. Inside the ZIP is a
+`setup.inf` label and nested `zip.zip` with an EXE-*named* fake payload;
+its MZ prefix, embedded game ZIP and CMP1 trailer imitate the **observed
+archive structure only**. **Never execute that .exe**, and do not place
+this wrapper inside the `Game/TK2LegacyLab` project directory.
+
+To inspect it, load the downloaded wrapper artifact ZIP directly into
+Game Explorer. The importer should unwrap it and show **exactly the same
+game files** as `tk2-legacy-game.zip`. CI compares every restored file
+byte-for-byte and also tests the GitHub Actions outer ZIP layer. It does
+not establish that any installer program runs on Windows.
+
+The original synthetic JPEG, DOC and scratch fixtures are preserved
+byte-for-byte. The DustBall scratch variant remains an evidence gap for
+the third PR, rather than being silently treated as compatible.
 
 ## Test graphics and combat completion batch
 
@@ -216,6 +257,8 @@ The [manifest](manifest.json) lists exact ZIP locations, source fixture paths, m
 
 ```sh
 node scripts/build-tk2-test-game.mjs dist/tk2-legacy-game.zip --legacy
+node scripts/check-companion-media.mjs
+node scripts/build-tk2-installer-fixture.mjs dist/tk2-legacy-game.zip dist/tk2-legacy-cmp1-test-wrapper.zip
 ```
 
-The generator normalizes the checked-in GPH text fixtures to CRLF, preserving their decoded values; checks each GPH's declared mode/compression; copies the TST binary fixtures *byte-for-byte*; builds the five gallery boards and validates both tile-reference edges for each; copies four historical board fixtures and their reference targets without byte changes; validates board dimensions, tile references and thread slots; packages seven generated historical TEM visual diagnostic editions and their 35 GPH tiles; checks character revisions, walking/artwork geometry, transparent and opaque pixel signatures, resolved tile references and shared support assets; adds five synthetic diagnostic ITM files and 34 distinguishable item GPHs; adds two text ENE tail variants and eight quadrant GPHs with exact byte, tile-order, alpha, animation-tail and reference checks; and adds eight GPH storage variants plus a visible BKG, four-frame TAN, registered 256-glyph FNT and text STE with byte, pixel, reference and layout checks; and checks the full ZIP inventory plus original baseline project bindings. The source-only format fixtures remain separately unmodified. CI uploads this ZIP separately from the unchanged `tk2-test-game.zip` baseline.
+The generator normalizes the checked-in GPH text fixtures to CRLF, preserving their decoded values; checks each GPH's declared mode/compression; copies the TST binary fixtures *byte-for-byte*; builds the five gallery boards and validates both tile-reference edges for each; copies four historical board fixtures and their reference targets without byte changes; validates board dimensions, tile references and thread slots; packages seven generated historical TEM visual diagnostic editions and their 35 GPH tiles; checks character revisions, walking/artwork geometry, transparent and opaque pixel signatures, resolved tile references and shared support assets; adds five synthetic diagnostic ITM files and 34 distinguishable item GPHs; adds two text ENE tail variants and eight quadrant GPHs with exact byte, tile-order, alpha, animation-tail and reference checks; and adds eight GPH storage variants plus a visible BKG, four-frame TAN, registered 256-glyph FNT and text STE with byte, pixel, reference and layout checks; adds the source-backed scratch/JPEG/DOC metadata entries and full, visibly checkable PNG/BMP companions; verifies a separate byte-identical CMP1 wrapper fixture; and checks the full ZIP inventory plus original baseline project bindings. The source-only format fixtures remain separately unmodified. CI uploads this ZIP separately from the unchanged `tk2-test-game.zip` baseline.

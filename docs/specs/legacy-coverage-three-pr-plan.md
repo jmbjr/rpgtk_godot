@@ -9,7 +9,7 @@ user's later acceptance pass. Preserve the existing playable
 `TK2TestLab` and `TK2LegacyLab` projects and the source conformance
 fixtures separately from generated diagnostic editions.
 
-## PR 1 · Graphics and combat — implementation in progress
+## PR 1 · Graphics and combat — completed in merged PR #76
 
 Target **12 matrix rows**:
 
@@ -32,24 +32,32 @@ verify their existing program, sound and animation references explicitly.
 All specimens are standalone/editor-open or reference coverage, **not**
 new startup room mechanics.
 
-## PR 2 · Packaging and companion media — pending
+## PR 2 · Packaging and companion media — in progress
 
 Target **five matrix rows**:
 
 - **Temporary board scratch text (`.___`)**: package the documented
   source fixture, retain its partial/uncertain shape and avoid claiming
   the scratch record is an editor-ready BRD.
-- **CMP1 Toolkit installer wrapper**: distribute a separately named test
-  installer ZIP (never nest an installer inside the runnable game's GAM
-  folder), and validate that the viewer unwraps it into the same set of
-  game assets. Avoid fabricating unsupported protected wrappers.
+- **CMP1 Toolkit installer wrapper**: distribute a separately named **viewer-only**
+  test ZIP (never nest an installer inside the runnable game's GAM folder).
+  The .exe-named payload is an **inert synthetic MZ prefix** with embedded
+  game ZIP bytes and a CMP1 trailer, **not a runnable installer**. CI must
+  compare recovered game file bytes to the original ZIP and verify the outer
+  GitHub Actions artifact wrapper also imports. Do not imply other installer
+  formats or protected wrappers are supported.
 - **JPEG SOF** and **Compound DOC**: include checked-in source fixtures,
   assert metadata while distinguishing partial metadata from complete media.
-- **PNG/BMP browser image entries**: add small, attributable generated
-  samples with clear pixel/checker landmarks and verify browser-image
-  routing. Record both actual file types as evidence for the grouped row.
+- **PNG/BMP browser image entries**: generate fully renderable 16×16 RGB PNG
+  and BGR24 BMP samples with matching pixels and identifiable colored corners.
+  Verify PNG chunk CRCs, scanlines, BMP row orientation, both media routes,
+  and pixel equality. Record both file types under the grouped matrix row.
 
 Keep existing GIF, WAV, and MIDI assets and validate any additional links.
+The JPEG fixture is **SOF-only** and the DOC fixture a **minimal CFB
+header**: both are deliberately *metadata-only*, not renderable full files.
+The scratch-board sample is an observed, partial reader fixture, not
+a valid BRD claim. CI success does not change those evidence limitations.
 
 ## PR 3 · Alternate GAM and explicit evidence gaps — pending
 

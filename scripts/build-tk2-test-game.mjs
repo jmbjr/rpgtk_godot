@@ -9,6 +9,8 @@ import { visualEnemyBytes, visualEnemyTileBytes, enemyDiagnosticStyle } from "..
 import { extraGphBytes, backgroundGrid, backgroundShading, backgroundBytes,
   animationFrames, animatedTileBytes, fontGlyphs, fontBytes
 } from "../docs/specs/fixtures/remaining-graphics-fixtures.mjs";
+import { diagnosticPng, diagnosticBmp, mediaFixtureSignature
+} from "../docs/specs/fixtures/companion-media-fixtures.mjs";
 import { enemySprite, itemSprites, standaloneTilePixels } from "../sprites.mjs";
 import { buildReferences, readArtifacts, tilePixels } from "../artifacts.mjs";
 import { openGameArchive } from "../archive.mjs";
@@ -29,6 +31,8 @@ const visualItemKit = manifest.visualItemKit ?? null;
 const legacyEnemies = manifest.legacyEnemies ?? [];
 const visualEnemyKit = manifest.visualEnemyKit ?? null;
 const graphicsCompletion = manifest.graphicsCompletion ?? null;
+const companionMedia = manifest.companionMedia ?? [];
+const companionBytes = { png: diagnosticPng, bmp: diagnosticBmp };
 const generatedCompletionAssets = graphicsCompletion ? [
   graphicsCompletion.background, graphicsCompletion.tileAnimation,
   graphicsCompletion.font, graphicsCompletion.statusEffect,
@@ -187,6 +191,7 @@ const instructions = [
   ...legacyItems.map(item => `ITM ${item.format} ${item.revision} ${item.graphics}: ${item.path} | Every walking frame and rest pose should show a colored relic`),
   ...legacyEnemies.map(enemy => `ENE ${enemy.revision} ${enemy.tail}: ${enemy.path} | Distinct 2x2 enemy art; inspect animation tail; save a copy`),
   ...generatedCompletionAssets.map(asset => `Graphics/combat batch 1: ${asset.path} | Individual editor-open; no runtime claim`),
+  ...companionMedia.map(asset => `Packaging/media batch 2: ${asset.path} | ${asset.usage}`),
 ].join("\r\n") + "\r\n";
 
 const zip = new JSZip();
@@ -267,6 +272,14 @@ if (graphicsCompletion) {
     zip.file(asset.path, bytes, options);
   }
 }
+for (const asset of companionMedia) {
+  assert.ok(asset.path.startsWith(project + "/"), asset.path);
+  assert.ok(Boolean(asset.fixture) !== Boolean(asset.generated),
+    `${asset.path}: exactly one fixture or generated source required`);
+  const source = asset.fixture ? fixtureByPath.get(asset.fixture) : companionBytes[asset.generated];
+  assert.ok(source, `${asset.path}: missing companion source`);
+  zip.file(asset.path, source, options);
+}
 for (const specimen of specimens) {
   assert.equal(specimen.type, "gph");
   assert.ok(specimen.path.startsWith(`${project}/Tiles/`), specimen.path);
@@ -294,10 +307,44 @@ const requiredPaths = [...Object.values(files), ...specimens.map(specimen => spe
   ...legacyEnemies.map(enemy => enemy.path),
   ...(visualEnemyKit ? [...visualEnemyTileBytes.keys()].map(tile => `${project}/Tiles/${tile}`) : []),
   ...generatedCompletionAssets.map(asset => asset.path),
-  ...(graphicsCompletion ? graphicsCompletion.graphicTiles : [])];
+  ...(graphicsCompletion ? graphicsCompletion.graphicTiles : []),
+  ...companionMedia.map(asset => asset.path)];
 assert.equal(new Set(requiredPaths).size, requiredPaths.length, "Duplicate manifest paths");
 assert.deepEqual([...artifacts.keys()].sort(), [...requiredPaths, readmePath].sort());
-for (const path of requiredPaths) assert.equal(artifacts.get(path).decodeStatus, "decoded", path);
+const companionStatuses = new Map(companionMedia.map(asset => [asset.path, asset.expectedDecodeStatus]));
+for (const path of requiredPaths)
+  assert.equal(artifacts.get(path).decodeStatus, companionStatuses.get(path) ?? "decoded", path);
+// Source-only historical metadata and *fully renderable* PNG/BMP are distinct.
+for (const asset of companionMedia) {
+  const source = asset.fixture ? fixtureByPath.get(asset.fixture) : companionBytes[asset.generated];
+  const output = Buffer.from(await opened.file(asset.path).async("uint8array"));
+  assert.deepEqual(output, source, `${asset.path}: source bytes must be unchanged`);
+  const record = artifacts.get(asset.path);
+  assert.equal(record.type, asset.type, asset.path);
+  if (asset.type === "___") {
+    assert.deepEqual(record.header, [1, 2, 3, 4, 5]);
+    assert.deepEqual(record.records, [{ tileName: "two-tiles.tst2", values: [-2, 0, 1] }]);
+  }
+  if (asset.type === "jpg") {
+    assert.deepEqual([record.width, record.height, record.precisionBits], [3, 2, 8]);
+    assert.equal(record.frameMarker, "0xc0");
+  }
+  if (asset.type === "doc") {
+    assert.deepEqual([record.container, record.sectorSize], ["CFB", 512]);
+    assert.deepEqual(record.directory, []);
+  }
+  if (asset.type === "png") {
+    assert.deepEqual([...output.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+    assert.deepEqual([output.readUInt32BE(16), output.readUInt32BE(20)],
+      [mediaFixtureSignature.width, mediaFixtureSignature.height]);
+  }
+  if (asset.type === "bmp") {
+    assert.equal(output.toString("ascii", 0, 2), "BM");
+    assert.deepEqual([output.readInt32LE(18), output.readInt32LE(22)],
+      [mediaFixtureSignature.width, mediaFixtureSignature.height]);
+    assert.equal(output.readUInt16LE(28), 24);
+  }
+}
 if (visualSpriteKit) {
   for (const [name, bytes] of visualTileBytes) {
     const path = `${project}/Tiles/${name}`;
@@ -656,4 +703,4 @@ assert.ok(artifacts.get(files.player).walking.length === 16);
 const output = process.argv[2] ?? "dist/tk2-test-game.zip";
 await mkdir(dirname(output), { recursive: true });
 await writeFile(output, bytes);
-console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards; ${legacyBoards.length} historical boards; ${legacyCharacters.length} historical TEM profiles; ${visualSpriteKit ? visualTileBytes.size : 0} TEM diagnostic GPHs; ${legacyItems.length} historical ITMs; ${visualItemKit ? visualItemTileBytes.size : 0} ITM diagnostic GPHs; ${legacyEnemies.length} ENE variants; ${visualEnemyKit ? visualEnemyTileBytes.size : 0} ENE diagnostic GPHs; ${generatedCompletionAssets.length} graphics/combat completion assets and ${graphicsCompletion ? graphicsCompletion.graphicTiles.length : 0} supporting GPH tiles.`);
+console.log(`Verified ${output}: project paths, startup bindings, solid cell, transparency, 16 walking tile references; ${specimens.length} standalone GPH variants; ${tilesetSpecimens.length} TST modes with linked gallery boards; ${legacyBoards.length} historical boards; ${legacyCharacters.length} historical TEM profiles; ${visualSpriteKit ? visualTileBytes.size : 0} TEM diagnostic GPHs; ${legacyItems.length} historical ITMs; ${visualItemKit ? visualItemTileBytes.size : 0} ITM diagnostic GPHs; ${legacyEnemies.length} ENE variants; ${visualEnemyKit ? visualEnemyTileBytes.size : 0} ENE diagnostic GPHs; ${generatedCompletionAssets.length} graphics/combat completion assets and ${graphicsCompletion ? graphicsCompletion.graphicTiles.length : 0} supporting GPH tiles; ${companionMedia.length} packaging/media specimens.`);

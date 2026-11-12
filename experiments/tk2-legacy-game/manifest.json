@@ -542,5 +542,59 @@
       "Game/TK2LegacyLab/Tiles/diag-tan-frame-3.gph",
       "Game/TK2LegacyLab/Tiles/diag-tan-frame-4.gph"
     ]
+  },
+  "companionMedia": [
+    {
+      "path": "Game/TK2LegacyLab/Boards/temp.___",
+      "fixture": "Boards/temp.___",
+      "type": "___",
+      "expectedDecodeStatus": "decoded",
+      "evidence": "partial",
+      "usage": "Observed Demo-like scratch data; record producer and numeric-field meaning unknown; do not load as an ordinary BRD"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Bitmap/header.jpg",
+      "fixture": "Bitmap/header.jpg",
+      "type": "jpg",
+      "expectedDecodeStatus": "decoded",
+      "evidence": "partial",
+      "usage": "Header-only JPEG SOF metadata sample; not a full renderable photograph"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Media/empty.doc",
+      "fixture": "Media/empty.doc",
+      "type": "doc",
+      "expectedDecodeStatus": "decoded",
+      "evidence": "partial",
+      "usage": "512-byte compound file header; not a complete user document"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Bitmap/diagnostic-16.png",
+      "generated": "png",
+      "type": "png",
+      "expectedDecodeStatus": "media",
+      "evidence": "generated",
+      "width": 16,
+      "height": 16,
+      "usage": "Full renderable PNG RGB24, colorful corners and opaque checker; not a historical Toolkit writer sample"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Bitmap/diagnostic-16.bmp",
+      "generated": "bmp",
+      "type": "bmp",
+      "expectedDecodeStatus": "media",
+      "evidence": "generated",
+      "width": 16,
+      "height": 16,
+      "usage": "Full renderable Windows BMP BGR24, same 16x16 color registration as PNG"
+    }
+  ],
+  "installerFixture": {
+    "filename": "tk2-legacy-cmp1-test-wrapper.zip",
+    "generator": "scripts/build-tk2-installer-fixture.mjs",
+    "kind": "synthetic viewer import only — not executable installer",
+    "input": "tk2-legacy-game.zip",
+    "expectedContent": "same normalized archive files and bytes as legacy game ZIP",
+    "usage": "Separate CI artifact; do not place inside Game/TK2LegacyLab/ and do not execute nested MZ diagnostic stub"
   }
 }
