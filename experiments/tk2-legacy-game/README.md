@@ -1,10 +1,46 @@
 # Toolkit 2 Legacy Test Lab · incremental format coverage
 
-This is the growing legacy coverage game for [issue #63](https://github.com/jmbjr/rpgtk_godot/issues/63), not yet an all-variants project. It keeps the verified minimal room from TK2TestLab under a **different project name**. The first slice included four standalone 16 × 16 GPH samples (modes 4 and 6, raw and RLE). The second included TST format 20 modes 2–6 and a separate binary BRD 2.2 gallery for each mode. The third adds historical BRD text 2.0/2.1 and binary 2.3 board specimens. The fourth adds seven distinct TEM character-format variants spanning text 2.0–2.2 and binary 2.3–2.4. The fifth adds five visibly diagnostic ITM item layouts (text 2.0/2.1 and binary 2.2/2.3). The sixth adds two ENE text 2.0 enemy-tail variants with individually checkable 2×2 enemy art.
+This is the growing legacy coverage game for [issue #63](https://github.com/jmbjr/rpgtk_godot/issues/63), not yet an all-variants project. It keeps the verified minimal room from TK2TestLab under a **different project name**. The first slice included four standalone 16 × 16 GPH samples (modes 4 and 6, raw and RLE). The second included TST format 20 modes 2–6 and a separate binary BRD 2.2 gallery for each mode. The third adds historical BRD text 2.0/2.1 and binary 2.3 board specimens. The fourth adds seven distinct TEM character-format variants spanning text 2.0–2.2 and binary 2.3–2.4. The fifth adds five visibly diagnostic ITM item layouts (text 2.0/2.1 and binary 2.2/2.3). The sixth adds two ENE text 2.0 enemy-tail variants with individually checkable 2×2 enemy art. The current graphics-and-combat batch adds the remaining eight standalone GPH combinations plus BKG 2.0, TAN 2.0, FNT 2.0 and STE text 2.0. [Three-PR completion plan](../../docs/specs/legacy-coverage-three-pr-plan.md).
 
 ## Install and baseline smoke test
 
 Extract `tk2-legacy-game.zip` into the directory containing the existing Toolkit 2 `Main` and `Game` folders. In RPG Toolkit Development System 2.2, open `Main/TK2LegacyLab.gam`. Run the startup message, dismiss it, walk in all four directions, and test the central blocking tile. The game uses **Default Resolution**, not Set Resolution; no full-screen mode is selected.
+
+## Test graphics and combat completion batch
+
+This batch adds **12 matrix entries** to the legacy game without changing its
+startup room or claiming that the desktop editor accepts every synthetic file.
+
+| Format group | Test filename(s) under `Game/TK2LegacyLab/` | Expected viewer result |
+| --- | --- | --- |
+| GPH mode 1 (32×32 RGB raw/RLE) | `Tiles/mode-1-raw.gph`, `Tiles/standalone-32-rle.gph` | Both display colored pixels with transparency |
+| GPH mode 2 (16×16 RGB raw/RLE) | `Tiles/standalone-16.gph`, `Tiles/mode-2-rle.gph` | Both display scaled 16×16 colored pixels |
+| GPH mode 3 (32×32 256-color indexed) | `Tiles/palette-3-{0,1}.gph` | Raw and RLE use the pinned palette |
+| GPH mode 5 (32×32 16-color indexed) | `Tiles/palette-5-{0,1}.gph` | Raw and RLE use the pinned palette |
+| BKG text 2.0 | `Bkrounds/bkg-text-20-diagnostic.bkg` | A full 19×11 checker/border of tiles, with subtle signed shading on the left/right edges |
+| TAN binary 2.0 | `Tiles/tan-binary-20-diagnostic.tan` | Four ordered and visibly different tile frames; speed 8 |
+| FNT text 2.0 | `Font/fnt-text-20-diagnostic.fnt` | 256 8×8 glyph slots with recognizable `A`, `B`, `0`, `1` and mostly filled registration patterns |
+| STE text 2.0 | `StatusE/ste-text-20.ste` | Name `Old effect`, version 2.0, three rounds, signed HP amount -50 and expected status flags |
+
+The BKG and TAN test files use six additional named 32×32 diagnostic GPH
+tiles. They have dark interiors, bright borders, distinct center markers and
+transparent outer corners. The source GPH 3/5 indexed variants are intentionally
+preserved byte-for-byte (after CRLF normalization); they may be more
+minimal-looking than the generated `diag-*` artwork. The original format
+conformance fixtures remain unchanged.
+
+**Viewer check:** load the legacy ZIP, open each new GPH, then the BKG
+background, TAN animation and FNT preview. Check the BKG has a full grid
+and the TAN references four different GPHs. Inspect the text STE separately
+from the existing binary `StatusE/slow.ste`; inspect existing
+`SpcMove/pulse.spc` and `Misc/effect.anm` and verify their static links.
+Every referenced BKG/TAN tile should resolve.
+
+**Desktop checks are intentionally deferred.** These assets are standalone:
+the original main board, player, and runtime bindings do not use them.
+The TAN speed records source timing only; no claim of accurate Toolkit 2
+playback is made. The generated FNT is a visible parser/editor diagnostic,
+not a historically authenticated typeface.
 
 ## Test historical ENE text 2.0 enemy tails
 
@@ -182,4 +218,4 @@ The [manifest](manifest.json) lists exact ZIP locations, source fixture paths, m
 node scripts/build-tk2-test-game.mjs dist/tk2-legacy-game.zip --legacy
 ```
 
-The generator normalizes the checked-in GPH text fixtures to CRLF, preserving their decoded values; checks each GPH's declared mode/compression; copies the TST binary fixtures *byte-for-byte*; builds the five gallery boards and validates both tile-reference edges for each; copies four historical board fixtures and their reference targets without byte changes; validates board dimensions, tile references and thread slots; packages seven generated historical TEM visual diagnostic editions and their 35 GPH tiles; checks character revisions, walking/artwork geometry, transparent and opaque pixel signatures, resolved tile references and shared support assets; adds five synthetic diagnostic ITM files and 34 distinguishable item GPHs; adds two text ENE tail variants and eight quadrant GPHs with exact byte, tile-order, alpha, animation-tail and reference checks; and checks the full ZIP inventory plus original baseline project bindings. The source-only format fixtures remain separately unmodified. CI uploads this ZIP separately from the unchanged `tk2-test-game.zip` baseline.
+The generator normalizes the checked-in GPH text fixtures to CRLF, preserving their decoded values; checks each GPH's declared mode/compression; copies the TST binary fixtures *byte-for-byte*; builds the five gallery boards and validates both tile-reference edges for each; copies four historical board fixtures and their reference targets without byte changes; validates board dimensions, tile references and thread slots; packages seven generated historical TEM visual diagnostic editions and their 35 GPH tiles; checks character revisions, walking/artwork geometry, transparent and opaque pixel signatures, resolved tile references and shared support assets; adds five synthetic diagnostic ITM files and 34 distinguishable item GPHs; adds two text ENE tail variants and eight quadrant GPHs with exact byte, tile-order, alpha, animation-tail and reference checks; and adds eight GPH storage variants plus a visible BKG, four-frame TAN, registered 256-glyph FNT and text STE with byte, pixel, reference and layout checks; and checks the full ZIP inventory plus original baseline project bindings. The source-only format fixtures remain separately unmodified. CI uploads this ZIP separately from the unchanged `tk2-test-game.zip` baseline.
