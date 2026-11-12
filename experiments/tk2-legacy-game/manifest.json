@@ -55,6 +55,78 @@
       "detail": 6,
       "compressed": true,
       "usage": "standalone editor-open check; not referenced by running game"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Tiles/mode-1-raw.gph",
+      "generated": "mode-1-raw.gph",
+      "type": "gph",
+      "format": "text 2.0",
+      "detail": 1,
+      "compressed": false,
+      "usage": "Standalone editor-open visual test; indexed modes use source fixture colors; not active game art"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Tiles/standalone-32-rle.gph",
+      "source": "docs/specs/fixtures/standalone-32-rle.gph",
+      "type": "gph",
+      "format": "text 2.0",
+      "detail": 1,
+      "compressed": true,
+      "usage": "Standalone editor-open visual test; indexed modes use source fixture colors; not active game art"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Tiles/standalone-16.gph",
+      "source": "docs/specs/fixtures/standalone-16.gph",
+      "type": "gph",
+      "format": "text 2.0",
+      "detail": 2,
+      "compressed": false,
+      "usage": "Standalone editor-open visual test; indexed modes use source fixture colors; not active game art"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Tiles/mode-2-rle.gph",
+      "generated": "mode-2-rle.gph",
+      "type": "gph",
+      "format": "text 2.0",
+      "detail": 2,
+      "compressed": true,
+      "usage": "Standalone editor-open visual test; indexed modes use source fixture colors; not active game art"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Tiles/palette-3-0.gph",
+      "source": "docs/specs/fixtures/palette-3-0.gph",
+      "type": "gph",
+      "format": "text 2.0",
+      "detail": 3,
+      "compressed": false,
+      "usage": "Standalone editor-open visual test; indexed modes use source fixture colors; not active game art"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Tiles/palette-3-1.gph",
+      "source": "docs/specs/fixtures/palette-3-1.gph",
+      "type": "gph",
+      "format": "text 2.0",
+      "detail": 3,
+      "compressed": true,
+      "usage": "Standalone editor-open visual test; indexed modes use source fixture colors; not active game art"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Tiles/palette-5-0.gph",
+      "source": "docs/specs/fixtures/palette-5-0.gph",
+      "type": "gph",
+      "format": "text 2.0",
+      "detail": 5,
+      "compressed": false,
+      "usage": "Standalone editor-open visual test; indexed modes use source fixture colors; not active game art"
+    },
+    {
+      "path": "Game/TK2LegacyLab/Tiles/palette-5-1.gph",
+      "source": "docs/specs/fixtures/palette-5-1.gph",
+      "type": "gph",
+      "format": "text 2.0",
+      "detail": 5,
+      "compressed": true,
+      "usage": "Standalone editor-open visual test; indexed modes use source fixture colors; not active game art"
     }
   ],
   "tilesets": [
@@ -429,5 +501,46 @@
       2
     ],
     "usage": "Two high contrast 2x2 enemy sprites; short tail and four-slot animation tail; original sparse conformance files unchanged"
+  },
+  "graphicsCompletion": {
+    "batch": 1,
+    "source": "docs/specs/fixtures/remaining-graphics-fixtures.mjs",
+    "background": {
+      "path": "Game/TK2LegacyLab/Bkrounds/bkg-text-20-diagnostic.bkg",
+      "generated": "background",
+      "version": "2.0",
+      "width": 19,
+      "height": 11,
+      "usage": "209 populated placements, distinct border/checker, signed shading, audio refs; editor-open only"
+    },
+    "tileAnimation": {
+      "path": "Game/TK2LegacyLab/Tiles/tan-binary-20-diagnostic.tan",
+      "generated": "animatedTile",
+      "version": "2.0",
+      "speed": 8,
+      "frames": 4,
+      "usage": "four ordered colored GPH frames, stored frame speed not exact runtime timing"
+    },
+    "font": {
+      "path": "Game/TK2LegacyLab/Font/fnt-text-20-diagnostic.fnt",
+      "generated": "font",
+      "version": "2.0",
+      "glyphs": 256,
+      "usage": "8x8 glyph registration, A/B/0/1 landmarks; editor-open only"
+    },
+    "statusEffect": {
+      "path": "Game/TK2LegacyLab/StatusE/ste-text-20.ste",
+      "fixture": "StatusE/text-ste.ste",
+      "version": "2.0",
+      "usage": "byte-identical text status effect, independent of binary 2.2 slow.ste"
+    },
+    "graphicTiles": [
+      "Game/TK2LegacyLab/Tiles/diag-bkg-0.gph",
+      "Game/TK2LegacyLab/Tiles/diag-bkg-1.gph",
+      "Game/TK2LegacyLab/Tiles/diag-tan-frame-1.gph",
+      "Game/TK2LegacyLab/Tiles/diag-tan-frame-2.gph",
+      "Game/TK2LegacyLab/Tiles/diag-tan-frame-3.gph",
+      "Game/TK2LegacyLab/Tiles/diag-tan-frame-4.gph"
+    ]
   }
 }
