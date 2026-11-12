@@ -29,7 +29,8 @@ for (const record of ledger.records) {
     assert.equal(record.archive, "blocked");
     assert.equal(record.paths.length, 0);
     assert.ok(record.blocker?.length > 30);
-    assert.match(rows[ledger.records.indexOf(record)], /Acquire sample/);
+    assert.match(rows[ledger.records.indexOf(record)], /Evidence blocker/,
+      record.variant + ": blocked matrix row must link to the evidence review");
   } else {
     assert.ok(record.paths.length > 0, record.variant + ": exact file path missing");
     assert.notEqual(record.archive, "blocked");
