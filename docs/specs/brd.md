@@ -1,7 +1,7 @@
 # BRD · board
 
-Specification revision **1.1** · [conventions](README.md). Partial text 2.0/2.1 and
-binary 2.2/2.3 profiles.
+Specification revision **1.1** · [conventions](README.md). Partial Toolkit 2
+text 2.0/2.1 and binary 2.2/2.3, plus Toolkit 3 binary 2.4 profiles.
 
 ## Binary header and tile grid
 
@@ -164,6 +164,76 @@ Binary `RPGTLKIT BOARD`, major 2, minor 2. Use the [binary grid](#binary-header-
 ## Binary 2.3
 
 Binary `RPGTLKIT BOARD`, major 2, minor 3. The common binary grid and placements are followed by counted thread filenames and a coordinate-type byte. See [remaining binary fields](#remaining-inspected-binary-fields). Coordinates are preserved without conversion.
+
+## Binary 2.4
+
+**Native Toolkit 3 vector-board layout.** The NUL-terminated header is
+`RPGTLKIT BOARD`, little-endian i16 major 2 and minor 4. This branch
+does **not** share the registration/start/per-tile shading sequence of
+binary 2.2/2.3. The [pinned 3.1 source reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vb/tkCommon/modules/CommonBoard.bas#L486-L685)
+establishes the following inspected prefix:
+
+1. Four i16 values: width, height, layer count, coordinate type.
+   A further i16 is the **maximum tile-lookup index**, followed by
+   maximum-plus-one NUL-terminated tile names.
+2. Tiles traverse **layer, row, column** order. A nonnegative i16 is
+   a single lookup index; a negative i16 is the *negative run length*,
+   followed by one i16 lookup index. Unlike 2.3, there are **no**
+   RGB shading or tile-type values following these tile tokens.
+3. The shading-block maximum is an i16. Each block stores a **layer i32**
+   followed by records of `run length i16, R i16, G i16, B i16`,
+   covering that layer's width × height positions. A source run
+   crossing the layer boundary is clamped in the visual preview
+   while `storedLength` retains the original value.
+4. The light maximum is an i16; each light holds layer i32,
+   type i32, a maximum-point i16 followed by i32 x/y point pairs,
+   and a maximum-color i16 followed by i16 RGB triples.
+5. The vector maximum is an i16; each vector holds a maximum-point
+   i16 and i32 x/y pairs, then i16 **attributes**, **closed** flag,
+   **layer**, **tile type**, and a NUL-terminated **handle**.
+   The raw signed closed flag is retained (Toolkit VB true may be
+   `-1`). Each maximum index of `-1` signifies an empty list.
+
+The reader **stops after the vector block**. Native later board
+programs, sprites, scripts, player starting position, background and
+remaining runtime flags are not decoded in this profile. The exported
+`vectors` preserve each point and all five per-vector fields; the
+`lights` and `shadingLayers` preserve the corresponding raw
+source values. The regular `runs` combine tile indices and applicable
+shade blocks for the existing tile renderer. No imaginary per-cell
+`tileTypes` are manufactured; that array is empty in 2.4.
+Neutral background/ambient values are **preview defaults**, not
+verified source configuration fields.
+
+**BSTW evidence:** The owner-provided
+[BSTW Expo Demo](https://github.com/jmbjr/rpgtk_godot/issues/79)
+has 285 files, SHA-256
+`77d6d4180948196106e3d4dad7e2ee62144b30fac8c7ac5491048740e9864300`.
+Its `BSTW/Boards/start.brd` is 2,093 bytes,
+20 × 15 tiles × 2 layers, coordinate code 4, with 9 vector
+records and **86 points**. `start2.brd` has 9 vectors and
+**67 points**. Seven additional tiny 2.4 boards store other
+coordinate codes and zero vectors. These are sample observations;
+the game bytes remain **outside this repository**.
+
+The board inspector shows the grid through existing resolved TST
+references. For coordinate code **4**, the optional vector overlay
+uses raw source pixels scaled by the board preview's 32-pixel
+tile cell. This produces an **inspectable diagnostic geometry plot**,
+not a claim of pixel-for-pixel editor/runtime parity. Other coordinate
+codes are preserved, but rotated, stacked or isometric vector
+projections are **not guessed**. The overlay can be toggled and
+filtered by stored layer; point coordinates, attributes, tile types,
+closed flags and handles remain accessible in the inspector and
+[connected-game JSON](connected-game.md).
+
+The [synthetic BRD 2.4 fixture](fixtures/board-24-fixtures.mjs)
+and [validation script](../../scripts/check-bstw-board-24.mjs)
+check source layout, normalized tile/shade runs, references,
+light/vector attributes, truncation, unsupported revisions and
+JSON export. Running the script with a local BSTW ZIP path additionally
+checks the original SHA-256, all nine boards and the 9/86 and 9/67
+sample counts without checking in game assets.
 
 ## Unsupported versions
 
