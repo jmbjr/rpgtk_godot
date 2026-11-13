@@ -1074,7 +1074,7 @@ function renderBoard(panel, board, edges) {
     showTypes.disabled = true;
     typeLabel.title = "Native 2.4 tile types live in vector records, not the earlier per-cell tile-type field.";
   }
-  const showVectors = board.vectors?.length && board.coordinateType === 4 ? el("input") : null;
+  const showVectors = board.vectors?.length > 0 && board.coordinateType === 4 ? el("input") : null;
   if (showVectors) {
     showVectors.type = "checkbox";
     showVectors.checked = true;
