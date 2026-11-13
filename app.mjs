@@ -987,6 +987,22 @@ function renderItemSprites(panel, artifact) {
 }
 
 function renderBoardMetadata(panel, board) {
+  if (board.vectors) {
+    const pointCount = board.vectors.reduce((sum, shape) => sum + shape.points.length, 0);
+    panel.append(el("p", `Native BRD 2.4 · coordinate code ${board.coordinateType} · ${board.vectors.length} vectors with ${pointCount} raw points · ${board.lights.length} light records · ${board.shadingLayers.length} shading layers`));
+    panel.append(el("p", "The source reader stops after vectors. Later programs, sprites, start location, backgrounds and game mechanics are not decoded."));
+    const details = el("details", "", "board-conditions");
+    details.append(el("summary", `Inspect ${board.vectors.length} stored vector records`));
+    for (const shape of board.vectors) {
+      const row = el("details", "", "reference");
+      row.append(el("summary", `Vector ${shape.slot} · layer ${shape.layer} · type ${shape.tileType} · ${shape.points.length} points`));
+      row.append(el("p", `Raw attributes: ${shape.attributes}; closed flag: ${shape.closed}; handle: ${JSON.stringify(shape.handle)}`));
+      row.append(el("p", shape.points.map(point => `(${point.x}, ${point.y})`).join(" → "), "technical"));
+      details.append(row);
+    }
+    panel.append(details);
+    return;
+  }
   panel.append(el("p", `Stored start: (${board.start.x}, ${board.start.y}, layer ${board.start.layer}) · Save disabled flag: ${board.saveDisabled}`));
   for (const [title, slots, field] of [["Program placements", board.programs, "program"], ["Item placements", board.items, "item"]]) {
     const section = el("details", "", "board-conditions");
@@ -1054,6 +1070,18 @@ function renderBoard(panel, board, edges) {
   const layerLabel = el("label", "Layers");
   layerLabel.append(layers);
   controls.append(layerLabel, typeLabel);
+  if (board.vectors) {
+    showTypes.disabled = true;
+    typeLabel.title = "Native 2.4 tile types live in vector records, not the earlier per-cell tile-type field.";
+  }
+  const showVectors = board.vectors?.length > 0 && board.coordinateType === 4 ? el("input") : null;
+  if (showVectors) {
+    showVectors.type = "checkbox";
+    showVectors.checked = true;
+    const vectorLabel = el("label", "Show raw vectors");
+    vectorLabel.prepend(showVectors);
+    controls.append(vectorLabel);
+  }
   const stage = el("div", "", "board-stage");
   const canvas = el("canvas", "", "board-map");
   canvas.width = board.width * tileSize;
@@ -1127,10 +1155,38 @@ function renderBoard(panel, board, edges) {
         }
       }
     }
+    if (showVectors?.checked) {
+      // Coordinate code 4 is the standard pixel layout in BSTW. Convert
+      // source pixel coordinates to the scaled 32px tile canvas; do not
+      // assume this mapping for rotated/stacked isometric coordinate codes.
+      const scale = tileSize / 32;
+      context.save();
+      context.lineWidth = Math.max(1.5, tileSize / 14);
+      for (const shape of board.vectors) {
+        if (layer && shape.layer !== layer) continue;
+        if (!shape.points.length) continue;
+        context.strokeStyle = shape.tileType === 1 ? "#ffad6c" :
+          shape.tileType === 2 ? "#74e6f1" : "#e6a9ff";
+        context.fillStyle = context.strokeStyle;
+        context.beginPath();
+        context.moveTo(shape.points[0].x * scale, shape.points[0].y * scale);
+        for (const point of shape.points.slice(1)) context.lineTo(point.x * scale, point.y * scale);
+        if (shape.closed) context.closePath();
+        if (shape.points.length > 1) context.stroke();
+        context.fillRect(shape.points[0].x * scale - 2, shape.points[0].y * scale - 2, 4, 4);
+      }
+      context.restore();
+    }
     notes.textContent = "Static tile preview · animated tiles show their first frame."
-      + (missing.size ? ` ${missing.size} tile references could not be rendered.` : "");
+      + (missing.size ? ` ${missing.size} tile references could not be rendered.` : "")
+      + (board.vectors ? ` Native BRD 2.4: ${board.vectors.length} vectors are stored as raw points. `
+        + (board.coordinateType === 4
+          ? "Overlay uses the standard pixel grid (32px per stored tile); editor/runtime parity is unverified."
+          : `Coordinate code ${board.coordinateType} projection is unverified; no vector overlay was inferred.`) : "");
   }
-  const cellInfo = el("p", "Click a cell to inspect its stored tile types.");
+  const cellInfo = el("p", board.vectors ?
+    "Raw vector geometry and attributes are listed above; click a cell to see its grid position." :
+    "Click a cell to inspect its stored tile types.");
   preview.append(cellInfo);
   canvas.addEventListener("click", event => {
     const rect = canvas.getBoundingClientRect();
@@ -1145,10 +1201,18 @@ function renderBoard(panel, board, edges) {
       const run = board.tileTypes.find(run => offset >= run.offset && offset < run.offset + run.length);
       values.push(`layer ${l + 1}: ${run?.value ?? "unavailable"}`);
     }
-    cellInfo.textContent = `Cell (${x + 1}, ${y + 1}) · ${values.join("; ")}`;
+    cellInfo.textContent = `Cell (${x + 1}, ${y + 1})`
+      + (board.vectors ? " · grid position only (vector collision not simulated)" :
+        ` · ${values.join("; ")}`);
   });
   showTypes.addEventListener("change", draw);
-  layers.addEventListener("change", () => { cellInfo.textContent = "Click a cell to inspect its stored tile types."; draw(); });
+  showVectors?.addEventListener("change", draw);
+  layers.addEventListener("change", () => {
+    cellInfo.textContent = board.vectors ?
+      "Raw vector geometry is listed above; click a cell to see its grid position." :
+      "Click a cell to inspect its stored tile types.";
+    draw();
+  });
   draw();
 }
 

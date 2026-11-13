@@ -63,7 +63,7 @@ reconstruction. [Fixture index](fixtures/README.md)
 | PRG | [RPGCode program](prg.md) | Source and static indexing | Demo startup trace and Toolkit 2 Help |
 | TAN | [Animated tile](tan.md) | Binary 2.0 | Demo animation files |
 | TEM | [Character](tem.md) | Text 2.0/2.1/2.2 and binary 2.3/2.4, walking/battle/rest/custom art | DustBall, Demo and Cluetest characters, compatibility reader and synthetic fixtures |
-| BRD | [Board](brd.md) | Text 2.0 and 2.1 and binary 2.2 and 2.3 placements, links, raw conditions and tile types | Demo boards, Cluetest text board, compatibility readers and synthetic fixtures |
+| BRD | [Board](brd.md) | Text 2.0/2.1 and binary 2.2/2.3 legacy fields; Toolkit 3 binary 2.4 tile RLE, separate shading, lights and raw collision vectors | Demo/Cluetest, pinned native reader, owner BSTW sample and synthetic fixtures |
 | ITM | [Item](itm.md) | Text 2.0/2.1 and binary 2.2/2.3 | DustBall and Demo items, compatibility reader and synthetic fixtures |
 | ENE | [Enemy](ene.md) | Text 2.0, two observed tails | Demo enemies |
 | BKG | [Battle background](bkg.md) | Text 2.0 | Demo backgrounds |

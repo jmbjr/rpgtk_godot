@@ -214,10 +214,130 @@ function readTextBoard(bytes) {
   return { width, height, layers, layerTitles, lookup, runs, tileTypes: compactTileTypes(tileTypes), programs, items, start, saveDisabled, background, ambient, refs };
 }
 
+function readVectorBoard(reader, bytes) {
+  // Native Toolkit 3 binary 2.4: unlike pre-vector BRD 2.2/2.3 there are
+  // no registration fields, start coordinates or per-tile shade/type bytes.
+  const width = reader.short();
+  const height = reader.short();
+  const layers = reader.short();
+  const coordinateType = reader.short();
+  const cells = width * height * layers;
+  const area = width * height;
+  if (width < 1 || height < 1 || layers < 1 || cells > 2_000_000) {
+    throw new Error("Unsupported vector board dimensions.");
+  }
+  const lookupCount = reader.short() + 1;
+  if (lookupCount < 1 || lookupCount > reader.remaining()) {
+    throw new Error("Invalid vector board tile lookup count.");
+  }
+  const lookup = Array.from({ length: lookupCount }, () => reader.string());
+  const placements = new Map();
+  const rawRuns = [];
+  for (let offset = 0; offset < cells;) {
+    const token = reader.short();
+    const length = token < 0 ? -token : 1;
+    const index = token < 0 ? reader.short() : token;
+    if (index < 0 || index >= lookup.length || offset + length > cells) {
+      throw new Error("Invalid vector board tile run.");
+    }
+    rawRuns.push({ offset, length, index });
+    if (index && lookup[index]) placements.set(index, (placements.get(index) ?? 0) + length);
+    offset += length;
+  }
+
+  // Toolkit 3 stores tile shading in independent, counted layer blocks.
+  // A source run may exceed the remaining cells (the 2.4 reader exits at
+  // the layer boundary); retain its stored count and clamp the preview.
+  const shadingCount = reader.short() + 1;
+  if (shadingCount < 0 || shadingCount > reader.remaining() / 6) {
+    throw new Error("Invalid vector board shading layer count.");
+  }
+  const shades = Array.from({ length: 3 }, () => new Int16Array(cells));
+  const shadingLayers = [];
+  for (let i = 0; i < shadingCount; i++) {
+    const layer = reader.long();
+    const sourceRuns = [];
+    for (let offset = 0; offset < area;) {
+      const storedLength = reader.short();
+      const shade = [reader.short(), reader.short(), reader.short()];
+      if (storedLength < 1) throw new Error("Invalid vector board shade run.");
+      const length = Math.min(storedLength, area - offset);
+      sourceRuns.push({ offset, length, storedLength, shade });
+      if (layer >= 1 && layer <= layers) {
+        const from = (layer - 1) * area + offset;
+        for (let channel = 0; channel < 3; channel++) {
+          shades[channel].fill(shade[channel], from, from + length);
+        }
+      }
+      offset += length;
+    }
+    shadingLayers.push({ layer, runs: sourceRuns });
+  }
+
+  // Merge graphic and shade runs without inventing pre-vector tile types.
+  const runs = [];
+  for (const run of rawRuns) {
+    if (!run.index || !lookup[run.index]) continue;
+    for (let offset = run.offset; offset < run.offset + run.length;) {
+      const shade = shades.map(channel => channel[offset]);
+      let end = offset + 1;
+      while (end < run.offset + run.length && shades.every((channel, i) => channel[end] === shade[i])) end++;
+      runs.push({ offset, length: end - offset, index: run.index, shade });
+      offset = end;
+    }
+  }
+
+  // Light and collision-vector records precede the newer program/sprite
+  // sections. Stop here: no unsupported late-tail fields are inferred.
+  const lightCount = reader.short() + 1;
+  if (lightCount < 0 || lightCount > reader.remaining() / 10) {
+    throw new Error("Invalid vector board light count.");
+  }
+  const lights = [];
+  const readPoints = label => {
+    const count = reader.short() + 1;
+    if (count < 0 || count > reader.remaining() / 8) throw new Error("Invalid " + label + " point count.");
+    return Array.from({ length: count }, () => ({ x: reader.long(), y: reader.long() }));
+  };
+  for (let i = 0; i < lightCount; i++) {
+    const layer = reader.long();
+    const type = reader.long();
+    const points = readPoints("board light");
+    const colorsCount = reader.short() + 1;
+    if (colorsCount < 0 || colorsCount > reader.remaining() / 6) {
+      throw new Error("Invalid vector board light color count.");
+    }
+    const colors = Array.from({ length: colorsCount }, () =>
+      [reader.short(), reader.short(), reader.short()]);
+    lights.push({ layer, type, points, colors });
+  }
+  const vectorCount = reader.short() + 1;
+  if (vectorCount < 0 || vectorCount > reader.remaining() / 10) {
+    throw new Error("Invalid vector board vector count.");
+  }
+  const vectors = Array.from({ length: vectorCount }, (_, slot) => {
+    const points = readPoints("board vector");
+    const attributes = reader.short();
+    const closed = reader.short(); // Preserve raw VB boolean (-1/0).
+    const layer = reader.short();
+    const tileType = reader.short();
+    const handle = reader.string();
+    return { slot, points, attributes, closed, layer, tileType, handle };
+  });
+  return {
+    width, height, layers, coordinateType,
+    layerTitles: ["", ...Array.from({ length: Math.max(layers, 8) }, (_, i) => "Layer " + (i + 1))].slice(0, 9),
+    lookup, runs, tileTypes: [], shadingLayers, lights, vectors,
+    background: -1, ambient: [0, 0, 0], // Neutral preview defaults; not stored prefix settings.
+    programs: [], items: [], refs: boardTileReferences(lookup, placements),
+  };
+}
+
 function readBoard(bytes) {
   if (/^RPGTLKIT BOARD[\r\n]/i.test(text.decode(bytes.subarray(0, 16)))) return readTextBoard(bytes);
   const reader = cursor(bytes);
-  const minor = header(reader, "RPGTLKIT BOARD", [2, 3]);
+  const minor = header(reader, "RPGTLKIT BOARD", [2, 3, 4]);
+  if (minor === 4) return readVectorBoard(reader, bytes);
   reader.skip(2);
   reader.string();
   const width = reader.short();

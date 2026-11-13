@@ -353,6 +353,55 @@
         "programs": {"type": "array", "items": {"$ref": "#/$defs/boardProgram"}},
         "items": {"type": "array", "items": {"$ref": "#/$defs/boardItem"}},
         "coordinateType": {"type": "integer", "minimum": 0, "maximum": 255},
+        "shadingLayers": {
+          "type": "array", "items": {
+            "type": "object",
+            "properties": {
+              "layer": {"type": "integer"},
+              "runs": {"type": "array", "items": {
+                "type": "object",
+                "properties": {
+                  "offset": {"type": "integer", "minimum": 0},
+                  "length": {"type": "integer", "minimum": 1},
+                  "storedLength": {"type": "integer", "minimum": 1},
+                  "shade": {"type": "array", "items": {"type": "integer"}, "minItems": 3, "maxItems": 3}
+                },
+                "required": ["offset", "length", "storedLength", "shade"], "additionalProperties": false
+              }}
+            },
+            "required": ["layer", "runs"], "additionalProperties": false
+          }
+        },
+        "lights": {
+          "type": "array", "items": {
+            "type": "object",
+            "properties": {
+              "layer": {"type": "integer"},
+              "type": {"type": "integer"},
+              "points": {"type": "array", "items": {"$ref": "#/$defs/vectorPoint"}},
+              "colors": {"type": "array", "items": {
+                "type": "array", "items": {"type": "integer"}, "minItems": 3, "maxItems": 3
+              }}
+            },
+            "required": ["layer", "type", "points", "colors"], "additionalProperties": false
+          }
+        },
+        "vectors": {
+          "type": "array", "items": {
+            "type": "object",
+            "properties": {
+              "slot": {"type": "integer", "minimum": 0},
+              "points": {"type": "array", "items": {"$ref": "#/$defs/vectorPoint"}},
+              "attributes": {"type": "integer"},
+              "closed": {"type": "integer"},
+              "layer": {"type": "integer"},
+              "tileType": {"type": "integer"},
+              "handle": {"type": "string"}
+            },
+            "required": ["slot", "points", "attributes", "closed", "layer", "tileType", "handle"],
+            "additionalProperties": false
+          }
+        },
         "tileLookup": {
           "type": "array",
           "items": {
@@ -391,6 +440,14 @@
         "runs"
       ],
       "additionalProperties": false
+    },
+    "vectorPoint": {
+      "type": "object",
+      "properties": {
+        "x": {"type": "integer"},
+        "y": {"type": "integer"}
+      },
+      "required": ["x", "y"], "additionalProperties": false
     },
     "boardPosition": {
       "type": "object",
