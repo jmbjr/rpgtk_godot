@@ -13,7 +13,7 @@ const binary = (signature, major, minor) => {
 };
 const cases=[];
 for(const [type,signature,textVersions,binaryVersions] of [
-  ["gam","MAIN",[0],[2,9]], ["tem","CHAR",[0,1,2],[3,4]], ["brd","BOARD",[0,1],[2,3]],
+  ["gam","MAIN",[0],[2,9]], ["tem","CHAR",[0,1,2],[3,4]], ["brd","BOARD",[0,1],[2,3,4]],
   ["itm","ITEM",[0,1],[2,3]], ["ste","STATUSE",[0],[2]], ["tan","TILEANIM",[],[0]],
   ["ene","ENEMY",[0],[]], ["bkg","BKG",[0],[]], ["spc","SPLMOVE",[0],[]],
   ["anm","ANIM",[0],[]], ["fnt","FONT",[0],[]],
