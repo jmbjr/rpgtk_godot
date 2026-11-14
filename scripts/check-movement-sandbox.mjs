@@ -35,8 +35,8 @@ assert.notStrictEqual(noInput, start, "Movement update returns a new immutable-l
 assert.equal(stepMovement(start, { x: 1, y: 0 }, 0).distance, 0);
 assert.equal(stepMovement(start, { x: 1, y: 0 }, NaN).moving, false);
 assert.equal(stepMovement(start, { x: 0, y: 1 }, -1).distance, 0);
-assert.equal(stepMovement(start, { x: 1, y: 0 }, 100).x - start.x,
-  WALK_SPEED * MAX_FRAME_SECONDS, "Clamp a stalled frame, never teleport");
+assert.ok(Math.abs(stepMovement(start, { x: 1, y: 0 }, 100).x - start.x -
+  WALK_SPEED * MAX_FRAME_SECONDS) < 1e-7, "Clamp a stalled frame, never teleport");
 
 for (const [input, facing, px, py] of [
   [{ x: 1, y: 0 }, "east", 1, 0],
