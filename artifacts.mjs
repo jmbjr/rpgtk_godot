@@ -921,7 +921,7 @@ function readTextItem(bytes) {
 function readItem(bytes) {
   if (/^RPGTLKIT ITEM[\r\n]/i.test(text.decode(bytes.subarray(0, 15)))) return readTextItem(bytes);
   const reader = cursor(bytes);
-  const version = header(reader, "RPGTLKIT ITEM", [2, 3]);
+  const version = header(reader, "RPGTLKIT ITEM", [2, 3, 7]);
   const number = version === 3 ? reader.long : reader.short;
   const name = reader.string();
   const description = reader.string();
@@ -940,6 +940,74 @@ function readItem(bytes) {
   const board = fields(reader, ["On-board program", "Pickup program"]);
   const sizeType = reader.byte();
   const refs = [...equip.refs, ...menu.refs, ...battle.refs, ...board.refs];
+  const common = {
+    version, name, description, modes, usableBy, characters, buyPrice, sellPrice,
+    keyItem, armorSlots, accessory, modifiers,
+    programs: { ...equip.values, ...menu.values,
+      "Battle-use program": battle.values["Battle-use program"], ...board.values },
+    animation: battle.values["Item animation"],
+    menu: { hp: menu.hp, specialPower: menu.specialPower },
+    battle: { hp: battle.hp, specialPower: battle.specialPower }, sizeType,
+  };
+  if (version === 7) {
+    // The native Toolkit 3 item writer stores ten animation filenames,
+    // eight standing animations, timing doubles, custom slots, then
+    // collision/activation vector bases. No legacy 16x2 GPH tile pairs.
+    const compass = ["South", "North", "East", "West",
+      "Northwest", "Northeast", "Southwest", "Southeast"];
+    const stored = Array.from({ length: 10 }, () => reader.string());
+    const standing = Array.from({ length: 8 }, () => reader.string());
+    const directionalAnimations = compass.map((direction, i) => ({
+      direction, value: stored[i], evidence: `Walk ${direction} animation`,
+    }));
+    const standingAnimations = compass.map((direction, i) => ({
+      direction, value: standing[i], evidence: `Idle ${direction} animation`,
+    }));
+    const restAnimation = { value: stored[8], evidence: "Rest animation" };
+    const reservedGraphic = stored[9];
+    // The source writes speed before idleTime, unlike the historic
+    // character profile. Preserve both without deriving loop timing.
+    const speed = reader.double();
+    const idleTime = reader.double();
+    if (![speed, idleTime].every(Number.isFinite) || speed < 0 || idleTime < 0) {
+      throw new Error("Invalid native item animation timing.");
+    }
+    const customMaximum = reader.long();
+    if (customMaximum < -1 || customMaximum > 500 ||
+        customMaximum + 1 > reader.remaining() / 2) {
+      throw new Error("Invalid native item custom animation maximum.");
+    }
+    const customAnimations = Array.from({ length: customMaximum + 1 }, (_, slot) => ({
+      slot, value: reader.string(), handle: reader.string(),
+      evidence: `Custom animation · slot ${slot}`,
+    }));
+    const baseMaximum = reader.short();
+    if (baseMaximum < -1 || baseMaximum > 64 ||
+        baseMaximum + 1 > reader.remaining() / 2) {
+      throw new Error("Invalid native item vector-base maximum.");
+    }
+    const vectorBases = Array.from({ length: baseMaximum + 1 }, (_, slot) => {
+      const pointMaximum = reader.short();
+      if (pointMaximum < -1 || pointMaximum > 4095 ||
+          pointMaximum + 1 > reader.remaining() / 8) {
+        throw new Error("Invalid native item vector point maximum.");
+      }
+      return { slot, role: slot === 0 ? "Collision" : slot === 1 ? "Activation" : "Additional",
+        points: Array.from({ length: pointMaximum + 1 },
+          () => ({ x: reader.long(), y: reader.long() })) };
+    });
+    if (reader.remaining()) throw new Error("Unexpected native item tail.");
+    for (const graphic of [...directionalAnimations, ...standingAnimations,
+      restAnimation, ...customAnimations]) {
+      if (graphic.value) refs.push(reference(graphic.value, graphic.evidence));
+    }
+    // Keep the unassigned 10th graphics filename as raw evidence.
+    if (reservedGraphic) refs.push(reference(reservedGraphic, "Reserved item graphic"));
+    return {
+      ...common, directionalAnimations, standingAnimations, restAnimation,
+      reservedGraphic, customAnimations, vectorBases, speed, idleTime, refs,
+    };
+  }
   const walking = Array.from({ length: 16 }, (_, index) => {
     const frame = fields(reader, [`Walking frame ${index + 1} top`, `Walking frame ${index + 1} bottom`]);
     refs.push(...frame.refs);
@@ -947,12 +1015,7 @@ function readItem(bytes) {
   });
   const rest = fields(reader, ["Rest graphic top", "Rest graphic bottom"]);
   refs.push(...rest.refs);
-  return { version, name, description, modes, usableBy, characters, buyPrice, sellPrice, keyItem, armorSlots, accessory, modifiers,
-    programs: { ...equip.values, ...menu.values, "Battle-use program": battle.values["Battle-use program"], ...board.values },
-    animation: battle.values["Item animation"],
-    menu: { hp: menu.hp, specialPower: menu.specialPower },
-    battle: { hp: battle.hp, specialPower: battle.specialPower },
-    sizeType, walking, rest: Object.values(rest.values), refs };
+  return { ...common, walking, rest: Object.values(rest.values), refs };
 }
 
 // The demo contains one headerless text artifact with this repeated record shape.
