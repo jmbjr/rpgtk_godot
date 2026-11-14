@@ -296,6 +296,28 @@
           "required": ["value", "evidence"],
           "additionalProperties": false
         },
+        "walkingAnimations": {"type": "array", "minItems": 8, "maxItems": 8, "items": {"$ref": "#/$defs/nativeCharacterAnimation"}},
+        "standingAnimations": {"type": "array", "minItems": 8, "maxItems": 8, "items": {"$ref": "#/$defs/nativeCharacterAnimation"}},
+        "battleAnimations": {
+          "type": "array", "minItems": 5, "maxItems": 5,
+          "items": {"type": "object", "properties": {
+            "kind": {"enum": ["Attack", "Defense", "Special move", "Defeat", "Rest"]},
+            "value": {"type": "string"}, "evidence": {"type": "string"}
+          }, "required": ["kind", "value", "evidence"], "additionalProperties": false}
+        },
+        "customAnimations": {
+          "type": "array", "items": {"type": "object", "properties": {
+            "slot": {"type": "integer", "minimum": 0},
+            "value": {"type": "string"}, "handle": {"type": "string"}, "evidence": {"type": "string"}
+          }, "required": ["slot", "value", "handle", "evidence"], "additionalProperties": false}
+        },
+        "vectorBases": {
+          "type": "array", "items": {"type": "object", "properties": {
+            "slot": {"type": "integer", "minimum": 0},
+            "points": {"type": "array", "items": {"$ref": "#/$defs/vectorPoint"}}
+          }, "required": ["slot", "points"], "additionalProperties": false}
+        },
+        "idleTime": {"type": "number"}, "speed": {"type": "number"},
         "artwork": {"type": "array", "minItems": 27, "maxItems": 27, "items": {"$ref": "#/$defs/characterArtwork"}},
         "embeddedWalking": {
           "type": "array",
@@ -448,6 +470,15 @@
         "y": {"type": "integer"}
       },
       "required": ["x", "y"], "additionalProperties": false
+    },
+    "nativeCharacterAnimation": {
+      "type": "object",
+      "properties": {
+        "direction": {"enum": ["South", "North", "East", "West", "Northwest", "Northeast", "Southwest", "Southeast"]},
+        "value": {"type": "string"},
+        "evidence": {"type": "string"}
+      },
+      "required": ["direction", "value", "evidence"], "additionalProperties": false
     },
     "boardPosition": {
       "type": "object",
@@ -982,8 +1013,8 @@
             "required": ["image", "transparentColor", "sound"],
             "additionalProperties": false
           },
-          "minItems": 51,
-          "maxItems": 51
+          "minItems": 1,
+          "maxItems": 1001
         }
       },
       "required": ["byteLength", "width", "height", "storedFrameCount", "pauseSeconds", "frames"],
