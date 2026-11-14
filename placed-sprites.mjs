@@ -49,7 +49,8 @@ export function resolveInitialItemArtwork(item, artifacts, graph) {
     if (valid(image, "tbm")) {
       const composed = tileBitmapSprite(image, artifacts, graph);
       if (composed && composed.parts.length &&
-          composed.width === animation.width && composed.height === animation.height) {
+          composed.width === animation.width && composed.height === animation.height &&
+          composed.missing.length < composed.parts.length) {
         return {
           status: composed.missing.length ? "partial" : "resolved",
           source: candidate.evidence, animationPath: animation.path,
