@@ -9,6 +9,37 @@ npm ci
 python3 -m http.server 8000
 ```
 
+## First playable movement sandbox
+
+Open **[Movement Sandbox](sandbox.html)** from the Game Explorer home
+page, or visit `sandbox.html` directly on GitHub Pages. **No ZIP
+or Toolkit engine required.** Move the original, synthetic pixel-art
+character around a small tile board using **WASD**, arrow keys,
+or a touch D-pad on phones. Movement is four-way with normalized
+diagonal input, walking frames, a reset, a solid-wall overlay,
+and an inn landmark. Near the inn, the test explicitly reports that
+interacting with the door is a **future milestone**.
+
+The deterministic model in
+[`experiments/movement-sandbox/engine.mjs`](experiments/movement-sandbox/engine.mjs)
+defines a 9-pixel-radius circle against orthogonal **solid tile
+rectangles**, with independent-axis wall sliding, maximum 4-pixel
+substeps, and frame elapsed-time clamping. These are
+**explicitly chosen experiment policies**, *not* assertions about
+Toolkit 3 vector collision, actual BSTW geometry, sprite timings,
+or RPGCode execution*. The stand-alone demo uses
+original synthetic board/artwork from this repo, never the BSTW
+game assets. Follow-up work under [Issue #92](https://github.com/jmbjr/rpgtk_godot/issues/92)
+will add an inn-door dialogue adapter, then validate against
+real imported source.
+
+CI runs `node scripts/check-movement-sandbox.mjs` for four headings,
+diagonal speed, solid collisions, sliding, large frame deltas,
+reset, source-owned map integrity and UI contract. The Pages staging
+check now validates both Game Explorer and Movement Sandbox module
+graphs. Mobile touch acceptance still requires an actual device test
+after deployment.
+
 Choose the game ZIP and optionally its separate Main File. The viewer reads
 both files in browser memory. It indexes RPGCode source and resolves the
 startup fields of binary Main File format 2.2. Browse the archive by folder.
