@@ -17,6 +17,7 @@ JSON document locally and uses the same records as the artifact inspector.
 | `scriptTrace` | Static, cycle-safe, per-entrypoint `#Include`/`#Run` dependency inspection. Stores configured GAM/board/item script roots, source lines, resolved walks, missing and dynamic gaps, and explicit limits. It is not runtime reachability. |
 | Saved state (SAV) | SAV 3.4 records are ordinary artifacts whose `data` includes raw typed globals, party, inventory, equipment, world items, object mappings and a `completion` marker. Outgoing links are source filenames, not executable restoration dependencies. Active-thread stacks remain explicitly unparsed. |
 | `pluginAudit` | Correlates nonempty GAM plugin-slot and independent menu/fight plugin declarations with packaged DLLs. Preserves path resolution, export-name/architecture metadata, undeclared bundled files and limitations. Windows DLL bytes are not embedded or executed. |
+| `playabilityAssessment` | A source-only four-stage title/board/character/interaction audit with selected sprite coordinates, directional ANM/TST links, source PRG excerpts and explicit runtime gaps. `summary.runtimeVerified` remains false; a resolved link is **not** gameplay acceptance. |
 | `coverage` | Counts by artifact decode status and edge resolution status, and limits of the export. Decode counts include any uploaded Main File. |
 
 Resolve a `$ref` by looking up its base ID in the four record dictionaries.
