@@ -15,7 +15,7 @@ const revisions = {
 export const formatSpecs = {
   gam: "gam", prg: "prg", tst: "tst", tan: "tan", tem: "tem", brd: "brd", itm: "itm",
   ene: "ene", bkg: "bkg", spc: "spc", anm: "anm", gph: "gph", fnt: "fnt", ste: "ste",
-  gif: "gif", jpg: "jpg", jpeg: "jpg", wav: "wav", mid: "mid", doc: "doc", tbm: "tbm", sav: "sav", ___: "temporary-board",
+  gif: "gif", jpg: "jpg", jpeg: "jpg", wav: "wav", mid: "mid", doc: "doc", dll: "plugin-abi", tbm: "tbm", sav: "sav", ___: "temporary-board",
 };
 export const toolkitAsset = type => Object.hasOwn(signatures, type) || ["tst", "prg", "___", "tbm", "iso"].includes(type);
 const unknown = () => ({ encoding: "unknown", version: null, supported: false });
