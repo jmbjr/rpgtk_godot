@@ -1,0 +1,129 @@
+import { mainFileBindings } from "./model.mjs";
+import { ACTOR_RADIUS } from "./experiments/movement-sandbox/engine.mjs";
+
+// Source-only scene mapping. Never runs the GAM startup program, RPGCode,
+// native vector blocking, DLLs or plugins. UI consumers must check ok first.
+const HEADINGS = ["South", "North", "East", "West"];
+const decoded = (asset, type) =>
+  asset?.type === type && asset.decodeStatus === "decoded" && !asset.error;
+
+export function buildPlayableScene(artifacts, graph, selectedMain = null) {
+  const issues = [];
+  const fail = (code, detail) => issues.push({ code, detail });
+  const mains = [...artifacts.values()].filter(a => decoded(a, "gam"));
+  const main = selectedMain ?? (mains.length === 1 ? mains[0] : null);
+  if (!decoded(main, "gam") || main.minor !== 9) {
+    fail("unsupported-main", "A unique, decoded native GAM 2.9 Main File is required.");
+    return { ok: false, issues };
+  }
+
+  const bindings = new Map(mainFileBindings(main, [...artifacts.keys()]));
+  const linked = (label, type) => {
+    const binding = bindings.get(label);
+    const asset = artifacts.get(binding?.path);
+    if (binding?.status !== "resolved" || !decoded(asset, type)) {
+      fail("missing-" + type, label + ": " + (binding?.value || "(not set)") +
+        " is missing, ambiguous, or unsupported.");
+      return null;
+    }
+    return asset;
+  };
+  const board = linked("Opening board", "brd");
+  const character = linked("Initial character", "tem");
+  if (!board || !character) return { ok: false, issues };
+
+  if (!board.vectors || board.coordinateType !== 4 ||
+      !Number.isInteger(board.width) || !Number.isInteger(board.height) ||
+      board.width < 1 || board.height < 1 || board.width > 64 ||
+      board.height > 64 || !Number.isInteger(board.layers) ||
+      board.layers < 1 || board.layers > 8) {
+    fail("unsupported-board", "Only native BRD 2.4 orthogonal pixel boards (code 4, up to 64×64×8) are playable.");
+  }
+  const start = board.start;
+  if (!start || !Number.isFinite(start.x) || !Number.isFinite(start.y) ||
+      !Number.isInteger(start.layer) || start.layer < 1 ||
+      start.layer > board.layers || start.x < ACTOR_RADIUS ||
+      start.y < ACTOR_RADIUS || start.x > board.width * 32 - ACTOR_RADIUS ||
+      start.y > board.height * 32 - ACTOR_RADIUS) {
+    fail("invalid-spawn", "The stored start position or layer is outside the playable map bounds.");
+  }
+  if (issues.length) return { ok: false, issues };
+
+  const edges = graph.outgoing.get(board.path) ?? [];
+  const boardIndex = new Map(edges.filter(e => Number.isInteger(e.index))
+    .map(e => [e.index, e]));
+  const tileFrom = (edge, label) => {
+    let chosen = edge;
+    if (artifacts.get(chosen?.to)?.type === "tan") {
+      // The static viewer uses the first TAN frame for a still board tile.
+      chosen = (graph.outgoing.get(chosen.to) ?? []).find(e => e.tile !== undefined);
+    }
+    const set = artifacts.get(chosen?.to);
+    if (chosen?.status !== "Resolved" || !decoded(set, "tst") ||
+        !set.bytes || !Number.isInteger(chosen.tile) ||
+        chosen.tile < 1 || chosen.tile > set.count) {
+      fail("unresolved-tile", label + " has no supported, decoded TST tile.");
+      return null;
+    }
+    return { path: set.path, tile: chosen.tile };
+  };
+
+  const tiles = new Map();
+  for (const run of board.runs ?? []) {
+    if (!tiles.has(run.index)) {
+      tiles.set(run.index, tileFrom(boardIndex.get(run.index),
+        "Board lookup " + run.index + " (" + (board.lookup?.[run.index] ?? "") + ")"));
+    }
+  }
+  const walks = {};
+  for (const heading of HEADINGS) {
+    const named = character.walkingAnimations?.find(item => item.direction === heading);
+    const edge = (graph.outgoing.get(character.path) ?? [])
+      .find(item => item.evidence === "Walk " + heading + " animation");
+    const animation = artifacts.get(edge?.to);
+    if (!named?.value || edge?.status !== "Resolved" || !decoded(animation, "anm") ||
+        animation.width !== 32 || animation.height !== 32) {
+      fail("unsupported-animation", heading + " has no decoded 32×32 ANM walking animation.");
+      continue;
+    }
+    const imageEdges = new Map((graph.outgoing.get(animation.path) ?? [])
+      .map(e => [e.evidence, e]));
+    const frames = [];
+    for (const [index, frame] of animation.frames.entries()) {
+      if (!frame.image) continue; // Native ANM reserves many empty slots.
+      const tile = tileFrom(imageEdges.get("Frame " + (index + 1) + " image"),
+        heading + " frame " + (index + 1));
+      if (tile) frames.push({ ...tile, transparentColor: frame.transparentColor });
+    }
+    if (!frames.length || !Number.isFinite(animation.pauseSeconds) ||
+        animation.pauseSeconds <= 0) {
+      fail("unsupported-animation", heading + " has no playable frames or positive animation pause.");
+    }
+    walks[heading.toLowerCase()] = {
+      path: animation.path, frames, pauseSeconds: animation.pauseSeconds,
+    };
+  }
+  if (issues.length) return { ok: false, issues };
+
+  return {
+    ok: true, issues: [],
+    mainPath: main.path, boardPath: board.path, characterPath: character.path,
+    characterName: character.name, coordinateType: board.coordinateType,
+    start: { x: start.x, y: start.y, layer: start.layer },
+    board: {
+      width: board.width, height: board.height, layers: board.layers,
+      background: board.background, ambient: board.ambient ?? [0, 0, 0],
+      // Preserve the decoded source run order and one-based board layer order.
+      runs: board.runs.map(run => ({ ...run, tile: tiles.get(run.index) })),
+    },
+    walking: walks,
+    // Explicit sandbox movement model with no interior solids. The source
+    // vectors are retained as evidence in the viewer, NOT interpreted here.
+    world: {
+      tileSize: 32, width: board.width, height: board.height,
+      rows: Array.from({ length: board.height }, () => ".".repeat(board.width)),
+      spawn: { x: start.x, y: start.y },
+    },
+    collisionPolicy: "bounds-only; 9px actor radius; native vectors not interpreted",
+  };
+}
