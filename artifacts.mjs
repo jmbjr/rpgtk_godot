@@ -83,6 +83,37 @@ export function tilePixels(tileset, number) {
   return rgba;
 }
 
+function readTileBitmap(bytes) {
+  const reader = cursor(bytes);
+  const signature = reader.string();
+  const major = reader.short();
+  const minor = reader.short();
+  if (signature !== "TK3 TILEBITMAP" || major !== 3 || minor !== 0) {
+    throw new Error("Unsupported native tile bitmap header/revision.");
+  }
+  const width = reader.short();
+  const height = reader.short();
+  // Toolkit 3 saves (width + 1) × (height + 1) inclusive records,
+  // but the native renderer draws only x < width and y < height.
+  if (width < 1 || height < 1 || width > 256 || height > 256 ||
+      (width + 1) * (height + 1) > 16_384) {
+    throw new Error("Invalid native tile bitmap dimensions.");
+  }
+  const tiles = [];
+  const refs = [];
+  for (let x = 0; x <= width; x++) {
+    for (let y = 0; y <= height; y++) {
+      const value = reader.string();
+      const shade = [reader.short(), reader.short(), reader.short()];
+      const evidence = `Bitmap tile (${x}, ${y})`;
+      tiles.push({ x, y, value, shade });
+      if (value) refs.push(reference(value, evidence));
+    }
+  }
+  if (reader.remaining()) throw new Error("Unexpected trailing native tile bitmap bytes.");
+  return { width, height, storedColumns: width + 1, storedRows: height + 1, tiles, refs };
+}
+
 function readAnimation(bytes) {
   const reader = cursor(bytes);
   header(reader, "RPGTLKIT TILEANIM", [0]);
@@ -1042,7 +1073,7 @@ function readTemporaryBoardText(bytes) {
 const readers = {
   gam: readMainFile, prg: readProgram, tst: readTileset, tan: readAnimation, tem: readCharacter, brd: readBoard,
   bkg: readBackground, ene: readEnemy, spc: readSpecialMove, ste: readStatusEffect, anm: readLegacyAnimation,
-  fnt: readFont, gph: readStandaloneTile, itm: readItem,
+  fnt: readFont, gph: readStandaloneTile, itm: readItem, tbm: readTileBitmap,
   gif: readGif, jpg: readJpeg, jpeg: readJpeg, wav: readWave, mid: readMidi,
   doc: readCompoundDocument, ___: readTemporaryBoardText,
 };
