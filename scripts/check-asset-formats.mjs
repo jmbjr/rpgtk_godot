@@ -21,6 +21,8 @@ for(const [type,signature,textVersions,binaryVersions] of [
   for(const minor of textVersions) cases.push({type,bytes:bytes(`RPGTLKIT ${signature}\r\n2\r\n${minor}\r\n`),expected:{encoding:"text",version:`2.${minor}`,supported:true}});
   for(const minor of binaryVersions) cases.push({type,bytes:binary(`RPGTLKIT ${signature}`,2,minor),expected:{encoding:"binary",version:`2.${minor}`,supported:true}});
 }
+cases.push({type:"tbm",bytes:binary("TK3 TILEBITMAP",3,0),
+  expected:{encoding:"binary",version:"3.0",supported:true}});
 for(const detail of [1,2,3,4,5,6]) {
   const tst=new Uint8Array(6);const v=new DataView(tst.buffer);v.setInt16(0,20,true);v.setInt16(4,detail,true);
   cases.push({type:"tst",bytes:tst,expected:{encoding:"binary",version:"20",detail,supported:true}},
@@ -38,7 +40,7 @@ for(const {type,bytes,expected} of cases) {
   }
 }
 for(const [type,data,version] of [["tem",binary("RPGTLKIT CHAR",2,9),"2.9"],["brd",bytes("RPGTLKIT BOARD\n2\n9\n"),"2.9"],
-  ["tbm",binary("RPGTLKIT TILEBITMAP",3,0),"3.0"]]) {
+  ["tbm",binary("TK3 TILEBITMAP",3,1),"3.1"]]) {
   const f=detectSourceFormat(type,data);assert.equal(f.version,version);assert.equal(f.supported,false);
   assert.match(formatSummary({type,sourceFormat:f}),/Unsupported layout/);
   assert.equal(formatSpecTarget({type,sourceFormat:f}).anchor,"#unsupported-versions");
