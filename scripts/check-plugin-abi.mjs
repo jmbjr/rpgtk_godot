@@ -33,7 +33,7 @@ assert.equal(inspectPortableExecutable(Buffer.from("NOT A DLL")).status, "not-pe
 for (const [label, bytes] of [
   ["short PE", syntheticComDll.subarray(0, 0x180)],
   ["bad export section", (() => {
-    const b = Buffer.from(syntheticComDll); b.writeUInt32LE(0x40000000, 0x118 + 96); return b;
+    const b = Buffer.from(syntheticComDll); b.writeUInt32LE(0x40000000, 0x98 + 96); return b;
   })()],
   ["huge export count", (() => {
     const b = Buffer.from(syntheticComDll); b.writeUInt32LE(8193, 0x300 + 24); return b;
