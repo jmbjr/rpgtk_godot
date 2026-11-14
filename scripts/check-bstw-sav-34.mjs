@@ -40,7 +40,7 @@ assert.deepEqual(save.equipmentModifiers, [
   { player: 1, hp: 21, specialPower: 22, defense: 23, fight: 24 },
 ]);
 assert.deepEqual([save.misc.selectedPlayer, save.misc.gold, save.misc.board, save.misc.mainFile],
-  [1, 2468, "start.brd", "Main\\Test.gam"]);
+  [1, 2468, "start.brd", "Main\\BSTW.gam"]);
 assert.deepEqual([save.misc.fontFace, save.misc.gameTimeSeconds, save.misc.stepsTakenTiles],
   ["Courier New", 372, 9]);
 assert.deepEqual(save.positions, [
