@@ -83,7 +83,8 @@ export function assessPlayability(artifacts, graph, mainFile = null, { interacti
     });
   }
   const movementReady = movement.length === 4 && movement.every(item =>
-    item.status === "Resolved" && item.frameCount > 0 &&
+    item.status === "Resolved" && decoded(artifacts.get(item.animation), "anm") &&
+    item.frameCount > 0 &&
     item.frames.every(frame => frame.status === "Resolved"));
   stages.push({
     id: "character", label: "Character and four walking directions",
