@@ -34,7 +34,7 @@ export function auditProjectPlugins(artifacts, mainFile = null) {
       };
     });
   return {
-    mainFile: mainFile?.path ?? mainFile?.filename ?? null,
+    mainFile: mainFile?.filename ?? mainFile?.path ?? null,
     declarationScope: config ? "configured" : "unavailable",
     storedSlots: config?.pluginSlots.length ?? 0,
     declarations, bundled,
