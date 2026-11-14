@@ -922,7 +922,7 @@ function readItem(bytes) {
   if (/^RPGTLKIT ITEM[\r\n]/i.test(text.decode(bytes.subarray(0, 15)))) return readTextItem(bytes);
   const reader = cursor(bytes);
   const version = header(reader, "RPGTLKIT ITEM", [2, 3, 7]);
-  const number = version === 3 ? reader.long : reader.short;
+  const number = version >= 3 ? reader.long : reader.short;
   const name = reader.string();
   const description = reader.string();
   const modes = Object.fromEntries(["equip", "menu", "board", "battle"].map(mode => [mode, Boolean(reader.byte())]));
