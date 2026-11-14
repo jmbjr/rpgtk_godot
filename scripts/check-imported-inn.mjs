@@ -195,11 +195,11 @@ for (const id of ["play-talk", "play-hud", "play-feedback", "play-dialogue",
   assert.match(html, new RegExp('id="' + id + '"'));
 assert.match(client, /nearAuthoredInn/);
 assert.match(client, /activateAuthoredInn/);
-assert.match(client, /inn\\.conversation \\? \\{ x: 0, y: 0 \\}/);
-assert.match(client, /if \\(!event\\.repeat\\) interact\\(\\)/);
-assert.match(client, /event\\.code === "KeyE" \\|\\| event\\.code === "Space"/);
-assert.match(client, /talkButton\\.addEventListener\\("click", interact/);
-assert.match(client, /inn = initialInnState\\(\\)/);
+assert.match(client, /inn\.conversation \? \{ x: 0, y: 0 \}/);
+assert.match(client, /if \(!event\.repeat\) interact\(\)/);
+assert.match(client, /event\.code === "KeyE" \|\| event\.code === "Space"/);
+assert.match(client, /talkButton\.addEventListener\("click", interact/);
+assert.match(client, /inn = initialInnState\(\)/);
 
 // The optional local production JS path reads the owner's original archive
 // without copying it into the repository or passing it to GitHub Actions.
