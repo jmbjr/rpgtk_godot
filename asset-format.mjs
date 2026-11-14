@@ -15,7 +15,7 @@ const revisions = {
 export const formatSpecs = {
   gam: "gam", prg: "prg", tst: "tst", tan: "tan", tem: "tem", brd: "brd", itm: "itm",
   ene: "ene", bkg: "bkg", spc: "spc", anm: "anm", gph: "gph", fnt: "fnt", ste: "ste",
-  gif: "gif", jpg: "jpg", jpeg: "jpg", wav: "wav", mid: "mid", doc: "doc", ___: "temporary-board",
+  gif: "gif", jpg: "jpg", jpeg: "jpg", wav: "wav", mid: "mid", doc: "doc", tbm: "tbm", ___: "temporary-board",
 };
 export const toolkitAsset = type => Object.hasOwn(signatures, type) || ["tst", "prg", "___", "tbm", "iso"].includes(type);
 const unknown = () => ({ encoding: "unknown", version: null, supported: false });
@@ -24,6 +24,16 @@ export function detectSourceFormat(type, bytes) {
   if (!toolkitAsset(type)) return undefined;
   if (type === "prg") return { encoding: "source", version: null, supported: true };
   if (type === "___") return unknown(); // Observed records have no verified version field.
+  if (type === "tbm") {
+    const end = bytes.indexOf(0);
+    if (end !== 14 || bytes.length < end + 5 ||
+        text.decode(bytes.subarray(0, end)) !== "TK3 TILEBITMAP") return unknown();
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const major = view.getInt16(end + 1, true);
+    const minor = view.getInt16(end + 3, true);
+    return { encoding: "binary", version: `${major}.${minor}`,
+      supported: major === 3 && minor === 0 };
+  }
   if (type === "tst") {
     if (bytes.length < 2) return unknown();
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
