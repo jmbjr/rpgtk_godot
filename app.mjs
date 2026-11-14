@@ -4,6 +4,8 @@ import { openGameArchive } from "./archive.mjs";
 import { traceProgramDependencies, traceProjectDependencies } from "./script-trace.mjs";
 import { auditProjectPlugins } from "./plugin-audit.mjs";
 import { assessPlayability } from "./playability-audit.mjs";
+import { buildPlayableScene } from "./playable-scene.mjs";
+import { mountAuthoredBoard } from "./experiments/movement-sandbox/authored-play.mjs";
 import { mainFileBindings, readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
 import { defaultMidiTone, playMidi } from "./midi.mjs";
@@ -36,6 +38,8 @@ function status(id, message, error = false) {
 
 let catalog;
 let archive = null;
+let playableScene = null;
+let activePlayable = null;
 let tileMatchIndex;
 let archiveName;
 let paths = [];
@@ -2418,8 +2422,37 @@ function showReference(group) {
   reference.append(jumps);
 }
 
+function closePlayable() {
+  activePlayable?.destroy();
+  activePlayable = null;
+  byId("play-stage").hidden = true;
+  byId("workspace").hidden = !archive;
+}
+byId("play-close").addEventListener("click", () => {
+  closePlayable();
+  byId("play-bstw").focus({ preventScroll: true });
+});
+byId("play-bstw").addEventListener("click", () => {
+  if (!playableScene?.ok || activePlayable) return;
+  const panel = byId("play-stage");
+  try {
+    panel.hidden = false;
+    byId("workspace").hidden = true;
+    activePlayable = mountAuthoredBoard(panel, playableScene, artifacts);
+    byId("play-error").hidden = true;
+    panel.scrollIntoView({ behavior: "instant", block: "start" });
+    panel.focus({ preventScroll: true });
+  } catch (error) {
+    closePlayable();
+    status("play-eligibility", "Unable to render board: " + error.message, true);
+  }
+});
+
 async function loadArchive(name, readBytes) {
   const request = ++archiveRequest;
+  closePlayable();
+  playableScene = null;
+  byId("play-launch").hidden = true;
   status("archive-status", `Opening ${name}…`);
   byId("export-game-json").disabled = true;
   status("game-export-status", "");
@@ -2450,6 +2483,16 @@ async function loadArchive(name, readBytes) {
     }
     status("archive-status", `${name} · ${paths.length} files · ${programs.length} RPGCode programs`);
     selectDefault(true);
+    // The runtime always follows the GAM embedded in the selected game ZIP,
+    // never an unrelated separately uploaded GAM.
+    playableScene = buildPlayableScene(artifacts, references, archiveMainFile);
+    byId("play-launch").hidden = false;
+    byId("play-bstw").disabled = !playableScene.ok;
+    status("play-eligibility", playableScene.ok ?
+      "Ready: " + playableScene.boardPath + " · " + playableScene.characterName +
+      " at (" + playableScene.start.x + ", " + playableScene.start.y +
+      ", layer " + playableScene.start.layer + ")" :
+      "Cannot play: " + playableScene.issues.slice(0, 2).map(issue => issue.detail).join(" "), !playableScene.ok);
   } catch (error) {
     if (request === archiveRequest) status("archive-status", `Unable to open ${name}. ${error.message}`, true);
   } finally {
