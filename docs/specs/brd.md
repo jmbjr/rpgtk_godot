@@ -194,16 +194,42 @@ establishes the following inspected prefix:
    The raw signed closed flag is retained (Toolkit VB true may be
    `-1`). Each maximum index of `-1` signifies an empty list.
 
-The reader **stops after the vector block**. Native later board
-programs, sprites, scripts, player starting position, background and
-remaining runtime flags are not decoded in this profile. The exported
-`vectors` preserve each point and all five per-vector fields; the
-`lights` and `shadingLayers` preserve the corresponding raw
-source values. The regular `runs` combine tile indices and applicable
-shade blocks for the existing tile renderer. No imaginary per-cell
-`tileTypes` are manufactured; that array is empty in 2.4.
-Neutral background/ambient values are **preview defaults**, not
-verified source configuration fields.
+After the vector block, the source-defined **native 2.4 tail is now
+decoded to exact EOF**. It is deliberately *not* mapped onto the older
+pre-vector `programs`/`items` record shapes. The source:
+[pinned CommonBoard reader, native branch](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vb/tkCommon/modules/CommonBoard.bas#L667-L791).
+
+| Order | Stored tail fields |
+| --- | --- |
+| Native programs | i16 inclusive maximum index; each record has filename and graphic zstr, initial/final variable/value zstr, four i16 activation/type/repeat-distance/layer values, an i16 inclusive maximum vector-point index with i32 x/y pairs, a raw i16 closed flag and handle zstr. |
+| Placed item sprites | i16 inclusive maximum index; each record stores filename, activation program, multitask program, initial/final/loading variable/value zstr (**nine strings**), activation and activation-type i16, x/y/layer i16, and associated waypoint-vector index i16. Positions in code 4 are stored pixel coordinates. |
+| Images | i16 inclusive maximum index; each record stores filename zstr, left/top i32, layer i16, draw-type i16, transparent COLORREF i32 and reserved translucency i16. |
+| Threads and board constants | Independent i16 inclusive maximum indices and maximum-plus-one filename/constant zstr arrays. Blank values remain stored slots, not resolved references. |
+| Labels and links | `layers+1` original layer-title zstr entries (including index 0), then four directional board zstr in North, South, East, West order. The existing viewer still presents a normalized nine-title list. |
+| Background and music | Background-image filename zstr, draw-type i32, background-color i32, music filename zstr. |
+| Startup and combat | Entry-program zstr, battle-background zstr, skill i16, allow-battles i16, save-disabled i16, ambient signed RGB i16 triples, then player start x/y/layer i16. No further bytes are accepted. |
+
+Native board decoded records preserve `nativePrograms`, `sprites`,
+`images`, `threads`, `constants`, `storedLayerTitles`,
+`directionalLinks`, all background/combat settings, `start`,
+`saveDisabled`, `ambient`, and their raw field values. Every
+nonempty supported filename generates a static reference with
+position evidence where the source provides coordinates. The board
+inspector lists sprite and program slots, links directly to referenced
+ITMs and RPGCode files, and shows a **toggleable source-pixel marker
+overlay for standard pixel coordinate code 4**, filtered by layer.
+Other coordinate modes retain raw values and **do not receive guessed
+sprite projections**.
+
+The exported `vectors` preserve each point and raw attributes,
+closed flag, layer, tile type and handle; the `lights` and
+`shadingLayers` preserve their raw source values. The regular `runs`
+combine tile indices and applicable shade blocks for the existing
+tile renderer. No imaginary per-cell `tileTypes` are manufactured
+in the 2.4 branch. Unlike the earlier partial reader, `background`
+and `ambient` now reflect source fields rather than neutral
+preview defaults. **Static references, conditions and positions
+do not prove live execution or editor/runtime visual parity.**
 
 **BSTW evidence:** The owner-provided
 [BSTW Expo Demo](https://github.com/jmbjr/rpgtk_godot/issues/79)
@@ -228,12 +254,31 @@ closed flags and handles remain accessible in the inspector and
 [connected-game JSON](connected-game.md).
 
 The [synthetic BRD 2.4 fixture](fixtures/board-24-fixtures.mjs)
-and [validation script](../../scripts/check-bstw-board-24.mjs)
-check source layout, normalized tile/shade runs, references,
-light/vector attributes, truncation, unsupported revisions and
-JSON export. Running the script with a local BSTW ZIP path additionally
-checks the original SHA-256, all nine boards and the 9/86 and 9/67
-sample counts without checking in game assets.
+and [prefix checks](../../scripts/check-bstw-board-24.mjs)
+now cover the complete native file shape, not a truncated
+vector-only specimen. The [new tail regression](../../scripts/check-bstw-board-tail.mjs)
+independently checks program/sprite/image fields, blank and populated
+slot counts, raw positional references, exact player-start and
+ambient data, connected-game JSON and deliberate malformed tails.
+
+Direct BSTW evidence: **both `start.brd` and `start2.brd` have
+seven placed native item sprites**. Six share the same coordinates:
+`lami.itm` (82,200), `rusty.itm` (432,228),
+`jim.itm` (590,55), and three `door.itm` placements
+(207,349), (512,414), (495,223), all on layer 1.
+The doors have separate activation scripts `mwininn.prg`,
+`mwinuglyhouse.prg`, `mwinsmallhouse.prg`.
+The seventh slot is `loyalis.itm` at (115,115) in
+`start.brd`, but `house_3x3.itm` at (325,100) in
+`start2.brd`. Both boards have **zero native programs and
+images**, one blank thread, eleven `"0"` constants, music
+`townmusic-final-8b.mp3`, and player start (107,78,layer 1).
+The remaining seven boards have empty sprite/program/image
+arrays and parse through the source-defined tail to exact EOF.
+
+Running the tail test with a local BSTW ZIP path checks SHA-256
+and all nine original board records. The original third-party
+archive remains outside Git and CI.
 
 ## Unsupported versions
 
