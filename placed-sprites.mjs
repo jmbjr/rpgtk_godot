@@ -77,9 +77,15 @@ export function mapBoardPlacements(board, artifacts, graph) {
       const itemResolved = itemEdge?.status === "Resolved" && valid(item, "itm");
       const itemStatus = itemResolved ? "resolved" :
         item?.type === "itm" && item.decodeStatus === "error" ? "unsupported" : "missing";
-      const art = itemResolved ?
-        resolveInitialItemArtwork(item, artifacts, graph) :
-        { status: "missing", reason: "ITM source unavailable" };
+      let art = { status: "missing", reason: "ITM source unavailable" };
+      if (itemResolved) {
+        try {
+          art = resolveInitialItemArtwork(item, artifacts, graph);
+        } catch (error) {
+          // A broken optional placed sprite never stops board/player play.
+          art = { status: "unsupported", reason: "Artwork inspection failed: " + error.message };
+        }
+      }
       const scriptEdge = edges.find(e =>
         e.evidence === "Native sprite activation program · slot " + sprite.slot);
       const program = artifacts.get(scriptEdge?.to);
