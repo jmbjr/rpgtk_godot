@@ -39,7 +39,7 @@ export function nativeSave34({ activeThread = false, shortTail = false } = {}) {
     i32(0),z(activeThread ? "active.prg" : ""),i32(0,1),f64(1.5),
   );
   if (activeThread) return pack(record, Buffer.from([0xfa,0xce,0x11,0x22,0x33,0x44]));
-  return pack(record, f64(0),i32(2),i32(100),z("carray"),i32(200),z(""),i32(300),z("scanvas"),
+  return pack(record, f64(0),i32(3),i32(100),z("carray"),i32(200),z(""),i32(300),z("scanvas"),
     i32(-7), ...(shortTail ? [Buffer.from([0x90])] : []));
 }
 export const nativeSaveFixture = nativeSave34();
