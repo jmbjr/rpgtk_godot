@@ -3,6 +3,9 @@ import { tileBitmapSprite } from "../../sprites.mjs";
 import { spriteDrawOrder, spritePixelOrigin } from "../../placed-sprites.mjs";
 import { keyFrameColor } from "../../sprites.mjs";
 import { initialMovementState, stepMovement } from "./engine.mjs";
+import { initialInnState, advanceInn, currentInnMessage, conversationMessages }
+  from "./inn-dialogue.mjs";
+import { nearAuthoredInn, activateAuthoredInn } from "./imported-inn.mjs";
 
 // Deliberately use the synthetic sandbox's movement engine and WASD / arrow
 // / pointer-held D-pad policy. No board script, item or plugin is executed.
@@ -31,6 +34,13 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
   if (!scene.ok) throw Error("Cannot mount an unresolved playable scene.");
   const canvas = section.querySelector("#play-canvas");
   const status = section.querySelector("#play-status");
+  const hud = section.querySelector("#play-hud");
+  const feedback = section.querySelector("#play-feedback");
+  const dialoguePanel = section.querySelector("#play-dialogue");
+  const dialogueSpeaker = section.querySelector("#play-dialogue-speaker");
+  const dialogueText = section.querySelector("#play-dialogue-text");
+  const dialogueProgress = section.querySelector("#play-dialogue-progress");
+  const talkButton = section.querySelector("#play-talk");
   const pad = [...section.querySelectorAll("[data-move]")];
   const ctx = canvas?.getContext("2d", { alpha: false });
   if (!ctx) throw Error("The browser cannot create a 2D canvas.");
@@ -129,14 +139,19 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
     const p = scene.innDoor;
     innLabel.textContent = "Inn door: slot " + p.slot + " at (" +
       p.position.x + ", " + p.position.y + ", layer " +
-      p.position.layer + ") · " + p.programPath + " · locator only; activation disabled.";
+      p.position.layer + ") · " + p.programPath +
+      " · Talk within 46 px on the same layer.";
   } else {
     innLabel.textContent = "Inn door: " +
       (scene.innStatus === "ambiguous" ? "multiple resolved candidates" :
-        "no resolved mwininn.prg placement") + "; no activation.";
+        "no resolved mwininn.prg placement") + "; Talk unavailable.";
   }
 
   let actor = initialMovementState(scene.world);
+  // A fresh mount always starts with a fresh, in-memory inn conversation.
+  let inn = initialInnState();
+  let interactionFeedback = "";
+  const actorAtLayer = () => ({ ...actor, layer: scene.start.layer });
   let walkMs = 0;
   let priorFacing = actor.facing;
   let lastFrame = null;
@@ -198,8 +213,9 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
     // door under roofs stays discoverable even when its artwork is missing.
     if (scene.innDoor) {
       const p = scene.innDoor.position;
+      const near = nearAuthoredInn(actorAtLayer(), scene);
       ctx.save();
-      ctx.strokeStyle = "#ffe17c";
+      ctx.strokeStyle = near || inn.conversation ? "#fff4a5" : "#ffe17c";
       ctx.fillStyle = "#241a12";
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -219,10 +235,66 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
       ", " + Math.round(actor.y) + ", layer " + scene.start.layer + ") · " +
       actor.facing + (actor.moving ? " · walking" : " · standing") +
       (actor.blocked ? " · map edge" : "") + " · bounds-only collision";
+
+    const current = currentInnMessage(inn);
+    const near = nearAuthoredInn(actorAtLayer(), scene);
+    hud.textContent = "Clues: " + inn.clues + " / " + inn.maxClues +
+      " · Inn visits: " + inn.checkedInn;
+    dialoguePanel.hidden = !(current || inn.clueMessage);
+    if (current) {
+      dialogueSpeaker.textContent = current.speaker;
+      dialogueText.textContent = current.text;
+      dialogueProgress.textContent = "Line " + (inn.conversation.index + 1) +
+        " / " + conversationMessages(inn.conversation).length;
+    } else if (inn.clueMessage) {
+      dialogueSpeaker.textContent = "Clue discovered";
+      dialogueText.textContent = inn.clueMessage;
+      dialogueProgress.textContent = "1 / " + inn.maxClues + " clues found";
+    }
+    talkButton.disabled = !current && !near;
+    talkButton.textContent = current ? (
+      inn.conversation.index + 1 === conversationMessages(inn.conversation).length ?
+        "Finish conversation" : "Next line"
+    ) : "Talk at inn";
+    const hint = !scene.innDoor ? "Inn interaction unavailable: no unique resolved mwininn.prg." :
+      current ? "Conversation active · press Next, E or Space." :
+      near ? "At the locked inn: press Talk, E or Space." :
+      "Walk to the marked INN DOOR to talk.";
+    const message = interactionFeedback || hint;
+    if (feedback.textContent !== message) feedback.textContent = message;
   };
+
+  function interact() {
+    // Timestamp is injected into the same deterministic adapter as the
+    // synthetic lab; exact 500ms remains blocked after completion.
+    const tick = performance.now();
+    const response = inn.conversation ?
+      advanceInn(inn, tick) : activateAuthoredInn(inn, actorAtLayer(), tick, scene);
+    inn = response.state;
+    if (response.outcome === "out-of-range") {
+      interactionFeedback = "Move within 46 pixels of the inn on its authored layer.";
+    } else if (response.outcome === "unavailable") {
+      interactionFeedback = "Inn interaction unavailable: the activation program is not uniquely resolved.";
+    } else if (response.outcome === "cooldown") {
+      interactionFeedback = "Give the door a moment (" +
+        response.remainingMs + " ms cooldown remaining).";
+    } else {
+      interactionFeedback = "";
+      if (response.outcome === "opened" || response.outcome === "completed") {
+        clearHeld();
+        if (response.outcome === "completed" && response.clueGained) {
+          interactionFeedback = "Clue found! The inn is still locked.";
+        }
+      }
+    }
+    updateStatus();
+    draw();
+  }
   const step = (direction, seconds) => {
+    if (inn.conversation) return;
     const previous = actor;
     actor = stepMovement(actor, axes[direction], seconds, scene.world);
+    if (actor.distance !== previous.distance) interactionFeedback = "";
     if (actor.facing !== priorFacing) walkMs = 0;
     priorFacing = actor.facing;
     if (!actor.moving || !previous.moving) walkMs = 0;
@@ -233,7 +305,9 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
     const seconds = lastFrame === null ? 0 : Math.max(0, (timestamp - lastFrame) / 1000);
     lastFrame = timestamp;
     const prior = actor;
-    actor = stepMovement(actor, input(), seconds, scene.world);
+    actor = stepMovement(actor, inn.conversation ? { x: 0, y: 0 } :
+      input(), seconds, scene.world);
+    if (actor.distance !== prior.distance) interactionFeedback = "";
     if (actor.facing !== priorFacing || (!prior.moving && actor.moving)) walkMs = 0;
     if (actor.moving) walkMs += Math.min(seconds, 0.05) * 1000;
     else walkMs = 0;
@@ -244,10 +318,19 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
   };
 
   document.addEventListener("keydown", event => {
-    if (!keyDirections.has(event.code) || event.altKey || event.ctrlKey || event.metaKey ||
+    if (event.altKey || event.ctrlKey || event.metaKey ||
         /^(INPUT|TEXTAREA|SELECT)$/.test(event.target?.tagName ?? "") ||
         event.target?.isContentEditable) return;
-    keyboardHeld.add(event.code);
+    if (event.code === "KeyE" || event.code === "Space") {
+      // Focused buttons handle their native Space/Enter clicks, not a
+      // duplicate global dialogue action.
+      if (event.target?.closest?.("button, a, [role=button]")) return;
+      event.preventDefault();
+      if (!event.repeat) interact();
+      return;
+    }
+    if (!keyDirections.has(event.code)) return;
+    if (!inn.conversation) keyboardHeld.add(event.code);
     event.preventDefault();
   }, { signal: listeners.signal });
   document.addEventListener("keyup", event => {
@@ -261,6 +344,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
   }, { signal: listeners.signal });
   for (const button of pad) {
     button.addEventListener("pointerdown", event => {
+      if (inn.conversation) return;
       if (event.pointerType === "mouse" && event.button !== 0) return;
       event.preventDefault();
       button.setPointerCapture(event.pointerId);
@@ -282,10 +366,13 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
       if (event.detail === 0) step(button.dataset.move, 1 / 20);
     }, { signal: listeners.signal });
   }
+  talkButton.addEventListener("click", interact, { signal: listeners.signal });
   const reset = section.querySelector("#play-reset");
   reset.addEventListener("click", () => {
     clearHeld();
     actor = initialMovementState(scene.world);
+    inn = initialInnState();
+    interactionFeedback = "";
     priorFacing = actor.facing;
     walkMs = 0;
     draw();
