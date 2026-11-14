@@ -158,9 +158,11 @@ function updateStatus() {
     (player.moving ? " · walking" : " · standing") +
     (player.blocked ? " · wall collision" : "");
   const near = distanceToLandmark(player) < 38;
-  landmarkStatus.textContent = near ?
+  const message = near ?
     "You reached the inn. Talking to the door is the next implementation milestone." :
     "Walk toward the INN in the upper-right corner. The inn cannot be interacted with yet.";
+  // Avoid re-announcing the same live-region text every animation update.
+  if (landmarkStatus.textContent.trim() !== message) landmarkStatus.textContent = message;
 }
 
 function frame(timestamp) {
