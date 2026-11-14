@@ -89,8 +89,8 @@ assert.equal(missingRoot.summary.missing, 4);
 const noWalk = new Map(artifacts);
 noWalk.delete("BSTW/Misc/test_north.anm");
 const partialWalk = assessPlayability(noWalk, graph);
-assert.equal(partialWalk.stages[2].status, "source-linked",
-  "Reference graph snapshot still points to absent file; assessment must not accept missing bytes");
+assert.equal(partialWalk.stages[2].status, "partial",
+  "A stale graph edge does not make missing animation bytes source-linked");
 const missingProgram = new Map(artifacts);
 missingProgram.delete("BSTW/Prg/openDoor.prg");
 const missingInteraction = assessPlayability(missingProgram, graph);
