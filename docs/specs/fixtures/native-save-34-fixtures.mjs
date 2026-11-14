@@ -27,7 +27,7 @@ export function nativeSave34({ activeThread = false, shortTail = false } = {}) {
     i32(0, 1, 2468, 0x00112233),
     z("Game\\Test\\Bitmap\\mwin.png"),
     i32(1,0x00445566),z("Courier New"),i32(18,1,0,1,372,9),
-    z("Main\\Test.gam"),z("start.brd"),
+    z("Main\\BSTW.gam"),z("start.brd"),
     f64(144.5,288.25),i32(1,1, -1,2,3,4),
     f64(12.5,23.75),i32(2,0, 7,-8,9,10),
     i32(77,19, 88,20),
