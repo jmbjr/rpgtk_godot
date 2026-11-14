@@ -13,7 +13,7 @@ JSON document locally and uses the same records as the artifact inspector.
 | `artifacts` | All archive files, including disconnected files, plus the uploaded Main File when present. Entries use the [artifact record contract](README.md). |
 | `actors` | Decoded character and enemy definitions, and the viewer's conceptual RPGCode author and interpreter roles. |
 | `commands`, `capabilities` | Observed built-ins and their capability definitions from the command catalog. Local and unknown symbols remain in the source program record. |
-| `edges` | Directed, typed relationships with source evidence. |
+| `edges` | Directed, typed relationships with source evidence. Native GAM 2.9 additional fields use `project-asset` for runtime/combat/media references and `plugin-declaration` for plugin slots/menu/fight plugin filenames. Declaration edges never imply DLL execution. |
 | `coverage` | Counts by artifact decode status and edge resolution status, and limits of the export. Decode counts include any uploaded Main File. |
 
 Resolve a `$ref` by looking up its base ID in the four record dictionaries.

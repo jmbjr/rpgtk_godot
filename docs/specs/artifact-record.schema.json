@@ -230,9 +230,80 @@
         "character": {"type": "string"},
         "projectPath": {"type": "string"},
         "title": {"type": "string"},
-        "language": {"type": "string"}
+        "language": {"type": "string"},
+        "configuration": {"$ref": "#/$defs/nativeMainConfiguration"}
       },
       "required": ["major", "minor", "startup", "board", "character"],
+      "if": {"required": ["configuration"]},
+      "then": {"properties": {"minor": {"const": 9}}},
+      "additionalProperties": false
+    },
+    "nativeMainConfiguration": {
+      "type": "object",
+      "properties": {
+        "screen": {"type": "object", "properties": {
+          "type": {"type": "integer"}, "fullScreen": {"type": "integer"},
+          "resolution": {"type": "integer"}, "disableProtection": {"type": "integer"}
+        }, "required": ["type", "fullScreen", "resolution", "disableProtection"], "additionalProperties": false},
+        "runtimeProgram": {"type": "string"},
+        "runtimeKeys": {"type": "object", "properties": {
+          "runKey": {"type": "integer"}, "menuKey": {"type": "integer"}, "generalKey": {"type": "integer"},
+          "extended": {"type": "array", "maxItems": 501, "items": {
+            "type": "object", "properties": {
+              "slot": {"type": "integer", "minimum": 0}, "key": {"type": "integer"},
+              "program": {"type": "string"}
+            }, "required": ["slot", "key", "program"], "additionalProperties": false
+          }}
+        }, "required": ["runKey", "menuKey", "generalKey", "extended"], "additionalProperties": false},
+        "menuPlugin": {"type": "string"}, "fightPlugin": {"type": "string"},
+        "combat": {"type": "object", "properties": {
+          "enabled": {"type": "integer"},
+          "enemies": {"type": "array", "maxItems": 501, "items": {
+            "type": "object", "properties": {
+              "slot": {"type": "integer", "minimum": 0},
+              "name": {"type": "string"}, "skill": {"type": "integer"}
+            }, "required": ["slot", "name", "skill"], "additionalProperties": false
+          }},
+          "type": {"type": "integer"}, "chances": {"type": "integer"},
+          "useAlternateProgram": {"type": "integer"},
+          "fightProgram": {"type": "string"}, "gameOverProgram": {"type": "string"}
+        }, "required": ["enabled", "enemies", "type", "chances", "useAlternateProgram", "fightProgram", "gameOverProgram"],
+        "additionalProperties": false},
+        "skins": {"type": "object", "properties": {
+          "button": {"type": "string"}, "window": {"type": "string"}
+        }, "required": ["button", "window"], "additionalProperties": false},
+        "pluginSlots": {"type": "array", "maxItems": 101, "items": {
+          "type": "object", "properties": {
+            "slot": {"type": "integer", "minimum": 0}, "filename": {"type": "string"}
+          }, "required": ["slot", "filename"], "additionalProperties": false
+        }},
+        "dayNight": {"type": "object", "properties": {
+          "enabled": {"type": "integer"}, "type": {"type": "integer"}, "length": {"type": "integer"}
+        }, "required": ["enabled", "type", "length"], "additionalProperties": false},
+        "cursor": {"type": "object", "properties": {
+          "moveSound": {"type": "string"}, "selectSound": {"type": "string"},
+          "cancelSound": {"type": "string"}, "joystick": {"type": "integer"},
+          "colorDepth": {"type": "integer"}, "gameSpeed": {"type": "integer"},
+          "pixelMovement": {"type": "integer"}, "image": {"type": "string"},
+          "hotspotX": {"type": "integer"}, "hotspotY": {"type": "integer"},
+          "transparentColor": {"type": "integer"}
+        }, "required": ["moveSound", "selectSound", "cancelSound", "joystick", "colorDepth",
+          "gameSpeed", "pixelMovement", "image", "hotspotX", "hotspotY", "transparentColor"],
+        "additionalProperties": false},
+        "display": {"type": "object", "properties": {
+          "width": {"type": "integer"}, "height": {"type": "integer"},
+          "fpsInTitleBar": {"type": "integer"}
+        }, "required": ["width", "height", "fpsInTitleBar"], "additionalProperties": false},
+        "pathfinding": {"type": "object", "properties": {
+          "heuristic": {"type": "integer"}, "drawVectors": {"type": "integer"},
+          "pathColor": {"type": "integer"}, "movementControls": {"type": "integer"},
+          "movementKeys": {"type": "array", "items": {"type": "integer"}, "minItems": 8, "maxItems": 8}
+        }, "required": ["heuristic", "drawVectors", "pathColor", "movementControls", "movementKeys"],
+        "additionalProperties": false}
+      },
+      "required": ["screen", "runtimeProgram", "runtimeKeys", "menuPlugin",
+        "fightPlugin", "combat", "skins", "pluginSlots", "dayNight", "cursor",
+        "display", "pathfinding"],
       "additionalProperties": false
     },
     "prg": {

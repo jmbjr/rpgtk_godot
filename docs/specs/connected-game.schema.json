@@ -114,7 +114,8 @@
       "properties": {
         "type": {
           "enum": ["startup-program", "opening-board", "initial-character", "board-tile", "board-program",
-            "script-file", "asset-reference", "defined-by", "authors", "interprets", "invokes", "implements-capability"]
+            "script-file", "asset-reference", "project-asset", "plugin-declaration",
+            "defined-by", "authors", "interprets", "invokes", "implements-capability"]
         },
         "source": {"$ref": "#/$defs/ref"},
         "target": {"$ref": "artifact-record.schema.json#/$defs/edge/properties/target"},
