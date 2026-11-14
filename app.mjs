@@ -1013,7 +1013,83 @@ function spriteLinks(sprite) {
   return details;
 }
 
+function renderNativeItem(panel, artifact) {
+  const edges = references.outgoing.get(artifact.path) ?? [];
+  const byEvidence = new Map(edges.map(edge => [edge.evidence, edge]));
+  const activeModes = Object.entries(artifact.modes).filter(([, enabled]) => enabled)
+    .map(([label]) => label);
+  panel.append(el("h3", artifact.name),
+    el("p", "Native Toolkit 3 item · ITM binary 2.7"),
+    assetFields([
+      ["Item role", activeModes.join(", ") || "None enabled"],
+      ["Description", artifact.description || "—"],
+      ["Buy / sell price", `${artifact.buyPrice} / ${artifact.sellPrice}`],
+      ["Equipment modifiers", Object.entries(artifact.modifiers)
+        .map(([name, value]) => `${name} ${value}`).join(" · ")],
+      ["Speed / idle time", `${artifact.speed} / ${artifact.idleTime} seconds (stored)`],
+      ["Collision / activation vectors",
+        artifact.vectorBases.map(base => `${base.role} ${base.points.length} points`).join(" · ") || "None"],
+    ]));
+  panel.append(el("p", "Native items reference ANM files, not the older 16 walking-frame top/bottom GPH pairs. Following an ANM may lead to indexed TST pixels or to a TBM bitmap not yet decoded."));
+  const assigned = artifact.directionalAnimations.filter(entry => entry.value);
+  if (!assigned.length) {
+    panel.append(el("p", "This item has no assigned movement animation. Its inventory and equipment fields remain available."));
+  } else {
+    panel.append(el("h3", "Walking animations"));
+    const grid = el("div", "", "sprite-strip");
+    for (const item of assigned) {
+      const edge = byEvidence.get(item.evidence);
+      const card = el("div", "", "native-walk-card");
+      card.append(el("strong", item.direction));
+      const first = references.outgoing.get(edge?.to)?.find(e => e.evidence === "Frame 1 image");
+      if (first?.to && first.tile !== undefined && artifacts.get(first.to)?.type === "tst") {
+        const thumbnail = tileCanvas();
+        thumbnail.setAttribute("role", "img");
+        thumbnail.setAttribute("aria-label", `${item.direction} first item animation frame`);
+        thumbnail.removeAttribute("aria-hidden");
+        paintTile(thumbnail, first);
+        thumbnail.style.width = "64px";
+        card.append(thumbnail);
+      }
+      card.append(edge?.to ? button(item.value, () => selectArtifact(edge.to)) :
+        el("p", `${item.value} · ${edge?.status || "Unresolved"}`));
+      if (first?.value) card.append(el("p", `First frame: ${first.value} · ${first.status}`, "technical"));
+      grid.append(card);
+    }
+    panel.append(grid);
+  }
+  const extras = [
+    ...artifact.standingAnimations,
+    artifact.restAnimation,
+    ...artifact.customAnimations,
+  ].filter(entry => entry.value);
+  if (extras.length) {
+    const details = el("details", "", "reference");
+    details.append(el("summary", `${extras.length} assigned idle/rest/custom animations`));
+    for (const entry of extras) {
+      const edge = byEvidence.get(entry.evidence);
+      const line = el("div", "", "reference");
+      line.append(el("strong", entry.direction || entry.handle || entry.evidence), " · ",
+        edge?.to ? button(entry.value, () => selectArtifact(edge.to)) :
+          el("span", `${entry.value} · ${edge?.status || "Unresolved"}`));
+      details.append(line);
+    }
+    panel.append(details);
+  }
+  const geometry = el("details", "", "reference");
+  geometry.append(el("summary", `Inspect ${artifact.vectorBases.length} raw vector bases`));
+  for (const base of artifact.vectorBases) {
+    geometry.append(el("p", `${base.role} · slot ${base.slot} · ${base.points.length} points: `
+      + base.points.map(p => `(${p.x}, ${p.y})`).join(" → "), "technical"));
+  }
+  panel.append(geometry);
+}
+
 function renderItemSprites(panel, artifact) {
+  if (artifact.directionalAnimations) {
+    renderNativeItem(panel, artifact);
+    return;
+  }
   panel.append(el("h3", artifact.name), el("p", "Item graphics · ITM-01 Item roles"));
   const sprites = itemSprites(artifact, artifacts, references);
   const sequences = sprites.walking.filter(sequence => sequence.frames.some(Boolean));
