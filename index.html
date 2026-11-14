@@ -6,6 +6,7 @@
   <meta name="description" content="Inspect RPG Toolkit 2 game files and trace RPGCode commands in your browser.">
   <title>RPG Toolkit 2 · Game Explorer</title>
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./experiments/movement-sandbox/sandbox.css">
   <script defer src="./vendor/jszip.min.js"></script>
   <script defer src="./vendor/webaudio-tinysynth.js"></script>
   <script type="module" src="./app.mjs"></script>
@@ -46,10 +47,42 @@
         </div>
         <dl id="bindings" class="bindings" hidden></dl>
         <div id="main-data"></div>
+        <div id="play-launch" class="play-launch" hidden>
+          <button type="button" id="play-bstw" disabled>Play opening board</button>
+          <span id="play-eligibility" class="technical" role="status"></span>
+        </div>
         <div class="sprite-controls">
           <button type="button" id="export-game-json" disabled>Download connected game JSON</button>
           <span id="game-export-status" class="technical" role="status"></span>
         </div>
+      </section>
+
+      <section id="play-stage" class="panel play-panel" aria-labelledby="play-heading" hidden tabindex="-1">
+        <div class="sandbox-panel-heading">
+          <h2 id="play-heading">Authored opening board</h2>
+          <div class="sandbox-options">
+            <button type="button" id="play-reset">Reset to stored start</button>
+            <button type="button" id="play-close">Back to file viewer</button>
+          </div>
+        </div>
+        <p class="technical">This scene uses the ZIP's own board tiles and character walking frames. It starts directly on the board. Native vectors and RPGCode are not executed.</p>
+        <div class="play-pad-row">
+          <span>Walk with WASD, arrows, or D-pad.</span>
+          <div class="sandbox-dpad" role="group" aria-label="Move authored character">
+            <button type="button" class="pad-north" data-move="north" aria-label="Move north">▲</button>
+            <button type="button" class="pad-west" data-move="west" aria-label="Move west">◀</button>
+            <button type="button" class="pad-center" tabindex="-1" disabled aria-hidden="true">●</button>
+            <button type="button" class="pad-east" data-move="east" aria-label="Move east">▶</button>
+            <button type="button" class="pad-south" data-move="south" aria-label="Move south">▼</button>
+          </div>
+        </div>
+        <canvas id="play-canvas" class="sandbox-canvas play-canvas" width="640" height="480"
+          role="img" aria-label="Playable imported source board and four-way animated character">
+          A modern browser with 2D canvas is required.
+        </canvas>
+        <p id="play-status" class="sandbox-status" role="status" aria-live="off"></p>
+        <p id="play-error" class="technical" role="status" hidden></p>
+        <p class="technical">Collision: board bounds only, circular actor radius 9 source pixels; imported native vector blocking is unverified. Source sprite/item activation is not supported in this slice.</p>
       </section>
 
       <section class="workspace" aria-label="Game archive workspace" id="workspace" hidden>
