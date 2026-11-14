@@ -123,7 +123,7 @@ reported as unassigned, not missing.
 | Item examples | Verified source properties |
 | --- | --- |
 | `jim.itm`, `lami.itm`, `loyalis.itm`, `rusty.itm` | Board objects with four cardinal animations; pickup programs `mwinJim.prg`, `mwinLami.prg`, `mwinStartBoardLoad.prg`, `mwinRusty.prg`, respectively |
-| `house_3x3.itm` | South ANM `house_3x3.anm` has two TBM frames, `house_3x3_closed.tbm` and `house_3x3_open.tbm`, linked but **TBM pixels are not yet supported** |
+| `house_3x3.itm` | South ANM `house_3x3.anm` has two TBM frames, `house_3x3_closed.tbm` and `house_3x3_open.tbm`, linked to the now-supported [native TBM 3.0 renderer](tbm.md); first-frame house artwork is composited from TST tiles |
 | `door.itm`, `testvision.itm` | Standalone board graphics and directional ANM links |
 | `hat.itm` | Equipment modifiers HP +1, defense +2, fight +3, special power +4 |
 | `pot_health.itm`, `toast.itm`, `bugs.itm` | Menu-use items, including HP +10 for Health Potion and SMP +10 for Toast; artwork may be empty |
@@ -143,7 +143,7 @@ slots, vector points, invalid maxima/truncation and connected JSON
 references. Passing the optional read-only test against a local
 BSTW ZIP proves decoder acceptance for this identified sample;
 it does **not** establish editor save/reopen compatibility,
-runtime collision/activation behavior or TBM rendering.
+runtime collision/activation behavior or editor/runtime-perfect TBM rendering.
 
 ## Unsupported versions
 

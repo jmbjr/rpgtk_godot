@@ -73,6 +73,23 @@ export function enemySprite(enemy, artifacts, graph) {
   return compose(width, height, parts, artifacts, graph);
 }
 
+export function tileBitmapSprite(bitmap, artifacts, graph) {
+  if (!Number.isInteger(bitmap?.width) || !Number.isInteger(bitmap?.height) ||
+      bitmap.width < 1 || bitmap.height < 1 ||
+      bitmap.width > 256 || bitmap.height > 256) return null;
+  const byEvidence = new Map((graph.outgoing.get(bitmap.path) ?? [])
+    .map(edge => [edge.evidence, edge]));
+  const parts = bitmap.tiles
+    // The saved (width+1)x(height+1) array has sentinel cells:
+    // native Toolkit 3 renders only the smaller visible rectangle.
+    .filter(tile => tile.value && tile.x < bitmap.width && tile.y < bitmap.height)
+    .map(tile => ({
+      ...tile,
+      edge: byEvidence.get(`Bitmap tile (${tile.x}, ${tile.y})`),
+    }));
+  return compose(bitmap.width, bitmap.height, parts, artifacts, graph);
+}
+
 export function itemSprites(item, artifacts, graph) {
   const byEvidence = new Map((graph.outgoing.get(item.path) ?? []).map(edge => [edge.evidence, edge]));
   if (item.embeddedGraphics) {
