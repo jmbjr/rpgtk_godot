@@ -32,6 +32,9 @@ jobs:
           node --check pe-inspect.mjs
           node --check plugin-audit.mjs
           node --check playability-audit.mjs
+          node --check experiments/movement-sandbox/world.mjs
+          node --check experiments/movement-sandbox/engine.mjs
+          node --check experiments/movement-sandbox/sandbox.mjs
           node --check inspector-history.mjs
           node --check media.mjs
           node --check midi.mjs
@@ -78,6 +81,7 @@ jobs:
           node scripts/check-bstw-sav-34.mjs
           node scripts/check-plugin-abi.mjs
           node scripts/check-playability-audit.mjs
+          node scripts/check-movement-sandbox.mjs
           node scripts/check-inspector-history.mjs
           node scripts/check-connection-map.mjs
       - name: Check tileset PDF export
@@ -87,6 +91,9 @@ jobs:
           mkdir -p site/vendor
           cp .nojekyll index.html style.css app.mjs archive.mjs model.mjs artifacts.mjs asset-format.mjs tile-palette.mjs records.mjs game-graph.mjs inspector-history.mjs connection-map.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs tile-matches.mjs tile-pdf.mjs catalog.json site/
           cp native-board-tail.mjs script-trace.mjs save-state.mjs pe-inspect.mjs plugin-audit.mjs playability-audit.mjs site/
+          mkdir -p site/experiments/movement-sandbox
+          cp sandbox.html site/
+          cp experiments/movement-sandbox/{world,engine,sandbox}.mjs experiments/movement-sandbox/sandbox.css site/experiments/movement-sandbox/
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
           cp -R vendor/soundfont vendor/generaluser-gs vendor/piano-roll vendor/jspdf site/vendor/
           cp --parents experiments/dodge-tiles/{project,card-scene}.mjs site/
