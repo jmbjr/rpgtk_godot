@@ -4,18 +4,18 @@ const signatures = {
   gam: ["RPGTLKIT MAIN", "RPGTLKIT MAINFORM"], tem: ["RPGTLKIT CHAR"], brd: ["RPGTLKIT BOARD"],
   itm: ["RPGTLKIT ITEM"], ene: ["RPGTLKIT ENEMY"], bkg: ["RPGTLKIT BKG"],
   spc: ["RPGTLKIT SPLMOVE"], ste: ["RPGTLKIT STATUSE"], anm: ["RPGTLKIT ANIM"],
-  fnt: ["RPGTLKIT FONT"], gph: ["RPGTLKIT TILE"], tan: ["RPGTLKIT TILEANIM"],
+  fnt: ["RPGTLKIT FONT"], gph: ["RPGTLKIT TILE"], tan: ["RPGTLKIT TILEANIM"], sav: ["RPGTLKIT SAVE"],
 };
 const revisions = {
   gam: { text: ["2.0"], binary: ["2.2", "2.9"] }, tem: { text: ["2.0", "2.1", "2.2"], binary: ["2.3", "2.4", "2.8"] },
   brd: { text: ["2.0", "2.1"], binary: ["2.2", "2.3", "2.4"] }, itm: { text: ["2.0", "2.1"], binary: ["2.2", "2.3", "2.7"] },
   ste: { text: ["2.0"], binary: ["2.2"] }, tan: { binary: ["2.0"] },
-  anm: { text: ["2.0"], binary: ["2.3"] },
+  anm: { text: ["2.0"], binary: ["2.3"] }, sav: { binary: ["3.4"] },
 };
 export const formatSpecs = {
   gam: "gam", prg: "prg", tst: "tst", tan: "tan", tem: "tem", brd: "brd", itm: "itm",
   ene: "ene", bkg: "bkg", spc: "spc", anm: "anm", gph: "gph", fnt: "fnt", ste: "ste",
-  gif: "gif", jpg: "jpg", jpeg: "jpg", wav: "wav", mid: "mid", doc: "doc", tbm: "tbm", ___: "temporary-board",
+  gif: "gif", jpg: "jpg", jpeg: "jpg", wav: "wav", mid: "mid", doc: "doc", tbm: "tbm", sav: "sav", ___: "temporary-board",
 };
 export const toolkitAsset = type => Object.hasOwn(signatures, type) || ["tst", "prg", "___", "tbm", "iso"].includes(type);
 const unknown = () => ({ encoding: "unknown", version: null, supported: false });

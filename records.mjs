@@ -1,7 +1,7 @@
 import { mainSourceFormat } from "./asset-format.mjs";
 import { tilesetRgb } from "./tile-palette.mjs";
 
-const partialFormats = new Set(["gam", "prg", "tem", "brd", "gif", "jpg", "jpeg", "wav", "mid", "doc", "___"]);
+const partialFormats = new Set(["gam", "prg", "tem", "brd", "gif", "jpg", "jpeg", "wav", "mid", "doc", "___", "sav"]);
 
 export function artifactId(path, mainFile = false) {
   const encoded = path.split("/").map(encodeURIComponent).join("/");
