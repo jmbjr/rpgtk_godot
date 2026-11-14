@@ -13,10 +13,10 @@ const binary = (signature, major, minor) => {
 };
 const cases=[];
 for(const [type,signature,textVersions,binaryVersions] of [
-  ["gam","MAIN",[0],[2,9]], ["tem","CHAR",[0,1,2],[3,4]], ["brd","BOARD",[0,1],[2,3,4]],
+  ["gam","MAIN",[0],[2,9]], ["tem","CHAR",[0,1,2],[3,4,8]], ["brd","BOARD",[0,1],[2,3,4]],
   ["itm","ITEM",[0,1],[2,3]], ["ste","STATUSE",[0],[2]], ["tan","TILEANIM",[],[0]],
   ["ene","ENEMY",[0],[]], ["bkg","BKG",[0],[]], ["spc","SPLMOVE",[0],[]],
-  ["anm","ANIM",[0],[]], ["fnt","FONT",[0],[]],
+  ["anm","ANIM",[0],[3]], ["fnt","FONT",[0],[]],
 ]) {
   for(const minor of textVersions) cases.push({type,bytes:bytes(`RPGTLKIT ${signature}\r\n2\r\n${minor}\r\n`),expected:{encoding:"text",version:`2.${minor}`,supported:true}});
   for(const minor of binaryVersions) cases.push({type,bytes:binary(`RPGTLKIT ${signature}`,2,minor),expected:{encoding:"binary",version:`2.${minor}`,supported:true}});
@@ -37,7 +37,7 @@ for(const {type,bytes,expected} of cases) {
     assert.deepEqual(tileMode({type,sourceFormat:actual}), {label:`Mode ${actual.detail}: ${labels[actual.detail-1]}`,palette:actual.detail>=3});
   }
 }
-for(const [type,data,version] of [["tem",binary("RPGTLKIT CHAR",2,8),"2.8"],["brd",bytes("RPGTLKIT BOARD\n2\n9\n"),"2.9"],
+for(const [type,data,version] of [["tem",binary("RPGTLKIT CHAR",2,9),"2.9"],["brd",bytes("RPGTLKIT BOARD\n2\n9\n"),"2.9"],
   ["tbm",binary("RPGTLKIT TILEBITMAP",3,0),"3.0"]]) {
   const f=detectSourceFormat(type,data);assert.equal(f.version,version);assert.equal(f.supported,false);
   assert.match(formatSummary({type,sourceFormat:f}),/Unsupported layout/);
@@ -66,7 +66,7 @@ for(const {page,anchor} of targets) {
 }
 const zip=new JSZip();
 for(const {path,bytes} of [...fixtures,...detailFixtures])zip.file(path,bytes);
-zip.file("Chrs/unsupported.tem",binary("RPGTLKIT CHAR",2,8));
+zip.file("Chrs/unsupported.tem",binary("RPGTLKIT CHAR",2,9));
 zip.file("Chrs/truncated.tem",bytes("RPGTLKIT CHAR"));
 const {artifacts}=await readArtifacts(zip,{});const graph=buildReferences(artifacts);
 for(const a of artifacts.values())if(toolkitAsset(a.type)) {
@@ -77,6 +77,6 @@ for(const a of artifacts.values())if(toolkitAsset(a.type)) {
   assert.ok(!Object.hasOwn(record.data,"sourceFormat"));
 }
 const unsupported=artifactRecord(artifacts.get("Chrs/unsupported.tem"),graph);
-assert.equal(unsupported.decode.status,"error");assert.equal(unsupported.sourceFormat.version,"2.8");
+assert.equal(unsupported.decode.status,"error");assert.equal(unsupported.sourceFormat.version,"2.9");
 assert.equal(artifacts.get("Chrs/truncated.tem").sourceFormat.version,null);
 console.log("Source formats passed: all supported revisions/details, unsupported and truncated headers, external GAM, unversioned source, exported metadata and spec anchors.");
