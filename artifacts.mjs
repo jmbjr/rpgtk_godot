@@ -21,6 +21,7 @@ function cursor(bytes) {
     byte() { skip(1); return view.getUint8(offset - 1); },
     short() { skip(2); return view.getInt16(offset - 2, true); },
     long() { skip(4); return view.getInt32(offset - 4, true); },
+    double() { skip(8); return view.getFloat64(offset - 8, true); },
     string() {
       const end = bytes.indexOf(0, offset);
       if (end < 0) throw new Error("The file ends before a string terminator.");
@@ -547,7 +548,7 @@ function readTextCharacter(bytes) {
 function readCharacter(bytes) {
   if (/^RPGTLKIT CHAR[\r\n]/i.test(text.decode(bytes.subarray(0, 15)))) return readTextCharacter(bytes);
   const reader = cursor(bytes);
-  const minor = header(reader, "RPGTLKIT CHAR", [3, 4]);
+  const minor = header(reader, "RPGTLKIT CHAR", [3, 4, 8]);
   const name = reader.string();
   for (let i = 0; i < 9; i++) reader.string();
   const stats = Object.fromEntries(
@@ -567,9 +568,66 @@ function readCharacter(bytes) {
   reader.skip(7); // Armor types.
   reader.skip(minor === 3 ? 1 : 4); // Level type.
   reader.skip(14); // Experience and level progression.
-  for (const label of ["Attack", "Defense", "Special move", "Defeat"]) refs.push(reference(reader.string(), `${label} sound`));
+  if (minor < 5) {
+    for (const label of ["Attack", "Defense", "Special move", "Defeat"]) {
+      refs.push(reference(reader.string(), `${label} sound`));
+    }
+  }
   refs.push(reference(reader.string(), "Level-up program"));
-  reader.skip(2);
+  reader.skip(2); // Level-up type and character graphic size flags.
+
+  if (minor === 8) {
+    // Native Toolkit 3 character graphics are ANM filenames, not the
+    // legacy 16×2 walking GPH filenames. First 8 gfx are movement, next
+    // 5 are battle/rest; one historical reserved gfx slot follows.
+    const compass = ["South", "North", "East", "West",
+      "Northwest", "Northeast", "Southwest", "Southeast"];
+    const source = Array.from({ length: 14 }, () => reader.string());
+    const standing = Array.from({ length: 8 }, () => reader.string());
+    const walkingAnimations = compass.map((direction, i) => ({
+      direction, value: source[i], evidence: `Walk ${direction} animation`,
+    }));
+    const battleAnimations = ["Attack", "Defense", "Special move", "Defeat", "Rest"]
+      .map((kind, i) => ({ kind, value: source[i + 8], evidence: `${kind} animation` }));
+    const standingAnimations = compass.map((direction, i) => ({
+      direction, value: standing[i], evidence: `Idle ${direction} animation`,
+    }));
+    const idleTime = reader.double();
+    const speed = reader.double();
+    if (![idleTime, speed].every(Number.isFinite)) throw new Error("Invalid native character timing.");
+    const maximumCustom = reader.long();
+    if (maximumCustom < -1 || maximumCustom > reader.remaining() / 2) {
+      throw new Error("Invalid native character custom animation count.");
+    }
+    const customAnimations = Array.from({ length: maximumCustom + 1 }, (_, slot) => {
+      const value = reader.string();
+      const handle = reader.string();
+      return { slot, value, handle, evidence: `Custom animation · slot ${slot}` };
+    });
+    const baseMaximum = reader.short();
+    if (baseMaximum < -1 || baseMaximum > reader.remaining() / 2) {
+      throw new Error("Invalid native character vector-base count.");
+    }
+    const vectorBases = Array.from({ length: baseMaximum + 1 }, (_, slot) => {
+      const count = reader.short() + 1;
+      if (count < 0 || count > reader.remaining() / 8) {
+        throw new Error("Invalid native character vector point count.");
+      }
+      return { slot, points: Array.from({ length: count }, () =>
+        ({ x: reader.long(), y: reader.long() })) };
+    });
+    if (reader.remaining()) throw new Error("Unexpected native character tail.");
+    for (const field of [...walkingAnimations, ...battleAnimations,
+      ...standingAnimations, ...customAnimations]) {
+      if (field.value) refs.push(reference(field.value, field.evidence));
+    }
+    return {
+      name, stats, profile, walking: [], walkingAnimations, battleAnimations,
+      standingAnimations, customAnimations, vectorBases, idleTime, speed,
+      refs: refs.filter(ref => ref.value),
+    };
+  }
+
   const walking = readCharacterWalking(reader.string);
   const artwork = characterArtwork(false, minor, true, reader.string);
   refs.push(...walking.flatMap(frame => frame.parts), ...artwork.flatMap(frame => frame.parts));
@@ -737,6 +795,32 @@ function readStatusEffect(bytes) {
 }
 
 function readLegacyAnimation(bytes) {
+  if (!/^RPGTLKIT ANIM[\r\n]/i.test(text.decode(bytes.subarray(0, 16)))) {
+    const reader = cursor(bytes);
+    header(reader, "RPGTLKIT ANIM", [3]);
+    const width = reader.long();
+    const height = reader.long();
+    const storedFrameCount = reader.long();
+    if (width < 1 || width > 2048 || height < 1 || height > 2048 ||
+        storedFrameCount < 0 || storedFrameCount > 1000 ||
+        storedFrameCount + 1 > Math.floor((reader.remaining() - 8) / 6)) {
+      throw new Error("Invalid binary animation dimensions or frame count.");
+    }
+    const refs = [];
+    const frames = Array.from({ length: storedFrameCount + 1 }, (_, index) => {
+      const image = reader.string();
+      const transparentColor = reader.long();
+      const sound = reader.string();
+      if (image) refs.push(reference(image, `Frame ${index + 1} image`));
+      if (sound) refs.push(reference(sound, `Frame ${index + 1} sound`));
+      return { image, transparentColor, sound };
+    });
+    const pauseSeconds = reader.double();
+    if (!Number.isFinite(pauseSeconds) || pauseSeconds < 0 || reader.remaining()) {
+      throw new Error("Invalid binary animation pause or tail.");
+    }
+    return { width, height, storedFrameCount, frames, pauseSeconds, refs };
+  }
   const reader = textReader(bytes, "RPGTLKIT ANIM");
   const width = reader.number();
   const height = reader.number();
