@@ -81,13 +81,24 @@
           A modern browser with 2D canvas is required.
         </canvas>
         <p id="play-status" class="sandbox-status" role="status" aria-live="off"></p>
+        <div class="sandbox-hud" id="play-hud" aria-live="off">Clues: 0 / 13 · Inn visits: 0</div>
+        <section class="sandbox-dialogue" id="play-dialogue" hidden aria-labelledby="play-dialogue-speaker">
+          <div class="sandbox-dialogue-heading">
+            <strong id="play-dialogue-speaker">Bruce</strong>
+            <span id="play-dialogue-progress" class="technical">Line 1 / 4</span>
+          </div>
+          <p id="play-dialogue-text">Inn conversation</p>
+          <p class="technical">Adapted, newly written dialogue. The original RPGCode and plugins are not executed.</p>
+        </section>
+        <button id="play-talk" class="sandbox-talk" type="button" disabled aria-controls="play-dialogue">Talk at inn</button>
+        <p id="play-feedback" class="sandbox-landmark" role="status" aria-live="polite">Approach the marked inn door to talk.</p>
         <p id="play-inn" class="play-inn-label" role="status"></p>
         <details class="play-placements">
           <summary>Authored placements and artwork diagnostics</summary>
           <ol id="play-placements"></ol>
         </details>
         <p id="play-error" class="technical" role="status" hidden></p>
-        <p class="technical">Collision: board bounds only, circular actor radius 9 source pixels; imported native vector blocking is unverified. Source sprite/item activation is not supported in this slice.</p>
+        <p class="technical">Collision: board bounds only, circular actor radius 9 source pixels; imported native vector blocking is unverified. Only the resolved inn-door dialogue adapter is supported; other sprite/item scripts remain inactive.</p>
       </section>
 
       <section class="workspace" aria-label="Game archive workspace" id="workspace" hidden>
