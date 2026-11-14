@@ -16,6 +16,7 @@ JSON document locally and uses the same records as the artifact inspector.
 | `edges` | Directed, typed relationships with source evidence. Native GAM 2.9 additional fields use `project-asset` for runtime/combat/media references and `plugin-declaration` for plugin slots/menu/fight plugin filenames. Declaration edges never imply DLL execution. |
 | `scriptTrace` | Static, cycle-safe, per-entrypoint `#Include`/`#Run` dependency inspection. Stores configured GAM/board/item script roots, source lines, resolved walks, missing and dynamic gaps, and explicit limits. It is not runtime reachability. |
 | Saved state (SAV) | SAV 3.4 records are ordinary artifacts whose `data` includes raw typed globals, party, inventory, equipment, world items, object mappings and a `completion` marker. Outgoing links are source filenames, not executable restoration dependencies. Active-thread stacks remain explicitly unparsed. |
+| `pluginAudit` | Correlates nonempty GAM plugin-slot and independent menu/fight plugin declarations with packaged DLLs. Preserves path resolution, export-name/architecture metadata, undeclared bundled files and limitations. Windows DLL bytes are not embedded or executed. |
 | `coverage` | Counts by artifact decode status and edge resolution status, and limits of the export. Decode counts include any uploaded Main File. |
 
 Resolve a `$ref` by looking up its base ID in the four record dictionaries.
