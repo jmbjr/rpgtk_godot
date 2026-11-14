@@ -91,7 +91,7 @@ function renderNativeMainConfig(main, bindings) {
   const section = el("details", "", "reference");
   section.open = true;
   const declared = settings.pluginSlots.filter(entry => entry.filename);
-  const bundled = paths.filter(path => /\\.dll$/i.test(path));
+  const bundled = paths.filter(path => /\.dll$/i.test(path));
   const declaredNames = new Set(declared.map(entry => entry.filename.toLowerCase()));
   const unused = bundled.filter(path => !declaredNames.has(basename(path).toLowerCase()));
   section.append(
