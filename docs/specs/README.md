@@ -68,7 +68,8 @@ reconstruction. [Fixture index](fixtures/README.md)
 | ENE | [Enemy](ene.md) | Text 2.0, two observed tails | Demo enemies |
 | BKG | [Battle background](bkg.md) | Text 2.0 | Demo backgrounds |
 | SPC | [Special move](spc.md) | Text 2.0 | Demo move and Toolkit 2 editor |
-| ANM | [Effect animation](anm.md) | Text 2.0 and native binary 2.3, frame/TST links, transparency and pause | Demo explosion, pinned native reader, BSTW Bruce and synthetic fixtures |
+| ANM | [Effect animation](anm.md) | Text 2.0 and native binary 2.3, frame/TST/TBM links, transparency and pause | Demo explosion, pinned native reader, BSTW Bruce and house animations, synthetic fixtures |
+| TBM | [Native tile bitmap](tbm.md) | Toolkit 3 binary 3.0 inclusive tile/shade grid; composed TST artwork | Pinned native source, both BSTW house_3x3 TBMs, synthetic shade/transparency fixtures |
 | FNT | [Bitmap font](fnt.md) | Text 2.0 | Demo base font |
 | STE | [Status effect](ste.md) | Text 2.0 and binary 2.2 | DustBall status effects, editor fixture and compatibility reader |
 | GIF | [GIF image](gif.md) | GIF87a/GIF89a metadata | GIF spec and demo images |
