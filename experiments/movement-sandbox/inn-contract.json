@@ -1,0 +1,128 @@
+{
+  "schemaVersion": "0.1.0",
+  "id": "sandbox.inn.locked-door",
+  "kind": "prototype-interaction-contract",
+  "notDodgeConformant": true,
+  "sourceEvidence": {
+    "archive": "BSTW_EXPO_DEMO (1).zip",
+    "sha256": "77d6d4180948196106e3d4dad7e2ee62144b30fac8c7ac5491048740e9864300",
+    "program": "BSTW/Prg/mwininn.prg",
+    "initialization": "BSTW/Prg/init.prg",
+    "sourceLines": {
+      "cooldown": [
+        4,
+        8
+      ],
+      "firstBranch": [
+        11
+      ],
+      "firstDialog": [
+        16,
+        23,
+        30,
+        32
+      ],
+      "repeatDialog": [
+        50,
+        57,
+        64
+      ],
+      "clueOnFirst": [
+        42,
+        43
+      ],
+      "completion": [
+        76,
+        77
+      ],
+      "threshold": [
+        48
+      ],
+      "einnIndex": [
+        60
+      ],
+      "maxClues": [
+        78
+      ]
+    }
+  },
+  "syntheticPolicies": {
+    "interactionDistancePixels": 46,
+    "clock": "performance.now monotonic milliseconds passed as a pure-function parameter",
+    "firstAttempt": "accepted immediately because the original initialization of LastinnTalk is not defined",
+    "cooldownComparison": "elapsedMilliseconds > 500",
+    "interactionGeometry": "point actor to center of synthetic INN tile, not original item collision vectors",
+    "dialogueText": "newly-authored paraphrases, not imported original RPGCode text"
+  },
+  "state": {
+    "checkedInn": {
+      "type": "nonnegative integer",
+      "initial": 0,
+      "sourceEquivalent": "checked[einn]"
+    },
+    "clues": {
+      "type": "integer",
+      "initial": 0,
+      "max": 13,
+      "sourceEquivalent": "clues"
+    },
+    "lastInnTalkMs": {
+      "type": "number|null",
+      "initial": null,
+      "sourceEquivalent": "LastinnTalk"
+    },
+    "conversation": {
+      "type": "null|{kind:'first'|'repeat',index:integer}",
+      "initial": null
+    },
+    "clueMessage": {
+      "type": "string|null",
+      "initial": null
+    }
+  },
+  "commands": [
+    {
+      "id": "interact",
+      "guards": [
+        "no active dialogue",
+        "actor within 46px of inn tile",
+        "no previous talk, or now - LastinnTalk > 500"
+      ],
+      "events": [
+        "ConversationOpened"
+      ],
+      "actions": [
+        "select first dialogue when checkedInn=0, otherwise repeat dialogue",
+        "set cursor to zero",
+        "freeze player movement until dialogue ends"
+      ],
+      "failures": [
+        "out-of-range",
+        "cooldown",
+        "busy"
+      ]
+    },
+    {
+      "id": "advance-dialogue",
+      "guards": [
+        "active dialogue"
+      ],
+      "events": [
+        "LineAdvanced",
+        "ConversationCompleted",
+        "ClueAwarded (first only)"
+      ],
+      "actions": [
+        "increment cursor before final line",
+        "after final line, increment checkedInn, update LastinnTalk",
+        "if first and previously unchecked, award one clue up to 13"
+      ]
+    }
+  ],
+  "limitations": [
+    "does not interpret or execute original RPGCode",
+    "does not run COM DLLs or simulate source-authored board/activation vectors",
+    "dialogue and first-activation tick semantics are explicit approximations",
+    "no save/load persistence; reset clears all variables"
+  ]
+}

@@ -73,11 +73,15 @@ components. It must not register, load or execute original DLLs.
    controls and explicitly chosen solid-tile collision policy. CI tests
    the pure movement model. This is playable but **not yet an imported
    BSTW board**; Android acceptance remains manual.
-3. **Following PR — one door adapter:** interaction range/key and
-   deterministic \`checked[einn]\`, \`LastinnTalk\`, \`clues\` transitions
-   and multi-message dialogue. No full interpreter. Represent the
-   scene's event/state contract so it can later be mapped to DODGE
-   and a Godot runtime.
+3. **Issue #96 — inn dialogue adapter:** the synthetic sandbox now has
+   Talk / Next keyboard+touch actions, a strict source-backed cooldown,
+   first/repeat dialogue, and one clue awarded upon completing the
+   first conversation. The [behavioral mapping](inn-dialogue-adapter.md)
+   and [portable prototype event/state contract](../../experiments/movement-sandbox/inn-contract.json)
+   are **not normative DODGE implementations** and do not execute
+   original RPGCode or native plugins. Android interaction acceptance
+   remains manual. Follow-up work should import source-driven board
+   geometry/animation and validate real runtime behavior.
 
 ### What CI establishes today
 

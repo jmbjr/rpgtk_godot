@@ -14,7 +14,38 @@
   image-rendering: pixelated; background: #343d36;
 }
 .sandbox-status { color: #e9d7b5; font-family: var(--mono); font-size: .83rem; margin: .75rem 0 .25rem; }
-.sandbox-landmark { margin: .3rem 0 1rem; min-height: 1.6rem; }
+.sandbox-landmark { margin: .3rem 0 .65rem; min-height: 1.6rem; }
+.sandbox-hud {
+  margin-bottom: .75rem; color: #f5daab; background: #312a2b;
+  border: 1px solid #6a5b4b; border-radius: 5px;
+  padding: .5rem .7rem; font: 650 .86rem system-ui, sans-serif;
+}
+.sandbox-dialogue {
+  margin-bottom: .9rem; padding: .8rem .9rem;
+  border: 2px solid #bf9560; border-radius: 6px;
+  background: #262027; box-shadow: 0 0 0 2px #151215;
+}
+.sandbox-dialogue-heading {
+  display: flex; align-items: baseline; justify-content: space-between;
+  flex-wrap: wrap; gap: .3rem .7rem;
+}
+.sandbox-dialogue-heading strong { color: #ffe0a5; font-size: 1.1rem; }
+.sandbox-dialogue-heading span { color: #c2b5a5; }
+.sandbox-dialogue > p:not(.technical) {
+  color: #fff2de; margin: .55rem 0; line-height: 1.55; font-size: 1rem;
+}
+.sandbox-dialogue > p.technical { color: #bdb0ac; font-size: .75rem; margin: .35rem 0 0; }
+.sandbox-talk {
+  display: block; width: min(100%, 270px); min-height: 48px;
+  margin: .55rem auto .15rem; border: 2px solid #e3b976;
+  font-weight: 750; background: #4c3828; color: #fff0d4;
+}
+.sandbox-talk:disabled {
+  opacity: .5; cursor: not-allowed; border-color: #6a5b4b;
+}
+.sandbox-talk:not(:disabled):hover, .sandbox-talk:not(:disabled):active {
+  background: #755337;
+}
 .sandbox-under { display: grid; grid-template-columns: minmax(230px, .92fr) minmax(240px, 1fr); gap: .85rem; }
 .sandbox-under > div { border: 1px solid var(--line); border-radius: 6px; padding: .8rem; background: #211f23; }
 .sandbox-under h3 { color: #f0d3a0; font: bold 1rem system-ui, sans-serif; margin: 0 0 .4rem; }
@@ -50,11 +81,14 @@
   .sandbox-canvas { order: 2; }
   .sandbox-status { order: 3; }
   .sandbox-landmark { order: 4; }
-  .sandbox-under > .sandbox-details { order: 5; }
+  .sandbox-hud { order: 5; }
+  .sandbox-dialogue { order: 6; }
+  .sandbox-under > .sandbox-details { order: 7; }
   .sandbox-intro { padding: .85rem 0 .55rem; }
   .sandbox-intro p { font-size: .84rem; line-height: 1.4; margin-block: .25rem; }
   .sandbox-under h3 { margin: .1rem 0; }
   .sandbox-under .sandbox-controls p { margin: .15rem 0; font-size: .8rem; }
+  .sandbox-talk { margin: .35rem auto .1rem; }
   .sandbox-dpad { margin: .25rem auto .1rem;
     grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 52px); }
   .sandbox-panel-heading h2 { font-size: 1.3rem; }
