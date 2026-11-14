@@ -168,6 +168,19 @@ if (process.argv[2]) {
   const realScene = buildPlayableScene(real, buildReferences(real));
   assert.equal(realScene.ok, true, JSON.stringify(realScene.issues));
   assert.equal(realScene.placements.length, 7);
+  assert.deepEqual(realScene.placements.map(p =>
+    [p.slot, p.filename.toLowerCase(), p.position.x, p.position.y, p.position.layer]), [
+    [0, "lami.itm", 82, 200, 1],
+    [1, "rusty.itm", 432, 228, 1],
+    [2, "jim.itm", 590, 55, 1],
+    [3, "door.itm", 207, 349, 1],
+    [4, "door.itm", 512, 414, 1],
+    [5, "door.itm", 495, 223, 1],
+    [6, "loyalis.itm", 115, 115, 1],
+  ]);
+  assert.ok(realScene.placements.every(p =>
+    p.itemStatus === "resolved" && p.artStatus === "resolved"),
+    "Every recorded BSTW start.brd sprite has a decoded ITM and first-frame artwork");
   assert.deepEqual(realScene.innDoor?.position, { x: 207, y: 349, layer: 1 });
   assert.equal(realScene.innDoor?.slot, 3);
   const inn = realScene.placements.find(p => p.isInnDoor);
