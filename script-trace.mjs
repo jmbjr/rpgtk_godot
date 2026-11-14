@@ -56,7 +56,8 @@ export function traceProjectDependencies(artifacts, graph, mainFile) {
   const seen = new Set();
   const add = (label, from, edge, sourceLine = null) => {
     const path = isProgram(artifacts, edge?.to ?? edge?.path) ? (edge?.to ?? edge?.path) : null;
-    const status = edge?.status ?? (path ? "Resolved" : "Missing");
+    const rawStatus = edge?.status ?? (path ? "Resolved" : "Missing");
+    const status = rawStatus[0].toUpperCase() + rawStatus.slice(1);
     const key = JSON.stringify([label, from, path, edge?.value, sourceLine]);
     if (seen.has(key)) return;
     seen.add(key);
