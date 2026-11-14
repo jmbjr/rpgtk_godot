@@ -504,6 +504,115 @@ function artworkMatchControl(matchRows) {
   return section;
 }
 
+function renderSavedGame(panel, save, edges) {
+  const find = evidence => edges.find(edge => edge.evidence === evidence);
+  const link = (name, evidence) => linkedAsset(name, find(evidence));
+  const globals = save.globals;
+  panel.append(el("h3", "Saved game state · Toolkit 3 SAV 3.4"),
+    el("p", "Read-only state snapshot. Opening this file does not load the save into the game or execute RPGCode."),
+    assetFields([
+      ["Stored current board", link(save.misc.board, "Saved current board")],
+      ["Main File", link(save.misc.mainFile, "Saved Main File")],
+      ["Gold", save.misc.gold.toLocaleString()],
+      ["Selected party slot", String(save.misc.selectedPlayer)],
+      ["Elapsed game time", save.misc.gameTimeSeconds + " stored seconds"],
+      ["Movement size", save.movementSize === undefined ? "Not parsed" : String(save.movementSize)],
+      ["Number globals", globals.numeric.length.toLocaleString()],
+      ["Object globals", globals.objects.length.toLocaleString()],
+      ["Literal globals", globals.literals.length.toLocaleString()],
+      ["Redirects", globals.redirects.length.toLocaleString()],
+      ["Object-class mappings", save.objectClasses?.length.toLocaleString() ?? "Not parsed"],
+    ]));
+  panel.append(el("h3", "Saved party · " + save.party.length));
+  for (const person of save.party) {
+    const pos = save.positions[person.slot];
+    const mods = save.equipmentModifiers[person.slot];
+    const eq = save.equipment.filter(e => e.player === person.slot && e.filename);
+    const section = el("div", "", "reference");
+    const h = el("h4", "Slot " + person.slot + " · " + (person.name || "(unnamed)"));
+    if (person.slot === save.misc.selectedPlayer) h.append(el("span", " · selected", "technical"));
+    section.append(h, el("p", "Character: "),
+      link(person.filename, "Saved party member · slot " + person.slot));
+    if (pos) section.append(el("p", "Pixel position (" + pos.x + ", " + pos.y +
+      "), layer " + pos.layer + " · Active flag " + pos.active +
+      " · Vector index " + pos.boardPath.vectorIndex, "technical"));
+    if (mods) section.append(el("p", "Equipment effects: HP " + mods.hp +
+      " · SMP " + mods.specialPower + " · Defense " + mods.defense +
+      " · Fight " + mods.fight, "technical"));
+    for (const item of eq) section.append(el("p", "Equipment slot " + item.slot + " · "),
+      link(item.filename, "Saved equipment · player " + item.player + " slot " + item.slot),
+      " · Handle " + item.handle);
+    panel.append(section);
+  }
+  const inv = el("details", "", "reference");
+  inv.open = save.inventory.length < 10;
+  inv.append(el("summary", "Saved inventory · " + save.inventory.length + " stored entries"));
+  for (const item of save.inventory) {
+    const line = el("p");
+    line.append(item.quantity + " × ", link(item.filename, "Saved inventory · slot " + item.slot),
+      " · Handle " + item.handle);
+    inv.append(line);
+  }
+  panel.append(inv);
+  const world = el("details", "", "reference");
+  const occupied = save.worldItems.filter(item => item.filename);
+  world.append(el("summary", "World item slots · " + save.worldItems.length +
+    " stored / " + occupied.length + " occupied"));
+  for (const item of occupied) {
+    const line = el("p");
+    line.append("Slot " + item.slot + " · ",
+      link(item.filename, "Saved board item · slot " + item.slot),
+      " · Position (" + item.position.x + ", " + item.position.y +
+      ", layer " + item.position.layer + ") · Active " + item.active);
+    if (item.activationProgram) line.append(" · ",
+      link(item.activationProgram, "Saved item activation program · slot " + item.slot));
+    world.append(line);
+  }
+  panel.append(world);
+  const state = el("p", save.completion === "complete" ?
+    "Entire SAV 3.4 record decoded to EOF. This does not establish runtime restoration compatibility." :
+    "A saved thread includes execution state not yet decoded; " +
+    save.unparsedTailBytes + " trailing bytes remain opaque.", "technical");
+  panel.append(state);
+
+  // Large save files can have thousands of RPGCode globals. Keep the
+  // Android page responsive: render only a small filtered batch, never
+  // all stored variables at once. The connected JSON retains them all.
+  const search = el("details", "", "reference");
+  search.append(el("summary", "Search stored RPGCode globals"));
+  const input = el("input");
+  input.type = "search";
+  input.placeholder = "Variable name or value";
+  input.setAttribute("aria-label", "Search saved RPGCode variable names and values");
+  const matches = el("div");
+  const notice = el("p", "", "technical");
+  const sections = Object.entries(globals);
+  function draw() {
+    const query = input.value.trim().toLowerCase();
+    matches.replaceChildren();
+    if (!query) {
+      notice.textContent = "Enter a search term to inspect stored global values.";
+      return;
+    }
+    let total = 0, shown = 0;
+    for (const [kind, values] of sections) for (const entry of values) {
+      if (!entry.name.toLowerCase().includes(query) &&
+          !String(entry.value).toLowerCase().includes(query)) continue;
+      total++;
+      if (shown++ >= 40) continue;
+      const line = el("p", kind + " · " + entry.name + " = " +
+        JSON.stringify(entry.value), "technical");
+      matches.append(line);
+    }
+    notice.textContent = total + " matches · showing first " + Math.min(total, 40) +
+      " (full state is available in connected JSON)";
+  }
+  input.addEventListener("input", draw);
+  search.append(input, notice, matches);
+  draw();
+  panel.append(search);
+}
+
 function renderAsset(artifact) {
   const panel = byId("graph");
   const edges = references.outgoing.get(artifact.path) ?? [];
@@ -521,6 +630,10 @@ function renderAsset(artifact) {
   }
   if (artifact.type === "anm") {
     renderAnimation(panel, artifact, edges);
+    return;
+  }
+  if (artifact.type === "sav") {
+    renderSavedGame(panel, artifact, edges);
     return;
   }
   if (artifact.type === "tbm") {
