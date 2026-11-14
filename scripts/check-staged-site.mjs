@@ -15,12 +15,15 @@ async function requireFile(path) {
   assert.ok(details.isFile(), "Published asset is not a file: " + path);
 }
 for (const path of ["index.html", "app.mjs", "catalog.json", "style.css",
+  "sandbox.html", "experiments/movement-sandbox/sandbox.css",
   "vendor/jszip.min.js", "vendor/webaudio-tinysynth.js"]) {
   await requireFile(path);
 }
-const html = await readFile(join(site, "index.html"), "utf8");
-for (const [, src] of html.matchAll(/<script\b[^>]*\bsrc=["']\.\/([^"']+)["']/g)) {
-  await requireFile(src);
+for (const page of ["index.html", "sandbox.html"]) {
+  const html = await readFile(join(site, page), "utf8");
+  for (const [, src] of html.matchAll(/<script\b[^>]*\bsrc=["']\.\/([^"']+)["']/g)) {
+    await requireFile(src);
+  }
 }
 // esbuild recursively resolves every static import and re-export made by
 // app.mjs, exactly as a browser does before running module code. In
@@ -28,14 +31,17 @@ for (const [, src] of html.matchAll(/<script\b[^>]*\bsrc=["']\.\/([^"']+)["']/g)
 // while copying artifacts.mjs into the site directory.
 try {
   const result = await build({
-    entryPoints: [join(site, "app.mjs")],
+    entryPoints: [join(site, "app.mjs"),
+      join(site, "experiments/movement-sandbox/sandbox.mjs")],
     bundle: true,
+    outdir: join(site, "__validation_only__"),
     platform: "browser",
     format: "esm",
     write: false,
     logLevel: "silent",
   });
-  assert.ok(result.outputFiles.length, "No module output from published entrypoint.");
+  assert.ok(result.outputFiles.length >= 2,
+    "Both viewer and movement sandbox browser entrypoints must be staged.");
 } catch (error) {
   throw new Error(
     "Published Game Explorer cannot start: a JavaScript module is missing " +
@@ -43,4 +49,4 @@ try {
     { cause: error },
   );
 }
-console.log("Published viewer passed: HTML script URLs and the complete browser module import graph resolve from " + site);
+console.log("Published viewer and movement sandbox passed: both HTML entrypoint URLs and complete browser ESM dependency graphs resolve from " + site);
