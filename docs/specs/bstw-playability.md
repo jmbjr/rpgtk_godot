@@ -1,6 +1,6 @@
 # BSTW: first playability vertical slice
 
-Evidence report revision **1.0** · [format index](README.md) · [playability issue #92](https://github.com/jmbjr/rpgtk_godot/issues/92).
+Evidence report revision **1.1** · [format index](README.md) · [playability issue #92](https://github.com/jmbjr/rpgtk_godot/issues/92).
 
 This is a **source-only** assessment of the owner-supplied \`BSTW_EXPO_DEMO (1).zip\`
 (SHA-256 \`77d6d4180948196106e3d4dad7e2ee62144b30fac8c7ac5491048740e9864300\`).
@@ -96,3 +96,59 @@ Bruce movement and inn script; **CI never embeds the game**.
 **Do not confuse** a successful source-link chain or a passing
 format fixture with playable game behavior or desktop editor
 acceptance.
+
+## Next slice: authored-board browser movement (#92, post-#97)
+
+This is a **separate, bounded playable slice**, not a change to the four-gate
+static evidence report above. After opening a ZIP in Game Explorer, use
+**Play opening board** to enter the decoded GAM opening board directly.
+It intentionally skips title-script execution and party initialization.
+The app requires a unique decoded GAM 2.9 in the archive, an opening
+native BRD 2.4 with orthogonal pixel coordinate code 4, a decoded initial
+TEM 2.8, valid board tile lookups and four complete 32×32 ANM → indexed
+TST walking chains. Missing, ambiguous or unsupported links disable Play
+with a visible explanation; no fallback synthetic board.
+
+**Original BSTW source mapping:** BSTW.gam → BSTW/Boards/start.brd
+(20×15×2) and BSTW/Chrs/bruce.tem (spawn **107,78, layer 1**).
+BRD tile runs/shades and ambient colors are rendered in source layer order.
+The original cardinal walking frames are selected by the native TEM/ANM/TST
+chain, with the source ANM pause (0.15 s for BSTW), transparency key and
+32×32 pixels. The actor is composited after its stored layer and before higher
+layers. The preview uses a **foot/center anchor** at source pixel coordinates
+(x−16, y−32 for a 32px sprite); exact Toolkit anchor equivalence is
+unverified. Placed ITM sprites, board images, lights and scripts are **not**
+rendered or executed in this PR.
+
+**Declared collision policy:** reuse the synthetic movement stepper with
+a **9-source-pixel circular actor, 112 pixels/s, normalized diagonals,
+4px maximum swept substeps, axis-separated movement, 50ms frame-delta
+cap**, but with **only outside-map bounds solid**. The nine BSTW native
+vector records and their attributes/closed flags remain *static evidence*;
+their blocking semantics are not verified. Walking may cross obstacles
+drawn on the original tiles. Spawn/layer are checked within map bounds;
+all four cardinal directions are step-tested. This is neither an assertion
+of native collision parity nor an RPGCode interpreter.
+
+The sandbox at [sandbox.html](../../sandbox.html) remains a testable,
+self-contained synthetic board including its established solid-tile collision
+and first/repeat inn dialogue. The imported board has **no inn activation**.
+Movement uses the same keyboard **WASD/arrows** and held/tap mobile D-pad
+input semantics; **Reset** returns to the stored spawn.
+All archive files remain browser-local and are never uploaded, staged, or
+included in CI.
+
+**Testing:** [synthetic scene acceptance](../../scripts/check-playable-scene.mjs)
+covers GAM mapping, source board runs/layers, four ANM/TST chains,
+all cardinal movements, bounds, missing assets, unsupported coordinates,
+invalid spawn, missing/invalid frames and UI entry points. It is included
+in Pages CI alongside the existing sandbox, Toolkit 2/3 and staged
+ES-module closure checks. An optional read-only, SHA-gated check can run
+on a local copy of the owner's original game:
+
+    node scripts/check-playable-scene.mjs "/path/to/BSTW_EXPO_DEMO (1).zip"
+
+**Android acceptance:** open the deployed Game Explorer → select the
+local BSTW ZIP → tap **Play opening board** → inspect Bruce at (107,78)
+on start.brd → use each D-pad direction → use Reset and Back to viewer.
+Browser visual/touch acceptance remains manual until the owner tests it.
