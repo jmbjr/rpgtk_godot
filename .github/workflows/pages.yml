@@ -60,6 +60,7 @@ jobs:
           node scripts/check-bstw-gam-29.mjs
           node scripts/check-bstw-gam-config.mjs
           node scripts/check-bstw-board-24.mjs
+          node scripts/check-bstw-board-tail.mjs
           node scripts/check-bstw-tem-anm.mjs
           node scripts/check-bstw-itm-27.mjs
           node scripts/check-bstw-tbm-30.mjs
