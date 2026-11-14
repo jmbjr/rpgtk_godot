@@ -1189,7 +1189,69 @@ function renderBoardMetadata(panel, board) {
   if (board.vectors) {
     const pointCount = board.vectors.reduce((sum, shape) => sum + shape.points.length, 0);
     panel.append(el("p", `Native BRD 2.4 · coordinate code ${board.coordinateType} · ${board.vectors.length} vectors with ${pointCount} raw points · ${board.lights.length} light records · ${board.shadingLayers.length} shading layers`));
-    panel.append(el("p", "The source reader stops after vectors. Later programs, sprites, start location, backgrounds and game mechanics are not decoded."));
+    panel.append(el("p", "Native tail: " + board.nativePrograms.length + " programs · " +
+      board.sprites.length + " placed item sprites · " + board.images.length +
+      " images · " + board.threads.length + " stored threads · " +
+      board.constants.length + " constants."));
+    panel.append(el("p", "Player start (source pixels): (" +
+      board.start.x + ", " + board.start.y + ", layer " + board.start.layer +
+      ") · Saving disabled flag: " + board.saveDisabled +
+      " · Music: " + (board.boardMusic || "(none)") +
+      " · Background color: " + board.background));
+    const links = references.outgoing.get(board.path) ?? [];
+    const linked = (filename, evidence) => {
+      const edge = links.find(item => item.evidence === evidence);
+      return edge?.to ? button(filename, () => selectArtifact(edge.to)) :
+        el("span", filename ? filename + " · " + (edge?.status || "Unresolved") : "(none)");
+    };
+    const spriteDetails = el("details", "", "board-conditions");
+    spriteDetails.open = board.sprites.length > 0;
+    spriteDetails.append(el("summary", "Placed native sprites · " + board.sprites.length));
+    for (const sprite of board.sprites) {
+      const row = el("div", "", "reference");
+      row.append(el("h4", "Slot " + sprite.slot + " · " +
+        (sprite.filename || "(blank)")), linked(sprite.filename,
+        "Native board sprite · slot " + sprite.slot));
+      row.append(el("p", "Stored pixel position (" + sprite.position.x + ", " +
+        sprite.position.y + ", layer " + sprite.position.layer +
+        ") · Activate " + sprite.activate + " · Type " + sprite.activationType +
+        " · Associated vector " + sprite.associatedVector));
+      if (sprite.activationProgram) row.append(el("p", "Activation: "),
+        linked(sprite.activationProgram, "Native sprite activation program · slot " + sprite.slot));
+      if (sprite.multitaskProgram) row.append(el("p", "Multitask: "),
+        linked(sprite.multitaskProgram, "Native sprite multitask program · slot " + sprite.slot));
+      row.append(el("p", "Conditions: " + JSON.stringify({
+        initialVariable: sprite.initialVariable, initialValue: sprite.initialValue,
+        finalVariable: sprite.finalVariable, finalValue: sprite.finalValue,
+        loadingVariable: sprite.loadingVariable, loadingValue: sprite.loadingValue,
+      }), "technical"));
+      spriteDetails.append(row);
+    }
+    panel.append(spriteDetails);
+    const programDetails = el("details", "", "board-conditions");
+    programDetails.append(el("summary", "Native program placements · " + board.nativePrograms.length));
+    for (const entry of board.nativePrograms) {
+      const row = el("div", "", "reference");
+      row.append(el("h4", "Slot " + entry.slot + " · " + (entry.filename || "(blank)")));
+      if (entry.filename) row.append(linked(entry.filename, "Native board program · slot " + entry.slot));
+      if (entry.graphic) row.append(linked(entry.graphic, "Native program graphic · slot " + entry.slot));
+      row.append(el("p", "Layer " + entry.layer + " · Activation " + entry.activate +
+        " / type " + entry.activationType + " · Repeat distance " + entry.distanceRepeat +
+        " · Vector " + entry.vectorBase.points.length + " points · Closed " +
+        entry.vectorBase.closed + " · Handle " + entry.vectorBase.handle));
+      programDetails.append(row);
+    }
+    panel.append(programDetails);
+    const imageDetails = el("details", "", "board-conditions");
+    imageDetails.append(el("summary", "Native placed images · " + board.images.length));
+    for (const entry of board.images) {
+      const row = el("p", "Slot " + entry.slot + " · (" + entry.position.x + ", " +
+        entry.position.y + ") · Layer " + entry.layer + " · Draw " + entry.drawType);
+      if (entry.filename) row.append(" · ", linked(entry.filename, "Native board image · slot " + entry.slot));
+      imageDetails.append(row);
+    }
+    panel.append(imageDetails);
+    panel.append(el("p", "These placements, flags, and conditions are recorded data; they are not executed or collision-tested.", "technical"));
     const details = el("details", "", "board-conditions");
     details.append(el("summary", `Inspect ${board.vectors.length} stored vector records`));
     for (const shape of board.vectors) {
