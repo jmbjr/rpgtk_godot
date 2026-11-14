@@ -21,7 +21,12 @@ const limits = [
 ];
 
 function referenceType(record, edge) {
-  if (record.format === "gam") return mainRelations[edge.evidence];
+  if (record.format === "gam") {
+    if (mainRelations[edge.evidence]) return mainRelations[edge.evidence];
+    if (edge.evidence.startsWith("Declared plugin") ||
+        edge.evidence.endsWith(" system plugin")) return "plugin-declaration";
+    return "project-asset";
+  }
   if (record.format === "prg") return "script-file";
   if (record.format === "brd") {
     if (edge.placements !== undefined) return "board-tile";
