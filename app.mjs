@@ -86,6 +86,55 @@ const sourceNames = {
   H: "help3.htm · RPGCode Reference",
   E: "eventsEN.ref · Event catalog",
 };
+function renderNativeMainConfig(main, bindings) {
+  const { configuration: settings } = main;
+  const section = el("details", "", "reference");
+  section.open = true;
+  const declared = settings.pluginSlots.filter(entry => entry.filename);
+  const bundled = paths.filter(path => /\\.dll$/i.test(path));
+  const declaredNames = new Set(declared.map(entry => entry.filename.toLowerCase()));
+  const unused = bundled.filter(path => !declaredNames.has(basename(path).toLowerCase()));
+  section.append(
+    el("summary", `Toolkit 3 plugins · ${declared.length} declared / ${bundled.length} bundled`),
+    el("p", `${settings.pluginSlots.length} stored plugin slots (${settings.pluginSlots.length - declared.length} empty). Filenames are read-only data; this viewer never loads or executes DLLs.`),
+  );
+  const rows = el("div", "", "bindings");
+  for (const entry of settings.pluginSlots) {
+    const row = el("div");
+    const match = bindings.find(([label]) => label === `Declared plugin · slot ${entry.slot}`)?.[1];
+    row.append(el("strong", `Slot ${entry.slot}: `));
+    if (!entry.filename) row.append(el("span", "(blank)"));
+    else if (match?.path) row.append(button(entry.filename, () => selectArtifact(match.path)),
+      el("span", " · bundled, declaration resolved", "technical"));
+    else row.append(el("span", `${entry.filename} · not found or ambiguous in this ZIP`));
+    rows.append(row);
+  }
+  section.append(rows);
+  if (unused.length) {
+    const extra = el("p", `Bundled but not named in those plugin slots (${unused.length}): `);
+    unused.forEach((path, index) => {
+      if (index) extra.append(document.createTextNode(" · "));
+      extra.append(button(basename(path), () => selectArtifact(path)));
+    });
+    section.append(extra);
+  }
+  const scripts = settings.runtimeKeys.extended.filter(entry => entry.program);
+  const details = el("details", "", "reference");
+  details.append(el("summary", `Other native settings · ${scripts.length} extended runtime scripts`));
+  const summary = [
+    ["Runtime key slots", String(settings.runtimeKeys.extended.length)],
+    ["Enemy slots", String(settings.combat.enemies.length)],
+    ["Active enemy filenames", String(settings.combat.enemies.filter(enemy => enemy.name).length)],
+    ["Day/night", `${settings.dayNight.enabled} · type ${settings.dayNight.type} · length ${settings.dayNight.length}`],
+    ["Screen mode", String(settings.screen.type)],
+    ["Resolution", `${settings.display.width} × ${settings.display.height}`],
+    ["Movement key values", settings.pathfinding.movementKeys.join(", ")],
+  ];
+  details.append(assetFields(summary));
+  section.append(details);
+  return section;
+}
+
 function selectDefault(newArchive = false) {
   mainFile = uploadedMainFile ?? archiveMainFile;
   const bindings = mainFile ? mainFileBindings(mainFile, paths) : [];
@@ -101,6 +150,7 @@ function selectDefault(newArchive = false) {
   const mainData = byId("main-data");
   mainData.replaceChildren();
   if (mainFile) mainData.append(assetFormatHeader({ type: "gam", sourceFormat: mainSourceFormat(mainFile) }));
+  if (mainFile?.configuration) mainData.append(renderNativeMainConfig(mainFile, bindings));
   if (mainFile === archiveMainFile && archiveMainFile) {
     mainData.append(jsonPanel(() => artifactRecord(artifacts.get(archiveMainFile.filename), references)));
   } else if (mainFile) {
