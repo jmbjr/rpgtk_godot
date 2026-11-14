@@ -11,6 +11,18 @@ import {
   activateInn, advanceInn,
 } from "../experiments/movement-sandbox/inn-dialogue.mjs";
 
+const contract = JSON.parse(await readFile(new URL(
+  "../experiments/movement-sandbox/inn-contract.json", import.meta.url), "utf8"));
+assert.equal(contract.kind, "prototype-interaction-contract");
+assert.equal(contract.notDodgeConformant, true);
+assert.equal(contract.syntheticPolicies.interactionDistancePixels, INN_TALK_RANGE_PIXELS);
+assert.equal(contract.sourceEvidence.sha256, "77d6d4180948196106e3d4dad7e2ee62144b30fac8c7ac5491048740e9864300");
+assert.deepEqual(contract.sourceEvidence.sourceLines.cooldown,
+  INN_SCRIPT_SOURCE.sourceLines.cooldown);
+assert.deepEqual(contract.sourceEvidence.sourceLines.firstDialog,
+  INN_SCRIPT_SOURCE.sourceLines.firstDialogue);
+assert.equal(contract.commands.length, 2);
+assert.ok(contract.limitations.some(line => line.includes("not interpret")));
 const world = SANDBOX_WORLD;
 assert.deepEqual([INN_TALK_THRESHOLD_MS, INN_CHECKED_INDEX, INN_MAX_CLUES],
   [500, 10, 13]);
