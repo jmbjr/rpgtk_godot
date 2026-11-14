@@ -225,3 +225,65 @@ past the placed characters → find the marked inn door and verify the
 diagnostics show slot 3 at (207,349), layer 1. The mark does not activate
 the door. Visual and touch acceptance must be checked on the deployed
 page by the owner.
+
+## Imported BSTW inn conversation (#92, after item placement slice)
+
+This slice uses **only** the uniquely resolved native BRD sprite activation
+reference to `mwininn.prg`, following the existing
+[placed-sprite mapping](../../placed-sprites.mjs). It does not dispatch to
+RPGCode. A door filename alone does not identify the inn. If no target
+resolves, the reference is missing, or multiple targets resolve, **Talk is
+unavailable**. The real owner sample has exactly one valid target:
+**start.brd sprite slot 3 (zero-based), door.itm, at (207,349), layer 1**;
+the other two door.itm placements do not activate this adapter.
+
+**Activation geometry is a documented approximation**: the same inclusive
+**46-source-pixel Euclidean distance** as the synthetic sandbox, measured
+between Bruce's current authored pixel origin and the door's stored pixel
+origin, with a mandatory **same-layer** check. No native item activation
+base polygon, line of sight or blocking vectors are interpreted. The
+source's native `mwininn.prg` link determines *which* door is eligible;
+its source code is not executed. Bounds-only movement and the source
+artwork/layer/depth policy from the previous slices remain unchanged.
+
+**Controls and state:** approach the marked inn door on its layer, then
+press **Talk** on touch (or **E / Space** outside a focused button).
+The button becomes **Next line** and finally **Finish conversation**.
+Bruce cannot move while the conversation is open. The imported runtime
+uses the same deterministic
+[dialogue adapter](../../experiments/movement-sandbox/inn-dialogue.mjs)
+and newly authored paraphrases from [#96](inn-dialogue-adapter.md);
+first visit has four lines and awards one clue **only upon completion**.
+Repeat visits have three lines and never award another clue.
+The cooldown is **strictly elapsed milliseconds > 500**, measured from
+the completion of the previous conversation (equality is rejected).
+Browser `performance.now()` is the source-owned monotonic test clock,
+not a claim of Toolkit 3 tick-clock parity. HUD shows clues (maximum 13)
+and inn visit count. **Reset** restores Bruce's stored spawn and clears
+dialogue, clue notification, clues, visits and cooldown. Every new
+Play mount creates a fresh in-memory state.
+
+Tests in [check-imported-inn.mjs](../../scripts/check-imported-inn.mjs)
+cover the synthetic BRD→ITM/PRG inn reference, other door separation,
+wrong-layer and 46px boundary gating, unavailable/ambiguous activation
+references, complete first/repeat dialogue, the strict 500ms cooldown,
+one-time clue, Reset/new state, and UI keyboard/touch controls. Pages CI
+also checks the staged imported-inn module closure, existing sandbox,
+Toolkit file-format regressions and the historical coverage checks.
+The optional local SHA-gated production-JavaScript check on the owner's
+original ZIP verifies the configured real scene and unique door, not
+manual canvas/touch behavior:
+
+    node scripts/check-imported-inn.mjs "/path/to/BSTW_EXPO_DEMO.zip"
+
+**Android acceptance:** upload BSTW → Play opening board → approach the
+marked inn → finish the first conversation → confirm **1/13 clues**
+and **one visit** → allow strictly more than 500 ms after completion →
+repeat three lines → confirm clue count remains **1** and visits become
+**2** → Reset → confirm **0/13** clues and zero visits.
+
+**Not implemented:** automatic activation, other door scripts, the actual
+locked door opening, title execution, original RPGCode, COM plugins,
+saves, board transitions, vector hitboxes or exact Toolkit collision.
+The separate source-owned `sandbox.html` inn remains testable and unchanged.
+No original game ZIP, music, art, binaries or DLLs are placed in Git or CI.
