@@ -16,13 +16,15 @@ for(const [type,signature,textVersions,binaryVersions] of [
   ["gam","MAIN",[0],[2,9]], ["tem","CHAR",[0,1,2],[3,4,8]], ["brd","BOARD",[0,1],[2,3,4]],
   ["itm","ITEM",[0,1],[2,3,7]], ["ste","STATUSE",[0],[2]], ["tan","TILEANIM",[],[0]],
   ["ene","ENEMY",[0],[]], ["bkg","BKG",[0],[]], ["spc","SPLMOVE",[0],[]],
-  ["anm","ANIM",[0],[3]], ["fnt","FONT",[0],[]],
+  ["anm","ANIM",[0],[3]], ["fnt","FONT",[0],[]], ["sav","SAVE",[],[]],
 ]) {
   for(const minor of textVersions) cases.push({type,bytes:bytes(`RPGTLKIT ${signature}\r\n2\r\n${minor}\r\n`),expected:{encoding:"text",version:`2.${minor}`,supported:true}});
   for(const minor of binaryVersions) cases.push({type,bytes:binary(`RPGTLKIT ${signature}`,2,minor),expected:{encoding:"binary",version:`2.${minor}`,supported:true}});
 }
 cases.push({type:"tbm",bytes:binary("TK3 TILEBITMAP",3,0),
   expected:{encoding:"binary",version:"3.0",supported:true}});
+cases.push({type:"sav",bytes:binary("RPGTLKIT SAVE",3,4),
+  expected:{encoding:"binary",version:"3.4",supported:true}});
 for(const detail of [1,2,3,4,5,6]) {
   const tst=new Uint8Array(6);const v=new DataView(tst.buffer);v.setInt16(0,20,true);v.setInt16(4,detail,true);
   cases.push({type:"tst",bytes:tst,expected:{encoding:"binary",version:"20",detail,supported:true}},
@@ -40,12 +42,12 @@ for(const {type,bytes,expected} of cases) {
   }
 }
 for(const [type,data,version] of [["tem",binary("RPGTLKIT CHAR",2,9),"2.9"],["brd",bytes("RPGTLKIT BOARD\n2\n9\n"),"2.9"],
-  ["tbm",binary("TK3 TILEBITMAP",3,1),"3.1"]]) {
+  ["tbm",binary("TK3 TILEBITMAP",3,1),"3.1"],["sav",binary("RPGTLKIT SAVE",3,5),"3.5"]]) {
   const f=detectSourceFormat(type,data);assert.equal(f.version,version);assert.equal(f.supported,false);
   assert.match(formatSummary({type,sourceFormat:f}),/Unsupported layout/);
   assert.equal(formatSpecTarget({type,sourceFormat:f}).anchor,"#unsupported-versions");
 }
-for(const type of ["tem","gam","gph","tst","iso","tbm"]) {
+for(const type of ["tem","gam","gph","tst","iso","tbm","sav"]) {
   for(const data of [new Uint8Array(),type === "tst" ? Uint8Array.of(20) : bytes("RPGTLKIT CHAR\0\x02")]) {
     const f=detectSourceFormat(type,data);assert.equal(f.version,null);assert.equal(f.supported,false);
     assert.match(formatSummary({type,sourceFormat:f}),/version unavailable/);
@@ -59,7 +61,7 @@ assert.deepEqual(mainSourceFormat({major:2,minor:2}),{encoding:"binary",version:
 assert.deepEqual(mainSourceFormat({major:2,minor:9}),{encoding:"binary",version:"2.9",supported:true});
 // Follow every generated native spec target, including stable links to renamed sections.
 const targets=cases.map(({type,expected})=>formatSpecTarget({type,sourceFormat:expected}));
-for(const type of ["prg","___","tem","brd","itm","gam","gph","tst","tan","ene","bkg","spc","ste","anm","fnt","tbm","iso"]) targets.push(formatSpecTarget({type}));
+for(const type of ["prg","___","tem","brd","itm","gam","gph","tst","tan","ene","bkg","spc","ste","anm","fnt","tbm","sav","iso"]) targets.push(formatSpecTarget({type}));
 for(const {page,anchor} of targets) {
   const markdown=await readFile(new URL(`../docs/specs/${page}.md`,import.meta.url),"utf8");
   const headings=[...markdown.matchAll(/^## (.+)$/gm)].map(m=>"#"+m[1].toLowerCase().replace(/[^\w\- ]/g,"").replaceAll(" ","-"));
