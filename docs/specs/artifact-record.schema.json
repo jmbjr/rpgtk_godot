@@ -77,6 +77,12 @@
     },
     {
       "if": {
+        "properties": {"format": {"const": "tbm"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/tbm"}}}
+    },
+    {
+      "if": {
         "properties": {"format": {"const": "tan"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
       },
       "then": {"properties": {"data": {"$ref": "#/$defs/tan"}}}
@@ -185,6 +191,33 @@
     }
   ],
   "$defs": {
+    "tbm": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "width": {"type": "integer", "minimum": 1, "maximum": 256},
+        "height": {"type": "integer", "minimum": 1, "maximum": 256},
+        "storedColumns": {"type": "integer", "minimum": 2, "maximum": 257},
+        "storedRows": {"type": "integer", "minimum": 2, "maximum": 257},
+        "tiles": {
+          "type": "array", "maxItems": 16384,
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {"type": "integer", "minimum": 0},
+              "y": {"type": "integer", "minimum": 0},
+              "value": {"type": "string"},
+              "shade": {"type": "array", "items": {"type": "integer"},
+                "minItems": 3, "maxItems": 3}
+            },
+            "required": ["x", "y", "value", "shade"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["byteLength", "width", "height", "storedColumns", "storedRows", "tiles"],
+      "additionalProperties": false
+    },
     "edge": {
       "type": "object",
       "properties": {
