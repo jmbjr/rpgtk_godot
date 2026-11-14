@@ -68,9 +68,11 @@ components. It must not register, load or execute original DLLs.
    runtime gaps in the Main File inspector, expose the same immutable
    evidence in connected JSON, preserve source-line references, and
    verify synthetic and original-archive chains separately.
-2. **Next PR — controlled movement sandbox:** a source-owned small
-   synthetic board, four-direction sprite and chosen collision policy;
-   automated logic test plus browser/manual tests on Android.
+2. **Issue #94 — controlled movement sandbox:** a source-owned
+   16×11 tile board, four-direction original sprite, keyboard/mobile
+   controls and explicitly chosen solid-tile collision policy. CI tests
+   the pure movement model. This is playable but **not yet an imported
+   BSTW board**; Android acceptance remains manual.
 3. **Following PR — one door adapter:** interaction range/key and
    deterministic \`checked[einn]\`, \`LastinnTalk\`, \`clues\` transitions
    and multi-message dialogue. No full interpreter. Represent the
