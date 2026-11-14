@@ -1,4 +1,5 @@
 import { mainFileBindings } from "./model.mjs";
+import { mapBoardPlacements } from "./placed-sprites.mjs";
 import { ACTOR_RADIUS } from "./experiments/movement-sandbox/engine.mjs";
 
 // Source-only scene mapping. Never runs the GAM startup program, RPGCode,
@@ -105,6 +106,13 @@ export function buildPlayableScene(artifacts, graph, selectedMain = null) {
   }
   if (issues.length) return { ok: false, issues };
 
+  const placements = mapBoardPlacements(board, artifacts, graph);
+  const innTargets = placements.filter(placement => placement.isInnDoor);
+  const innDoor = innTargets.length === 1 ? {
+    slot: innTargets[0].slot, position: { ...innTargets[0].position },
+    itemPath: innTargets[0].itemPath, programPath: innTargets[0].programPath,
+  } : null;
+
   return {
     ok: true, issues: [],
     mainPath: main.path, boardPath: board.path, characterPath: character.path,
@@ -117,6 +125,9 @@ export function buildPlayableScene(artifacts, graph, selectedMain = null) {
       runs: board.runs.map(run => ({ ...run, tile: tiles.get(run.index) })),
     },
     walking: walks,
+    placements, innDoor,
+    innStatus: innTargets.length === 1 ? "resolved" :
+      innTargets.length ? "ambiguous" : "missing",
     // Explicit sandbox movement model with no interior solids. The source
     // vectors are retained as evidence in the viewer, NOT interpreted here.
     world: {
