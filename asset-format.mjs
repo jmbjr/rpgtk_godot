@@ -7,9 +7,10 @@ const signatures = {
   fnt: ["RPGTLKIT FONT"], gph: ["RPGTLKIT TILE"], tan: ["RPGTLKIT TILEANIM"],
 };
 const revisions = {
-  gam: { text: ["2.0"], binary: ["2.2", "2.9"] }, tem: { text: ["2.0", "2.1", "2.2"], binary: ["2.3", "2.4"] },
+  gam: { text: ["2.0"], binary: ["2.2", "2.9"] }, tem: { text: ["2.0", "2.1", "2.2"], binary: ["2.3", "2.4", "2.8"] },
   brd: { text: ["2.0", "2.1"], binary: ["2.2", "2.3", "2.4"] }, itm: { text: ["2.0", "2.1"], binary: ["2.2", "2.3"] },
   ste: { text: ["2.0"], binary: ["2.2"] }, tan: { binary: ["2.0"] },
+  anm: { text: ["2.0"], binary: ["2.3"] },
 };
 export const formatSpecs = {
   gam: "gam", prg: "prg", tst: "tst", tan: "tan", tem: "tem", brd: "brd", itm: "itm",
