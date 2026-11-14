@@ -34,6 +34,7 @@ try {
     entryPoints: [join(site, "app.mjs"),
       join(site, "experiments/movement-sandbox/sandbox.mjs")],
     bundle: true,
+    outdir: join(site, "__validation_only__"),
     platform: "browser",
     format: "esm",
     write: false,
