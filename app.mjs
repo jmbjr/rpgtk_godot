@@ -1,6 +1,7 @@
 import { indexTilesets, matchEmbeddedTile } from "./tile-matches.mjs";
 import { formatSummary, formatSpecTarget, isTileFormat, mainSourceFormat, tileMode } from "./asset-format.mjs";
 import { openGameArchive } from "./archive.mjs";
+import { traceProgramDependencies, traceProjectDependencies } from "./script-trace.mjs";
 import { mainFileBindings, readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
 import { defaultMidiTone, playMidi } from "./midi.mjs";
@@ -151,6 +152,7 @@ function selectDefault(newArchive = false) {
   mainData.replaceChildren();
   if (mainFile) mainData.append(assetFormatHeader({ type: "gam", sourceFormat: mainSourceFormat(mainFile) }));
   if (mainFile?.configuration) mainData.append(renderNativeMainConfig(mainFile, bindings));
+  if (archive) mainData.append(renderProjectScriptTrace());
   if (mainFile === archiveMainFile && archiveMainFile) {
     mainData.append(jsonPanel(() => artifactRecord(artifacts.get(archiveMainFile.filename), references)));
   } else if (mainFile) {
@@ -166,6 +168,62 @@ function selectDefault(newArchive = false) {
   const selection = { path: selected, folder: selectedFolder, tile: tileSelection, line: selectedLine };
   if (newArchive) inspectorHistory.reset(crypto.getRandomValues(new Uint32Array(4)).join("-"), selection);
   else inspectorHistory.replace(selection);
+}
+
+function renderScriptWalk(walk) {
+  const details = el("details", "", "reference");
+  const title = `${walk.steps.length} unique scripts · ${walk.links.length} observed #Include/#Run links`
+    + (walk.gaps.length ? ` · ${walk.gaps.length} unresolved/dynamic` : "");
+  details.append(el("summary", title));
+  if (!walk.steps.length) {
+    details.append(el("p", "No resolved script to trace."));
+    return details;
+  }
+  for (const step of walk.steps) {
+    const row = el("div", "", "reference");
+    row.style.paddingInlineStart = Math.min(step.depth, 5) * 15 + "px";
+    row.append(button(basename(step.path), () => selectArtifact(step.path)),
+      el("span", step.from ? ` · via ${step.directive} in ${basename(step.from)}:${step.line}` :
+        " · entrypoint", "technical"));
+    details.append(row);
+  }
+  if (walk.gaps.length) {
+    const gaps = el("details", "", "reference");
+    gaps.append(el("summary", `${walk.gaps.length} unresolvable or dynamic references`));
+    for (const gap of walk.gaps) {
+      const row = el("div", "", "reference");
+      row.append(button(`${basename(gap.from)}:${gap.line} ${gap.directive}`,
+        () => selectArtifact(gap.from, undefined, gap.line ?? undefined)),
+        el("span", ` · ${gap.value} · ${gap.status}`, "technical"));
+      gaps.append(row);
+    }
+    details.append(gaps);
+  }
+  if (walk.truncated) details.append(el("p", "Script trace reached the 500-program safety limit."));
+  return details;
+}
+
+function renderProjectScriptTrace() {
+  const trace = traceProjectDependencies(artifacts, references, mainFile);
+  const panel = el("details", "", "reference");
+  const summary = trace.summary;
+  panel.append(el("summary", `Static RPGCode dependency trace · ${summary.entryCount} configured entrypoints · ${summary.uniqueScripts} unique scripts`));
+  panel.append(el("p", "Includes are source relationships, not proven execution order. Board/item interactions are configured candidates; dynamic paths and conditional branches are not executed.", "technical"));
+  if (!trace.entries.length) panel.append(el("p", "No unique configured Main File or startup script is available for this archive."));
+  for (const entry of trace.entries) {
+    const outer = el("details", "", "reference");
+    const heading = entry.path ? `${entry.label} · ${basename(entry.path)}` :
+      `${entry.label} · ${entry.value || "unassigned"} (${entry.status})`;
+    outer.append(el("summary", heading));
+    if (entry.path) outer.append(button("Open script", () => selectArtifact(entry.path)));
+    if (entry.from && artifacts.has(entry.from)) {
+      outer.append(" · ", button("View origin", () =>
+        selectArtifact(entry.from, undefined, entry.sourceLine ?? undefined)));
+    }
+    outer.append(renderScriptWalk(entry.trace));
+    panel.append(outer);
+  }
+  return panel;
 }
 
 function renderBindings(bindings) {
@@ -290,6 +348,8 @@ function showArtifact() {
   if (program) {
     renderSource(program);
     renderGraph(program);
+    byId("graph").prepend(renderScriptWalk(
+      traceProgramDependencies(artifacts, references, artifact.path)));
   } else {
     renderAsset(artifact);
   }
