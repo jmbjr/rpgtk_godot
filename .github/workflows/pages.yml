@@ -58,6 +58,7 @@ jobs:
           node scripts/check-format-specs.mjs
           node scripts/check-asset-formats.mjs
           node scripts/check-bstw-gam-29.mjs
+          node scripts/check-bstw-gam-config.mjs
           node scripts/check-bstw-board-24.mjs
           node scripts/check-bstw-tem-anm.mjs
           node scripts/check-companion-media.mjs
