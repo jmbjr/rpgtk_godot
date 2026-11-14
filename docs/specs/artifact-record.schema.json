@@ -71,6 +71,12 @@
     },
     {
       "if": {
+        "properties": {"format": {"const": "sav"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/sav"}}}
+    },
+    {
+      "if": {
         "properties": {"format": {"const": "prg"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
       },
       "then": {"properties": {"data": {"$ref": "#/$defs/prg"}}}
@@ -338,6 +344,181 @@
         "fightPlugin", "combat", "skins", "pluginSlots", "dayNight", "cursor",
         "display", "pathfinding"],
       "additionalProperties": false
+    },
+    "sav": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "globals": {
+          "type": "object", "additionalProperties": false,
+          "required": ["numeric", "objects", "literals", "redirects"],
+          "properties": {
+            "numeric": {"type": "array", "maxItems": 100000, "items": {"$ref": "#/$defs/saveNumber"}},
+            "objects": {"type": "array", "maxItems": 100000, "items": {"$ref": "#/$defs/saveNumber"}},
+            "literals": {"type": "array", "maxItems": 100000, "items": {"$ref": "#/$defs/saveString"}},
+            "redirects": {"type": "array", "maxItems": 100000, "items": {"$ref": "#/$defs/saveString"}}
+          }
+        },
+        "party": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/saveParty"}},
+        "inventory": {"type": "array", "maxItems": 5000, "items": {"$ref": "#/$defs/saveItem"}},
+        "equipment": {"type": "array", "maxItems": 1024, "items": {"$ref": "#/$defs/saveEquipment"}},
+        "equipmentModifiers": {"type": "array", "maxItems": 64, "items": {
+          "type": "object", "additionalProperties": false,
+          "required": ["player", "hp", "specialPower", "defense", "fight"],
+          "properties": {
+            "player": {"type": "integer", "minimum": 0}, "hp": {"type": "integer"},
+            "specialPower": {"type": "integer"}, "defense": {"type": "integer"},
+            "fight": {"type": "integer"}
+          }
+        }},
+        "misc": {"type": "object", "additionalProperties": false,
+          "required": ["menuColor", "selectedPlayer", "gold", "messageWindowColor",
+            "messageWindowBackground", "debug", "fontColor", "fontFace", "fontSize",
+            "bold", "underline", "italic", "gameTimeSeconds", "stepsTakenTiles", "mainFile", "board"],
+          "properties": {
+            "menuColor": {"type": "integer"}, "selectedPlayer": {"type": "integer"},
+            "gold": {"type": "integer"}, "messageWindowColor": {"type": "integer"},
+            "messageWindowBackground": {"type": "string"}, "debug": {"type": "integer"},
+            "fontColor": {"type": "integer"}, "fontFace": {"type": "string"},
+            "fontSize": {"type": "integer"}, "bold": {"type": "integer"},
+            "underline": {"type": "integer"}, "italic": {"type": "integer"},
+            "gameTimeSeconds": {"type": "integer"}, "stepsTakenTiles": {"type": "integer"},
+            "mainFile": {"type": "string"}, "board": {"type": "string"}
+          }
+        },
+        "positions": {"type": "array", "maxItems": 64, "items": {
+          "type": "object", "additionalProperties": false,
+          "required": ["player", "x", "y", "layer", "active", "boardPath"],
+          "properties": {
+            "player": {"type": "integer", "minimum": 0}, "x": {"type": "number"},
+            "y": {"type": "number"}, "layer": {"type": "integer"},
+            "active": {"type": "integer"}, "boardPath": {"$ref": "#/$defs/savePath"}
+          }
+        }},
+        "levelProgress": {"type": "array", "maxItems": 64, "items": {
+          "type": "object", "additionalProperties": false,
+          "required": ["player", "nextLevel", "progression"],
+          "properties": {
+            "player": {"type": "integer", "minimum": 0},
+            "nextLevel": {"type": "integer"}, "progression": {"type": "integer"}
+          }
+        }},
+        "formerPlayers": {"type": "array", "minItems": 26, "maxItems": 26,
+          "items": {"$ref": "#/$defs/saveItem"}},
+        "presentation": {
+          "type": "object", "additionalProperties": false,
+          "required": ["menuGraphic", "fightMenuGraphic", "messageWindowWidth", "swappedPlayerName"],
+          "properties": {
+            "menuGraphic": {"type": "string"}, "fightMenuGraphic": {"type": "string"},
+            "messageWindowWidth": {"type": "integer"}, "swappedPlayerName": {"type": "string"}
+          }
+        },
+        "worldItems": {"type": "array", "maxItems": 20000,
+          "items": {"$ref": "#/$defs/saveWorldItem"}},
+        "threads": {"type": "array", "maxItems": 10001,
+          "items": {"$ref": "#/$defs/saveThread"}},
+        "movementSize": {"type": "number"},
+        "objectClasses": {"type": "array", "maxItems": 100000,
+          "items": {"type": "object", "additionalProperties": false,
+            "required": ["slot", "index", "className"],
+            "properties": {
+              "slot": {"type": "integer", "minimum": 0},
+              "index": {"type": "integer"}, "className": {"type": "string"}
+            }
+          }},
+        "loopOffset": {"type": "integer"},
+        "completion": {"enum": ["complete", "active-thread-state-unparsed"]},
+        "unparsedTailBytes": {"type": "integer", "minimum": 0}
+      },
+      "required": ["byteLength", "globals", "party", "inventory",
+        "equipment", "equipmentModifiers", "misc", "positions",
+        "levelProgress", "formerPlayers", "presentation", "worldItems",
+        "threads", "completion", "unparsedTailBytes"],
+      "if": {"properties": {"completion": {"const": "complete"}}},
+      "then": {"required": ["movementSize", "objectClasses", "loopOffset"],
+        "properties": {"unparsedTailBytes": {"const": 0}}},
+      "else": {"not": {"required": ["objectClasses"]}},
+      "additionalProperties": false
+    },
+    "saveNumber": {
+      "type": "object", "additionalProperties": false,
+      "properties": {"name": {"type": "string"}, "value": {"type": "number"}},
+      "required": ["name", "value"]
+    },
+    "saveString": {
+      "type": "object", "additionalProperties": false,
+      "properties": {"name": {"type": "string"}, "value": {"type": "string"}},
+      "required": ["name", "value"]
+    },
+    "saveParty": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "slot": {"type": "integer", "minimum": 0},
+        "name": {"type": "string"}, "filename": {"type": "string"}
+      },
+      "required": ["slot", "name", "filename"]
+    },
+    "saveItem": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "slot": {"type": "integer", "minimum": 0},
+        "filename": {"type": "string"}, "handle": {"type": "string"},
+        "quantity": {"type": "integer"}
+      },
+      "required": ["slot", "filename"],
+      "allOf": [{"if": {"required": ["quantity"]},
+        "then": {"required": ["handle"]},
+        "else": {"required": ["handle"]}}]
+    },
+    "saveEquipment": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "player": {"type": "integer", "minimum": 0},
+        "slot": {"type": "integer", "minimum": 1, "maximum": 16},
+        "filename": {"type": "string"}, "handle": {"type": "string"}
+      },
+      "required": ["player", "slot", "filename", "handle"]
+    },
+    "savePath": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "vectorIndex": {"type": "integer"}, "cycles": {"type": "integer"},
+        "nextNode": {"type": "integer"}, "attributes": {"type": "integer"}
+      },
+      "required": ["vectorIndex", "cycles", "nextNode", "attributes"]
+    },
+    "saveWorldItem": {
+      "type": "object", "additionalProperties": false,
+      "required": ["slot", "filename"],
+      "properties": {
+        "slot": {"type": "integer", "minimum": 0},
+        "filename": {"type": "string"},
+        "activationProgram": {"type": "string"}, "multitaskProgram": {"type": "string"},
+        "initialVariable": {"type": "string"}, "initialValue": {"type": "string"},
+        "finalVariable": {"type": "string"}, "finalValue": {"type": "string"},
+        "activate": {"type": "integer"}, "activationType": {"type": "integer"},
+        "position": {"type": "object", "additionalProperties": false,
+          "required": ["x", "y", "layer"], "properties": {
+            "x": {"type": "number"}, "y": {"type": "number"}, "layer": {"type": "integer"}
+          }},
+        "active": {"type": "integer"}, "boardPath": {"$ref": "#/$defs/savePath"}
+      },
+      "if": {"properties": {"filename": {"const": ""}}},
+      "then": {"maxProperties": 2},
+      "else": {"required": ["activationProgram", "multitaskProgram",
+        "initialVariable", "initialValue", "finalVariable", "finalValue",
+        "activate", "activationType", "position", "active", "boardPath"]}
+    },
+    "saveThread": {
+      "type": "object", "additionalProperties": false,
+      "required": ["slot", "filename", "persistent", "isItemThread",
+        "itemSlot", "sleeping", "duration"],
+      "properties": {
+        "slot": {"type": "integer", "minimum": 0}, "filename": {"type": "string"},
+        "persistent": {"type": "integer"}, "isItemThread": {"type": "integer"},
+        "itemSlot": {"type": ["integer", "null"]},
+        "sleeping": {"type": "integer"}, "duration": {"type": "number"}
+      }
     },
     "prg": {
       "type": "object",
