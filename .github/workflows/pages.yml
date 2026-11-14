@@ -32,6 +32,8 @@ jobs:
           node --check pe-inspect.mjs
           node --check plugin-audit.mjs
           node --check playability-audit.mjs
+          node --check playable-scene.mjs
+          node --check experiments/movement-sandbox/authored-play.mjs
           node --check experiments/movement-sandbox/world.mjs
           node --check experiments/movement-sandbox/engine.mjs
           node --check experiments/movement-sandbox/inn-dialogue.mjs
@@ -82,6 +84,7 @@ jobs:
           node scripts/check-bstw-sav-34.mjs
           node scripts/check-plugin-abi.mjs
           node scripts/check-playability-audit.mjs
+          node scripts/check-playable-scene.mjs
           node scripts/check-movement-sandbox.mjs
           node scripts/check-inn-dialogue.mjs
           node scripts/check-inspector-history.mjs
@@ -92,10 +95,10 @@ jobs:
         run: |
           mkdir -p site/vendor
           cp .nojekyll index.html style.css app.mjs archive.mjs model.mjs artifacts.mjs asset-format.mjs tile-palette.mjs records.mjs game-graph.mjs inspector-history.mjs connection-map.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs tile-matches.mjs tile-pdf.mjs catalog.json site/
-          cp native-board-tail.mjs script-trace.mjs save-state.mjs pe-inspect.mjs plugin-audit.mjs playability-audit.mjs site/
+          cp native-board-tail.mjs script-trace.mjs save-state.mjs pe-inspect.mjs plugin-audit.mjs playability-audit.mjs playable-scene.mjs site/
           mkdir -p site/experiments/movement-sandbox
           cp sandbox.html site/
-          cp experiments/movement-sandbox/{world,engine,inn-dialogue,sandbox}.mjs experiments/movement-sandbox/sandbox.css site/experiments/movement-sandbox/
+          cp experiments/movement-sandbox/{world,engine,inn-dialogue,sandbox,authored-play}.mjs experiments/movement-sandbox/sandbox.css site/experiments/movement-sandbox/
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
           cp -R vendor/soundfont vendor/generaluser-gs vendor/piano-roll vendor/jspdf site/vendor/
           cp --parents experiments/dodge-tiles/{project,card-scene}.mjs site/
