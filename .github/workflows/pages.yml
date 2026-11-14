@@ -77,9 +77,12 @@ jobs:
         run: |
           mkdir -p site/vendor
           cp .nojekyll index.html style.css app.mjs archive.mjs model.mjs artifacts.mjs asset-format.mjs tile-palette.mjs records.mjs game-graph.mjs inspector-history.mjs connection-map.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs tile-matches.mjs tile-pdf.mjs catalog.json site/
+          cp native-board-tail.mjs site/
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
           cp -R vendor/soundfont vendor/generaluser-gs vendor/piano-roll vendor/jspdf site/vendor/
           cp --parents experiments/dodge-tiles/{project,card-scene}.mjs site/
+      - name: Verify published viewer modules
+        run: node scripts/check-staged-site.mjs site
       - name: Build and verify Toolkit 2 test games
         run: |
           node scripts/build-tk2-test-game.mjs site/tk2-test-game.zip
