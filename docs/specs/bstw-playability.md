@@ -187,6 +187,16 @@ Pinned Toolkit runtime source:
 - [renderNow](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/render/render.cpp#L487-L551) draws sprites per layer with higher board layers over lower sprites.
 - [spriteCollisions / z-order](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/movement/CSprite/CSprite.cpp#L1080-L1175) uses collision-base geometry. That full dynamic sorting **is not reproduced**: this browser slice uses a deterministic same-layer Y, X, then source-slot ordering for items and Bruce. It does not evaluate conditional loading variables, native sprite bases or under-vectors.
 
+**Read-only original ZIP inventory (not an embedded fixture):**
+`start.brd` stores seven layer-1 placements: slot 0 Lami at
+(82,200), slot 1 Rusty (432,228), slot 2 Jim (590,55),
+slot 3 inn door (207,349), slot 4 another door (512,414),
+slot 5 another door (495,223), and slot 6 Loyalis (115,115).
+All seven initial South ANMs resolve to supported 32×32 indexed TST
+artwork. The 96×96 TBM compositor is tested synthetically for
+other native objects; `house_3x3.itm` is **not** placed on this
+opening board.
+
 **Inn:** The diagnostic yellow `INN DOOR` marker is selected
 **only** when a placed sprite's board activation-program edge actually
 resolves to the decoded `mwininn.prg`. A generic `door.itm` name
