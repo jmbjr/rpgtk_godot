@@ -1189,7 +1189,69 @@ function renderBoardMetadata(panel, board) {
   if (board.vectors) {
     const pointCount = board.vectors.reduce((sum, shape) => sum + shape.points.length, 0);
     panel.append(el("p", `Native BRD 2.4 · coordinate code ${board.coordinateType} · ${board.vectors.length} vectors with ${pointCount} raw points · ${board.lights.length} light records · ${board.shadingLayers.length} shading layers`));
-    panel.append(el("p", "The source reader stops after vectors. Later programs, sprites, start location, backgrounds and game mechanics are not decoded."));
+    panel.append(el("p", "Native tail: " + board.nativePrograms.length + " programs · " +
+      board.sprites.length + " placed item sprites · " + board.images.length +
+      " images · " + board.threads.length + " stored threads · " +
+      board.constants.length + " constants."));
+    panel.append(el("p", "Player start (source pixels): (" +
+      board.start.x + ", " + board.start.y + ", layer " + board.start.layer +
+      ") · Saving disabled flag: " + board.saveDisabled +
+      " · Music: " + (board.boardMusic || "(none)") +
+      " · Background color: " + board.background));
+    const links = references.outgoing.get(board.path) ?? [];
+    const linked = (filename, evidence) => {
+      const edge = links.find(item => item.evidence === evidence);
+      return edge?.to ? button(filename, () => selectArtifact(edge.to)) :
+        el("span", filename ? filename + " · " + (edge?.status || "Unresolved") : "(none)");
+    };
+    const spriteDetails = el("details", "", "board-conditions");
+    spriteDetails.open = board.sprites.length > 0;
+    spriteDetails.append(el("summary", "Placed native sprites · " + board.sprites.length));
+    for (const sprite of board.sprites) {
+      const row = el("div", "", "reference");
+      row.append(el("h4", "Slot " + sprite.slot + " · " +
+        (sprite.filename || "(blank)")), linked(sprite.filename,
+        "Native board sprite · slot " + sprite.slot));
+      row.append(el("p", "Stored pixel position (" + sprite.position.x + ", " +
+        sprite.position.y + ", layer " + sprite.position.layer +
+        ") · Activate " + sprite.activate + " · Type " + sprite.activationType +
+        " · Associated vector " + sprite.associatedVector));
+      if (sprite.activationProgram) row.append(el("p", "Activation: "),
+        linked(sprite.activationProgram, "Native sprite activation program · slot " + sprite.slot));
+      if (sprite.multitaskProgram) row.append(el("p", "Multitask: "),
+        linked(sprite.multitaskProgram, "Native sprite multitask program · slot " + sprite.slot));
+      row.append(el("p", "Conditions: " + JSON.stringify({
+        initialVariable: sprite.initialVariable, initialValue: sprite.initialValue,
+        finalVariable: sprite.finalVariable, finalValue: sprite.finalValue,
+        loadingVariable: sprite.loadingVariable, loadingValue: sprite.loadingValue,
+      }), "technical"));
+      spriteDetails.append(row);
+    }
+    panel.append(spriteDetails);
+    const programDetails = el("details", "", "board-conditions");
+    programDetails.append(el("summary", "Native program placements · " + board.nativePrograms.length));
+    for (const entry of board.nativePrograms) {
+      const row = el("div", "", "reference");
+      row.append(el("h4", "Slot " + entry.slot + " · " + (entry.filename || "(blank)")));
+      if (entry.filename) row.append(linked(entry.filename, "Native board program · slot " + entry.slot));
+      if (entry.graphic) row.append(linked(entry.graphic, "Native program graphic · slot " + entry.slot));
+      row.append(el("p", "Layer " + entry.layer + " · Activation " + entry.activate +
+        " / type " + entry.activationType + " · Repeat distance " + entry.distanceRepeat +
+        " · Vector " + entry.vectorBase.points.length + " points · Closed " +
+        entry.vectorBase.closed + " · Handle " + entry.vectorBase.handle));
+      programDetails.append(row);
+    }
+    panel.append(programDetails);
+    const imageDetails = el("details", "", "board-conditions");
+    imageDetails.append(el("summary", "Native placed images · " + board.images.length));
+    for (const entry of board.images) {
+      const row = el("p", "Slot " + entry.slot + " · (" + entry.position.x + ", " +
+        entry.position.y + ") · Layer " + entry.layer + " · Draw " + entry.drawType);
+      if (entry.filename) row.append(" · ", linked(entry.filename, "Native board image · slot " + entry.slot));
+      imageDetails.append(row);
+    }
+    panel.append(imageDetails);
+    panel.append(el("p", "These placements, flags, and conditions are recorded data; they are not executed or collision-tested.", "technical"));
     const details = el("details", "", "board-conditions");
     details.append(el("summary", `Inspect ${board.vectors.length} stored vector records`));
     for (const shape of board.vectors) {
@@ -1280,6 +1342,14 @@ function renderBoard(panel, board, edges) {
     const vectorLabel = el("label", "Show raw vectors");
     vectorLabel.prepend(showVectors);
     controls.append(vectorLabel);
+  }
+  const showSprites = board.sprites?.length > 0 && board.coordinateType === 4 ? el("input") : null;
+  if (showSprites) {
+    showSprites.type = "checkbox";
+    showSprites.checked = true;
+    const label = el("label", "Show placed items + start");
+    label.prepend(showSprites);
+    controls.append(label);
   }
   const stage = el("div", "", "board-stage");
   const canvas = el("canvas", "", "board-map");
@@ -1376,6 +1446,38 @@ function renderBoard(panel, board, edges) {
       }
       context.restore();
     }
+    if (showSprites?.checked) {
+      // Code 4 stores positions in pixels. This is a static locator, not
+      // sprite rendering, collision testing, or a guaranteed editor parity.
+      const scale = tileSize / 32;
+      context.save();
+      context.font = Math.max(11, Math.floor(tileSize * 0.52)) + "px sans-serif";
+      context.lineWidth = 2;
+      context.textBaseline = "middle";
+      context.textAlign = "center";
+      for (const sprite of board.sprites) {
+        if (layer && sprite.position.layer !== layer) continue;
+        const px = sprite.position.x * scale;
+        const py = sprite.position.y * scale;
+        context.beginPath();
+        context.fillStyle = "#ffbd57";
+        context.strokeStyle = "#10151a";
+        context.arc(px, py, Math.max(6, tileSize * 0.25), 0, 2 * Math.PI);
+        context.fill();
+        context.stroke();
+        context.fillStyle = "#10151a";
+        context.fillText(String(sprite.slot + 1), px, py + 0.5);
+      }
+      if (board.start && (!layer || board.start.layer === layer)) {
+        const px = board.start.x * scale;
+        const py = board.start.y * scale;
+        context.fillStyle = "#7cf4de";
+        context.strokeStyle = "#10151a";
+        context.fillRect(px - 5, py - 5, 10, 10);
+        context.strokeRect(px - 5, py - 5, 10, 10);
+      }
+      context.restore();
+    }
     notes.textContent = "Static tile preview · animated tiles show their first frame."
       + (missing.size ? ` ${missing.size} tile references could not be rendered.` : "")
       + (board.vectors ? ` Native BRD 2.4: ${board.vectors.length} vectors are stored as raw points. `
@@ -1403,9 +1505,18 @@ function renderBoard(panel, board, edges) {
     cellInfo.textContent = `Cell (${x + 1}, ${y + 1})`
       + (board.vectors ? " · grid position only (vector collision not simulated)" :
         ` · ${values.join("; ")}`);
+    if (board.sprites && board.coordinateType === 4) {
+      const visible = board.sprites.filter(sprite =>
+        (!selected || sprite.position.layer === selected) &&
+        Math.floor(sprite.position.x / 32) === x &&
+        Math.floor(sprite.position.y / 32) === y);
+      if (visible.length) cellInfo.textContent += " · Stored sprites: " +
+        visible.map(sprite => (sprite.slot + 1) + ": " + sprite.filename).join(", ");
+    }
   });
   showTypes.addEventListener("change", draw);
   showVectors?.addEventListener("change", draw);
+  showSprites?.addEventListener("change", draw);
   layers.addEventListener("change", () => {
     cellInfo.textContent = board.vectors ?
       "Raw vector geometry is listed above; click a cell to see its grid position." :

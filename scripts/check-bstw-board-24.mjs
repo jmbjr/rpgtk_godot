@@ -51,7 +51,8 @@ assert.deepEqual([alt.width, alt.height, alt.layers, alt.coordinateType], [5, 3,
 assert.deepEqual([alt.vectors.length, alt.lights.length, alt.runs.length], [0, 0, 0]);
 
 const graph = buildReferences(artifacts);
-assert.deepEqual(graph.outgoing.get(board.path).map(edge => [edge.tile, edge.to, edge.status]),
+assert.deepEqual(graph.outgoing.get(board.path).filter(edge => edge.index !== undefined)
+  .map(edge => [edge.tile, edge.to, edge.status]),
   [[1, "BSTW/Tiles/two-tiles.tst", "Resolved"], [2, "BSTW/Tiles/two-tiles.tst", "Resolved"]]);
 const validation = new Ajv2020({ strictTypes: false });
 const base = new URL("../docs/specs/", import.meta.url);

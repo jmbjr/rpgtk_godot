@@ -1,4 +1,5 @@
 import { detectSourceFormat, toolkitAsset } from "./asset-format.mjs";
+import { readNativeBoardTail } from "./native-board-tail.mjs";
 import { dosPalette, tilesetRgb } from "./tile-palette.mjs";
 import { decodeProgram, indexProgram, readMainFile } from "./model.mjs";
 import { readCompoundDocument, readGif, readJpeg, readMidi, readWave } from "./media.mjs";
@@ -319,8 +320,7 @@ function readVectorBoard(reader, bytes) {
     }
   }
 
-  // Light and collision-vector records precede the newer program/sprite
-  // sections. Stop here: no unsupported late-tail fields are inferred.
+  // Light and collision-vector records precede the native board tail.
   const lightCount = reader.short() + 1;
   if (lightCount < 0 || lightCount > reader.remaining() / 10) {
     throw new Error("Invalid vector board light count.");
@@ -356,12 +356,15 @@ function readVectorBoard(reader, bytes) {
     const handle = reader.string();
     return { slot, points, attributes, closed, layer, tileType, handle };
   });
+  const { refs: tailRefs, ...tail } = readNativeBoardTail(reader, layers);
   return {
     width, height, layers, coordinateType,
-    layerTitles: ["", ...Array.from({ length: Math.max(layers, 8) }, (_, i) => "Layer " + (i + 1))].slice(0, 9),
     lookup, runs, tileTypes: [], shadingLayers, lights, vectors,
-    background: -1, ambient: [0, 0, 0], // Neutral preview defaults; not stored prefix settings.
-    programs: [], items: [], refs: boardTileReferences(lookup, placements),
+    // Do not conflate native vector-board program/sprite records with
+    // the older pre-vector board item/program shapes.
+    programs: [], items: [],
+    ...tail,
+    refs: [...boardTileReferences(lookup, placements), ...tailRefs],
   };
 }
 
