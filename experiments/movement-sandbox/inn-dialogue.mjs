@@ -39,7 +39,7 @@ export const INN_SCRIPT_SOURCE = Object.freeze({
   limitations: Object.freeze([
     "Dialogue is newly authored paraphrase, not original imported game text.",
     "The collision, proximity radius and input are sandbox policies; Toolkit item vectors are not emulated.",
-    "This adapter models the observed script branch, cooldown and counters; it never executes RPGCode or DLLs.",
+    "This adapter does not execute RPGCode or DLLs; it models the observed branch, cooldown and counters.",
   ]),
 });
 
