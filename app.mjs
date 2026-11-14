@@ -10,7 +10,7 @@ import { connectedGameRecord, rpgcodeRoles } from "./game-graph.mjs";
 import { createInspectorHistory } from "./inspector-history.mjs";
 import { connectionCounts, connectionFilterOptions, connectionNeighbors, connectionType,
   filterConnections, referenceDestination } from "./connection-map.mjs";
-import { characterArtworkSprite, animationFrames, battleBackground, enemySprite, itemSprites, keyFrameColor, standaloneTilePixels } from "./sprites.mjs";
+import { characterArtworkSprite, animationFrames, battleBackground, enemySprite, itemSprites, keyFrameColor, standaloneTilePixels, tileBitmapSprite } from "./sprites.mjs";
 
 const byId = id => document.getElementById(id);
 const el = (tag, value = "", className = "") => {
@@ -463,6 +463,18 @@ function renderAsset(artifact) {
     renderAnimation(panel, artifact, edges);
     return;
   }
+  if (artifact.type === "tbm") {
+    const sprite = tileBitmapSprite(artifact, artifacts, references);
+    panel.append(el("p", `Native TBM 3.0 · ${artifact.width} × ${artifact.height} visible tiles (${artifact.storedColumns} × ${artifact.storedRows} stored records)`));
+    if (sprite) {
+      const canvas = spriteCanvas(`Reconstructed tile bitmap for ${basename(artifact.path)}`);
+      drawSprite(canvas, sprite);
+      panel.append(canvas, spriteLinks(sprite));
+      if (sprite.missing.length) panel.append(el("p", `${sprite.missing.length} placed tiles cannot be rendered.`));
+    } else panel.append(el("p", "The stored tile bitmap cannot be previewed."));
+    panel.append(el("p", "Source tile shades and transparent pixels are preserved. Original Toolkit 3 editor/runtime parity is not yet verified.", "technical"));
+    return;
+  }
   if (artifact.type === "spc") {
     renderSpecialMove(panel, artifact, edges);
     return;
@@ -824,6 +836,11 @@ function renderAnimation(panel, artifact, edges) {
     const edge = byEvidence.get(`Frame ${index + 1} image`);
     const path = edge?.to;
     const tileset = artifacts.get(path);
+    if (image && tileset?.type === "tbm") {
+      // Native animation frame images can themselves be composed TBM files.
+      // Keep missing source tiles visible in the TBM inspector.
+      return Promise.resolve(tileBitmapSprite(tileset, artifacts, references));
+    }
     // Native Toolkit 3 ANMs may store "FLcharacters.tst14" as their
     // image field. Browser Image cannot decode a TST, so render the
     // resolved indexed tile through the existing Toolkit palette decoder.
