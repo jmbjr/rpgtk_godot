@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Play the RPG Toolkit movement experiment in your browser with keyboard and touch controls.">
+  <meta name="description" content="Play a synthetic RPG movement and inn-dialogue experiment in your browser with keyboard and mobile controls.">
   <title>Movement Sandbox · RPG Toolkit Game Explorer</title>
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./experiments/movement-sandbox/sandbox.css">
@@ -20,7 +20,7 @@
       </header>
       <section class="panel sandbox-panel" aria-labelledby="sandbox-heading">
         <div class="sandbox-panel-heading">
-          <h2 id="sandbox-heading">Movement test</h2>
+          <h2 id="sandbox-heading">Movement &amp; interaction test</h2>
           <div class="sandbox-options">
             <label><input id="sandbox-collision" type="checkbox"> Show solid tiles + actor radius</label>
             <button id="sandbox-reset" type="button">Reset position</button>
@@ -32,12 +32,21 @@
         </canvas>
         <p id="sandbox-status" class="sandbox-status" role="status" aria-live="off">Preparing movement board…</p>
         <p id="sandbox-landmark" class="sandbox-landmark" role="status" aria-live="polite">
-          Walk toward the inn.
+          Walk toward the inn, then press Talk.
         </p>
+        <div class="sandbox-hud" id="sandbox-hud" aria-live="off">Clues: 0 / 13 · Inn visits: 0</div>
+        <section class="sandbox-dialogue" id="sandbox-dialogue" hidden aria-labelledby="sandbox-dialogue-speaker">
+          <div class="sandbox-dialogue-heading">
+            <strong id="sandbox-dialogue-speaker">Bruce</strong>
+            <span id="sandbox-dialogue-progress" class="technical">Dialogue 1 / 4</span>
+          </div>
+          <p id="sandbox-dialogue-text">Conversation text</p>
+          <p class="technical">Adapted dialogue for this synthetic sandbox; no imported RPGCode is executed.</p>
+        </section>
         <div class="sandbox-under">
           <div class="sandbox-controls">
             <h3>Move the character</h3>
-            <p>Use <strong>WASD</strong>, <strong>arrow keys</strong>, or the touch controls. Two directions at once move diagonally at the same speed.</p>
+            <p>Move with <strong>WASD</strong>, <strong>arrow keys</strong>, or the touch controls. At the inn, press <strong>E</strong>, <strong>Space</strong>, or <strong>Talk</strong> to start and advance dialogue.</p>
             <div class="sandbox-dpad" role="group" aria-label="Directional movement">
               <button type="button" class="pad-north" data-move="north" aria-label="Move north">▲</button>
               <button type="button" class="pad-west" data-move="west" aria-label="Move west">◀</button>
@@ -45,12 +54,13 @@
               <button type="button" class="pad-east" data-move="east" aria-label="Move east">▶</button>
               <button type="button" class="pad-south" data-move="south" aria-label="Move south">▼</button>
             </div>
+            <button id="sandbox-talk" class="sandbox-talk" type="button" disabled aria-controls="sandbox-dialogue">Talk at inn</button>
           </div>
           <div class="sandbox-details">
             <h3>What this experiment proves</h3>
-            <p>Four-way controls, visible walking frames, normalized diagonal motion, solid-tile collisions, wall sliding and phone-friendly touch input.</p>
-            <p><strong>What it does not prove:</strong> Toolkit collision-vector semantics, imported animation parity, actual RPGCode execution, door dialogue, save loading or COM plugin compatibility.</p>
-            <p>The inn is a landmark for the next step. <strong>Interacting with it is not implemented yet.</strong></p>
+            <p>Four-way controls, walking animation, solid-tile collisions, and a stateful inn conversation with first/repeat dialogue, a clue counter and a source-backed cooldown rule.</p>
+            <p><strong>What it does not prove:</strong> Toolkit collision-vector semantics, imported animation parity, original RPGCode execution, save loading, COM plugin compatibility or exact BSTW interaction range.</p>
+            <p>The inn dialogue uses newly written lines and an explicit deterministic adapter modeled on the observed <code>mwininn.prg</code> branch and clue updates. The inn stays locked. Reset clears clues and visits.</p>
           </div>
         </div>
       </section>

@@ -1,5 +1,7 @@
 import { SANDBOX_WORLD, TILE_SIZE, tileAt, solidAt } from "./world.mjs";
-import { ACTOR_RADIUS, initialMovementState, stepMovement, distanceToLandmark } from "./engine.mjs";
+import { ACTOR_RADIUS, initialMovementState, stepMovement } from "./engine.mjs";
+import { initialInnState, nearInn, activateInn, advanceInn, currentInnMessage,
+  conversationMessages } from "./inn-dialogue.mjs";
 
 const board = document.querySelector("#sandbox-canvas");
 const ctx = board.getContext("2d", { alpha: false });
@@ -7,6 +9,12 @@ const status = document.querySelector("#sandbox-status");
 const landmarkStatus = document.querySelector("#sandbox-landmark");
 const resetButton = document.querySelector("#sandbox-reset");
 const overlay = document.querySelector("#sandbox-collision");
+const talkButton = document.querySelector("#sandbox-talk");
+const clueHud = document.querySelector("#sandbox-hud");
+const dialoguePanel = document.querySelector("#sandbox-dialogue");
+const dialogueSpeaker = document.querySelector("#sandbox-dialogue-speaker");
+const dialogueText = document.querySelector("#sandbox-dialogue-text");
+const dialogueProgress = document.querySelector("#sandbox-dialogue-progress");
 const pad = [...document.querySelectorAll("[data-move]")];
 const keyDirections = new Map([
   ["ArrowUp", "north"], ["KeyW", "north"],
@@ -23,6 +31,8 @@ const directional = {
   east: { x: 1, y: 0 },
 };
 let player = initialMovementState();
+let inn = initialInnState();
+let interactionFeedback = "";
 let lastFrame = null;
 let lastStatus = 0;
 const background = document.createElement("canvas");
@@ -140,6 +150,13 @@ function draw() {
     ctx.arc(player.x, player.y, ACTOR_RADIUS, 0, Math.PI * 2);
     ctx.stroke();
   }
+  if (nearInn(player) || inn.conversation) {
+    const tileX = SANDBOX_WORLD.landmark.x - TILE_SIZE / 2;
+    const tileY = SANDBOX_WORLD.landmark.y - TILE_SIZE / 2;
+    ctx.strokeStyle = "#ffe19b";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(tileX + 1.5, tileY + 1.5, TILE_SIZE - 3, TILE_SIZE - 3);
+  }
   drawActor(ctx, player);
 }
 
@@ -157,18 +174,67 @@ function updateStatus() {
     Math.round(player.y) + ") · facing " + player.facing +
     (player.moving ? " · walking" : " · standing") +
     (player.blocked ? " · wall collision" : "");
-  const near = distanceToLandmark(player) < 38;
-  const message = near ?
-    "You reached the inn. Talking to the door is the next implementation milestone." :
-    "Walk toward the INN in the upper-right corner. The inn cannot be interacted with yet.";
-  // Avoid re-announcing the same live-region text every animation update.
+  const near = nearInn(player);
+  const current = currentInnMessage(inn);
+  const hint = current ? "Conversation active · press Next, E or Space to continue." :
+    near ? "At the locked inn: press Talk, E or Space." :
+    "Walk to the INN at the upper right to talk.";
+  const message = interactionFeedback || hint;
+  // Avoid repeated ARIA announcements while the animation loop runs.
   if (landmarkStatus.textContent.trim() !== message) landmarkStatus.textContent = message;
+  clueHud.textContent = "Clues: " + inn.clues + " / " + inn.maxClues +
+    " · Inn visits: " + inn.checkedInn;
+  dialoguePanel.hidden = !(current || inn.clueMessage);
+  if (current) {
+    dialogueSpeaker.textContent = current.speaker;
+    dialogueText.textContent = current.text;
+    dialogueProgress.textContent = "Line " + (inn.conversation.index + 1) +
+      " / " + conversationMessages(inn.conversation).length;
+  } else if (inn.clueMessage) {
+    dialogueSpeaker.textContent = "Clue discovered";
+    dialogueText.textContent = inn.clueMessage;
+    dialogueProgress.textContent = "1 / " + inn.maxClues + " clues found";
+  }
+  talkButton.disabled = !current && !near;
+  talkButton.textContent = current ? (
+    inn.conversation.index + 1 === conversationMessages(inn.conversation).length ?
+      "Finish conversation" : "Next line"
+  ) : "Talk at inn";
+}
+
+function interact() {
+  // performance.now is a browser monotonic-millisecond clock; the pure
+  // behavior adapter receives the timestamp explicitly for easy tests.
+  const tick = performance.now();
+  const response = inn.conversation ?
+    advanceInn(inn, tick) : activateInn(inn, player, tick);
+  inn = response.state;
+  if (response.outcome === "out-of-range") {
+    interactionFeedback = "Move closer to the inn before talking.";
+  } else if (response.outcome === "cooldown") {
+    interactionFeedback = "Give the door a moment (" +
+      response.remainingMs + " ms cooldown remaining).";
+  } else {
+    interactionFeedback = "";
+    if (response.outcome === "opened" || response.outcome === "completed") {
+      clearHeld();
+      if (response.outcome === "completed" && response.clueGained) {
+        interactionFeedback = "Clue found! The inn is still locked.";
+      }
+    }
+  }
+  updateStatus();
+  draw();
 }
 
 function frame(timestamp) {
   const seconds = lastFrame === null ? 0 : Math.max(0, (timestamp - lastFrame) / 1000);
   lastFrame = timestamp;
-  player = stepMovement(player, pressedInput(), seconds);
+  // Pause walking while dialogue is shown, preserving interaction range.
+  const before = player;
+  player = stepMovement(player, inn.conversation ? { x: 0, y: 0 } :
+    pressedInput(), seconds);
+  if (player.distance !== before.distance) interactionFeedback = "";
   draw();
   if (timestamp - lastStatus > 150) {
     updateStatus();
@@ -188,8 +254,16 @@ document.addEventListener("keydown", event => {
   if (event.altKey || event.ctrlKey || event.metaKey ||
       /^(INPUT|TEXTAREA|SELECT)$/.test(event.target?.tagName ?? "") ||
       event.target?.isContentEditable) return;
+  if (event.code === "KeyE" || event.code === "Space") {
+    // A focused button already generates its own click on Space/Enter;
+    // don't handle the same physical action twice.
+    if (event.target?.closest?.("button, a, [role=button]")) return;
+    event.preventDefault();
+    if (!event.repeat) interact();
+    return;
+  }
   if (!keyDirections.has(event.code)) return;
-  keyboardHeld.add(event.code);
+  if (!inn.conversation) keyboardHeld.add(event.code);
   event.preventDefault();
 });
 document.addEventListener("keyup", event => {
@@ -229,9 +303,12 @@ for (const button of pad) {
     updateStatus();
   });
 }
+talkButton.addEventListener("click", interact);
 resetButton.addEventListener("click", () => {
   clearHeld();
   player = initialMovementState();
+  inn = initialInnState();
+  interactionFeedback = "";
   updateStatus();
   draw();
 });
