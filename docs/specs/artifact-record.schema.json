@@ -351,11 +351,21 @@
             "required": ["direction", "frame", "parts"],
             "additionalProperties": false
           },
-          "minItems": 16,
+          "minItems": 0,
           "maxItems": 16
         }
       },
       "required": ["byteLength", "name", "stats", "profile", "walking"],
+      "allOf": [
+        {
+          "if": {"required": ["walkingAnimations"]},
+          "then": {
+            "properties": {"walking": {"maxItems": 0}},
+            "required": ["walkingAnimations", "standingAnimations", "battleAnimations", "customAnimations", "vectorBases", "idleTime", "speed"]
+          },
+          "else": {"properties": {"walking": {"minItems": 16}}}
+        }
+      ],
       "additionalProperties": false
     },
     "brd": {
