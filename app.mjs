@@ -3,6 +3,7 @@ import { formatSummary, formatSpecTarget, isTileFormat, mainSourceFormat, tileMo
 import { openGameArchive } from "./archive.mjs";
 import { traceProgramDependencies, traceProjectDependencies } from "./script-trace.mjs";
 import { auditProjectPlugins } from "./plugin-audit.mjs";
+import { assessPlayability } from "./playability-audit.mjs";
 import { mainFileBindings, readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
 import { defaultMidiTone, playMidi } from "./midi.mjs";
@@ -88,6 +89,45 @@ const sourceNames = {
   H: "help3.htm · RPGCode Reference",
   E: "eventsEN.ref · Event catalog",
 };
+function renderPlayabilityEvidence() {
+  const audit = assessPlayability(artifacts, references, mainFile);
+  const panel = el("details", "", "reference");
+  panel.append(el("summary", "Playability evidence · " + audit.summary.sourceLinked +
+    "/4 source-linked stages · runtime NOT tested"));
+  panel.append(el("p", "This is an inspection of decoded references, NOT a playable game or proof of runtime reachability. The selected interaction is a configured candidate.", "technical"));
+  for (const stage of audit.stages) {
+    const box = el("details", "", "reference");
+    box.append(el("summary", stage.label + " · " + stage.status));
+    if (stage.source && artifacts.has(stage.source))
+      box.append(button("Open source", () => selectArtifact(stage.source)));
+    for (const fact of stage.facts) box.append(el("p", fact, "technical"));
+    for (const ref of stage.references) {
+      if (!ref.value) continue;
+      const p = el("p", ref.evidence + " · ", "technical");
+      if (ref.path && artifacts.has(ref.path))
+        p.append(button(ref.value, () => selectArtifact(ref.path)));
+      else p.append(el("span", ref.value + " (" + ref.status + ")"));
+      box.append(p);
+    }
+    for (const line of stage.sourceLines.slice(0, 10)) {
+      const row = el("p", "", "technical");
+      row.append(button("Source line " + line.line,
+        () => selectArtifact(line.path, undefined, line.line)),
+      " · " + line.text);
+      box.append(row);
+    }
+    panel.append(box);
+  }
+  const gaps = el("details", "", "reference");
+  gaps.append(el("summary", audit.gaps.length + " runtime capabilities still to implement/validate"));
+  for (const gap of audit.gaps) {
+    gaps.append(el("p", gap.id + " · " + gap.need, "technical"));
+    gaps.append(el("p", "Acceptance: " + gap.acceptance, "technical"));
+  }
+  panel.append(gaps);
+  return panel;
+}
+
 function renderNativeMainConfig(main, bindings) {
   const { configuration: settings } = main;
   const section = el("details", "", "reference");
@@ -173,6 +213,7 @@ function selectDefault(newArchive = false) {
   if (mainFile) mainData.append(assetFormatHeader({ type: "gam", sourceFormat: mainSourceFormat(mainFile) }));
   if (mainFile?.configuration) mainData.append(renderNativeMainConfig(mainFile, bindings));
   if (archive) mainData.append(renderProjectScriptTrace());
+  if (archive) mainData.append(renderPlayabilityEvidence());
   if (mainFile === archiveMainFile && archiveMainFile) {
     mainData.append(jsonPanel(() => artifactRecord(artifacts.get(archiveMainFile.filename), references)));
   } else if (mainFile) {
