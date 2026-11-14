@@ -117,6 +117,9 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
       " · (" + pos.x + ", " + pos.y + ", layer " + pos.layer + ")" +
       " · ITM: " + placement.itemStatus + " · artwork: " + frameState +
       (placement.artSource ? " via " + placement.artSource : "") +
+      (placement.itemPath ? " · ITM " + placement.itemPath : "") +
+      (placement.animationPath ? " · ANM " + placement.animationPath : "") +
+      (placement.artwork ? " · image " + placement.artwork.path : "") +
       (placement.isInnDoor ? " · INN DOOR (mwininn.prg)" : "");
     if (placement.isInnDoor) row.classList.add("play-inn-entry");
     diagnostic.append(row);
