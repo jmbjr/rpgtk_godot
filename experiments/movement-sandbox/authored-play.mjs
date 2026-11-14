@@ -1,4 +1,6 @@
 import { tilePixels } from "../../artifacts.mjs";
+import { tileBitmapSprite } from "../../sprites.mjs";
+import { spriteDrawOrder, spritePixelOrigin } from "../../placed-sprites.mjs";
 import { keyFrameColor } from "../../sprites.mjs";
 import { initialMovementState, stepMovement } from "./engine.mjs";
 
@@ -15,16 +17,17 @@ const axes = {
   west: { x: -1, y: 0 }, east: { x: 1, y: 0 },
 };
 
-function pixelCanvas(pixels) {
+function pixelCanvas(pixels, width = 32, height = 32) {
   const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = 32;
+  canvas.width = width;
+  canvas.height = height;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw Error("A 2D canvas is required to render the original game tiles.");
-  ctx.putImageData(new ImageData(pixels, 32, 32), 0, 0);
+  ctx.putImageData(new ImageData(pixels, width, height), 0, 0);
   return canvas;
 }
 
-export function mountAuthoredBoard(section, scene, artifacts) {
+export function mountAuthoredBoard(section, scene, artifacts, graph) {
   if (!scene.ok) throw Error("Cannot mount an unresolved playable scene.");
   const canvas = section.querySelector("#play-canvas");
   const status = section.querySelector("#play-status");
@@ -79,6 +82,60 @@ export function mountAuthoredBoard(section, scene, artifacts) {
   const animations = Object.fromEntries(Object.entries(scene.walking).map(([dir, data]) =>
     [dir, { pauseMs: data.pauseSeconds * 1000,
       frames: data.frames.map(frame => imageFor(frame, [0, 0, 0], frame.transparentColor)) }]));
+
+  const placedImages = new Map();
+  const artFailures = new Map();
+  const placed = scene.placements ?? [];
+  for (const placement of placed) {
+    if (!placement.artwork) continue;
+    try {
+      const frame = placement.artwork;
+      if (frame.kind === "tst") {
+        placedImages.set(placement.slot, imageFor(frame, [0, 0, 0], frame.transparentColor));
+      } else if (frame.kind === "tbm") {
+        const sprite = tileBitmapSprite(artifacts.get(frame.path), artifacts, graph);
+        if (!sprite || !sprite.parts.length || sprite.width !== frame.width ||
+            sprite.height !== frame.height) throw Error("Unsupported bitmap composition");
+        const rgba = sprite.pixels;
+        if (frame.transparentColor !== null && frame.transparentColor >= 0)
+          keyFrameColor(rgba, frame.transparentColor);
+        placedImages.set(placement.slot, pixelCanvas(rgba, sprite.width, sprite.height));
+      } else throw Error("Unsupported artwork kind");
+    } catch (error) {
+      artFailures.set(placement.slot, error.message);
+    }
+  }
+  const diagnostic = section.querySelector("#play-placements");
+  diagnostic.replaceChildren();
+  for (const placement of placed) {
+    const row = document.createElement("li");
+    const pos = placement.position;
+    const frameState = artFailures.has(placement.slot) ?
+      "render failed (" + artFailures.get(placement.slot) + ")" :
+      placement.artStatus + (placement.artReason ? " (" + placement.artReason + ")" : "");
+    row.textContent = "Slot " + placement.slot + " · " + placement.filename +
+      " · (" + pos.x + ", " + pos.y + ", layer " + pos.layer + ")" +
+      " · ITM: " + placement.itemStatus + " · artwork: " + frameState +
+      (placement.artSource ? " via " + placement.artSource : "") +
+      (placement.itemPath ? " · ITM " + placement.itemPath : "") +
+      (placement.animationPath ? " · ANM " + placement.animationPath : "") +
+      (placement.artwork ? " · image " + placement.artwork.path : "") +
+      (placement.isInnDoor ? " · INN DOOR (mwininn.prg)" : "");
+    if (placement.isInnDoor) row.classList.add("play-inn-entry");
+    diagnostic.append(row);
+  }
+  const innLabel = section.querySelector("#play-inn");
+  if (scene.innDoor) {
+    const p = scene.innDoor;
+    innLabel.textContent = "Inn door: slot " + p.slot + " at (" +
+      p.position.x + ", " + p.position.y + ", layer " +
+      p.position.layer + ") · " + p.programPath + " · locator only; activation disabled.";
+  } else {
+    innLabel.textContent = "Inn door: " +
+      (scene.innStatus === "ambiguous" ? "multiple resolved candidates" :
+        "no resolved mwininn.prg placement") + "; no activation.";
+  }
+
   let actor = initialMovementState(scene.world);
   let walkMs = 0;
   let priorFacing = actor.facing;
@@ -109,15 +166,52 @@ export function mountAuthoredBoard(section, scene, artifacts) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     for (let layer = 1; layer <= scene.board.layers; layer++) {
       ctx.drawImage(layerCanvases[layer - 1], 0, 0);
-      if (layer !== scene.start.layer) continue;
-      const animation = animations[actor.facing];
-      const frame = actor.moving ?
-        Math.floor(walkMs / animation.pauseMs) % animation.frames.length : 0;
-      // Policy: the source pixel start is the character's foot/center
-      // anchor. Do not silently round it to a tile or assume a native
-      // Toolkit character-origin rule that has not been verified.
-      ctx.drawImage(animation.frames[frame],
-        Math.round(actor.x - 16), Math.round(actor.y - 32));
+      // Native board renders a layer's tiles and then its sprites;
+      // approximate same-layer collision-base Z ordering by stored Y/X.
+      const actors = spriteDrawOrder(placed,
+        { x: actor.x, y: actor.y, layer: scene.start.layer }, layer);
+      for (const entry of actors) {
+        if (entry.kind === "player") {
+          const animation = animations[actor.facing];
+          const frame = actor.moving ?
+            Math.floor(walkMs / animation.pauseMs) % animation.frames.length : 0;
+          const origin = spritePixelOrigin(actor, 32, 32);
+          ctx.drawImage(animation.frames[frame], origin.x, origin.y);
+          continue;
+        }
+        const image = placedImages.get(entry.slot);
+        const placement = entry.placement;
+        if (image) {
+          const origin = spritePixelOrigin(placement.position, image.width, image.height);
+          ctx.drawImage(image, origin.x, origin.y);
+        } else {
+          // Missing ITM or image should never silently remove a location.
+          ctx.save();
+          ctx.strokeStyle = "#edb86a";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(entry.x - 6, entry.y - 6, 12, 12);
+          ctx.restore();
+        }
+      }
+    }
+    // Inn locator is diagnostic only; draw above all board layers so a
+    // door under roofs stays discoverable even when its artwork is missing.
+    if (scene.innDoor) {
+      const p = scene.innDoor.position;
+      ctx.save();
+      ctx.strokeStyle = "#ffe17c";
+      ctx.fillStyle = "#241a12";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.font = "bold 12px monospace";
+      const labelX = Math.min(Math.max(2, p.x + 13), canvas.width - 71);
+      const labelY = Math.min(Math.max(15, p.y - 8), canvas.height - 5);
+      ctx.fillRect(labelX - 2, labelY - 12, 70, 15);
+      ctx.fillStyle = "#ffe17c";
+      ctx.fillText("INN DOOR", labelX, labelY);
+      ctx.restore();
     }
   };
   const updateStatus = () => {

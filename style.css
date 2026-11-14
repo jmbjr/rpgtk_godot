@@ -261,3 +261,11 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
   .play-pad-row { flex-direction: column; gap: 0; }
   .play-pad-row .sandbox-dpad { margin: .2rem auto; }
 }
+
+.play-inn-label { margin: .4rem 0; padding: .55rem .7rem; border: 1px solid #b49a65;
+  background: #332b22; color: #ffe0a5; font-size: .88rem; line-height: 1.5; }
+.play-placements { margin: .5rem 0; }
+.play-placements summary { cursor: pointer; color: #e2c795; }
+.play-placements ol { margin: .6rem 0; padding-left: 1.6rem; font: .78rem/1.7 var(--mono); }
+.play-placements li { overflow-wrap: anywhere; }
+.play-placements .play-inn-entry { color: #ffe0a5; font-weight: bold; }
