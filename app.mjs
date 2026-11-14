@@ -2438,7 +2438,7 @@ byId("play-bstw").addEventListener("click", () => {
   try {
     panel.hidden = false;
     byId("workspace").hidden = true;
-    activePlayable = mountAuthoredBoard(panel, playableScene, artifacts);
+    activePlayable = mountAuthoredBoard(panel, playableScene, artifacts, references);
     byId("play-error").hidden = true;
     panel.scrollIntoView({ behavior: "instant", block: "start" });
     panel.focus({ preventScroll: true });
