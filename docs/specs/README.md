@@ -59,7 +59,7 @@ reconstruction. [Fixture index](fixtures/README.md)
 | --- | --- | --- | --- |
 | GPH | [Standalone tile](gph.md) | Text 2.0, details 1–6, raw or run-length encoded | Demo detail 1 RLE; pinned palette table and raw/RLE fixtures for all details. |
 | TST | [Tileset](tst.md) | Binary version 20, details 1–6 | Demo detail 1; native-size RGB/palette fixtures and pinned compatibility source. |
-| GAM | [Main File](gam.md) | Toolkit 2 text 2.0 / binary 2.2, plus Toolkit 3 binary 2.9 startup prefix | Demo.gam, DustBall main.gam, pinned Toolkit 3 reader, BSTW issue #79 inventory, synthetic 2.9 fixture |
+| GAM | [Main File](gam.md) | Toolkit 2 text 2.0 / binary 2.2; Toolkit 3 binary 2.9 startup and complete source-defined settings, including declared plugins and runtime-key scripts | Demo.gam, DustBall, pinned reader, real BSTW ZIP and synthetic 2.9 tail fixtures |
 | PRG | [RPGCode program](prg.md) | Source and static indexing | Demo startup trace and Toolkit 2 Help |
 | TAN | [Animated tile](tan.md) | Binary 2.0 | Demo animation files |
 | TEM | [Character](tem.md) | Toolkit 2 text 2.0/2.1/2.2 and binary 2.3/2.4; Toolkit 3 binary 2.8 portrait, directional ANMs and vector bases | Demo, Cluetest, DustBall, pinned native reader, BSTW and synthetic fixtures |
