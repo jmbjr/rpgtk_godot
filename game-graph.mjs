@@ -1,6 +1,7 @@
 import { buildReferences } from "./artifacts.mjs";
 import { mainFileBindings } from "./model.mjs";
 import { traceProjectDependencies } from "./script-trace.mjs";
+import { auditProjectPlugins } from "./plugin-audit.mjs";
 import { artifactId, artifactRecord } from "./records.mjs";
 
 export const rpgcodeRoles = [
@@ -112,6 +113,8 @@ export function connectedGameRecord(artifacts, catalog, { archiveName, externalM
     artifacts: Object.fromEntries(records.map(record => [record.$id, record])),
     actors, commands, capabilities, edges,
     scriptTrace: traceProjectDependencies(artifacts, graph,
+      externalMain ?? (mains.length === 1 ? artifacts.get(mains[0]) : null)),
+    pluginAudit: auditProjectPlugins(artifacts,
       externalMain ?? (mains.length === 1 ? artifacts.get(mains[0]) : null)),
     coverage: { decodeCounts, referenceCounts, limitations: limits },
   };

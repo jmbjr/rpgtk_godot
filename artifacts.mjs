@@ -1,5 +1,6 @@
 import { detectSourceFormat, toolkitAsset } from "./asset-format.mjs";
 import { readNativeBoardTail } from "./native-board-tail.mjs";
+import { inspectPortableExecutable } from "./pe-inspect.mjs";
 import { readSaveState } from "./save-state.mjs";
 import { dosPalette, tilesetRgb } from "./tile-palette.mjs";
 import { decodeProgram, indexProgram, readMainFile } from "./model.mjs";
@@ -1078,6 +1079,7 @@ const readers = {
   gam: readMainFile, prg: readProgram, tst: readTileset, tan: readAnimation, tem: readCharacter, brd: readBoard,
   bkg: readBackground, ene: readEnemy, spc: readSpecialMove, ste: readStatusEffect, anm: readLegacyAnimation,
   fnt: readFont, gph: readStandaloneTile, itm: readItem, tbm: readTileBitmap, sav: readSaveState,
+  dll: bytes => ({ pe: inspectPortableExecutable(bytes) }),
   gif: readGif, jpg: readJpeg, jpeg: readJpeg, wav: readWave, mid: readMidi,
   doc: readCompoundDocument, ___: readTemporaryBoardText,
 };

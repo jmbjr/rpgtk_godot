@@ -2,6 +2,7 @@ import { indexTilesets, matchEmbeddedTile } from "./tile-matches.mjs";
 import { formatSummary, formatSpecTarget, isTileFormat, mainSourceFormat, tileMode } from "./asset-format.mjs";
 import { openGameArchive } from "./archive.mjs";
 import { traceProgramDependencies, traceProjectDependencies } from "./script-trace.mjs";
+import { auditProjectPlugins } from "./plugin-audit.mjs";
 import { mainFileBindings, readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
 import { defaultMidiTone, playMidi } from "./midi.mjs";
@@ -119,6 +120,25 @@ function renderNativeMainConfig(main, bindings) {
     });
     section.append(extra);
   }
+  const audit = auditProjectPlugins(artifacts, main);
+  const abi = el("details", "", "reference");
+  abi.append(el("summary", "Static DLL interface evidence · " +
+    audit.summary.comExportCandidates + " COM-registration export candidates / " +
+    audit.summary.legacyExportCandidates + " legacy TKPlugInit candidates"));
+  abi.append(el("p", "Read-only PE header and export inspection. COM entrypoint names do not establish RPGCode methods, plugin capabilities, or successful registration.", "technical"));
+  for (const entry of audit.bundled) {
+    const pe = entry.pe;
+    const line = el("p");
+    line.append(button(entry.filename, () => selectArtifact(entry.path)),
+      " · " + (pe?.status === "pe" ? pe.architecture + " " + pe.peFormat :
+        pe?.status ?? "Not inspected"),
+      " · " + (pe?.interfaceEvidence?.comRegistrationExports ?
+        "COM registration exports" : pe?.interfaceEvidence?.legacyTKPlugInitExport ?
+        "legacy TKPlugInit export" : "interface undetermined"),
+      " · " + (entry.declaredAs.length ? entry.declaredAs.join(", ") : "not declared in GAM slots"));
+    abi.append(line);
+  }
+  section.append(abi);
   const scripts = settings.runtimeKeys.extended.filter(entry => entry.program);
   const details = el("details", "", "reference");
   details.append(el("summary", `Other native settings · ${scripts.length} extended runtime scripts`));
@@ -613,6 +633,32 @@ function renderSavedGame(panel, save, edges) {
   panel.append(search);
 }
 
+function renderDllMetadata(panel, artifact) {
+  const pe = artifact.pe;
+  panel.append(el("h3", "Windows DLL · static file inspection"),
+    el("p", "This viewer reads DLL header bytes only. No library is loaded, registered or executed."));
+  if (!pe || pe.status !== "pe") {
+    panel.append(el("p", pe?.reason || "Portable Executable metadata is unavailable."));
+    return;
+  }
+  panel.append(assetFields([
+    ["Machine", pe.architecture + " (COFF 0x" + pe.machine.toString(16) + ")"],
+    ["Format", pe.peFormat + (pe.isDll ? " · DLL flag set" : " · DLL flag absent")],
+    ["Named exports", String(pe.exports.length)],
+    ["COM registration exports",
+      pe.interfaceEvidence.comRegistrationExports ? "DllRegisterServer and DllGetClassObject present" : "Not both present"],
+    ["Legacy interface", pe.interfaceEvidence.legacyTKPlugInitExport ?
+      "TKPlugInit present" : "TKPlugInit not exported"],
+  ]));
+  const info = el("details", "", "reference");
+  info.append(el("summary", pe.exports.length + " named PE exports (first 60 displayed)"));
+  for (const entry of pe.exports.slice(0, 60)) {
+    info.append(el("p", entry.ordinal + " · " + entry.name +
+      (entry.forwardedTo ? " → " + entry.forwardedTo : ""), "technical"));
+  }
+  panel.append(info, el("p", "Export names cannot confirm a COM class's callable RPGCode methods. The native runtime has separate COM and legacy TKPlug* loading paths.", "technical"));
+}
+
 function renderAsset(artifact) {
   const panel = byId("graph");
   const edges = references.outgoing.get(artifact.path) ?? [];
@@ -630,6 +676,10 @@ function renderAsset(artifact) {
   }
   if (artifact.type === "anm") {
     renderAnimation(panel, artifact, edges);
+    return;
+  }
+  if (artifact.type === "dll") {
+    renderDllMetadata(panel, artifact);
     return;
   }
   if (artifact.type === "sav") {

@@ -94,6 +94,7 @@
     },
     "edges": {"type": "array", "items": {"$ref": "#/$defs/edge"}},
     "scriptTrace": {"$ref": "#/$defs/scriptTrace"},
+    "pluginAudit": {"$ref": "#/$defs/pluginAudit"},
     "coverage": {
       "type": "object",
       "required": ["decodeCounts", "referenceCounts", "limitations"],
@@ -106,6 +107,57 @@
     }
   },
   "$defs": {
+    "pluginAudit": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mainFile", "declarationScope", "storedSlots", "declarations", "bundled", "summary", "limitations"],
+      "properties": {
+        "mainFile": {"type": ["string", "null"]},
+        "declarationScope": {"enum": ["configured", "unavailable"]},
+        "storedSlots": {"type": "integer", "minimum": 0},
+        "declarations": {
+          "type": "array", "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["role", "slot", "filename", "evidence", "status", "path"],
+            "properties": {
+              "role": {"enum": ["slot", "menu", "fight"]},
+              "slot": {"type": ["integer", "null"], "minimum": 0},
+              "filename": {"type": "string", "minLength": 1},
+              "evidence": {"type": "string"},
+              "status": {"enum": ["resolved", "missing", "ambiguous", "unset"]},
+              "path": {"type": ["string", "null"]}
+            }
+          }
+        },
+        "bundled": {
+          "type": "array", "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["path", "filename", "declaredAs", "pe"],
+            "properties": {
+              "path": {"type": "string"}, "filename": {"type": "string"},
+              "declaredAs": {"type": "array", "items": {"type": "string"}},
+              "pe": {"oneOf": [
+                {"type": "null"},
+                {"$ref": "artifact-record.schema.json#/$defs/peMetadata"}
+              ]}
+            }
+          }
+        },
+        "summary": {
+          "type": "object", "additionalProperties": false,
+          "required": ["declared", "bundled", "undeclaredBundled", "unresolvedDeclarations",
+            "comExportCandidates", "legacyExportCandidates"],
+          "properties": {
+            "declared": {"type": "integer", "minimum": 0},
+            "bundled": {"type": "integer", "minimum": 0},
+            "undeclaredBundled": {"type": "integer", "minimum": 0},
+            "unresolvedDeclarations": {"type": "integer", "minimum": 0},
+            "comExportCandidates": {"type": "integer", "minimum": 0},
+            "legacyExportCandidates": {"type": "integer", "minimum": 0}
+          }
+        },
+        "limitations": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+      }
+    },
     "scriptTrace": {
       "type": "object", "additionalProperties": false,
       "required": ["mainFile", "openingBoard", "entries", "summary", "limitations"],
