@@ -1,7 +1,7 @@
 # TEM · character
 
 Specification revision **1.1** · [conventions](README.md). Partial text 2.0/2.1/2.2 and
-binary 2.3/2.4 profiles.
+binary 2.3/2.4 and native Toolkit 3 binary 2.8 profiles.
 
 ## Binary read sequence
 
@@ -135,6 +135,61 @@ Binary `RPGTLKIT CHAR`, major 2, minor 3. The level-type field is one byte. Grap
 ## Binary 2.4
 
 Binary `RPGTLKIT CHAR`, major 2, minor 4. The level-type field is i32 rather than the 2.3 one-byte field. Graphics remain filename references with the same counts and ordering. See [binary read sequence](#binary-read-sequence) and [artwork](#battle-rest-and-custom-artwork).
+
+## Binary 2.8
+
+**Native Toolkit 3 character format**, not a 16-frame legacy GPH
+record. Source evidence: [pinned Toolkit 3.1 binary reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vb/tkCommon/modules/CommonPlayer.bas#L527-L656)
+and [native player graphics ordering](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/common/player.cpp#L200-L283).
+The owner-supplied BSTW Expo Demo (SHA-256
+`77d6d4180948196106e3d4dad7e2ee62144b30fac8c7ac5491048740e9864300`)
+independently confirms this read sequence for its eight 2.8 characters:
+
+1. Binary header, name, nine RPGCode variable strings, eight i32 stats
+   and one portrait filename.
+2. **201** special-move groups of filename zstr, two i32 condition
+   values and two zstr condition values; special-move title zstr and
+   one enable byte.
+3. Eleven accessory names, seven armor bytes, i32 level type,
+   14 progression bytes, level-up program zstr, and two graphic/level
+   flags. Legacy four sound fields are **absent** for minor 8.
+4. **14 graphics zstr**: eight movement animations in order
+   South, North, East, West, NW, NE, SW, SE; five action/rest animations
+   (Attack, Defense, Special move, Defeat, Rest); and one reserved
+   slot. **Eight standing/idle animation zstr** follow in the same
+   direction order.
+5. Two IEEE-754 little-endian doubles: idle delay and speed. Then
+   one signed i32 **maximum custom-animation index**; each of
+   maximum-plus-one slots stores animation zstr and handle zstr.
+6. One i16 **maximum vector-base index**, followed by
+   maximum-plus-one vector bases, each with an i16 maximum-point index
+   and i32 x/y coordinate pairs. These are preserved as raw data.
+
+The native decoded record has `walkingAnimations`,
+`standingAnimations`, `battleAnimations`, `customAnimations`,
+`idleTime`, `speed`, `vectorBases`, and `walking: []`. It
+**does not synthesize 16 old-style walking frames**. All populated
+animations are ordinary filename references, resolved to ANM artifacts.
+The inspector renders Bruce's portrait and offers the four cardinal
+walking animations as navigable links with their first resolved TST
+tiles as thumbnails. Diagonal, idle, action and custom data are
+preserved in JSON; their engine semantics are not simulated.
+
+**Real BSTW evidence:** `BSTW/Chrs/bruce.tem` is 2,650 bytes,
+revision 2.8, name `Bruce`, portrait `profBruce_active.png`
+(existing under `BSTW/Bitmap/`), and stores references to
+`bruce_south.anm`, `bruce_north.anm`, `bruce_east.anm`,
+`bruce_west.anm`. It has two four-point vector bases, idle delay
+3.0 and speed 0.05. All eight characters in the archive have a
+2.8 header and parse to their exact EOF. The source format revision
+is not the Toolkit application release version.
+
+Synthetic [2.8 conformance fixtures](fixtures/native-character-28-fixtures.mjs)
+and the [character/animation test](../../scripts/check-bstw-tem-anm.mjs)
+assert deliberate marker values, graph references, record schema,
+corrupt/truncated cases, and exact indexed TST frames. The optional
+local BSTW archive test verifies the original checksum and
+all eight characters without committing third-party game files.
 
 ## Unsupported versions
 

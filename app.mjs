@@ -509,6 +509,38 @@ function renderAsset(artifact) {
     const portrait = edges.find(edge => edge.evidence === "Character portrait")?.to;
     if (portrait) showMedia(panel, portrait, `${artifact.name} portrait`);
     panel.append(stats);
+    if (artifact.walkingAnimations) {
+      panel.append(el("h3", "Toolkit 3 walking animations"),
+        el("p", "These graphics are ANM files linked by the character, not embedded walking tiles. Select a direction to open its full animation with frame controls."));
+      const grid = el("div", "", "sprite-strip");
+      for (const direction of ["South", "East", "North", "West"]) {
+        const spec = artifact.walkingAnimations.find(item => item.direction === direction);
+        const edge = edges.find(item => item.evidence === spec?.evidence);
+        const card = el("div", "", "native-walk-card");
+        card.append(el("strong", direction));
+        const thumbnail = tileCanvas();
+        thumbnail.setAttribute("role", "img");
+        thumbnail.setAttribute("aria-label", `${direction} first walking frame`);
+        thumbnail.removeAttribute("aria-hidden");
+        const first = references.outgoing.get(edge?.to)?.find(item => item.evidence === "Frame 1 image");
+        if (first?.to && first.tile !== undefined) {
+          paintTile(thumbnail, first);
+          thumbnail.style.width = "64px";
+        }
+        card.append(thumbnail);
+        card.append(edge?.to ?
+          button(spec.value, () => selectArtifact(edge.to)) :
+          el("p", `${spec?.value || "(not assigned)"} · ${edge?.status || "Unresolved"}`));
+        const frameLinks = references.outgoing.get(edge?.to)?.filter(item =>
+          item.evidence.startsWith("Frame ") && item.evidence.endsWith(" image") && item.value) ?? [];
+        if (frameLinks.length) card.append(el("p",
+          frameLinks.map(item => item.value).join(" · "), "technical"));
+        grid.append(card);
+      }
+      panel.append(grid, el("p",
+        "The thumbnail is the first resolved frame. Follow each ANM to inspect its detected binary revision, source tiles and additional frames."));
+      return;
+    }
     const matchRows = [];
     if (artifact.embeddedWalking) panel.append(artworkMatchControl(matchRows));
     const walkingFrames = [...artifact.walking.entries()];
@@ -739,7 +771,16 @@ function renderAnimation(panel, artifact, edges) {
   const byEvidence = new Map(edges.map(edge => [edge.evidence, edge]));
   const sourceArchive = archive;
   const images = frames.map(({ image }, index) => {
-    const path = byEvidence.get(`Frame ${index + 1} image`)?.to;
+    const edge = byEvidence.get(`Frame ${index + 1} image`);
+    const path = edge?.to;
+    const tileset = artifacts.get(path);
+    // Native Toolkit 3 ANMs may store "FLcharacters.tst14" as their
+    // image field. Browser Image cannot decode a TST, so render the
+    // resolved indexed tile through the existing Toolkit palette decoder.
+    if (image && tileset?.type === "tst" && edge.tile !== undefined) {
+      const pixels = tilePixels(tileset, edge.tile);
+      return Promise.resolve(pixels ? { pixels, width: 32, height: 32 } : null);
+    }
     return path && image ? sourceArchive.file(path).async("blob").then(async blob => {
       const url = URL.createObjectURL(blob);
       try {
@@ -778,7 +819,14 @@ function renderAnimation(panel, artifact, edges) {
         if (frame.image) frameStatus.textContent = `${label} · Image unavailable`;
         return;
       }
-      context.drawImage(image, 0, 0, width, height);
+      if (image.pixels) {
+        // TST pixels are already RGBA, with Toolkit transparency applied.
+        const stamp = document.createElement("canvas");
+        stamp.width = image.width;
+        stamp.height = image.height;
+        stamp.getContext("2d").putImageData(new ImageData(image.pixels, image.width, image.height), 0, 0);
+        context.drawImage(stamp, 0, 0, width, height);
+      } else context.drawImage(image, 0, 0, width, height);
       const pixels = context.getImageData(0, 0, width, height);
       keyFrameColor(pixels.data, frame.transparentColor);
       context.putImageData(pixels, 0, 0);
