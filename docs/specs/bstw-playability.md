@@ -1,6 +1,6 @@
 # BSTW: first playability vertical slice
 
-Evidence report revision **1.1** · [format index](README.md) · [playability issue #92](https://github.com/jmbjr/rpgtk_godot/issues/92).
+Evidence report revision **1.2** · [format index](README.md) · [playability issue #92](https://github.com/jmbjr/rpgtk_godot/issues/92).
 
 This is a **source-only** assessment of the owner-supplied \`BSTW_EXPO_DEMO (1).zip\`
 (SHA-256 \`77d6d4180948196106e3d4dad7e2ee62144b30fac8c7ac5491048740e9864300\`).
@@ -152,3 +152,66 @@ on a local copy of the owner's original game:
 local BSTW ZIP → tap **Play opening board** → inspect Bruce at (107,78)
 on start.brd → use each D-pad direction → use Reset and Back to viewer.
 Browser visual/touch acceptance remains manual until the owner tests it.
+
+## Authored placed-item visibility and inn locator (post-#98)
+
+This slice retains the imported opening board and bounds-only walking from
+PR #98. It uses **each native BRD 2.4 sprite record** with its original
+zero-based slot, ITM filename, pixel position, layer and activation-program
+reference. `mapBoardPlacements` follows the existing resolved reference
+graph from BRD → ITM 2.7 → first suitable ANM 2.3 → indexed TST 20
+or TBM 3.0 → TST 20. No item scripts or sprite movement run.
+
+The native [CItem::open at the pinned Toolkit 3.1 revision](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/movement/CItem/CItem.cpp#L76-L103)
+sets **South (MV_S)** as the initial animation. The preview therefore uses
+the first nonempty stored frame of the South animation; if that frame is
+unavailable, it tries authored Rest and Idle South, in that order. Each
+image uses its frame's transparent-color key. Supported TST frames and
+TBM-composited multtile frames render in original pixel dimensions
+(e.g. house 96×96). This is a **frozen initial-frame preview**, not a
+simulation of item idle timing, facing changes or moving item scripts.
+
+A placement is recorded even if its **ITM** file is absent or
+unreadable, its **artwork** is missing, partial or unsupported, or its
+activation **PRG** is missing. ITM resolution and artwork resolution have
+separate statuses in the expandable play-view placement diagnostics.
+Missing artwork uses a small square position marker rather than
+preventing movement or replacing the board. Invalid layer data also
+remains diagnosable; no unsupported layer is silently assigned.
+
+### Source coordinate and draw policy
+
+Pinned Toolkit runtime source:
+- [Board loader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/common/board.cpp#L397-L440) reads sprite x/y/layer and calls `setPosition` with absolute pixel coordinates.
+- [CSprite::render](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/movement/CSprite/CSprite.cpp#L2053-L2124) anchors 2D artwork at x−floor(width/2), y+1−height; the +1 offset is explicit in native source.
+- [renderNow](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/render/render.cpp#L487-L551) draws sprites per layer with higher board layers over lower sprites.
+- [spriteCollisions / z-order](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/movement/CSprite/CSprite.cpp#L1080-L1175) uses collision-base geometry. That full dynamic sorting **is not reproduced**: this browser slice uses a deterministic same-layer Y, X, then source-slot ordering for items and Bruce. It does not evaluate conditional loading variables, native sprite bases or under-vectors.
+
+**Inn:** The diagnostic yellow `INN DOOR` marker is selected
+**only** when a placed sprite's board activation-program edge actually
+resolves to the decoded `mwininn.prg`. A generic `door.itm` name
+or another door's activation program cannot qualify. In the owner's
+BSTW ZIP, source-backed expectation is slot **3 (zero-based)** at
+**(207,349), layer 1**. If multiple matching resolved programs exist,
+the locator reports ambiguity instead of picking one. This is a
+**locator only**; no Talk/activation, dialogue or clue updates are
+connected to the imported scene.
+
+The bounds-only collision policy remains unchanged. Only the imported
+local ZIP supplies original artwork; no artwork or game binaries ship
+with Pages, Git or CI. The synthetic movement/inn sandbox is unchanged.
+The [new test suite](../../scripts/check-placed-sprites.mjs)
+covers first-frame TST/TBM mapping, missing/unreadable ITM,
+missing artwork with successful play, two distinguishable doors,
+resolved-program identification, ambiguous scripts, source anchor and
+layer/Y ordering. An optional SHA-checked original-ZIP assertion uses
+the existing production decoder, but cannot run in CI without
+violating the archive separation rule:
+
+    node scripts/check-placed-sprites.mjs "/path/to/BSTW_EXPO_DEMO.zip"
+
+**Android test:** upload BSTW → **Play opening board** → walk Bruce
+past the placed characters → find the marked inn door and verify the
+diagnostics show slot 3 at (207,349), layer 1. The mark does not activate
+the door. Visual and touch acceptance must be checked on the deployed
+page by the owner.
