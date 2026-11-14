@@ -125,7 +125,9 @@ withoutBitmap.delete("BSTW/Tiles/sample.tst");
 const noBitmap = buildPlayableScene(withoutBitmap, buildReferences(withoutBitmap));
 assert.equal(noBitmap.ok, true);
 assert.equal(noBitmap.placements[3].itemStatus, "resolved");
-assert.equal(noBitmap.placements[3].artStatus, "missing");
+assert.equal(noBitmap.placements[3].artStatus, "resolved");
+assert.equal(noBitmap.placements[3].artSource, "Rest animation",
+  "Missing native bitmap may fall back to an authored Rest ANM frame");
 const missingScript = new Map(artifacts);
 missingScript.delete("BSTW/Prg/mwininn.prg");
 const noScript = buildPlayableScene(missingScript, buildReferences(missingScript));
