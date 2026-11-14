@@ -70,6 +70,81 @@ Binary `RPGTLKIT ITEM`, major 2, minor 2. The numeric values selected by the sha
 
 Binary `RPGTLKIT ITEM`, major 2, minor 3. The version-dependent numeric values use i32 instead of i16; other byte flags and string slots keep their documented widths. See [binary layouts](#binary-22-and-23).
 
+## Binary 2.7
+
+**Native Toolkit 3.1 item layout.** Source evidence: the
+[pinned 3.1 item reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vb/tkCommon/modules/CommonItem.bas#L349-L511)
+and [native trans3 item graphics order](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/common/item.cpp#L200-L296).
+The read-only owner-supplied BSTW Expo Demo ZIP (SHA-256
+`77d6d4180948196106e3d4dad7e2ee62144b30fac8c7ac5491048740e9864300`)
+contains **11 ITM files**, all binary 2.7, verified by an independent
+source-guided binary walk to each file's exact EOF.
+
+The initial binary 2.3 header and inventory/stat fields **still apply**
+through the single item size-code byte: name and description zstr,
+four use flags and usable-by byte, 51 character zstr slots, i32 prices,
+key flag, eight armor bytes, accessory zstr, four i32 equipment
+modifiers, equip/remove program zstr, menu HP/SMP i32 + program,
+battle HP/SMP i32 + program and ANM zstr, on-board/pickup programs,
+and an item size-code byte.
+
+**The native 2.7 graphics section replaces the old tile-pair array.**
+It contains, in order:
+
+1. **Ten** animation filename zstr: walking South, North, East,
+   West, Northwest, Northeast, Southwest, Southeast; the
+   historical Rest slot; and one reserved slot. The reserved
+   filename is retained as `reservedGraphic`.
+2. **Eight** standing/idle zstr in the same direction order.
+3. Two little-endian IEEE-754 doubles, **speed then idleTime**.
+   These are stored values, not claims about precise runtime loops.
+4. Signed i32 **maximum custom-animation index** and
+   maximum-plus-one pairs of animation filename zstr + handle zstr.
+   An empty custom slot is still an actual stored slot.
+5. Signed i16 **maximum vector-base index**; per base, signed i16
+   maximum point index and maximum-plus-one little-endian i32 x/y
+   pairs. The first two bases are labeled Collision and Activation,
+   but the original points remain intact.
+
+The native record exports `directionalAnimations`,
+`standingAnimations`, `restAnimation`, `reservedGraphic`,
+`customAnimations`, `vectorBases`, `speed` and `idleTime`
+alongside the common item fields. **No legacy 16×2 GPH walking
+array or resting pair is invented.** Every nonempty ANM filename,
+and every nonempty program reference in the common fields, enters
+the ordinary reference graph. The inspector shows item roles and
+modifiers, clickable directional ANMs, a first-frame TST thumbnail
+where the referenced image is a supported indexed tile, and raw
+collision/activation vector coordinates. Empty graphic slots are
+reported as unassigned, not missing.
+
+### BSTW item evidence
+
+| Item examples | Verified source properties |
+| --- | --- |
+| `jim.itm`, `lami.itm`, `loyalis.itm`, `rusty.itm` | Board objects with four cardinal animations; pickup programs `mwinJim.prg`, `mwinLami.prg`, `mwinStartBoardLoad.prg`, `mwinRusty.prg`, respectively |
+| `house_3x3.itm` | South ANM `house_3x3.anm` has two TBM frames, `house_3x3_closed.tbm` and `house_3x3_open.tbm`, linked but **TBM pixels are not yet supported** |
+| `door.itm`, `testvision.itm` | Standalone board graphics and directional ANM links |
+| `hat.itm` | Equipment modifiers HP +1, defense +2, fight +3, special power +4 |
+| `pot_health.itm`, `toast.itm`, `bugs.itm` | Menu-use items, including HP +10 for Health Potion and SMP +10 for Toast; artwork may be empty |
+
+All 11 BSTW items contain two four-point vector bases in the
+observed files. `jim_south.anm` resolves to
+`BSTW/Tiles/FLcharacters.tst` tiles **5** and **6** via
+the native ANM 2.3 reader. That tileset already has a functional
+TST pixel renderer. The raw game ZIP and any DLL/EXE files
+remain out of the repository.
+
+[Small synthetic ITM 2.7 fixture](fixtures/native-item-27-fixtures.mjs)
+and [conformance test](../../scripts/check-bstw-itm-27.mjs)
+verify deliberately different numeric values, all graphic slot
+orders, TST 14/15 pixel links, missing/empty artwork, custom
+slots, vector points, invalid maxima/truncation and connected JSON
+references. Passing the optional read-only test against a local
+BSTW ZIP proves decoder acceptance for this identified sample;
+it does **not** establish editor save/reopen compatibility,
+runtime collision/activation behavior or TBM rendering.
+
 ## Unsupported versions
 
 The revision-specific sections on this page describe only the listed, verified
