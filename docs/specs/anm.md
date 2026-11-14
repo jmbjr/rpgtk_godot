@@ -41,6 +41,10 @@ A frame image may reference an indexed tileset cell such as
 the resolved `FLcharacters.tst` path and one-based tile index 14.
 The animation inspector paints that tile using the existing
 `tilePixels` decoder, then applies the stored transparency key.
+For a frame referring to a native Toolkit 3 `.tbm` file, the
+[TBM 3.0 renderer](tbm.md#binary-30) now assembles referenced TST
+tiles with per-cell signed RGB shades and transparency into an RGBA
+frame; its animation size may be 96 × 96 for `house_3x3`.
 Other supported frame media remain browser image files. The playback
 controls show only through the **last populated image/sound slot**;
 blank slots remain preserved in the stored `frames` array.
