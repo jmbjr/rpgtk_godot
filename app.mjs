@@ -1067,6 +1067,14 @@ function renderNativeItem(panel, artifact) {
         paintTile(thumbnail, first);
         thumbnail.style.width = "64px";
         card.append(thumbnail);
+      } else if (first?.to && artifacts.get(first.to)?.type === "tbm") {
+        const sprite = tileBitmapSprite(artifacts.get(first.to), artifacts, references);
+        if (sprite) {
+          const canvas = spriteCanvas(`${item.direction} first item tile-bitmap frame`);
+          drawSprite(canvas, sprite);
+          canvas.style.width = "96px";
+          card.append(canvas);
+        }
       }
       card.append(edge?.to ? button(item.value, () => selectArtifact(edge.to)) :
         el("p", `${item.value} · ${edge?.status || "Unresolved"}`));
