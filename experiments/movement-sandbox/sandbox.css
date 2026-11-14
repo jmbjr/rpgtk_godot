@@ -41,10 +41,21 @@
 .pad-south { grid-area: 3 / 2; }
 .sandbox-details strong { color: #f3d8a7; }
 @media (max-width: 680px) {
-  .sandbox-under { grid-template-columns: 1fr; }
-  .sandbox-intro { padding: 1.3rem 0 .75rem; }
-  .sandbox-intro p { font-size: .92rem; }
-  .sandbox-dpad { grid-template-columns: repeat(3, 72px); grid-template-rows: repeat(3, 68px); }
-  .sandbox-under > .sandbox-controls { order: -1; }
+  /* The user must see the game and D-pad simultaneously on a phone,
+     rather than scrolling past the board to reach its controls. */
+  .sandbox-panel { display: flex; flex-direction: column; }
+  .sandbox-panel-heading { order: 0; }
+  .sandbox-under { display: contents; }
+  .sandbox-under > .sandbox-controls { order: 1; padding: .35rem .6rem; }
+  .sandbox-canvas { order: 2; }
+  .sandbox-status { order: 3; }
+  .sandbox-landmark { order: 4; }
+  .sandbox-under > .sandbox-details { order: 5; }
+  .sandbox-intro { padding: .85rem 0 .55rem; }
+  .sandbox-intro p { font-size: .84rem; line-height: 1.4; margin-block: .25rem; }
+  .sandbox-under h3 { margin: .1rem 0; }
+  .sandbox-under .sandbox-controls p { margin: .15rem 0; font-size: .8rem; }
+  .sandbox-dpad { margin: .25rem auto .1rem;
+    grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 52px); }
   .sandbox-panel-heading h2 { font-size: 1.3rem; }
 }
