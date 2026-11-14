@@ -71,6 +71,12 @@
     },
     {
       "if": {
+        "properties": {"format": {"const": "dll"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
+      },
+      "then": {"properties": {"data": {"$ref": "#/$defs/dll"}}}
+    },
+    {
+      "if": {
         "properties": {"format": {"const": "sav"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
       },
       "then": {"properties": {"data": {"$ref": "#/$defs/sav"}}}
@@ -344,6 +350,49 @@
         "fightPlugin", "combat", "skins", "pluginSlots", "dayNight", "cursor",
         "display", "pathfinding"],
       "additionalProperties": false
+    },
+    "dll": {
+      "type": "object", "additionalProperties": false,
+      "required": ["byteLength", "pe"],
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "pe": {"$ref": "#/$defs/peMetadata"}
+      }
+    },
+    "peMetadata": {
+      "type": "object", "additionalProperties": false,
+      "required": ["byteLength", "status"],
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "status": {"enum": ["pe", "not-pe", "malformed-pe"]},
+        "reason": {"type": "string"},
+        "machine": {"type": "integer", "minimum": 0},
+        "architecture": {"type": "string"},
+        "peFormat": {"enum": ["PE32", "PE32+"]},
+        "isDll": {"type": "boolean"},
+        "exports": {
+          "type": "array", "maxItems": 8192,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["name", "ordinal"],
+            "properties": {
+              "name": {"type": "string"}, "ordinal": {"type": "integer", "minimum": 0},
+              "forwardedTo": {"type": "string"}
+            }
+          }
+        },
+        "interfaceEvidence": {
+          "type": "object", "additionalProperties": false,
+          "required": ["comRegistrationExports", "legacyTKPlugInitExport"],
+          "properties": {
+            "comRegistrationExports": {"type": "boolean"},
+            "legacyTKPlugInitExport": {"type": "boolean"}
+          }
+        }
+      },
+      "if": {"properties": {"status": {"const": "pe"}}},
+      "then": {"required": ["machine", "architecture", "peFormat", "isDll", "exports", "interfaceEvidence"]},
+      "else": {"required": ["reason"]}
     },
     "sav": {
       "type": "object",
