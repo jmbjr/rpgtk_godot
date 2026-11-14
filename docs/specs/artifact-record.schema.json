@@ -774,53 +774,129 @@
     "itm": {
       "type": "object",
       "properties": {
-        "byteLength": {"type": "integer", "minimum": 0},
-        "version": {"enum": [0, 1, 2, 3]},
-        "name": {"type": "string"},
-        "description": {"type": "string"},
+        "byteLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "version": {
+          "enum": [
+            0,
+            1,
+            2,
+            3,
+            7
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
         "modes": {
           "type": "object",
           "properties": {
-            "equip": {"type": "boolean"},
-            "menu": {"type": "boolean"},
-            "board": {"type": "boolean"},
-            "battle": {"type": "boolean"}
+            "equip": {
+              "type": "boolean"
+            },
+            "menu": {
+              "type": "boolean"
+            },
+            "board": {
+              "type": "boolean"
+            },
+            "battle": {
+              "type": "boolean"
+            }
           },
-          "required": ["equip", "menu", "board", "battle"],
+          "required": [
+            "equip",
+            "menu",
+            "board",
+            "battle"
+          ],
           "additionalProperties": false
         },
-        "usableBy": {"type": "integer", "minimum": 0, "maximum": 255},
-        "characters": {"type": "array", "items": {"type": "string"}, "minItems": 51, "maxItems": 51},
-        "buyPrice": {"type": "integer"},
-        "sellPrice": {"type": "integer"},
-        "keyItem": {"type": "boolean"},
+        "usableBy": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "characters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 51,
+          "maxItems": 51
+        },
+        "buyPrice": {
+          "type": "integer"
+        },
+        "sellPrice": {
+          "type": "integer"
+        },
+        "keyItem": {
+          "type": "boolean"
+        },
         "armorSlots": {
           "type": "array",
-          "items": {"type": "integer", "minimum": 0, "maximum": 255},
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
           "minItems": 8,
           "maxItems": 8
         },
-        "accessory": {"type": "string"},
+        "accessory": {
+          "type": "string"
+        },
         "modifiers": {
           "type": "object",
           "properties": {
-            "hp": {"type": "integer"},
-            "defense": {"type": "integer"},
-            "fight": {"type": "integer"},
-            "specialPower": {"type": "integer"}
+            "hp": {
+              "type": "integer"
+            },
+            "defense": {
+              "type": "integer"
+            },
+            "fight": {
+              "type": "integer"
+            },
+            "specialPower": {
+              "type": "integer"
+            }
           },
-          "required": ["hp", "defense", "fight", "specialPower"],
+          "required": [
+            "hp",
+            "defense",
+            "fight",
+            "specialPower"
+          ],
           "additionalProperties": false
         },
         "programs": {
           "type": "object",
           "properties": {
-            "Equip program": {"type": "string"},
-            "Remove program": {"type": "string"},
-            "Menu-use program": {"type": "string"},
-            "Battle-use program": {"type": "string"},
-            "On-board program": {"type": "string"},
-            "Pickup program": {"type": "string"}
+            "Equip program": {
+              "type": "string"
+            },
+            "Remove program": {
+              "type": "string"
+            },
+            "Menu-use program": {
+              "type": "string"
+            },
+            "Battle-use program": {
+              "type": "string"
+            },
+            "On-board program": {
+              "type": "string"
+            },
+            "Pickup program": {
+              "type": "string"
+            }
           },
           "required": [
             "Equip program",
@@ -832,35 +908,192 @@
           ],
           "additionalProperties": false
         },
-        "animation": {"type": "string"},
+        "animation": {
+          "type": "string"
+        },
         "menu": {
           "type": "object",
-          "properties": {"hp": {"type": "integer"}, "specialPower": {"type": "integer"}},
-          "required": ["hp", "specialPower"],
+          "properties": {
+            "hp": {
+              "type": "integer"
+            },
+            "specialPower": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "hp",
+            "specialPower"
+          ],
           "additionalProperties": false
         },
         "battle": {
           "type": "object",
-          "properties": {"hp": {"type": "integer"}, "specialPower": {"type": "integer"}},
-          "required": ["hp", "specialPower"],
+          "properties": {
+            "hp": {
+              "type": "integer"
+            },
+            "specialPower": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "hp",
+            "specialPower"
+          ],
           "additionalProperties": false
         },
-        "sizeType": {"type": "integer", "minimum": 0, "maximum": 255},
+        "sizeType": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
         "walking": {
           "type": "array",
-          "items": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2},
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
           "minItems": 16,
           "maxItems": 16
         },
-        "rest": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2},
+        "rest": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
         "embeddedGraphics": {
           "type": "object",
           "properties": {
-            "walking": {"type": "array", "items": {"$ref": "#/$defs/embeddedItemTile"}, "minItems": 16, "maxItems": 16},
-            "rest": {"$ref": "#/$defs/embeddedItemTile"}
+            "walking": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/embeddedItemTile"
+              },
+              "minItems": 16,
+              "maxItems": 16
+            },
+            "rest": {
+              "$ref": "#/$defs/embeddedItemTile"
+            }
           },
-          "required": ["walking", "rest"],
+          "required": [
+            "walking",
+            "rest"
+          ],
           "additionalProperties": false
+        },
+        "directionalAnimations": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/nativeCharacterAnimation"
+          }
+        },
+        "standingAnimations": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/nativeCharacterAnimation"
+          }
+        },
+        "restAnimation": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "string"
+            },
+            "evidence": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "reservedGraphic": {
+          "type": "string"
+        },
+        "customAnimations": {
+          "type": "array",
+          "maxItems": 501,
+          "items": {
+            "type": "object",
+            "properties": {
+              "slot": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "value": {
+                "type": "string"
+              },
+              "handle": {
+                "type": "string"
+              },
+              "evidence": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "slot",
+              "value",
+              "handle",
+              "evidence"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "vectorBases": {
+          "type": "array",
+          "maxItems": 65,
+          "items": {
+            "type": "object",
+            "properties": {
+              "slot": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "role": {
+                "enum": [
+                  "Collision",
+                  "Activation",
+                  "Additional"
+                ]
+              },
+              "points": {
+                "type": "array",
+                "maxItems": 4096,
+                "items": {
+                  "$ref": "#/$defs/vectorPoint"
+                }
+              }
+            },
+            "required": [
+              "slot",
+              "role",
+              "points"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0
+        },
+        "idleTime": {
+          "type": "number",
+          "minimum": 0
         }
       },
       "required": [
@@ -881,11 +1114,60 @@
         "animation",
         "menu",
         "battle",
-        "sizeType",
-        "walking",
-        "rest"
+        "sizeType"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "version": {
+                "const": 7
+              }
+            },
+            "required": [
+              "version"
+            ]
+          },
+          "then": {
+            "required": [
+              "directionalAnimations",
+              "standingAnimations",
+              "restAnimation",
+              "reservedGraphic",
+              "customAnimations",
+              "vectorBases",
+              "speed",
+              "idleTime"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "walking"
+                  ]
+                },
+                {
+                  "required": [
+                    "rest"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "required": [
+              "walking",
+              "rest"
+            ],
+            "not": {
+              "required": [
+                "directionalAnimations"
+              ]
+            }
+          }
+        }
+      ]
     },
     "ene": {
       "type": "object",
