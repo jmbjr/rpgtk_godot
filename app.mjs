@@ -1343,6 +1343,14 @@ function renderBoard(panel, board, edges) {
     vectorLabel.prepend(showVectors);
     controls.append(vectorLabel);
   }
+  const showSprites = board.sprites?.length > 0 && board.coordinateType === 4 ? el("input") : null;
+  if (showSprites) {
+    showSprites.type = "checkbox";
+    showSprites.checked = true;
+    const label = el("label", "Show placed items + start");
+    label.prepend(showSprites);
+    controls.append(label);
+  }
   const stage = el("div", "", "board-stage");
   const canvas = el("canvas", "", "board-map");
   canvas.width = board.width * tileSize;
@@ -1438,6 +1446,38 @@ function renderBoard(panel, board, edges) {
       }
       context.restore();
     }
+    if (showSprites?.checked) {
+      // Code 4 stores positions in pixels. This is a static locator, not
+      // sprite rendering, collision testing, or a guaranteed editor parity.
+      const scale = tileSize / 32;
+      context.save();
+      context.font = Math.max(11, Math.floor(tileSize * 0.52)) + "px sans-serif";
+      context.lineWidth = 2;
+      context.textBaseline = "middle";
+      context.textAlign = "center";
+      for (const sprite of board.sprites) {
+        if (layer && sprite.position.layer !== layer) continue;
+        const px = sprite.position.x * scale;
+        const py = sprite.position.y * scale;
+        context.beginPath();
+        context.fillStyle = "#ffbd57";
+        context.strokeStyle = "#10151a";
+        context.arc(px, py, Math.max(6, tileSize * 0.25), 0, 2 * Math.PI);
+        context.fill();
+        context.stroke();
+        context.fillStyle = "#10151a";
+        context.fillText(String(sprite.slot + 1), px, py + 0.5);
+      }
+      if (board.start && (!layer || board.start.layer === layer)) {
+        const px = board.start.x * scale;
+        const py = board.start.y * scale;
+        context.fillStyle = "#7cf4de";
+        context.strokeStyle = "#10151a";
+        context.fillRect(px - 5, py - 5, 10, 10);
+        context.strokeRect(px - 5, py - 5, 10, 10);
+      }
+      context.restore();
+    }
     notes.textContent = "Static tile preview · animated tiles show their first frame."
       + (missing.size ? ` ${missing.size} tile references could not be rendered.` : "")
       + (board.vectors ? ` Native BRD 2.4: ${board.vectors.length} vectors are stored as raw points. `
@@ -1465,9 +1505,18 @@ function renderBoard(panel, board, edges) {
     cellInfo.textContent = `Cell (${x + 1}, ${y + 1})`
       + (board.vectors ? " · grid position only (vector collision not simulated)" :
         ` · ${values.join("; ")}`);
+    if (board.sprites && board.coordinateType === 4) {
+      const visible = board.sprites.filter(sprite =>
+        (!selected || sprite.position.layer === selected) &&
+        Math.floor(sprite.position.x / 32) === x &&
+        Math.floor(sprite.position.y / 32) === y);
+      if (visible.length) cellInfo.textContent += " · Stored sprites: " +
+        visible.map(sprite => (sprite.slot + 1) + ": " + sprite.filename).join(", ");
+    }
   });
   showTypes.addEventListener("change", draw);
   showVectors?.addEventListener("change", draw);
+  showSprites?.addEventListener("change", draw);
   layers.addEventListener("change", () => {
     cellInfo.textContent = board.vectors ?
       "Raw vector geometry is listed above; click a cell to see its grid position." :
