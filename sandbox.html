@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Play the RPG Toolkit movement experiment in your browser with keyboard and touch controls.">
+  <title>Movement Sandbox · RPG Toolkit Game Explorer</title>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./experiments/movement-sandbox/sandbox.css">
+  <script type="module" src="./experiments/movement-sandbox/sandbox.mjs"></script>
+</head>
+<body>
+  <div class="page">
+    <header class="site-header"><strong>RPG Toolkit · Movement Lab</strong><a href="./index.html">Back to Game Explorer</a></header>
+    <main class="sandbox-main">
+      <header class="intro sandbox-intro">
+        <p class="eyebrow">First playable experiment · synthetic board</p>
+        <h1>Walk around.</h1>
+        <p>Move a character across a little board, slide along walls, and find the inn. This is original test artwork and an explicitly simplified collision model—not BSTW gameplay or Toolkit runtime emulation.</p>
+      </header>
+      <section class="panel sandbox-panel" aria-labelledby="sandbox-heading">
+        <div class="sandbox-panel-heading">
+          <h2 id="sandbox-heading">Movement test</h2>
+          <div class="sandbox-options">
+            <label><input id="sandbox-collision" type="checkbox"> Show solid tiles + actor radius</label>
+            <button id="sandbox-reset" type="button">Reset position</button>
+          </div>
+        </div>
+        <canvas id="sandbox-canvas" class="sandbox-canvas" width="512" height="352" role="img"
+          aria-label="Top-down synthetic 16 by 11 tile board with walls, an inn in the upper right, and an animated controllable character. Use the movement controls below.">
+          Your browser does not support canvas. This test requires a modern browser.
+        </canvas>
+        <p id="sandbox-status" class="sandbox-status" role="status" aria-live="off">Preparing movement board…</p>
+        <p id="sandbox-landmark" class="sandbox-landmark" role="status" aria-live="polite">
+          Walk toward the inn.
+        </p>
+        <div class="sandbox-under">
+          <div class="sandbox-controls">
+            <h3>Move the character</h3>
+            <p>Use <strong>WASD</strong>, <strong>arrow keys</strong>, or the touch controls. Two directions at once move diagonally at the same speed.</p>
+            <div class="sandbox-dpad" role="group" aria-label="Directional movement">
+              <button type="button" class="pad-north" data-move="north" aria-label="Move north">▲</button>
+              <button type="button" class="pad-west" data-move="west" aria-label="Move west">◀</button>
+              <button type="button" class="pad-center" tabindex="-1" disabled aria-hidden="true">●</button>
+              <button type="button" class="pad-east" data-move="east" aria-label="Move east">▶</button>
+              <button type="button" class="pad-south" data-move="south" aria-label="Move south">▼</button>
+            </div>
+          </div>
+          <div class="sandbox-details">
+            <h3>What this experiment proves</h3>
+            <p>Four-way controls, visible walking frames, normalized diagonal motion, solid-tile collisions, wall sliding and phone-friendly touch input.</p>
+            <p><strong>What it does not prove:</strong> Toolkit collision-vector semantics, imported animation parity, actual RPGCode execution, door dialogue, save loading or COM plugin compatibility.</p>
+            <p>The inn is a landmark for the next step. <strong>Interacting with it is not implemented yet.</strong></p>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer><span>Source-owned synthetic runtime test · no ZIP or DLL required.</span><a href="./index.html">Game Explorer</a></footer>
+  </div>
+</body>
+</html>
