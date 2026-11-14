@@ -17,8 +17,13 @@ or Toolkit engine required.** Move the original, synthetic pixel-art
 character around a small tile board using **WASD**, arrow keys,
 or a touch D-pad on phones. Movement is four-way with normalized
 diagonal input, walking frames, a reset, a solid-wall overlay,
-and an inn landmark. Near the inn, the test explicitly reports that
-interacting with the door is a **future milestone**.
+and an inn landmark. **Approach the inn and press Talk**, or use
+**E/Space** on the keyboard, to open a first-visit conversation between
+Bruce and Loyalis. Advance one line at a time. Finishing the first
+conversation awards one clue; later visits show different dialogue
+without awarding another clue. The script-derived cooldown is a strict
+**more than 500 ms** after the previous conversation finishes.
+**Reset position** also resets the clue/visit counters.
 
 The deterministic model in
 [`experiments/movement-sandbox/engine.mjs`](experiments/movement-sandbox/engine.mjs)
@@ -30,13 +35,17 @@ Toolkit 3 vector collision, actual BSTW geometry, sprite timings,
 or RPGCode execution*. The stand-alone demo uses
 original synthetic board/artwork from this repo, never the BSTW
 game assets. Follow-up work under [Issue #92](https://github.com/jmbjr/rpgtk_godot/issues/92)
-will add an inn-door dialogue adapter, then validate against
-real imported source.
+now includes an [inn interaction adapter](docs/specs/inn-dialogue-adapter.md)
+and a [portable event/state contract](experiments/movement-sandbox/inn-contract.json)
+for future Godot/DODGE mapping. Dialogue is newly authored, and the
+adapter never executes original RPGCode, DLLs, or BSTW assets.
 
 CI runs `node scripts/check-movement-sandbox.mjs` for four headings,
 diagonal speed, solid collisions, sliding, large frame deltas,
-reset, source-owned map integrity and UI contract. The Pages staging
-check now validates both Game Explorer and Movement Sandbox module
+reset, source-owned map integrity and UI contract. The
+inn interaction is also tested in the dedicated deterministic dialogue
+regression, including exact 500-ms gating and one-time clues.
+The Pages staging check now validates both Game Explorer and Movement Sandbox module
 graphs. Mobile touch acceptance still requires an actual device test
 after deployment.
 
