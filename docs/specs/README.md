@@ -62,13 +62,13 @@ reconstruction. [Fixture index](fixtures/README.md)
 | GAM | [Main File](gam.md) | Toolkit 2 text 2.0 / binary 2.2, plus Toolkit 3 binary 2.9 startup prefix | Demo.gam, DustBall main.gam, pinned Toolkit 3 reader, BSTW issue #79 inventory, synthetic 2.9 fixture |
 | PRG | [RPGCode program](prg.md) | Source and static indexing | Demo startup trace and Toolkit 2 Help |
 | TAN | [Animated tile](tan.md) | Binary 2.0 | Demo animation files |
-| TEM | [Character](tem.md) | Text 2.0/2.1/2.2 and binary 2.3/2.4, walking/battle/rest/custom art | DustBall, Demo and Cluetest characters, compatibility reader and synthetic fixtures |
+| TEM | [Character](tem.md) | Toolkit 2 text 2.0/2.1/2.2 and binary 2.3/2.4; Toolkit 3 binary 2.8 portrait, directional ANMs and vector bases | Demo, Cluetest, DustBall, pinned native reader, BSTW and synthetic fixtures |
 | BRD | [Board](brd.md) | Text 2.0/2.1 and binary 2.2/2.3 legacy fields; Toolkit 3 binary 2.4 tile RLE, separate shading, lights and raw collision vectors | Demo/Cluetest, pinned native reader, owner BSTW sample and synthetic fixtures |
 | ITM | [Item](itm.md) | Text 2.0/2.1 and binary 2.2/2.3 | DustBall and Demo items, compatibility reader and synthetic fixtures |
 | ENE | [Enemy](ene.md) | Text 2.0, two observed tails | Demo enemies |
 | BKG | [Battle background](bkg.md) | Text 2.0 | Demo backgrounds |
 | SPC | [Special move](spc.md) | Text 2.0 | Demo move and Toolkit 2 editor |
-| ANM | [Effect animation](anm.md) | Text 2.0 | Demo explosion |
+| ANM | [Effect animation](anm.md) | Text 2.0 and native binary 2.3, frame/TST links, transparency and pause | Demo explosion, pinned native reader, BSTW Bruce and synthetic fixtures |
 | FNT | [Bitmap font](fnt.md) | Text 2.0 | Demo base font |
 | STE | [Status effect](ste.md) | Text 2.0 and binary 2.2 | DustBall status effects, editor fixture and compatibility reader |
 | GIF | [GIF image](gif.md) | GIF87a/GIF89a metadata | GIF spec and demo images |
