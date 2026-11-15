@@ -368,3 +368,133 @@ enable **Show verified wall outlines** → try to walk through the large
 highlighted building wall → go around its southern edge → reach the
 marked inn door from the walkable side → **Talk / Next / Finish** →
 verify **Clues 1/13** and **Inn visits 1**.
+
+## Source-backed BSTW title → New entry (#92)
+
+**Original archive, re-inspected read-only:** `BSTW_EXPO_DEMO.zip`,
+SHA-256 `77d6d4180948196106e3d4dad7e2ee62144b30fac8c7ac5491048740e9864300`.
+The archive configures `BSTW/Prg/menuTitle.prg` in its native GAM 2.9,
+along with `start.brd` and `bruce.tem`. This is the only startup
+shape the [title adapter](../../bstw-title.mjs) currently recognizes.
+
+### Explicit original RPGCode evidence
+
+- `menuTitle.prg` lines **13–17** include `CArray.prg`, `CCmap.prg`,
+  `CommonFunctions.prg`, `menus.prg` and `init.prg`.
+- Line **19** invokes `InitVar()`; lines **33–35** set
+  `introBkg.png`, start `titlemusic`, and call `CutsceneIntro()`.
+  Line **42** constructs a `CCmap("tbkg.png",640,200,220,280)` menu
+  and line **47** configures four rows. Lines **49–56** assign graphics
+  for New/Load/Options/Quit, including `tNew.png` and
+  `tNew_roll.png` for the New row; source `titleCursor.png` is
+  commented out at line 27, and the effective `cursorGraphic` is blank.
+- Lines **79–82** assign four `iTitle` images with timed parameters.
+  The final entry is `"BSTW.png?" + castlit(delayVal*.8)` at **line
+  82**. Line **86** passes the array to
+  `Slideshow(iTitle,640,480,0,0)`. The linked
+  `CommonFunctions.prg` lines **57–105** split the `?` timing
+  suffix from the image filename and use `setimage`; thus
+  **`BSTW.png` is an authored title image**, not a literal
+  `BSTW.png?` archive filename. The original 640×480 PNG exists in
+  `BSTW/Bitmap/BSTW.png`; the New graphic is
+  `BSTW/Bitmap/tNew.png` (200×50).
+- `menuTitle.prg` line **96** invokes
+  `titleCmap->ShowIt(index)`; `CCmap.prg` lines **572–586** confirm
+  it returns a selected index, and **598–603** show the index is
+  derived from the selected menu row/column. Lines **100–103** enter
+  the switch; **case 0 at line 105** is the New branch:
+  `_party[0] = "Bruce"` (109), `setPlayer(0,"Bruce","Hero",...)`
+  (112), `_party[1] = "Loyalis"` (114),
+  `setPlayer(1,"Loyalis","Knight",...)` (117),
+  `initCmaps()` (119), then `end()` (120).
+- Other branches are *not* implemented: Load displays the demo's
+  unimplemented save/load explanation (case 1, 124–146); Options
+  enters `OptionScreen()` (case 2, 148–157); case 3 calls
+  `windows()` (159–162). These are source facts, **not** offered
+  as playable browser controls.
+
+### Pinned Toolkit engine confirmation and uncertainties
+
+At the pinned Toolkit 3.1 revision
+[`9191b9191c9bda0998c6faae16929b3331ed2ead`](https://github.com/chrisbmatthews/rpgtoolkit/tree/9191b9191c9bda0998c6faae16929b3331ed2ead),
+[`vc/trans3/common/mainfile.cpp` lines 125–127](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/common/mainfile.cpp#L125-L127)
+loads the configured startup program, board and initial character.
+[`vc/trans3/app/winmain.cpp` lines 286–338](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/app/winmain.cpp#L286-L338)
+loads the initial player, **runs the startup program**, then if an
+initial board exists and the start program did not load a game, opens
+that board and places the player at the board's stored pixel spawn.
+This confirms engine ordering. It does **not** prove that all side
+effects of the sample's `end()`, `InitVar()`, `setPlayer()`,
+`initCmaps()`, plugin routines, timed slideshow, sound or window
+system can be reproduced. In particular, whether the historical
+runtime's `end()` always returns to the standard initial-board
+transition under all conditions remains outside our browser
+acceptance. We choose a deliberate, testable approximation:
+**New opens the already-supported `start.brd` scene from the GAM**,
+with Bruce at its stored (107,78,layer 1).
+
+### Browser adapter policy and visible fallback
+
+After importing a ZIP, **Open BSTW title** appears only if a unique
+native GAM 2.9 names `BSTW`, `menuTitle.prg`, `start.brd` and
+`bruce.tem`, its unique resolved startup PRG contains the recognized
+`iTitle[3]`/Slideshow title reference, a matching New graphic
+reference, and the ordered explicit case-0 Bruce/Loyalis New
+statements. Commented-out statements do not count. We do **not**
+execute the script or infer New from an unrelated menu. Unsupported
+or ambiguous startup PRGs disable title entry with a reason.
+The source-declared title image and New graphic are separately
+resolved in the startup program's game-root `Bitmap/` folder.
+Missing/ambiguous/corrupt images are **reported without guessing
+another file**; a text placeholder is shown if the title picture
+cannot be displayed, and native accessible **New** remains usable
+when the board scene resolves. If the board itself is unsupported,
+the title can still open but **New is disabled with a reason**.
+
+The title is a **single static snapshot** of the final authored
+slideshow image; it does not display the three earlier slideshow
+images, play music, replay `CutsceneIntro()`, build a `CCmap`,
+replicate the source's layered `tbkg.png` placement, cursor/rollover
+effects or native timing. The visible New control is a semantic
+HTML `button`: tap/click, keyboard Enter and Space all activate
+it; no unsupported Load, Options or Quit actions appear.
+**Back to Game Explorer** returns without starting a game.
+A title image is decoded *only from the already locally opened ZIP*
+into a temporary in-memory Blob URL, revoked when leaving the title
+or loading another archive. No original game art is copied to GitHub,
+CI or the hosted site.
+
+**Fresh-session contract:** New and the existing
+**Play opening board (direct)** launch through the *same*
+`mountAuthoredBoard` path. Before mounting, any previous scene is
+destroyed. The renderer's existing initialization allocates a fresh
+movement state and `initialInnState()`, clearing clues, visits,
+cooldowns and active conversation. The direct Play button remains
+visible as a test/diagnostic shortcut. The title is limited to one
+explicit adapter, with no generic RPGCode execution, saved-game
+loading or board transitions.
+
+**Verification:** [`scripts/check-bstw-title.mjs`](../../scripts/check-bstw-title.mjs)
+builds source-owned synthetic GAM/BRD/TEM/ANM/PRG/PNG fixtures,
+tests strict startup recognition and New-branch ordering, image
+resolution/missing/ambiguous/unsupported cases, rejection of
+mismatched scenes, repeated fresh New requests, existing dialogue
+state reset and static UI/input contracts. GitHub Pages checks
+`bstw-title.mjs` in the staged import closure alongside all prior
+collision, inn, sandbox, Toolkit and historical checks.
+Optional SHA-gated **local** original archive validation (not CI):
+
+    node scripts/check-bstw-title.mjs "/path/to/BSTW_EXPO_DEMO.zip"
+
+This tests the production `openGameArchive → readArtifacts →
+buildPlayableScene → assessBstwTitle → requestBstwNewSession` chain,
+source line anchors and original PNG dimensions, when executed in a
+local checkout. It is distinct from manual browser/Android acceptance.
+
+**Android test:** upload original BSTW ZIP → **Open BSTW title** →
+tap **New** → confirm Bruce at **(107,78,layer 1)** →
+navigate around a verified solid wall → walk to the accessible
+south side of the **INN DOOR** at (207,349,layer 1) →
+**Talk / Next / Finish** → verify **Clues: 1/13, Inn visits: 1**.
+Return to the title, choose New again, and confirm a fresh game with
+zero clues and visits; direct **Play opening board** still works.

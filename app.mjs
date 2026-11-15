@@ -5,6 +5,7 @@ import { traceProgramDependencies, traceProjectDependencies } from "./script-tra
 import { auditProjectPlugins } from "./plugin-audit.mjs";
 import { assessPlayability } from "./playability-audit.mjs";
 import { buildPlayableScene } from "./playable-scene.mjs";
+import { assessBstwTitle, requestBstwNewSession } from "./bstw-title.mjs";
 import { mountAuthoredBoard } from "./experiments/movement-sandbox/authored-play.mjs";
 import { mainFileBindings, readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
@@ -39,7 +40,10 @@ function status(id, message, error = false) {
 let catalog;
 let archive = null;
 let playableScene = null;
+let bstwTitle = null;
 let activePlayable = null;
+let titleDisplayRequest = 0;
+const titleBlobUrls = new Set();
 let tileMatchIndex;
 let archiveName;
 let paths = [];
@@ -2426,14 +2430,29 @@ function closePlayable() {
   activePlayable?.destroy();
   activePlayable = null;
   byId("play-stage").hidden = true;
-  byId("workspace").hidden = !archive;
+  byId("workspace").hidden = !archive || !byId("bstw-title-stage").hidden;
 }
-byId("play-close").addEventListener("click", () => {
+
+function closeBstwTitle() {
+  ++titleDisplayRequest;
+  const image = byId("bstw-title-image");
+  image.onload = null;
+  image.onerror = null;
+  image.removeAttribute("src");
+  image.hidden = true;
+  byId("bstw-title-fallback").hidden = false;
+  byId("bstw-title-stage").hidden = true;
+  for (const url of titleBlobUrls) URL.revokeObjectURL(url);
+  titleBlobUrls.clear();
+  if (!activePlayable) byId("workspace").hidden = !archive;
+}
+
+// Both direct Play and title New use this exact launcher. Every mount
+// allocates fresh movement, inn dialogue, clues, visits and cooldown.
+function launchPlayableScene() {
+  if (!playableScene?.ok) return false;
+  closeBstwTitle();
   closePlayable();
-  byId("play-bstw").focus({ preventScroll: true });
-});
-byId("play-bstw").addEventListener("click", () => {
-  if (!playableScene?.ok || activePlayable) return;
   const panel = byId("play-stage");
   try {
     panel.hidden = false;
@@ -2442,16 +2461,105 @@ byId("play-bstw").addEventListener("click", () => {
     byId("play-error").hidden = true;
     panel.scrollIntoView({ behavior: "instant", block: "start" });
     panel.focus({ preventScroll: true });
+    return true;
   } catch (error) {
     closePlayable();
     status("play-eligibility", "Unable to render board: " + error.message, true);
+    return false;
   }
+}
+
+function showBstwTitle() {
+  if (!bstwTitle?.ok || !archive) return;
+  closePlayable();
+  closeBstwTitle();
+  const panel = byId("bstw-title-stage");
+  panel.hidden = false;
+  byId("workspace").hidden = true;
+  byId("bstw-title-new").disabled = !bstwTitle.newEnabled;
+  status("bstw-title-status", bstwTitle.newReason, !bstwTitle.newEnabled);
+
+  const art = bstwTitle.titleArt;
+  const newArt = bstwTitle.newArt;
+  const fallback = byId("bstw-title-fallback");
+  fallback.textContent = "Bruce Saves the World! Title artwork " +
+    (art?.filename ?? "(not set)") + " is " + (art?.status ?? "unknown") +
+    ". New remains available when the imported opening board is ready.";
+  const note = "Slideshow artwork " + (art?.filename ?? "(none)") +
+    ": " + (art?.status ?? "unknown") +
+    (art?.reason ? " — " + art.reason : "") +
+    ". Scripted New graphic " + (newArt?.filename ?? "(none)") +
+    ": " + (newArt?.status ?? "unknown") +
+    ". The button is a native accessible control rather than an emulated CCmap.";
+  status("bstw-title-art-status", note, art?.status !== "resolved");
+
+  if (art?.status === "resolved" && art.path) {
+    const sourceZip = archive;
+    const request = ++titleDisplayRequest;
+    const entry = sourceZip.file(art.path);
+    if (entry) {
+      void entry.async("uint8array").then(bytes => {
+        if (request !== titleDisplayRequest || sourceZip !== archive) return;
+        const mime = /\.png$/i.test(art.path) ? "image/png" :
+          /\.gif$/i.test(art.path) ? "image/gif" : "image/jpeg";
+        const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+        titleBlobUrls.add(url);
+        const image = byId("bstw-title-image");
+        image.onload = () => {
+          if (request !== titleDisplayRequest) return;
+          image.hidden = false;
+          fallback.hidden = true;
+        };
+        image.onerror = () => {
+          if (request !== titleDisplayRequest) return;
+          image.hidden = true;
+          fallback.hidden = false;
+          status("bstw-title-art-status",
+            "The selected original title image could not be displayed; New remains available.", true);
+        };
+        image.src = url;
+      }).catch(error => {
+        if (request !== titleDisplayRequest) return;
+        status("bstw-title-art-status",
+          "Cannot read original title artwork: " + error.message, true);
+      });
+    } else {
+      status("bstw-title-art-status",
+        "The resolved image entry is unavailable in this ZIP; showing a text fallback.", true);
+    }
+  }
+  panel.scrollIntoView({ behavior: "instant", block: "start" });
+  panel.focus({ preventScroll: true });
+}
+
+byId("play-close").addEventListener("click", () => {
+  closePlayable();
+  byId("play-bstw").focus({ preventScroll: true });
+});
+byId("play-bstw").addEventListener("click", () => {
+  if (!activePlayable) launchPlayableScene();
+});
+byId("open-bstw-title").addEventListener("click", showBstwTitle);
+byId("bstw-title-back").addEventListener("click", () => {
+  closeBstwTitle();
+  byId("open-bstw-title").focus({ preventScroll: true });
+});
+byId("bstw-title-new").addEventListener("click", () => {
+  const action = requestBstwNewSession(bstwTitle, playableScene);
+  if (!action.ok) {
+    status("bstw-title-status", action.reason, true);
+    return;
+  }
+  launchPlayableScene();
 });
 
 async function loadArchive(name, readBytes) {
   const request = ++archiveRequest;
+  closeBstwTitle();
   closePlayable();
   playableScene = null;
+  bstwTitle = null;
+  byId("open-bstw-title").disabled = true;
   byId("play-launch").hidden = true;
   status("archive-status", `Opening ${name}…`);
   byId("export-game-json").disabled = true;
@@ -2486,7 +2594,14 @@ async function loadArchive(name, readBytes) {
     // The runtime always follows the GAM embedded in the selected game ZIP,
     // never an unrelated separately uploaded GAM.
     playableScene = buildPlayableScene(artifacts, references, archiveMainFile);
+    bstwTitle = assessBstwTitle(artifacts, archiveMainFile, playableScene);
     byId("play-launch").hidden = false;
+    byId("open-bstw-title").disabled = !bstwTitle.ok;
+    status("bstw-title-eligibility", bstwTitle.ok ?
+      "BSTW title recognized · source " + bstwTitle.startupPath +
+      " · image " + bstwTitle.titleArt.status +
+      " · New " + (bstwTitle.newEnabled ? "ready" : "unavailable") :
+      "Title unavailable: " + bstwTitle.detail, !bstwTitle.ok);
     byId("play-bstw").disabled = !playableScene.ok;
     status("play-eligibility", playableScene.ok ?
       "Ready: " + playableScene.boardPath + " · " + playableScene.characterName +
