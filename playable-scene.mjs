@@ -1,6 +1,7 @@
 import { mainFileBindings } from "./model.mjs";
 import { mapBoardPlacements } from "./placed-sprites.mjs";
-import { ACTOR_RADIUS } from "./experiments/movement-sandbox/engine.mjs";
+import { ACTOR_RADIUS, circleBlocked } from "./experiments/movement-sandbox/engine.mjs";
+import { compileBoardVectorCollision } from "./vector-collision.mjs";
 
 // Source-only scene mapping. Never runs the GAM startup program, RPGCode,
 // native vector blocking, DLLs or plugins. UI consumers must check ok first.
@@ -113,6 +114,25 @@ export function buildPlayableScene(artifacts, graph, selectedMain = null) {
     itemPath: innTargets[0].itemPath, programPath: innTargets[0].programPath,
   } : null;
 
+  let vectorCollision = compileBoardVectorCollision(board, start.layer);
+  const world = {
+    tileSize: 32, width: board.width, height: board.height,
+    rows: Array.from({ length: board.height }, () => ".".repeat(board.width)),
+    spawn: { x: start.x, y: start.y },
+    vectorCollision,
+  };
+  // The browser's circle can overlap geometry that native Toolkit's
+  // player base does not. Make a safe bounds-only fallback explicit.
+  if (circleBlocked(world, start.x, start.y)) {
+    vectorCollision = {
+      ...vectorCollision, status: "bounds-only",
+      reason: "Stored spawn overlaps a solid; bounds-only fallback.",
+      skippedSolidSlots: vectorCollision.solids.map(vector => vector.slot),
+      solids: [],
+    };
+    world.vectorCollision = vectorCollision;
+  }
+
   return {
     ok: true, issues: [],
     mainPath: main.path, boardPath: board.path, characterPath: character.path,
@@ -128,13 +148,8 @@ export function buildPlayableScene(artifacts, graph, selectedMain = null) {
     placements, innDoor,
     innStatus: innTargets.length === 1 ? "resolved" :
       innTargets.length ? "ambiguous" : "missing",
-    // Explicit sandbox movement model with no interior solids. The source
-    // vectors are retained as evidence in the viewer, NOT interpreted here.
-    world: {
-      tileSize: 32, width: board.width, height: board.height,
-      rows: Array.from({ length: board.height }, () => ".".repeat(board.width)),
-      spawn: { x: start.x, y: start.y },
-    },
-    collisionPolicy: "bounds-only; 9px actor radius; native vectors not interpreted",
+    // Pure sandbox stepper sees only verified TT_SOLID geometry.
+    world,
+    collisionPolicy: vectorCollision.status + "; 9px circle; " + vectorCollision.reason,
   };
 }

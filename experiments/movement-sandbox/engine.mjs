@@ -1,12 +1,13 @@
 import { SANDBOX_WORLD, solidAt } from "./world.mjs";
+import { circleBlockedByVectors } from "../../vector-collision.mjs";
 
 export const ACTOR_RADIUS = 9;
 export const WALK_SPEED = 112; // Source-owned test policy, pixels per second.
 export const MAX_FRAME_SECONDS = 0.05;
 export const MAX_SUBSTEP_PIXELS = 4;
 
-// Axis-aligned solid tiles, circle actor, outside-world is solid.
-// This is *not* inferred Toolkit 3 vector collision behavior.
+// Circle actor against solid tiles and optional source-proven native board vectors.
+// Browser circle != native Toolkit player-defined vector-base polygon.
 export function circleBlocked(world, x, y, radius = ACTOR_RADIUS) {
   if (![x, y, radius].every(Number.isFinite) || radius < 0) return true;
   const tile = world.tileSize;
@@ -23,7 +24,7 @@ export function circleBlocked(world, x, y, radius = ACTOR_RADIUS) {
       if (dx * dx + dy * dy < radius * radius) return true;
     }
   }
-  return false;
+  return circleBlockedByVectors(world.vectorCollision, x, y, radius);
 }
 
 export function initialMovementState(world = SANDBOX_WORLD) {
