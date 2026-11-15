@@ -38,6 +38,14 @@ assert.equal(pure.state.variables.count, 1);
 assert.equal(pure.state.message, "", "MWinCls clears message window");
 assert.equal(pure.state.runs, 1);
 assert.equal(advanceTk3Script(pure.state).status, "inactive");
+const defaultLayer = startTk3Script(initialTk3ScriptState(),
+  'Send("another.brd", 32, 48)', "Examples/Prg/send3.prg");
+assert.equal(defaultLayer.status, "transfer");
+assert.deepEqual(defaultLayer.transfer, {
+  path: "Examples/Prg/send3.prg", line: 1, file: "another.brd",
+  x: 32, y: 48, layer: 1,
+}, "Source signature's optional fourth Send argument defaults to layer 1");
+
 
 for (const [source, line] of [
   [['mwin("First")', "wait()", 'Teleport("other.brd",5,5)'].join("\n"), 3],
@@ -230,6 +238,54 @@ for (const spec of scriptFixtureSpecs) {
     assert.equal(rejectedSend.scene, invalidScene2);
     assert.match(rejectedSend.state.diagnostic.text, /outside destination bounds/);
     assert.equal(rejectedSend.state.diagnostic.line, 8);
+
+    // These also start from generated native ZIPs rather than hand-built
+    // artifact records. All must retain the originating board on failure.
+    const attempt = async (modify) => {
+      const zipped = await buildScriptFixtureZip(spec);
+      await modify(zipped);
+      const parsed = await openGameArchive(
+        await zipped.generateAsync({ type: "uint8array" }),
+        raw => JSZip.loadAsync(raw));
+      const a = (await readArtifacts(parsed, {})).artifacts;
+      const g = buildReferences(a);
+      const before = buildPlayableScene(a, g);
+      assert.equal(before.ok, true);
+      const open = startPlacedTk3Script(initialTk3ScriptState(), before, actor, a);
+      assert.equal(open.status, "waiting");
+      const request = advanceTk3Script(open.state);
+      assert.equal(request.status, "transfer");
+      const result = resolveTk3BoardTransfer(request, before, a, g);
+      assert.equal(result.status, "error");
+      assert.equal(result.scene, before);
+      assert.equal(result.state.diagnostic.path, target.programPath);
+      assert.equal(result.state.diagnostic.line, 8);
+      assert.equal(result.state.execution, null);
+      return result.state.diagnostic.text;
+    };
+    const destinationPath = spec.root + "/Boards/" + spec.secondBoard.board;
+    const ambiguousReason = await attempt(async zip => {
+      const originalBytes = await zip.file(destinationPath).async("uint8array");
+      zip.file(destinationPath.toUpperCase(), originalBytes);
+    });
+    assert.match(ambiguousReason, /ambiguous/i);
+    const unsupportedReason = await attempt(async zip => {
+      zip.file(destinationPath, Uint8Array.from([1, 2, 3]));
+    });
+    assert.match(unsupportedReason, /unsupported|could not be decoded/i);
+    const oldSend = "Send(" + JSON.stringify(spec.secondBoard.board) + ", " +
+      spec.secondBoard.spawn.x + ", " + spec.secondBoard.spawn.y + ", " +
+      spec.secondBoard.spawn.layer + ")";
+    const invalidLayerReason = await attempt(zip => {
+      zip.file(target.programPath, originalScript.replace(oldSend,
+        'Send("' + spec.secondBoard.board + '", 19, 27, 9)'));
+    });
+    assert.match(invalidLayerReason, /Layer 9 is outside/i);
+    const invalidPathReason = await attempt(zip => {
+      zip.file(target.programPath, originalScript.replace(oldSend,
+        'Send("../' + spec.secondBoard.board + '", 19, 27, 1)'));
+    });
+    assert.match(invalidPathReason, /Destination must name/i);
   }
 
   // Negative acceptance is also sourced from ZIP bytes: no test-only
