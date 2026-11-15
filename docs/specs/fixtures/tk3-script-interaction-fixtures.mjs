@@ -2,7 +2,7 @@
 // GAM/BRD/TEM/ITM/ANM/TST/PRG readers are used without test-only shortcuts.
 // No original commercial/game-demo bytes are included.
 import { readFile } from "node:fs/promises";
-import JSZip from "../../vendor/jszip.min.js";
+import JSZip from "../../../vendor/jszip.min.js";
 import { nativeMainFixture } from "./native-main-29-fixtures.mjs";
 import { board24Fixtures } from "./board-24-fixtures.mjs";
 import { character28, nativeAnims, testTileset } from "./native-character-28-fixtures.mjs";
