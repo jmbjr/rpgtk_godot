@@ -99,9 +99,11 @@ export async function buildScriptFixtureZip(spec) {
   // The common BRD conformance fixture uses activation/loading conditions
   // intended for decoding diagnostics, not a runnable object. Strip those
   // on this synthetic object and select unconditional key-press activation.
-  const active = replaceOnce(withActivation,
-    spec.item + "\0" + spec.script + "\0\0trigger\00\0endTrigger\0done\0loading\0pending\0",
-    spec.item + "\0" + spec.script + "\0" + "\0".repeat(7));
+  const originalFields = [spec.item, spec.script, "", "trigger", "0",
+    "endTrigger", "done", "loading", "pending"].join("\0") + "\0";
+  const activeFields = [spec.item, spec.script, "", "", "", "", "", "", ""]
+    .join("\0") + "\0";
+  const active = replaceOnce(withActivation, originalFields, activeFields);
   const brd = alterPosition(active, spec.position);
   const itm = changeSource(nativeItem27({ emptyGraphics: true }),
     [["Synthetic Amulet", spec.itemName]]);
