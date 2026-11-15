@@ -4,6 +4,7 @@ import JSZip from "../vendor/jszip.min.js";
 import { openGameArchive } from "../archive.mjs";
 import { readArtifacts, buildReferences } from "../artifacts.mjs";
 import { buildPlayableScene } from "../playable-scene.mjs";
+import { resolveTk3BoardTransfer } from "../tk3-board-transfer.mjs";
 import { initialMovementState, stepMovement } from "../experiments/movement-sandbox/engine.mjs";
 import { initialInnState } from "../experiments/movement-sandbox/inn-dialogue.mjs";
 import { TK3_INTERACTION_RADIUS, compileTk3Interaction, initialTk3ScriptState,
@@ -114,7 +115,51 @@ for (const spec of scriptFixtureSpecs) {
   assert.equal(state.message, spec.first);
   assert.equal(state.variables[spec.variable], undefined);
   assert.equal(startPlacedTk3Script(state, scene, actor, artifacts).status, "busy");
-  const done = advanceTk3Script(state);
+  const advanced = advanceTk3Script(state);
+  let done = advanced;
+  if (spec.secondBoard) {
+    assert.equal(advanced.status, "transfer", "Harbor must yield source Send");
+    assert.deepEqual(advanced.transfer, {
+      path: target.programPath,
+      line: 8,
+      file: spec.secondBoard.board,
+      x: spec.secondBoard.spawn.x, y: spec.secondBoard.spawn.y,
+      layer: spec.secondBoard.spawn.layer,
+    });
+    const arrived = resolveTk3BoardTransfer(advanced, scene, artifacts, graph);
+    assert.equal(arrived.transferred, true, arrived.state.diagnostic?.text);
+    assert.equal(arrived.status, "completed",
+      "Source statements after Send must continue on destination board");
+    assert.equal(arrived.fromBoardPath, scene.boardPath);
+    assert.equal(arrived.toBoardPath,
+      spec.root + "/Boards/" + spec.secondBoard.board);
+    assert.deepEqual(arrived.spawn, spec.secondBoard.spawn);
+    assert.deepEqual(arrived.scene.start, spec.secondBoard.spawn);
+    assert.equal(arrived.state.variables[spec.secondBoard.afterSend], 1,
+      "Original source script must continue executing after Send()");
+    const finishPlace = arrived.scene.placements.find(p =>
+      p.filename === spec.secondBoard.item);
+    assert.ok(finishPlace);
+    assert.equal(finishPlace.itemStatus, "resolved");
+    assert.equal(finishPlace.programStatus, "resolved");
+    assert.deepEqual(finishPlace.position, spec.secondBoard.position);
+    const finishActor = { ...finishPlace.position };
+    const ending = startPlacedTk3Script(arrived.state, arrived.scene,
+      finishActor, artifacts);
+    assert.equal(ending.status, "waiting", ending.state.diagnostic?.text);
+    assert.equal(ending.state.message, spec.secondBoard.good,
+      "Second-board ending must read variable written before Send");
+    const ended = advanceTk3Script(ending.state);
+    assert.equal(ended.status, "completed");
+    assert.equal(ended.state.variables[spec.variable], 1);
+    assert.equal(ended.state.variables[spec.secondBoard.afterSend], 1);
+    const freshEnding = startPlacedTk3Script(initialTk3ScriptState(),
+      arrived.scene, finishActor, artifacts);
+    assert.equal(freshEnding.status, "waiting");
+    assert.equal(freshEnding.state.message, spec.secondBoard.bad,
+      "Fresh game has not collected the first-board variable");
+    done = arrived;
+  }
   assert.equal(done.status, "completed");
   state = done.state;
   assert.equal(state.message, "");
@@ -131,6 +176,61 @@ for (const spec of scriptFixtureSpecs) {
   const reset = initialTk3ScriptState();
   assert.deepEqual(reset.variables, {});
   assert.equal(startPlacedTk3Script(reset, scene, actor, artifacts).state.message, spec.first);
+  if (spec.secondBoard) {
+    // Failure is evaluated on a fully parsed ZIP: the source program is
+    // unchanged, but the destination board is missing from the archive.
+    const missing = await buildScriptFixtureZip(spec);
+    missing.remove(spec.root + "/Boards/" + spec.secondBoard.board);
+    const missingZip = await openGameArchive(
+      await missing.generateAsync({ type: "uint8array" }),
+      raw => JSZip.loadAsync(raw));
+    const missingArtifacts = (await readArtifacts(missingZip, {})).artifacts;
+    const missingGraph = buildReferences(missingArtifacts);
+    const unchangedScene = buildPlayableScene(missingArtifacts, missingGraph);
+    assert.equal(unchangedScene.ok, true);
+    const pending = advanceTk3Script(startPlacedTk3Script(
+      initialTk3ScriptState(), unchangedScene, actor, missingArtifacts).state);
+    assert.equal(pending.status, "transfer");
+    const blocked = resolveTk3BoardTransfer(pending,
+      unchangedScene, missingArtifacts, missingGraph);
+    assert.equal(blocked.status, "error");
+    assert.equal(blocked.transferred, undefined);
+    assert.equal(blocked.scene, unchangedScene);
+    assert.equal(blocked.state.execution, null);
+    assert.equal(blocked.state.variables[spec.variable], 1,
+      "Script effects before failed Send should remain in the live session");
+    assert.equal(blocked.state.diagnostic.path, target.programPath);
+    assert.equal(blocked.state.diagnostic.line, 8);
+    assert.match(blocked.state.diagnostic.text, /missing/);
+    assert.equal(selectTk3ScriptTarget(blocked.scene, actor)?.slot, target.slot,
+      "Failed transfer leaves the original scene playable");
+
+    // A real decoded destination exists, but the script coordinates are
+    // invalid. Reject, do not silently use Toolkit's fallback of x=32.
+    const wrongCoords = await buildScriptFixtureZip(spec);
+    const originalScript = sourceForScriptFixture(spec);
+    const invalidScript = originalScript.replace(
+      "Send(" + JSON.stringify(spec.secondBoard.board) + ", " +
+      spec.secondBoard.spawn.x + ", " + spec.secondBoard.spawn.y + ", " +
+      spec.secondBoard.spawn.layer + ")",
+      'Send("' + spec.secondBoard.board + '", 999, 25, 1)');
+    assert.notEqual(invalidScript, originalScript);
+    wrongCoords.file(target.programPath, invalidScript);
+    const invalidZip2 = await openGameArchive(
+      await wrongCoords.generateAsync({ type: "uint8array" }),
+      raw => JSZip.loadAsync(raw));
+    const invalidAssets2 = (await readArtifacts(invalidZip2, {})).artifacts;
+    const invalidGraph2 = buildReferences(invalidAssets2);
+    const invalidScene2 = buildPlayableScene(invalidAssets2, invalidGraph2);
+    const badRequest = advanceTk3Script(startPlacedTk3Script(
+      initialTk3ScriptState(), invalidScene2, actor, invalidAssets2).state);
+    const rejectedSend = resolveTk3BoardTransfer(
+      badRequest, invalidScene2, invalidAssets2, invalidGraph2);
+    assert.equal(rejectedSend.status, "error");
+    assert.equal(rejectedSend.scene, invalidScene2);
+    assert.match(rejectedSend.state.diagnostic.text, /outside destination bounds/);
+    assert.equal(rejectedSend.state.diagnostic.line, 8);
+  }
 
   // Negative acceptance is also sourced from ZIP bytes: no test-only
   // modification of an already-decoded PRG record.
