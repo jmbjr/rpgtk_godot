@@ -287,3 +287,84 @@ locked door opening, title execution, original RPGCode, COM plugins,
 saves, board transitions, vector hitboxes or exact Toolkit collision.
 The separate source-owned `sandbox.html` inn remains testable and unchanged.
 No original game ZIP, music, art, binaries or DLLs are placed in Git or CI.
+
+## Native BRD 2.4 vector collision subset (#92)
+
+**Pinned source, read, not inferred from vector counts:**
+- [Toolkit 3.1 board loader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/common/board.cpp#L329-L356) decodes point lists, raw attributes, a nonzero closed flag, layer and numeric tile type.
+- [Tile-type constants](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/tkCommon/board/conversion.h) define `TT_SOLID=1`, `TT_UNDER=2`, `TT_UNIDIRECTIONAL=4`, `TT_STAIRS=8` and `TT_WAYPOINT=16`.
+- [Native boardCollisions](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/movement/CSprite/CSprite.cpp#L934-L1078) ignores `TT_UNDER`, filters by sprite layer, intersects board `CVector` with the *player's authored collision-base polygon*, and tests the `TT_SOLID` bit for movement blocking. Its unidirectional check is commented out; stair vectors can change layers. Actual Toolkit sliding uses vector and movement angles (not our axis-separated slide).
+- [Native CVector::contains](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/movement/CVector/CVector.cpp#L195-L284) tests subvector intersections even when the shape is open, and additionally tests point-in-polygon for **closed** shapes. Closed means any raw nonzero flag, including VB `-1`.
+
+**Owner's original BSTW ZIP** (`77d6d4180948196106e3d4dad7e2ee62144b30fac8c7ac5491048740e9864300`),
+independently decoded from the binary prefix of `BSTW/Boards/start.brd`:
+
+| Slots | Native flags | Policy |
+| --- | --- | --- |
+| 0–2 | `type=2` (`TT_UNDER`), `layer=2`, `closed=-1`, `attributes=0` | No player blocking. Under/overdraw effects are not implemented. |
+| 3–8 | `type=1` (`TT_SOLID`), `layer=1`, `closed=-1`, `attributes=0` | Six valid closed polygons, eligible to block Bruce on layer 1. |
+
+No *open* solid occurs on this real board, but synthetic fixtures test a
+two-point open `TT_SOLID` polyline. All six BSTW solid polygons have
+valid geometry. The stored spawn **(107,78,L1)** lies outside the six
+solid walls under the browser's **9px-radius circle** approximation.
+The inn is at **(207,349,L1)** on the lower boundary of the large
+solid rectangle (slot 3; corners 97,193 and 318,350). The walkable
+south approach includes **(207,370,L1)**, within the existing **46px**
+Talk range. Blocking should stop Bruce from entering the inn building,
+but should *not* prevent him reaching its conversation from that side.
+
+**Supported browser geometry:** only coordinate code **4**, exact numeric
+`TT_SOLID=1`, matching source layer, finite points, simple closed
+polygons (at least 3 vertices and nonzero area), and open polylines (at
+least 2 points), with at most 256 vertices per shape. Supported solid
+attributes are **not interpreted** because the native solid branch
+does not inspect them. The browser uses circle-to-segment minimum
+distance and odd-even point-in-polygon containment; source open
+polylines have no interior. Unsupported or malformed types/shapes are
+diagnosed and **nonblocking**; other supported vectors still block.
+Non-solid and other-layer vectors are diagnosed as skipped. If no
+supported blockers exist, or the browser's circle overlaps a stored
+spawn, the movement policy visibly falls back to **bounds-only**.
+The currently supported Play scene still requires a valid orthogonal
+pixel board; isometric/other coordinate modes remain outside the
+imported runtime, not silently projected.
+
+**Engine comparison / intentional differences:** Toolkit intersects
+its player-authored vector-base polygon with board line segments and
+closed polygons. Our movement stepper retains the synthetic **circle
+radius 9px**, constant **112 pixels/s**, **50ms maximum frame delta**,
+**4px maximum sweep substeps**, and independently tested **axis sliding**.
+Thus tight passages, edge contacts, angular wall slides and collisions
+against placed ITM sprite bases may differ from native Toolkit. Exact
+Toolkit player-base collision fidelity, union/mixed tile-type flags,
+unidirectional/stair/waypoint semantics, under rendering, board images
+and movement-layer transitions remain **unverified or out of scope**.
+Only the already supported imported inn dialogue remains activatable;
+its 46px point-distance condition is not a native item activation polygon.
+
+The imported Play view shows the selected collision policy, source
+solid/ignored/unsupported counts and fallback reason. **Show verified
+wall outlines** paints optional red boundaries over the art without
+changing collision or dialogue.
+
+**Checks:** [synthetic vector movement tests](../../scripts/check-vector-collision.mjs)
+cover exact type eligibility, open/closed shapes, same-layer selection,
+geometry rejection, walls versus clear paths, high-delta cap, axis
+sliding, bounds-only fallback, and UI diagnostics. The SHA-gated local
+read-only test accepts the original ZIP and checks **all six eligible
+polygons, valid spawn, wall blocking and a collision-valid route to
+the authored inn followed by the existing first conversation**:
+
+    node scripts/check-vector-collision.mjs "/path/to/BSTW_EXPO_DEMO.zip"
+
+Automated code checks, independent original-byte parsing and manual
+Android acceptance must be reported separately. The game archive,
+graphics, music, original scripts, DLLs and executables must never
+enter Git or CI.
+
+**Android test after merge:** upload BSTW → **Play opening board** →
+enable **Show verified wall outlines** → try to walk through the large
+highlighted building wall → go around its southern edge → reach the
+marked inn door from the walkable side → **Talk / Next / Finish** →
+verify **Clues 1/13** and **Inn visits 1**.
