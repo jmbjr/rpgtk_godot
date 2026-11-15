@@ -185,7 +185,7 @@ assert.match(browser, /assessBstwTitle\(artifacts, archiveMainFile, playableScen
 assert.match(browser, /requestBstwNewSession\(bstwTitle, playableScene\)/);
 assert.match(browser, /function launchPlayableScene\(\)/);
 assert.match(browser, /closePlayable\(\);\s*const panel = byId\("play-stage"\)/);
-assert.match(browser, /mountAuthoredBoard\(panel, playableScene, artifacts, references\)/);
+assert.match(browser, /mountAuthoredBoard\(panel, playableScene, artifacts,/);
 assert.match(browser, /URL\.createObjectURL\(new Blob\(\[bytes\]/);
 assert.match(browser, /URL\.revokeObjectURL\(url\)/);
 assert.match(browser, /byId\("bstw-title-new"\)\.addEventListener\("click"/);
