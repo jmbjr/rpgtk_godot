@@ -9,8 +9,9 @@ import { nearAuthoredInn, activateAuthoredInn } from "./imported-inn.mjs";
 import { initialTk3ScriptState, selectTk3ScriptTarget, startPlacedTk3Script,
   advanceTk3Script } from "../../tk3-script-slice.mjs";
 
-// Deliberately use the synthetic sandbox's movement engine and WASD / arrow
-// / pointer-held D-pad policy. No board script, item or plugin is executed.
+// Reuse the sandbox movement engine and keyboard/touch input. Only the
+// explicit source-verified RPGCode subset or existing inn adapter may run;
+// unsupported PRG commands and plugin code are never executed.
 const keyDirections = new Map([
   ["ArrowUp", "north"], ["KeyW", "north"],
   ["ArrowDown", "south"], ["KeyS", "south"],
@@ -160,7 +161,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
   } else {
     innLabel.textContent = "Inn door: " +
       (scene.innStatus === "ambiguous" ? "multiple resolved candidates" :
-        "no resolved mwininn.prg placement") + "; Talk unavailable.";
+        "no resolved mwininn.prg placement") +
+      "; the BSTW inn adapter is unavailable, but other source PRGs may be talkable.";
   }
 
   let actor = initialMovementState(scene.world);
@@ -288,7 +290,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
     status.textContent = scene.characterName + " · (" + Math.round(actor.x) +
       ", " + Math.round(actor.y) + ", layer " + scene.start.layer + ") · " +
       actor.facing + (actor.moving ? " · walking" : " · standing") +
-      (actor.blocked ? " · map edge" : "") + " · bounds-only collision";
+      (actor.blocked ? " · blocked" : "") + " · " + scene.collisionPolicy;
 
     const current = currentInnMessage(inn);
     const scriptWaiting = Boolean(scriptSession.execution?.waiting);
