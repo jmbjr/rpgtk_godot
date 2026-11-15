@@ -41,6 +41,7 @@
           <a class="download-button" href="./tk2-legacy-game.zip" download="tk2-legacy-game.zip">Download legacy ZIP</a>
           <a class="download-button" href="./tk3-script-harbor.zip" download="tk3-script-harbor.zip">TK3 Script Lab A · Harbor</a>
           <a class="download-button" href="./tk3-script-grove.zip" download="tk3-script-grove.zip">TK3 Script Lab B · Grove</a>
+          <a class="download-button" href="./tk3-script-startup.zip" download="tk3-script-startup.zip">TK3 Script Lab C · Lantern startup</a>
         </div>
         <p>For browser inspection, select a game ZIP or a GitHub Actions artifact ZIP containing one game ZIP; no extraction is needed. To run in Toolkit 2, extract the game ZIP into your Toolkit 2 folder. Open <code>Main/TK2TestLab.gam</code> for the baseline or <code>Main/TK2LegacyLab.gam</code> for legacy format checks. Open the standalone GPH tiles individually in the tile editor.</p>
         <div class="statuses">
@@ -52,6 +53,8 @@
         <div id="play-launch" class="play-launch" hidden>
           <button type="button" id="open-bstw-title" disabled>Open BSTW title</button>
           <span id="bstw-title-eligibility" class="technical" role="status"></span>
+          <button type="button" id="play-gam-startup" disabled>Run GAM startup + play</button>
+          <span id="gam-startup-status" class="technical" role="status" aria-live="polite"></span>
           <button type="button" id="play-bstw" disabled>Play opening board (direct)</button>
           <span id="play-eligibility" class="technical" role="status"></span>
         </div>
