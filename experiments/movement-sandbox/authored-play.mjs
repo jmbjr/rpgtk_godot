@@ -8,6 +8,7 @@ import { initialInnState, advanceInn, currentInnMessage, conversationMessages }
 import { nearAuthoredInn, activateAuthoredInn } from "./imported-inn.mjs";
 import { initialTk3ScriptState, selectTk3ScriptTarget, startPlacedTk3Script,
   advanceTk3Script } from "../../tk3-script-slice.mjs";
+import { resolveTk3BoardTransfer } from "../../tk3-board-transfer.mjs";
 
 // Reuse the sandbox movement engine and keyboard/touch input. Only the
 // explicit source-verified RPGCode subset or existing inn adapter may run;
@@ -33,8 +34,10 @@ function pixelCanvas(pixels, width = 32, height = 32) {
   return canvas;
 }
 
-export function mountAuthoredBoard(section, scene, artifacts, graph) {
+export function mountAuthoredBoard(section, scene, artifacts, graph, options = {}) {
   if (!scene.ok) throw Error("Cannot mount an unresolved playable scene.");
+  section.querySelector("#play-heading").textContent =
+    "Authored board · " + scene.boardPath;
   const canvas = section.querySelector("#play-canvas");
   const status = section.querySelector("#play-status");
   const collisionLabel = section.querySelector("#play-collision");
@@ -169,9 +172,9 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
 
   let actor = initialMovementState(scene.world);
   // A fresh mount always starts with a fresh, in-memory inn conversation.
-  let inn = initialInnState();
-  let scriptSession = initialTk3ScriptState();
-  let interactionFeedback = "";
+  let inn = options.innState ?? initialInnState();
+  let scriptSession = options.scriptSession ?? initialTk3ScriptState();
+  let interactionFeedback = options.arrivalFeedback ?? "";
   const actorAtLayer = () => ({ ...actor, layer: scene.start.layer });
   let walkMs = 0;
   let priorFacing = actor.facing;
@@ -344,10 +347,30 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
     if (scriptSession.execution?.waiting ||
         (!inn.conversation && !nearAuthoredInn(actorAtLayer(), scene) &&
           selectTk3ScriptTarget(scene, actorAtLayer()))) {
-      const response = scriptSession.execution?.waiting ?
+      const stepped = scriptSession.execution?.waiting ?
         advanceTk3Script(scriptSession) :
         startPlacedTk3Script(scriptSession, scene, actorAtLayer(), artifacts);
+      const response = stepped.status === "transfer" ?
+        resolveTk3BoardTransfer(stepped, scene, artifacts, graph) : stepped;
       scriptSession = response.state;
+      if (response.transferred) {
+        // Transfer is transactional: the pure resolver first validates the
+        // target scene. A separate app-owned callback remounts it without
+        // discarding script variables, visits or script continuation state.
+        clearHeld();
+        if (typeof options.onTransfer === "function") {
+          options.onTransfer({ scene: response.scene, scriptSession, innState: inn,
+            fromBoardPath: response.fromBoardPath,
+            arrivalFeedback: "Send() arrived at " + response.toBoardPath +
+              " · (" + response.spawn.x + ", " + response.spawn.y +
+              ", layer " + response.spawn.layer + ")." });
+          return;
+        }
+        // A standalone renderer is not allowed to silently claim a swap.
+        scriptSession = { ...scriptSession, execution: null, diagnostic: {
+          text: stepped.transfer.path + ":" + stepped.transfer.line +
+            ": Send(): browser scene-transfer callback is unavailable." } };
+      }
       interactionFeedback = response.status === "completed" ?
         "Source RPGCode program finished. Variables persist until Reset." : "";
       if (response.status === "waiting" || response.status === "completed" ||
