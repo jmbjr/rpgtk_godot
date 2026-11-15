@@ -39,6 +39,7 @@ jobs:
           node --check placed-sprites.mjs
           node --check vector-collision.mjs
           node --check experiments/movement-sandbox/authored-play.mjs
+          node --check experiments/movement-sandbox/playtest-guidance.mjs
           node --check experiments/movement-sandbox/world.mjs
           node --check experiments/movement-sandbox/engine.mjs
           node --check experiments/movement-sandbox/inn-dialogue.mjs
@@ -96,6 +97,7 @@ jobs:
           node scripts/check-vector-collision.mjs
           node scripts/check-bstw-title.mjs
           node scripts/check-tk3-script-slice.mjs
+          node scripts/check-playtest-guidance.mjs
           node scripts/check-movement-sandbox.mjs
           node scripts/check-inn-dialogue.mjs
           node scripts/check-inspector-history.mjs
@@ -109,7 +111,7 @@ jobs:
           cp native-board-tail.mjs script-trace.mjs save-state.mjs pe-inspect.mjs plugin-audit.mjs playability-audit.mjs playable-scene.mjs placed-sprites.mjs vector-collision.mjs bstw-title.mjs tk3-script-slice.mjs tk3-board-transfer.mjs site/
           mkdir -p site/experiments/movement-sandbox
           cp sandbox.html site/
-          cp experiments/movement-sandbox/{world,engine,inn-dialogue,imported-inn,sandbox,authored-play}.mjs experiments/movement-sandbox/sandbox.css site/experiments/movement-sandbox/
+          cp experiments/movement-sandbox/{world,engine,inn-dialogue,imported-inn,playtest-guidance,sandbox,authored-play}.mjs experiments/movement-sandbox/sandbox.css site/experiments/movement-sandbox/
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
           cp -R vendor/soundfont vendor/generaluser-gs vendor/piano-roll vendor/jspdf site/vendor/
           cp --parents experiments/dodge-tiles/{project,card-scene}.mjs site/
