@@ -2447,7 +2447,27 @@ function closeBstwTitle() {
   if (!activePlayable) byId("workspace").hidden = !archive;
 }
 
-// Both direct Play and title New use this exact launcher. Every mount
+// Transfer remounts the already-resolved destination, retaining only the
+// explicit per-session state. Initial Play / title New still start fresh.
+function remountTransferredBoard(request) {
+  const panel = byId("play-stage");
+  try {
+    const replacement = mountAuthoredBoard(panel, request.scene, artifacts,
+      references, { scriptSession: request.scriptSession,
+        innState: request.innState, arrivalFeedback: request.arrivalFeedback,
+        onTransfer: remountTransferredBoard });
+    activePlayable?.destroy();
+    activePlayable = replacement;
+    byId("play-error").hidden = true;
+  } catch (error) {
+    // The transfer already passed pure validation; unexpected browser
+    // rendering failure should not destroy the working previous mount.
+    status("play-error", "Cannot render transferred board: " + error.message, true);
+    byId("play-error").hidden = false;
+  }
+}
+
+// Both direct Play and title New use this exact launcher. Every fresh mount
 // allocates fresh movement, inn dialogue, clues, visits and cooldown.
 function launchPlayableScene() {
   if (!playableScene?.ok) return false;
@@ -2457,7 +2477,8 @@ function launchPlayableScene() {
   try {
     panel.hidden = false;
     byId("workspace").hidden = true;
-    activePlayable = mountAuthoredBoard(panel, playableScene, artifacts, references);
+    activePlayable = mountAuthoredBoard(panel, playableScene, artifacts,
+      references, { onTransfer: remountTransferredBoard });
     byId("play-error").hidden = true;
     panel.scrollIntoView({ behavior: "instant", block: "start" });
     panel.focus({ preventScroll: true });
