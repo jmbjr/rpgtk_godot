@@ -247,3 +247,48 @@ original first/repeat behavior.
 reference resolution, both scenes, Send continuation, endings and
 missing/invalid destinations. This does not establish browser/Android
 or original Toolkit editor manual acceptance.
+
+## Playtest visibility overlay (Script Lab and imported boards)
+
+The source-owned synthetic GAM/BRD/TEM/TST fixtures contain diagnostic
+pixels rather than polished game art. On a desktop, scaling a 3×2
+(96×64 pixel) board previously made the character almost invisible
+while enlarging and clipping the canvas TALK label.
+
+The play view now provides **Show readable playtest markers**, checked
+by default. These HTML/CSS markers are independent of original
+artwork, scene mapping, hitboxes and script execution. The gold
+**YOU** label follows the source character and cyan **TALK**
+labels identify *only resolved same-layer ITM→PRG placements*, named
+from the archive. Text stays at a readable screen size instead of
+scaling with the source pixel canvas. Right/bottom map positions
+anchor their labels left/above to avoid clipping. Compact boards
+are capped at 640 CSS pixels wide on desktop, but remain responsive
+on Android.
+
+A live hint before the canvas names the nearest eligible object,
+its Euclidean source-pixel distance, a simple left/right/up/down
+direction and whether the player is inside the existing inclusive
+46px Talk range. Direction hints are **not pathfinding** and do
+not imply the target is reachable past a wall. Original animation,
+tile shading, sprite placements, native collision, input movement,
+dialogue, variables and Send() are unchanged. Turn the overlay
+off to inspect source artwork by itself. Verbose collision
+diagnostics are accessible in an expandable section so Talk
+remains close to the board.
+
+**Desktop/Android manual acceptance:** upload the Harbor or Grove
+ZIP → Play opening board → confirm **Mira/Orio · YOU** is
+unmistakable, **Dock Bell/Old Oak Idol · TALK** stays legible at
+the board edge, follow the directional hint into Talk range,
+finish the first and repeat dialogue. For Harbor, confirm the
+second-board **Beacon Stone · TALK** and successful ending.
+Toggle playtest markers off and back on: source art and game
+behavior must remain unchanged.
+
+[Playtest-guidance test](../../scripts/check-playtest-guidance.mjs)
+opens both source-owned native ZIP fixtures through the actual
+archive/graph/scene pipeline and checks display data, marker
+anchoring, layer/item eligibility and range hints. CI also
+verifies Pages ESM staging, but does **not** replace manual
+visual acceptance on desktop/Android.
