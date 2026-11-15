@@ -85,8 +85,19 @@ for (const spec of scriptFixtureSpecs) {
   assert.equal(selectTk3ScriptTarget(scene, { x: NaN, y: 0, layer: 1 }), null);
   const start = initialMovementState(scene.world);
   assert.notDeepEqual([start.x, start.y], [actor.x, actor.y]);
-  const east = stepMovement(start, { x: 1, y: 0 }, 0.016, scene.world);
-  assert.ok(east.x >= start.x);
+  assert.equal(selectTk3ScriptTarget(scene,
+    { ...start, layer: scene.start.layer }), null,
+    "The player must approach the archive's placed object from spawn");
+  let walked = start;
+  for (let i = 0; i < 90 && !selectTk3ScriptTarget(scene,
+    { ...walked, layer: scene.start.layer }); i++) {
+    const vector = { x: Math.sign(actor.x - walked.x),
+      y: Math.sign(actor.y - walked.y) };
+    walked = stepMovement(walked, vector, 1 / 60, scene.world);
+  }
+  assert.equal(selectTk3ScriptTarget(scene,
+    { ...walked, layer: scene.start.layer })?.slot, target.slot,
+    "The existing browser stepper can walk to within Talk range");
   assert.equal(initialInnState().clues, 0);
 
   let state = initialTk3ScriptState();
