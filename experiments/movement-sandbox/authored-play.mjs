@@ -9,6 +9,7 @@ import { nearAuthoredInn, activateAuthoredInn } from "./imported-inn.mjs";
 import { initialTk3ScriptState, selectTk3ScriptTarget, startPlacedTk3Script,
   advanceTk3Script } from "../../tk3-script-slice.mjs";
 import { resolveTk3BoardTransfer } from "../../tk3-board-transfer.mjs";
+import { describePlayableTargets } from "./playtest-guidance.mjs";
 
 // Reuse the sandbox movement engine and keyboard/touch input. Only the
 // explicit source-verified RPGCode subset or existing inn adapter may run;
@@ -42,6 +43,13 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   const status = section.querySelector("#play-status");
   const collisionLabel = section.querySelector("#play-collision");
   const vectorOverlay = section.querySelector("#play-vector-overlay");
+  const markerToggle = section.querySelector("#play-markers-enabled");
+  const markerLayer = section.querySelector("#play-map-markers");
+  const mapFrame = section.querySelector("#play-map-frame");
+  const targetHint = section.querySelector("#play-target-hint");
+  // Source-owned 3×2 test boards should not be magnified to desktop width.
+  mapFrame.classList.toggle("play-map-frame--compact",
+    scene.board.width <= 5 && scene.board.height <= 5);
   const collision = scene.world.vectorCollision;
   const solidCount = collision?.solids?.length ?? 0;
   const ignoredCount = collision?.ignored?.length ?? 0;
@@ -176,6 +184,45 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   let scriptSession = options.scriptSession ?? initialTk3ScriptState();
   let interactionFeedback = options.arrivalFeedback ?? "";
   const actorAtLayer = () => ({ ...actor, layer: scene.start.layer });
+
+  // Separate DOM labels remain a readable size even when a tiny source
+  // canvas is pixel-scaled 5–10×. They do not touch art or interaction.
+  const makeMarker = (kind, label) => {
+    const marker = document.createElement("div");
+    marker.className = "play-map-marker play-map-marker--" + kind;
+    const caption = document.createElement("span");
+    caption.className = "play-map-marker__label";
+    caption.textContent = label;
+    marker.append(caption);
+    markerLayer.append(marker);
+    return marker;
+  };
+  const locateMarker = (element, item) => {
+    element.style.left = item.xPct + "%";
+    element.style.top = item.yPct + "%";
+    element.classList.toggle("label-left", item.labelLeft);
+    element.classList.toggle("label-above", item.labelAbove);
+  };
+  const initialGuidance = describePlayableTargets(scene, actorAtLayer());
+  markerLayer.replaceChildren();
+  const playerMarker = makeMarker("player", initialGuidance.player.label);
+  const targetMarkers = new Map(initialGuidance.targets.map(target =>
+    [target.slot, makeMarker("target", target.label + " · TALK")]));
+  const updatePlaytestMarkers = () => {
+    const guide = describePlayableTargets(scene, actorAtLayer());
+    locateMarker(playerMarker, guide.player);
+    for (const target of guide.targets) {
+      const marker = targetMarkers.get(target.slot);
+      if (!marker) continue;
+      locateMarker(marker, target);
+      marker.classList.toggle("is-near", target.inRange);
+    }
+    const talking = Boolean(inn.conversation || scriptSession.execution?.waiting);
+    const instruction = talking ?
+      "Conversation active: use Next / Finish, E or Space." : guide.hint;
+    if (targetHint.textContent !== instruction) targetHint.textContent = instruction;
+    markerLayer.hidden = !markerToggle.checked;
+  };
   let walkMs = 0;
   let priorFacing = actor.facing;
   let lastFrame = null;
@@ -233,27 +280,11 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
         }
       }
     }
-    // Source-backed generic PRG placements are marked independently of
-    // the BSTW inn adapter. Markers do not claim native vector hitboxes.
-    for (const placement of placed) {
-      if (placement.isInnDoor || placement.programStatus !== "resolved" ||
-          placement.positionStatus !== "valid") continue;
-      const { x, y, layer } = placement.position;
-      const near = selectTk3ScriptTarget(scene, actorAtLayer())?.slot === placement.slot;
-      ctx.save();
-      ctx.strokeStyle = near ? "#8bffdf" : "#6fd6ce";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(x, y, 8, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = "#ddfff8";
-      ctx.font = "bold 10px monospace";
-      ctx.fillText("TALK", x + 10, y - 6);
-      ctx.restore();
-    }
+    // Readable HTML markers now display source-resolved object locations;
+    // tiny boards no longer magnify a 10px canvas label into giant text.
     // Inn locator is diagnostic only; draw above all board layers so a
     // door under roofs stays discoverable even when its artwork is missing.
-    if (scene.innDoor) {
+    if (scene.innDoor && !markerToggle.checked) {
       const p = scene.innDoor.position;
       const near = nearAuthoredInn(actorAtLayer(), scene);
       ctx.save();
@@ -292,6 +323,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     }
   };
   const updateStatus = () => {
+    updatePlaytestMarkers();
     status.textContent = scene.characterName + " · (" + Math.round(actor.x) +
       ", " + Math.round(actor.y) + ", layer " + scene.start.layer + ") · " +
       actor.facing + (actor.moving ? " · walking" : " · standing") +
@@ -478,6 +510,10 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   }
   talkButton.addEventListener("click", interact, { signal: listeners.signal });
   vectorOverlay.addEventListener("change", draw, { signal: listeners.signal });
+  markerToggle.addEventListener("change", () => {
+    updatePlaytestMarkers();
+    draw();
+  }, { signal: listeners.signal });
   const reset = section.querySelector("#play-reset");
   reset.addEventListener("click", () => {
     clearHeld();
