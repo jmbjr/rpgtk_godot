@@ -287,5 +287,5 @@ for (const symbol of ["startPlacedTk3Script", "advanceTk3Script",
 assert.match(browser, /inn\.conversation \|\| scriptSession\.execution\?\.waiting/);
 assert.match(workflow, /node scripts\/check-tk3-script-slice\.mjs/);
 assert.match(workflow, /node scripts\/build-tk3-script-fixtures\.mjs site/);
-assert.match(workflow, /tk3-script-slice\.mjs site\//);
+assert.match(workflow, /tk3-script-slice\.mjs tk3-board-transfer\.mjs site\//);
 console.log("Toolkit 3 source-backed message subset and both full production archive fixtures passed.");
