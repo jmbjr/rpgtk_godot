@@ -9,7 +9,7 @@ const HEADINGS = ["South", "North", "East", "West"];
 const decoded = (asset, type) =>
   asset?.type === type && asset.decodeStatus === "decoded" && !asset.error;
 
-export function buildPlayableScene(artifacts, graph, selectedMain = null) {
+export function buildPlayableScene(artifacts, graph, selectedMain = null, options = {}) {
   const issues = [];
   const fail = (code, detail) => issues.push({ code, detail });
   const mains = [...artifacts.values()].filter(a => decoded(a, "gam"));
@@ -30,7 +30,13 @@ export function buildPlayableScene(artifacts, graph, selectedMain = null) {
     }
     return asset;
   };
-  const board = linked("Opening board", "brd");
+  // The ordinary first launch uses GAM bindings exactly as before. Only a
+  // validated Send() caller may override the active board and source-pixel
+  // spawn; character/art resolver stays unchanged.
+  const board = options.boardPath ?
+    artifacts.get(options.boardPath) : linked("Opening board", "brd");
+  if (options.boardPath && !decoded(board, "brd"))
+    fail("missing-brd", "Destination board is missing or unsupported.");
   const character = linked("Initial character", "tem");
   if (!board || !character) return { ok: false, issues };
 
@@ -41,7 +47,7 @@ export function buildPlayableScene(artifacts, graph, selectedMain = null) {
       board.layers < 1 || board.layers > 8) {
     fail("unsupported-board", "Only native BRD 2.4 orthogonal pixel boards (code 4, up to 64×64×8) are playable.");
   }
-  const start = board.start;
+  const start = options.start ?? board.start;
   if (!start || !Number.isFinite(start.x) || !Number.isFinite(start.y) ||
       !Number.isInteger(start.layer) || start.layer < 1 ||
       start.layer > board.layers || start.x < ACTOR_RADIUS ||
