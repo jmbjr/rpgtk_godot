@@ -255,6 +255,45 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 .play-pad-row > span { color: #e9d7b5; font-size: .9rem; }
 .play-pad-row .sandbox-dpad { margin: .3rem auto; }
 .play-canvas { aspect-ratio: 4 / 3; max-width: 100%; }
+.play-target-hint { margin: .55rem 0 .4rem; font-size: 1rem; font-weight: 700;
+  color: #f8e9cd; line-height: 1.5; }
+.play-marker-toggle { display: flex; align-items: center; gap: .45rem;
+  margin: .3rem 0 .7rem; cursor: pointer; }
+.play-marker-toggle input { accent-color: #ffce6a; width: 1.1rem; height: 1.1rem; }
+.play-map-frame { position: relative; width: 100%; max-width: 920px; }
+.play-map-frame--compact { max-width: 640px; }
+.play-map-frame .play-canvas { width: 100%; height: auto; display: block; }
+.play-map-markers { position: absolute; inset: 0; pointer-events: none;
+  overflow: hidden; }
+.play-map-markers[hidden] { display: none; }
+.play-map-marker { position: absolute; box-sizing: border-box;
+  width: 20px; height: 20px; border: 3px solid #fff;
+  border-radius: 50%; transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 3px #10151d, 0 0 11px rgba(0,0,0,.85); }
+.play-map-marker--player { z-index: 3; background: #ffad31; border-color: #fff8d7; }
+.play-map-marker--target { z-index: 2; background: #12cfb2; border-color: #f0fff9; }
+.play-map-marker--target.is-near { background: #ffe17c; }
+.play-map-marker__label { position: absolute; left: calc(100% + 7px);
+  top: calc(100% + 2px); white-space: nowrap;
+  max-width: min(12rem, 46vw); padding: .25rem .4rem;
+  font: 700 .82rem/1.25 system-ui, sans-serif; overflow-wrap: anywhere;
+  white-space: normal; border-radius: 4px;
+  color: #fffdf6; background: #101924; border: 1px solid #c8d2dc;
+  box-shadow: 0 2px 8px rgba(0,0,0,.65); text-shadow: none; }
+.play-map-marker--player .play-map-marker__label {
+  color: #fff8dc; border-color: #ffce69; }
+.play-map-marker--target .play-map-marker__label { border-color: #75eed9; }
+.play-map-marker--target.is-near .play-map-marker__label { border-color: #ffe17c; }
+.play-map-marker.label-left .play-map-marker__label {
+  left: auto; right: calc(100% + 7px); }
+.play-map-marker.label-above .play-map-marker__label {
+  top: auto; bottom: calc(100% + 2px); }
+.play-diagnostics { margin: .45rem 0 .7rem; }
+.play-diagnostics > summary { cursor: pointer; color: #d7c6ac;
+  font-size: .82rem; }
+@media (max-width: 680px) {
+  .play-map-marker__label { font-size: .72rem; max-width: 38vw; }
+}
 @media (max-width: 680px) {
   .play-panel { padding: .55rem; }
   .play-panel .sandbox-panel-heading { gap: .3rem; margin-bottom: .35rem; }
