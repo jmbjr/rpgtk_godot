@@ -18,6 +18,15 @@ const specs = Object.freeze([
     variable: "bell_seen",
     first: "Mira: The harbor bell has rung for the first time.",
     repeat: "Mira: The harbor bell remembers your visit.",
+    secondBoard: {
+      board: "beacon.brd", script: "beacon_ending.prg",
+      item: "beaconstone.itm", itemName: "Beacon Stone",
+      position: { x: 78, y: 45, layer: 1 },
+      spawn: { x: 19, y: 27, layer: 1 },
+      good: "Mira: The beacon answers the bell. The harbor is saved. THE END.",
+      bad: "Mira: The beacon is silent. Find the bell first.",
+      afterSend: "harbor_arrived",
+    },
   }),
   Object.freeze({
     id: "grove", root: "GroveLab", main: "GroveLab.gam",
@@ -70,6 +79,12 @@ export function sourceForScriptFixture(spec) {
     "  wait()",
     "  mwinCls()",
     "  " + spec.variable + " = 1",
+    ...(spec.secondBoard ? [
+      "  Send(" + JSON.stringify(spec.secondBoard.board) + ", " +
+        spec.secondBoard.spawn.x + ", " + spec.secondBoard.spawn.y + ", " +
+        spec.secondBoard.spawn.layer + ")",
+      "  " + spec.secondBoard.afterSend + " = 1",
+    ] : []),
     "}",
     "else",
     "{",
@@ -113,6 +128,38 @@ export async function buildScriptFixtureZip(spec) {
   zip.file(r + "/Item/" + spec.item, itm);
   zip.file(r + "/Prg/" + spec.startup, "// Synthetic startup; not executed by direct board launch.\n");
   zip.file(r + "/Prg/" + spec.script, sourceForScriptFixture(spec));
+  if (spec.secondBoard) {
+    const next = spec.secondBoard;
+    const destinationFields = [next.item, next.script, "", "", "", "", "", "", ""]
+      .join("\0") + "\0";
+    const secondNamed = replaceOnce(board24Fixtures.standard,
+      "jim.itm\0\0trigger\00\0endTrigger\0done\0loading\0pending\0",
+      destinationFields);
+    // Make the second board visually distinct as well as independently named.
+    const secondTiles = replaceOnce(secondNamed,
+      "two-tiles.tst1\0", "test-characters.tst5\0");
+    zip.file(r + "/Boards/" + next.board,
+      alterPosition(secondTiles, next.position));
+    zip.file(r + "/Item/" + next.item, changeSource(
+      nativeItem27({ emptyGraphics: true }),
+      [["Synthetic Amulet", next.itemName]]));
+    zip.file(r + "/Prg/" + next.script, [
+      "// Archive-authored two-board ending, not a browser condition.",
+      "if (" + spec.variable + " == 1)",
+      "{",
+      "  mwin(" + JSON.stringify(next.good) + ")",
+      "  wait()",
+      "  mwinCls()",
+      "}",
+      "else",
+      "{",
+      "  mwin(" + JSON.stringify(next.bad) + ")",
+      "  wait()",
+      "  mwinCls()",
+      "}",
+      "",
+    ].join("\n"));
+  }
   // Different scripts may reference the same shared synthetic animation
   // filenames, but only within each independent archive namespace.
   for (const [file, bytes] of nativeAnims)
