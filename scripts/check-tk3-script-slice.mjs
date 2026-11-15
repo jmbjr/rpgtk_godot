@@ -115,14 +115,18 @@ for (const spec of scriptFixtureSpecs) {
   assert.deepEqual(reset.variables, {});
   assert.equal(startPlacedTk3Script(reset, scene, actor, artifacts).state.message, spec.first);
 
-  const invalidArtifacts = new Map(artifacts);
-  const original = artifacts.get(target.programPath);
-  invalidArtifacts.set(target.programPath, {
-    ...original, program: { ...original.program,
-      rows: [{ line: 'mwin("Before")' }, { line: "wait()" },
-        { line: 'Send("unknown.brd",1,1)' }] },
-  });
-  const rejected = startPlacedTk3Script(initialTk3ScriptState(), scene, actor, invalidArtifacts);
+  // Negative acceptance is also sourced from ZIP bytes: no test-only
+  // modification of an already-decoded PRG record.
+  const invalidZip = await buildScriptFixtureZip(spec);
+  invalidZip.file(target.programPath,
+    ['mwin("Before")', "wait()", 'Send("unknown.brd",1,1)'].join("\n"));
+  const invalidBytes = await invalidZip.generateAsync({ type: "uint8array" });
+  const invalidArchive = await openGameArchive(invalidBytes, raw => JSZip.loadAsync(raw));
+  const invalidArtifacts = (await readArtifacts(invalidArchive, {})).artifacts;
+  const invalidScene = buildPlayableScene(invalidArtifacts, buildReferences(invalidArtifacts));
+  assert.equal(invalidScene.ok, true);
+  const rejected = startPlacedTk3Script(initialTk3ScriptState(),
+    invalidScene, actor, invalidArtifacts);
   assert.equal(rejected.status, "error");
   assert.equal(rejected.state.diagnostic.path, target.programPath);
   assert.equal(rejected.state.diagnostic.line, 3);
