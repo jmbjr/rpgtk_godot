@@ -132,9 +132,10 @@ export async function buildScriptFixtureZip(spec) {
     const next = spec.secondBoard;
     const destinationFields = [next.item, next.script, "", "", "", "", "", "", ""]
       .join("\0") + "\0";
+    const oldFields = ["jim.itm", "", "", "trigger", "0",
+      "endTrigger", "done", "loading", "pending"].join("\0") + "\0";
     const secondNamed = replaceOnce(board24Fixtures.standard,
-      "jim.itm\0\0trigger\00\0endTrigger\0done\0loading\0pending\0",
-      destinationFields);
+      oldFields, destinationFields);
     // Make the second board visually distinct as well as independently named.
     const secondTiles = replaceOnce(secondNamed,
       "two-tiles.tst1\0", "test-characters.tst5\0");
