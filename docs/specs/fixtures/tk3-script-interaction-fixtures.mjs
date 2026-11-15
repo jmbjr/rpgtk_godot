@@ -53,7 +53,7 @@ function i16(...values) {
 }
 function alterPosition(bytes, position) {
   const original = i16(1, 1, 38, 52, 1, -1);
-  const wanted = i16(1, 1, position.x, position.y, position.layer, -1);
+  const wanted = i16(0, 1, position.x, position.y, position.layer, -1);
   const source = Buffer.from(bytes);
   const index = source.indexOf(original);
   if (index < 0 || source.indexOf(original, index + original.length) !== -1)
@@ -96,7 +96,13 @@ export async function buildScriptFixtureZip(spec) {
   // source references, then edit only its stored position.
   const withActivation = replaceOnce(board24Fixtures.standard,
     "jim.itm\0\0", spec.item + "\0" + spec.script + "\0");
-  const brd = alterPosition(withActivation, spec.position);
+  // The common BRD conformance fixture uses activation/loading conditions
+  // intended for decoding diagnostics, not a runnable object. Strip those
+  // on this synthetic object and select unconditional key-press activation.
+  const active = replaceOnce(withActivation,
+    spec.item + "\0" + spec.script + "\0\0trigger\00\0endTrigger\0done\0loading\0pending\0",
+    spec.item + "\0" + spec.script + "\0" + "\0".repeat(7));
+  const brd = alterPosition(active, spec.position);
   const itm = changeSource(nativeItem27({ emptyGraphics: true }),
     [["Synthetic Amulet", spec.itemName]]);
   zip.file(spec.main, gam);
