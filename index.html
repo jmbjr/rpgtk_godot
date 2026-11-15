@@ -48,13 +48,32 @@
         <dl id="bindings" class="bindings" hidden></dl>
         <div id="main-data"></div>
         <div id="play-launch" class="play-launch" hidden>
-          <button type="button" id="play-bstw" disabled>Play opening board</button>
+          <button type="button" id="open-bstw-title" disabled>Open BSTW title</button>
+          <span id="bstw-title-eligibility" class="technical" role="status"></span>
+          <button type="button" id="play-bstw" disabled>Play opening board (direct)</button>
           <span id="play-eligibility" class="technical" role="status"></span>
         </div>
         <div class="sprite-controls">
           <button type="button" id="export-game-json" disabled>Download connected game JSON</button>
           <span id="game-export-status" class="technical" role="status"></span>
         </div>
+      </section>
+
+      <section id="bstw-title-stage" class="panel bstw-title-panel" aria-labelledby="bstw-title-heading" hidden tabindex="-1">
+        <div class="sandbox-panel-heading">
+          <h2 id="bstw-title-heading">Bruce Saves the World! · Title</h2>
+          <button type="button" id="bstw-title-back">Back to Game Explorer</button>
+        </div>
+        <p class="technical">A source-backed snapshot of BSTW's original title slideshow, not a running RPGCode menu. Only New is implemented.</p>
+        <div class="bstw-title-image-frame">
+          <img id="bstw-title-image" alt="Original BSTW title slideshow image from the uploaded ZIP" width="640" height="480" hidden>
+          <p id="bstw-title-fallback" class="bstw-title-fallback">Bruce Saves the World! The authored title artwork could not be displayed.</p>
+        </div>
+        <p id="bstw-title-art-status" class="technical" role="status">Artwork status will appear here.</p>
+        <div class="bstw-title-actions">
+          <button type="button" id="bstw-title-new" disabled>New</button>
+        </div>
+        <p id="bstw-title-status" class="technical" role="status">The New action opens a fresh supported board session.</p>
       </section>
 
       <section id="play-stage" class="panel play-panel" aria-labelledby="play-heading" hidden tabindex="-1">
