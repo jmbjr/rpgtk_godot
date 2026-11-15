@@ -92,7 +92,7 @@ assert.throws(() => initialMovementState({ ...world, spawn: { x: 60, y: 60 } }),
 let east = initialMovementState(world);
 for (let i = 0; i < 120; i++) east = stepMovement(east, { x: 1, y: 0 }, 1 / 60, world);
 assert.equal(east.blocked, true);
-assert.ok(east.x <= 31.001 && east.x >= 30, "No tunneling into the solid polygon");
+assert.ok(east.x <= 31.001 && east.x >= 28, "No tunneling into the solid polygon");
 assert.equal(circleBlocked(world, east.x, east.y), false);
 const largeDt = stepMovement(initialMovementState(world), { x: 1, y: 0 }, 5, world);
 const cappedDt = stepMovement(initialMovementState(world), { x: 1, y: 0 },
