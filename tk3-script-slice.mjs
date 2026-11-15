@@ -82,10 +82,17 @@ export function compileTk3Interaction(source, path) {
       const message = s.match(/^mwin\s*\(\s*("[^"]*")\s*\)$/i);
       const wait = /^wait\s*\(\s*\)$/i.test(s);
       const clear = /^mwincls\s*\(\s*\)$/i.test(s);
+      const send = s.match(/^send\s*\(\s*("[^"]*")\s*,\s*([^,()]+)\s*,\s*([^,()]+)\s*(?:,\s*([^,()]+)\s*)?\)$/i);
       const assignment = s.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/);
       if (message) nodes.push({ op: "mwin", value: expression(message[1], path, row.line), line: row.line });
       else if (wait) nodes.push({ op: "wait", line: row.line });
       else if (clear) nodes.push({ op: "clear", line: row.line });
+      else if (send) nodes.push({ op: "send",
+        file: expression(send[1], path, row.line),
+        x: expression(send[2], path, row.line),
+        y: expression(send[3], path, row.line),
+        layer: send[4] ? expression(send[4], path, row.line) :
+          { kind: "number", value: 1 }, line: row.line });
       else if (assignment) nodes.push({ op: "assign", name: assignment[1].toLowerCase(),
         value: expression(assignment[2], path, row.line), line: row.line });
       else fail(row, "Unsupported RPGCode statement: " + s);
@@ -155,7 +162,17 @@ function run(state) {
       if (!(typeof a === "number" && typeof b === "number" ?
         a === b : String(a) === String(b))) exec.pc = node.jump;
     } else if (node.op === "jump") exec.pc = node.jump;
-    else if (node.op === "wait") {
+    else if (node.op === "send") {
+      // The native Send() changes the active board synchronously but does
+      // not call CProgram::end(). Yield a transfer request to the caller
+      // and resume the same program counter on successful scene swap.
+      return { status: "transfer", state: { ...state, variables: vars,
+        message, execution: exec, diagnostic: null }, transfer: {
+        path: exec.path, line: node.line, file: evaluate(node.file, vars),
+        x: evaluate(node.x, vars), y: evaluate(node.y, vars),
+        layer: evaluate(node.layer, vars),
+      } };
+    } else if (node.op === "wait") {
       exec.waiting = true;
       return { status: "waiting", state: { ...state, variables: vars,
         message, execution: exec, diagnostic: null }, line: node.line };
@@ -183,6 +200,22 @@ export function startTk3Script(state, source, path) {
 export function advanceTk3Script(state) {
   if (!state.execution?.waiting) return { status: "inactive", state };
   return run({ ...state, execution: { ...state.execution, waiting: false } });
+}
+
+// Resume only after the outer scene owner has validated and committed Send.
+// The script continues at the statement *after* Send, on the new board.
+export function resumeTk3Transfer(state) {
+  if (!state.execution || state.execution.waiting) return { status: "inactive", state };
+  return run(state);
+}
+
+// A failed destination is a script diagnostic, not an aborted board session.
+// Keep all variables already assigned before Send, but discard the program
+// counter so the actor can talk, move and retry from the current board.
+export function rejectTk3Transfer(state, transfer, message) {
+  const diagnostic = issue(transfer.path, transfer.line, message);
+  return { status: "error", state: { ...state, execution: null,
+    message: "", diagnostic } };
 }
 
 // Find the nearest source-resolved, on-layer board item with a PRG.

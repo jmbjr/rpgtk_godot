@@ -74,8 +74,8 @@ unfamiliar behavior. Limits: 300 source lines, 8 brace levels,
 not an assertion of full Toolkit coercion/string/window behavior.
 
 **Unsupported:** arrays, `++`, `>`, nested calls in expressions,
-user methods/objects, `#include`, `send`, generic function calls,
-plugins, sound/graphics/portraits, board transitions, saves,
+user methods/objects, `#include`, generic function calls,
+plugins, sound/graphics/portraits, arbitrary board transitions, saves,
 native RPGCode error recovery and any external file execution.
 
 ## Source-driven activation versus native Toolkit activation
@@ -171,3 +171,79 @@ was inspected read-only from the owner ZIP (SHA-256
 The previously merged BSTW inn adapter continues to cover
 its source-derived first/repeat dialogue and 500ms cooldown,
 **without** claiming to execute this original script.
+
+## Follow-up: source-verified Send() and two-board Harbor ending (#92)
+
+Pinned Toolkit 3.1 source:
+[revision 9191b919](https://github.com/chrisbmatthews/rpgtoolkit/tree/9191b9191c9bda0998c6faae16929b3331ed2ead).
+
+- [functions.cpp lines 481–519](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/rpgcode/functions.cpp#L481-L519):
+  `Send("filename.brd", x, y, [layer=1])` first opens a board from
+  the game's Boards folder, casts x/y to integers, calls
+  `coords::tileToPixel` with the **destination** board coordinate
+  type, and sets the player's position and layer.
+- [coords.cpp lines 42–73](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/tkCommon/board/coords.cpp#L42-L73):
+  absolute pixel coordinate type 4 leaves x/y unchanged. Ordinary
+  orthogonal tile type 0 converts one-based tiles and adds a base
+  point, which this browser slice does **not** implement.
+- [CProgram.cpp lines 1855–1875](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/rpgcode/CProgram.cpp#L1855-L1875):
+  the program continues its instruction loop after a valid `Send()`;
+  `Send()` does not terminate the current script. Scalar variables
+  retain their values during the board change.
+
+Fixture syntax, authored in the first-board PRG:
+
+    bell_seen = 1
+    Send("beacon.brd", 19, 27, 1)
+    harbor_arrived = 1
+
+The fourth layer argument is optional and defaults to 1. The browser
+accepts one literal `.brd` basename within the current game's
+`Boards/` directory; numeric scalar arguments and supported expressions
+are truncated toward zero like native Send. Only type 4 destination
+BRDs (orthogonal absolute-pixel coordinates) are playable.
+
+**Deliberate browser policy:** unlike Toolkit, which displays a warning
+and substitutes 32 for an out-of-range coordinate, the browser rejects
+out-of-bounds positions, invalid layers, unsupported boards, missing
+or ambiguous target paths, and positions incompatible with the browser
+9px collision circle. It keeps the *old scene* playable, preserves
+variable writes already executed in the script, and displays a
+`path/to/script.prg:<line>: Send(): reason` diagnostic. The pure
+[Send bridge](../../tk3-board-transfer.mjs) reuses
+`resolveAsset` and `buildPlayableScene`. On success, the current
+script's instruction pointer and variables continue in the new scene.
+It does not run destination board-enter scripts, plugins, custom
+objects, saves, or any unsupported RPGCode.
+
+**Harbor Lab now has two source-owned native boards:**
+
+| Stage | Source-authored data |
+| --- | --- |
+| Board A | `HarborLab/Boards/wharf.brd` (Mira at 19,27,L1) |
+| Bell | `dockbell.itm` at (78,45,L1), `bell_greeting.prg` |
+| State | The first conversation sets `bell_seen = 1` |
+| Transfer | `Send("beacon.brd",19,27,1)` in the same PRG |
+| Continued script | `harbor_arrived = 1` runs *after* Send |
+| Board B | `HarborLab/Boards/beacon.brd`, distinct tile choice |
+| Beacon object | `beaconstone.itm` at (78,45,L1), `beacon_ending.prg` |
+| Ending | `if (bell_seen == 1)` shows victory; otherwise a different message |
+
+The **Grove Lab ZIP is unchanged**, remaining a one-board
+first/repeat story. All game assets and scripts are synthetic and
+source-owned.
+
+**Desktop/Android manual path:** download `tk3-script-harbor.zip`
+from Game Explorer → upload → Play opening board (direct) → approach
+the bell's teal TALK marker → Talk, read the first message, Next/Finish
+→ arrive on the distinct beacon board at (19,27,L1) → check both
+`bell_seen = 1` and `harbor_arrived = 1` in the variable panel →
+walk to the beacon's TALK marker → Talk → see the successful ending →
+Next/Finish. Back to file viewer and Play again should start fresh on
+the wharf with no variables. The Grove ZIP should still support its
+original first/repeat behavior.
+
+**Verification boundary:** synthetic CI exercises full ZIP parsing,
+reference resolution, both scenes, Send continuation, endings and
+missing/invalid destinations. This does not establish browser/Android
+or original Toolkit editor manual acceptance.
