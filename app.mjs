@@ -7,6 +7,7 @@ import { assessPlayability } from "./playability-audit.mjs";
 import { buildPlayableScene } from "./playable-scene.mjs";
 import { assessBstwTitle, requestBstwNewSession } from "./bstw-title.mjs";
 import { mountAuthoredBoard } from "./experiments/movement-sandbox/authored-play.mjs";
+import { executeGamStartup } from "./tk3-gam-startup.mjs";
 import { mainFileBindings, readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
 import { defaultMidiTone, playMidi } from "./midi.mjs";
@@ -2467,9 +2468,15 @@ function remountTransferredBoard(request) {
   }
 }
 
-// Both direct Play and title New use this exact launcher. Every fresh mount
-// allocates fresh movement, inn dialogue, clues, visits and cooldown.
+// Direct board launch and the established BSTW title/New flow intentionally
+// skip arbitrary GAM startup execution. Their existing contract is unchanged.
 function launchPlayableScene() {
+  return launchPlayableWithSession();
+}
+
+// The optional GAM startup route seeds the same source-owned interaction
+// session; the board, character, and source references are not special-cased.
+function launchPlayableWithSession(scriptSession = null, startupPath = null) {
   if (!playableScene?.ok) return false;
   closeBstwTitle();
   closePlayable();
@@ -2478,7 +2485,12 @@ function launchPlayableScene() {
     panel.hidden = false;
     byId("workspace").hidden = true;
     activePlayable = mountAuthoredBoard(panel, playableScene, artifacts,
-      references, { onTransfer: remountTransferredBoard });
+      references, { onTransfer: remountTransferredBoard,
+        ...(scriptSession ? { scriptSession,
+          arrivalFeedback: startupPath ?
+            "GAM startup completed: " + startupPath +
+            " · session variables are available to source object programs." :
+            "No GAM startup PRG configured; opening the initial board." } : {}) });
     byId("play-error").hidden = true;
     panel.scrollIntoView({ behavior: "instant", block: "start" });
     panel.focus({ preventScroll: true });
@@ -2558,7 +2570,25 @@ byId("play-close").addEventListener("click", () => {
   byId("play-bstw").focus({ preventScroll: true });
 });
 byId("play-bstw").addEventListener("click", () => {
-  if (!activePlayable) launchPlayableScene();
+  if (!activePlayable) {
+    status("gam-startup-status", "Direct board launch: the GAM startup PRG was bypassed.");
+    launchPlayableScene();
+  }
+});
+byId("play-gam-startup").addEventListener("click", () => {
+  if (activePlayable || !playableScene?.ok) return;
+  const outcome = executeGamStartup(artifacts, playableScene);
+  if (!outcome.ok) {
+    // Compilation and lifecycle gating are atomic: even assignments before
+    // an unsupported command have not been applied to the new session.
+    status("gam-startup-status", "Startup blocked: " +
+      outcome.diagnostic.text + " · Direct board play remains available.", true);
+    return;
+  }
+  status("gam-startup-status", outcome.status === "skipped" ?
+    "The GAM has no startup PRG; opening the initial board." :
+    "Ran source startup: " + outcome.startupPath);
+  launchPlayableWithSession(outcome.scriptSession, outcome.startupPath);
 });
 byId("open-bstw-title").addEventListener("click", showBstwTitle);
 byId("bstw-title-back").addEventListener("click", () => {
@@ -2581,6 +2611,8 @@ async function loadArchive(name, readBytes) {
   playableScene = null;
   bstwTitle = null;
   byId("open-bstw-title").disabled = true;
+  byId("play-gam-startup").disabled = true;
+  status("gam-startup-status", "");
   byId("play-launch").hidden = true;
   status("archive-status", `Opening ${name}…`);
   byId("export-game-json").disabled = true;
@@ -2624,6 +2656,10 @@ async function loadArchive(name, readBytes) {
       " · New " + (bstwTitle.newEnabled ? "ready" : "unavailable") :
       "Title unavailable: " + bstwTitle.detail, !bstwTitle.ok);
     byId("play-bstw").disabled = !playableScene.ok;
+    byId("play-gam-startup").disabled = !playableScene.ok;
+    status("gam-startup-status", playableScene.ok ?
+      "Optional bounded GAM startup path · source PRG must complete synchronously." :
+      "GAM startup unavailable until the opening scene is playable.", !playableScene.ok);
     status("play-eligibility", playableScene.ok ?
       "Ready: " + playableScene.boardPath + " · " + playableScene.characterName +
       " at (" + playableScene.start.x + ", " + playableScene.start.y +
