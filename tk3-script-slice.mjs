@@ -185,15 +185,17 @@ export function advanceTk3Script(state) {
   return run({ ...state, execution: { ...state.execution, waiting: false } });
 }
 
-// Find the nearest source-resolved, on-layer board placement with a PRG.
-// Keep the existing, source-identified locked-inn adapter as an independent
-// baseline; it requires features deliberately outside this tiny interpreter.
+// Find the nearest source-resolved, on-layer board item with a PRG.
+// No game-specific or script-name exclusions belong in this generic selector.
+// The browser may route individual placements to an established adapter
+// before invoking the subset interpreter; this selector does not decide it.
 export function selectTk3ScriptTarget(scene, actor, radius = TK3_INTERACTION_RADIUS) {
   if (!scene?.ok || !Number.isFinite(actor?.x) || !Number.isFinite(actor?.y) ||
       !Number.isInteger(actor.layer)) return null;
   return (scene.placements ?? [])
-    .filter(p => p.positionStatus === "valid" && p.programStatus === "resolved" &&
-      !p.isInnDoor && p.programPath && /\.prg$/i.test(p.programPath) &&
+    .filter(p => p.positionStatus === "valid" &&
+      p.itemStatus === "resolved" && p.programStatus === "resolved" &&
+      p.programPath && /\.prg$/i.test(p.programPath) &&
       p.position?.layer === actor.layer)
     .map(p => ({ placement: p,
       distance: Math.hypot(p.position.x - actor.x, p.position.y - actor.y) }))
