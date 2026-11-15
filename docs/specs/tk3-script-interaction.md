@@ -84,7 +84,7 @@ native RPGCode error recovery and any external file execution.
 The actual production `readArtifacts → buildReferences →
 buildPlayableScene` pipeline supplies the decoded BRD placements,
 ITM and PRG resolutions and script rows. The selector uses the
-**nearest uniquely resolved program placement** within an
+**nearest placed item with a resolved ITM and a uniquely resolved PRG** within an
 inclusive 46 source-pixel Euclidean radius, **same layer**,
 breaking distance ties by stored zero-based slot. Unresolved
 and ambiguous program links are ineligible. It does not
@@ -94,7 +94,13 @@ The 46px range, key binding, line-of-sight omission,
 program activation eligibility (besides reference resolution),
 ignoring native activation polygons, and touch UI are **browser
 policies**, not editor fidelity. Both fixtures deliberately save
-unconditional keypress-style activation records. The established
+unconditional keypress-style activation records. The generic selector itself does **not** inspect game names, script names,
+or the BSTW inn flag. The browser interaction dispatcher retains the
+existing BSTW inn adapter's priority whenever the uniquely resolved
+inn is in range; the generic selector can otherwise handle source-backed
+placements without game-specific checks. A missing ITM is not treated
+as a live script-bearing object even when its BRD program edge resolves.
+The established
 BSTW `mwininn.prg` selection is reserved for its **existing**
 first/repeat clue-and-cooldown adapter, as that script needs
 additional language and helper support. The BSTW title adapter,
