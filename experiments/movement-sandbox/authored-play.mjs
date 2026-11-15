@@ -63,6 +63,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
   if (!ctx) throw Error("The browser cannot create a 2D canvas.");
   canvas.width = scene.board.width * 32;
   canvas.height = scene.board.height * 32;
+  // Tiny synthetic boards have different aspect ratios from BSTW 20×15.
+  canvas.style.aspectRatio = scene.board.width + " / " + scene.board.height;
   ctx.imageSmoothingEnabled = false;
 
   const cache = new Map();
