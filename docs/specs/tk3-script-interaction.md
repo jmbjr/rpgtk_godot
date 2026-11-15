@@ -119,7 +119,7 @@ variable names and dialogue**.
 | Character | Mira / `mira.tem` | Orio / `orio.tem` |
 | Board | `HarborLab/Boards/wharf.brd` | `GroveLab/Boards/meadow.brd` |
 | Item | `dockbell.itm` | `oakidol.itm` |
-| Position | (40,42,L1) | (67,43,L1) |
+| Position | (78,45,L1) | (67,43,L1) |
 | PRG | `HarborLab/Prg/bell_greeting.prg` | `GroveLab/Prg/oak_whisper.prg` |
 | Session variable | `bell_seen` | `oak_visited` |
 | Text | Harbor bell first/repeat | Old oak first/repeat |
