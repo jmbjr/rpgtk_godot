@@ -236,7 +236,7 @@ for (const spec of scriptFixtureSpecs) {
   // modification of an already-decoded PRG record.
   const invalidZip = await buildScriptFixtureZip(spec);
   invalidZip.file(target.programPath,
-    ['mwin("Before")', "wait()", 'Send("unknown.brd",1,1)'].join("\n"));
+    ['mwin("Before")', "wait()", 'Teleport("unknown.brd",1,1)'].join("\n"));
   const invalidBytes = await invalidZip.generateAsync({ type: "uint8array" });
   const invalidArchive = await openGameArchive(invalidBytes, raw => JSZip.loadAsync(raw));
   const invalidArtifacts = (await readArtifacts(invalidArchive, {})).artifacts;
