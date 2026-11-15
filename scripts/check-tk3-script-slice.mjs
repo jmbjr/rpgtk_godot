@@ -40,7 +40,7 @@ assert.equal(pure.state.runs, 1);
 assert.equal(advanceTk3Script(pure.state).status, "inactive");
 
 for (const [source, line] of [
-  [['mwin("First")', "wait()", 'Send("other.brd",5,5)'].join("\n"), 3],
+  [['mwin("First")', "wait()", 'Teleport("other.brd",5,5)'].join("\n"), 3],
   [['mwin("First")', '#include "helpers.prg"'].join("\n"), 2],
   [['mwin("First")', 'myWin->SetTxt("Nope")'].join("\n"), 2],
   [['if (visits > 0)', "{", 'mwin("Invalid")', "}"].join("\n"), 1],
