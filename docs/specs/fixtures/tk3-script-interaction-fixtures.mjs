@@ -14,7 +14,7 @@ const specs = Object.freeze([
     title: "Harbor Message Lab", startup: "harbor_start.prg",
     board: "wharf.brd", character: "mira.tem", characterName: "Mira",
     item: "dockbell.itm", itemName: "Dock Bell", script: "bell_greeting.prg",
-    position: Object.freeze({ x: 40, y: 42, layer: 1 }),
+    position: Object.freeze({ x: 78, y: 45, layer: 1 }),
     variable: "bell_seen",
     first: "Mira: The harbor bell has rung for the first time.",
     repeat: "Mira: The harbor bell remembers your visit.",
