@@ -195,7 +195,8 @@ for (const id of ["play-talk", "play-hud", "play-feedback", "play-dialogue",
   assert.match(html, new RegExp('id="' + id + '"'));
 assert.match(client, /nearAuthoredInn/);
 assert.match(client, /activateAuthoredInn/);
-assert.match(client, /inn\.conversation \? \{ x: 0, y: 0 \}/);
+assert.match(client, /inn\.conversation \|\| scriptSession\.execution\?\.waiting/,
+  "The imported inn and generic script must both freeze walking during dialogue");
 assert.match(client, /if \(!event\.repeat\) interact\(\)/);
 assert.match(client, /event\.code === "KeyE" \|\| event\.code === "Space"/);
 assert.match(client, /talkButton\.addEventListener\("click", interact/);

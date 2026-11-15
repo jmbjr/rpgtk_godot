@@ -33,6 +33,7 @@ jobs:
           node --check plugin-audit.mjs
           node --check playability-audit.mjs
           node --check playable-scene.mjs
+          node --check tk3-script-slice.mjs
           node --check bstw-title.mjs
           node --check placed-sprites.mjs
           node --check vector-collision.mjs
@@ -93,6 +94,7 @@ jobs:
           node scripts/check-imported-inn.mjs
           node scripts/check-vector-collision.mjs
           node scripts/check-bstw-title.mjs
+          node scripts/check-tk3-script-slice.mjs
           node scripts/check-movement-sandbox.mjs
           node scripts/check-inn-dialogue.mjs
           node scripts/check-inspector-history.mjs
@@ -103,13 +105,15 @@ jobs:
         run: |
           mkdir -p site/vendor
           cp .nojekyll index.html style.css app.mjs archive.mjs model.mjs artifacts.mjs asset-format.mjs tile-palette.mjs records.mjs game-graph.mjs inspector-history.mjs connection-map.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs tile-matches.mjs tile-pdf.mjs catalog.json site/
-          cp native-board-tail.mjs script-trace.mjs save-state.mjs pe-inspect.mjs plugin-audit.mjs playability-audit.mjs playable-scene.mjs placed-sprites.mjs vector-collision.mjs bstw-title.mjs site/
+          cp native-board-tail.mjs script-trace.mjs save-state.mjs pe-inspect.mjs plugin-audit.mjs playability-audit.mjs playable-scene.mjs placed-sprites.mjs vector-collision.mjs bstw-title.mjs tk3-script-slice.mjs site/
           mkdir -p site/experiments/movement-sandbox
           cp sandbox.html site/
           cp experiments/movement-sandbox/{world,engine,inn-dialogue,imported-inn,sandbox,authored-play}.mjs experiments/movement-sandbox/sandbox.css site/experiments/movement-sandbox/
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
           cp -R vendor/soundfont vendor/generaluser-gs vendor/piano-roll vendor/jspdf site/vendor/
           cp --parents experiments/dodge-tiles/{project,card-scene}.mjs site/
+      - name: Build portable TK3 RPGCode interaction labs
+        run: node scripts/build-tk3-script-fixtures.mjs site
       - name: Verify published viewer modules
         run: node scripts/check-staged-site.mjs site
       - name: Build and verify Toolkit 2 test games
