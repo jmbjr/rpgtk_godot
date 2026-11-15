@@ -79,6 +79,12 @@ for (const spec of scriptFixtureSpecs) {
   assert.equal(compileTk3Interaction(source, target.programPath).ok, true);
   const actor = { x: target.position.x, y: target.position.y, layer: target.position.layer };
   assert.equal(selectTk3ScriptTarget(scene, actor)?.slot, target.slot);
+  // The pure generic selector must not depend on BSTW's inn classification;
+  // only the browser interaction dispatcher gives that legacy adapter priority.
+  const specialTag = { ...scene, placements: scene.placements.map(p =>
+    p.slot === target.slot ? { ...p, isInnDoor: true } : p) };
+  assert.equal(selectTk3ScriptTarget(specialTag, actor)?.slot, target.slot,
+    "Source-linked generic interactions are independent of game-specific labels");
   assert.equal(selectTk3ScriptTarget(scene, { ...actor, layer: 2 }), null);
   assert.equal(selectTk3ScriptTarget(scene, { ...actor, x: actor.x - 46 })?.slot, target.slot);
   assert.equal(selectTk3ScriptTarget(scene, { ...actor, x: actor.x - 46.1 }), null);
@@ -144,6 +150,25 @@ for (const spec of scriptFixtureSpecs) {
   assert.equal(rejected.state.execution, null);
   assert.equal(startPlacedTk3Script(initialTk3ScriptState(), scene,
     { x: -500, y: -500, layer: 1 }, artifacts).status, "out-of-range");
+
+  // A BRD reference to a PRG alone cannot create an interactable item:
+  // the item itself must load, just as Toolkit's board.items list must
+  // contain a CItem before CSprite::programTest can activate its script.
+  const withoutItem = await buildScriptFixtureZip(spec);
+  withoutItem.remove(spec.root + "/Item/" + spec.item);
+  const withoutItemBytes = await withoutItem.generateAsync({ type: "uint8array" });
+  const withoutItemArchive = await openGameArchive(withoutItemBytes,
+    raw => JSZip.loadAsync(raw));
+  const withoutItemArtifacts = (await readArtifacts(withoutItemArchive, {})).artifacts;
+  const withoutItemScene = buildPlayableScene(withoutItemArtifacts,
+    buildReferences(withoutItemArtifacts));
+  assert.equal(withoutItemScene.ok, true, "Missing optional item must not block scene play");
+  const orphan = withoutItemScene.placements.find(p => p.slot === target.slot);
+  assert.equal(orphan?.itemStatus, "missing");
+  assert.equal(orphan?.programStatus, "resolved");
+  assert.equal(selectTk3ScriptTarget(withoutItemScene, actor), null);
+  assert.equal(startPlacedTk3Script(initialTk3ScriptState(),
+    withoutItemScene, actor, withoutItemArtifacts).status, "out-of-range");
   console.log(spec.id + ": source archive GAM -> BRD -> TEM/ANM/TST -> ITM/PRG; first + repeat, reset and unsupported line passed.");
 }
 
