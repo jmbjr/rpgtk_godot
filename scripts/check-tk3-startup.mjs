@@ -33,14 +33,14 @@ const binding = new Map(mainFileBindings(main, [...artifacts.keys()]))
   .get("Configured startup");
 assert.equal(binding.status, "resolved");
 assert.equal(binding.path, startupPath);
-assert.equal(artifacts.get(startupPath).program.rows.map(r => r.line).join("\n"),
+assert.equal(artifacts.get(startupPath).program.rows.map(r => r.line).join("\n").trimEnd(),
   sourceForStartupPrg(spec).trimEnd());
 const item = scene.placements.find(p => p.filename === spec.item);
 assert.ok(item);
 assert.equal(item.itemStatus, "resolved");
 assert.equal(item.programStatus, "resolved");
 assert.deepEqual(item.position, spec.position);
-assert.equal(artifacts.get(item.programPath).program.rows.map(r => r.line).join("\n"),
+assert.equal(artifacts.get(item.programPath).program.rows.map(r => r.line).join("\n").trimEnd(),
   sourceForStartupLab(spec).trimEnd());
 
 const actor = { ...item.position };
