@@ -6,6 +6,8 @@ import { initialMovementState, stepMovement } from "./engine.mjs";
 import { initialInnState, advanceInn, currentInnMessage, conversationMessages }
   from "./inn-dialogue.mjs";
 import { nearAuthoredInn, activateAuthoredInn } from "./imported-inn.mjs";
+import { initialTk3ScriptState, selectTk3ScriptTarget, startPlacedTk3Script,
+  advanceTk3Script } from "../../tk3-script-slice.mjs";
 
 // Deliberately use the synthetic sandbox's movement engine and WASD / arrow
 // / pointer-held D-pad policy. No board script, item or plugin is executed.
@@ -53,6 +55,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
   const dialogueText = section.querySelector("#play-dialogue-text");
   const dialogueProgress = section.querySelector("#play-dialogue-progress");
   const talkButton = section.querySelector("#play-talk");
+  const scriptVariables = section.querySelector("#play-script-variables");
+  const scriptDiagnostic = section.querySelector("#play-script-diagnostic");
   const pad = [...section.querySelectorAll("[data-move]")];
   const ctx = canvas?.getContext("2d", { alpha: false });
   if (!ctx) throw Error("The browser cannot create a 2D canvas.");
@@ -162,6 +166,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
   let actor = initialMovementState(scene.world);
   // A fresh mount always starts with a fresh, in-memory inn conversation.
   let inn = initialInnState();
+  let scriptSession = initialTk3ScriptState();
   let interactionFeedback = "";
   const actorAtLayer = () => ({ ...actor, layer: scene.start.layer });
   let walkMs = 0;
@@ -221,6 +226,24 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
         }
       }
     }
+    // Source-backed generic PRG placements are marked independently of
+    // the BSTW inn adapter. Markers do not claim native vector hitboxes.
+    for (const placement of placed) {
+      if (placement.isInnDoor || placement.programStatus !== "resolved" ||
+          placement.positionStatus !== "valid") continue;
+      const { x, y, layer } = placement.position;
+      const near = selectTk3ScriptTarget(scene, actorAtLayer())?.slot === placement.slot;
+      ctx.save();
+      ctx.strokeStyle = near ? "#8bffdf" : "#6fd6ce";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = "#ddfff8";
+      ctx.font = "bold 10px monospace";
+      ctx.fillText("TALK", x + 10, y - 6);
+      ctx.restore();
+    }
     // Inn locator is diagnostic only; draw above all board layers so a
     // door under roofs stays discoverable even when its artwork is missing.
     if (scene.innDoor) {
@@ -268,30 +291,45 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
       (actor.blocked ? " · map edge" : "") + " · bounds-only collision";
 
     const current = currentInnMessage(inn);
+    const scriptWaiting = Boolean(scriptSession.execution?.waiting);
     const near = nearAuthoredInn(actorAtLayer(), scene);
+    const genericTarget = selectTk3ScriptTarget(scene, actorAtLayer());
     hud.textContent = "Clues: " + inn.clues + " / " + inn.maxClues +
       " · Inn visits: " + inn.checkedInn;
-    dialoguePanel.hidden = !(current || inn.clueMessage);
+    scriptVariables.textContent = "Script variables (session): " +
+      (Object.entries(scriptSession.variables).map(([name, value]) =>
+        name + " = " + JSON.stringify(value)).join(" · ") || "(none yet)");
+    scriptDiagnostic.textContent = scriptSession.diagnostic?.text || "";
+    scriptDiagnostic.hidden = !scriptSession.diagnostic;
+    dialoguePanel.hidden = !(current || scriptWaiting || inn.clueMessage);
     if (current) {
       dialogueSpeaker.textContent = current.speaker;
       dialogueText.textContent = current.text;
       dialogueProgress.textContent = "Line " + (inn.conversation.index + 1) +
         " / " + conversationMessages(inn.conversation).length;
+    } else if (scriptWaiting) {
+      const running = scriptSession.execution;
+      const waitLine = running.instructions[running.pc - 1]?.line ?? 1;
+      dialogueSpeaker.textContent = scene.characterName + " · archive RPGCode";
+      dialogueText.textContent = scriptSession.message || "(Waiting for input)";
+      dialogueProgress.textContent = running.path + ":" + waitLine;
     } else if (inn.clueMessage) {
       dialogueSpeaker.textContent = "Clue discovered";
       dialogueText.textContent = inn.clueMessage;
       dialogueProgress.textContent = "1 / " + inn.maxClues + " clues found";
     }
-    talkButton.disabled = !current && !near;
+    talkButton.disabled = !current && !scriptWaiting && !near && !genericTarget;
     talkButton.textContent = current ? (
       inn.conversation.index + 1 === conversationMessages(inn.conversation).length ?
         "Finish conversation" : "Next line"
-    ) : "Talk at inn";
-    const hint = !scene.innDoor ? "Inn interaction unavailable: no unique resolved mwininn.prg." :
-      current ? "Conversation active · press Next, E or Space." :
+    ) : scriptWaiting ? "Next / Finish" :
+      near ? "Talk at inn" : "Talk to object";
+    const hint = current || scriptWaiting ? "Conversation active · press Next, E or Space." :
       near ? "At the locked inn: press Talk, E or Space." :
-      "Walk to the marked INN DOOR to talk.";
-    const message = interactionFeedback || hint;
+      genericTarget ? "Near " + genericTarget.filename + ": Talk runs " +
+        genericTarget.programPath + " from this ZIP." :
+      "Approach a marked TALK object or INN DOOR.";
+    const message = interactionFeedback || scriptSession.diagnostic?.text || hint;
     if (feedback.textContent !== message) feedback.textContent = message;
   };
 
@@ -299,22 +337,35 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
     // Timestamp is injected into the same deterministic adapter as the
     // synthetic lab; exact 500ms remains blocked after completion.
     const tick = performance.now();
-    const response = inn.conversation ?
-      advanceInn(inn, tick) : activateAuthoredInn(inn, actorAtLayer(), tick, scene);
-    inn = response.state;
-    if (response.outcome === "out-of-range") {
-      interactionFeedback = "Move within 46 pixels of the inn on its authored layer.";
-    } else if (response.outcome === "unavailable") {
-      interactionFeedback = "Inn interaction unavailable: the activation program is not uniquely resolved.";
-    } else if (response.outcome === "cooldown") {
-      interactionFeedback = "Give the door a moment (" +
-        response.remainingMs + " ms cooldown remaining).";
+    if (scriptSession.execution?.waiting ||
+        (!inn.conversation && !nearAuthoredInn(actorAtLayer(), scene) &&
+          selectTk3ScriptTarget(scene, actorAtLayer()))) {
+      const response = scriptSession.execution?.waiting ?
+        advanceTk3Script(scriptSession) :
+        startPlacedTk3Script(scriptSession, scene, actorAtLayer(), artifacts);
+      scriptSession = response.state;
+      interactionFeedback = response.status === "completed" ?
+        "Source RPGCode program finished. Variables persist until Reset." : "";
+      if (response.status === "waiting" || response.status === "completed" ||
+          response.status === "error") clearHeld();
     } else {
-      interactionFeedback = "";
-      if (response.outcome === "opened" || response.outcome === "completed") {
-        clearHeld();
-        if (response.outcome === "completed" && response.clueGained) {
-          interactionFeedback = "Clue found! The inn is still locked.";
+      const response = inn.conversation ?
+        advanceInn(inn, tick) : activateAuthoredInn(inn, actorAtLayer(), tick, scene);
+      inn = response.state;
+      if (response.outcome === "out-of-range") {
+        interactionFeedback = "Move within 46 pixels of the inn on its authored layer.";
+      } else if (response.outcome === "unavailable") {
+        interactionFeedback = "Inn interaction unavailable: the activation program is not uniquely resolved.";
+      } else if (response.outcome === "cooldown") {
+        interactionFeedback = "Give the door a moment (" +
+          response.remainingMs + " ms cooldown remaining).";
+      } else {
+        interactionFeedback = "";
+        if (response.outcome === "opened" || response.outcome === "completed") {
+          clearHeld();
+          if (response.outcome === "completed" && response.clueGained) {
+            interactionFeedback = "Clue found! The inn is still locked.";
+          }
         }
       }
     }
@@ -322,7 +373,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
     draw();
   }
   const step = (direction, seconds) => {
-    if (inn.conversation) return;
+    if (inn.conversation || scriptSession.execution?.waiting) return;
     const previous = actor;
     actor = stepMovement(actor, axes[direction], seconds, scene.world);
     if (actor.distance !== previous.distance) interactionFeedback = "";
@@ -336,8 +387,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
     const seconds = lastFrame === null ? 0 : Math.max(0, (timestamp - lastFrame) / 1000);
     lastFrame = timestamp;
     const prior = actor;
-    actor = stepMovement(actor, inn.conversation ? { x: 0, y: 0 } :
-      input(), seconds, scene.world);
+    actor = stepMovement(actor, inn.conversation || scriptSession.execution?.waiting ?
+      { x: 0, y: 0 } : input(), seconds, scene.world);
     if (actor.distance !== prior.distance) interactionFeedback = "";
     if (actor.facing !== priorFacing || (!prior.moving && actor.moving)) walkMs = 0;
     if (actor.moving) walkMs += Math.min(seconds, 0.05) * 1000;
@@ -361,7 +412,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
       return;
     }
     if (!keyDirections.has(event.code)) return;
-    if (!inn.conversation) keyboardHeld.add(event.code);
+    if (!inn.conversation && !scriptSession.execution?.waiting)
+      keyboardHeld.add(event.code);
     event.preventDefault();
   }, { signal: listeners.signal });
   document.addEventListener("keyup", event => {
@@ -375,7 +427,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
   }, { signal: listeners.signal });
   for (const button of pad) {
     button.addEventListener("pointerdown", event => {
-      if (inn.conversation) return;
+      if (inn.conversation || scriptSession.execution?.waiting) return;
       if (event.pointerType === "mouse" && event.button !== 0) return;
       event.preventDefault();
       button.setPointerCapture(event.pointerId);
@@ -404,6 +456,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
     clearHeld();
     actor = initialMovementState(scene.world);
     inn = initialInnState();
+    scriptSession = initialTk3ScriptState();
     interactionFeedback = "";
     priorFacing = actor.facing;
     walkMs = 0;
