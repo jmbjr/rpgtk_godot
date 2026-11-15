@@ -34,6 +34,18 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
   if (!scene.ok) throw Error("Cannot mount an unresolved playable scene.");
   const canvas = section.querySelector("#play-canvas");
   const status = section.querySelector("#play-status");
+  const collisionLabel = section.querySelector("#play-collision");
+  const vectorOverlay = section.querySelector("#play-vector-overlay");
+  const collision = scene.world.vectorCollision;
+  const solidCount = collision?.solids?.length ?? 0;
+  const ignoredCount = collision?.ignored?.length ?? 0;
+  const unsupportedCount = collision?.unsupported?.length ?? 0;
+  collisionLabel.textContent = "Collision: " + (collision?.status ?? "bounds-only") +
+    " · " + solidCount + " supported solid vector(s), " +
+    ignoredCount + " nonblocking/other-layer, " +
+    unsupportedCount + " unsupported · " +
+    (collision?.reason ?? "No supported source geometry.") +
+    " Browser 9px circle + axis sliding; Toolkit uses an authored base polygon.";
   const hud = section.querySelector("#play-hud");
   const feedback = section.querySelector("#play-feedback");
   const dialoguePanel = section.querySelector("#play-dialogue");
@@ -229,6 +241,25 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
       ctx.fillText("INN DOOR", labelX, labelY);
       ctx.restore();
     }
+    // A diagnostic overlay makes the verified walls easy to check on
+    // Android. It never changes game collision, character or dialogue.
+    if (vectorOverlay.checked && collision?.solids?.length) {
+      ctx.save();
+      ctx.strokeStyle = "#ff664d";
+      ctx.fillStyle = "rgba(255, 102, 77, 0.12)";
+      ctx.lineWidth = 2;
+      for (const solid of collision.solids) {
+        ctx.beginPath();
+        ctx.moveTo(solid.points[0].x, solid.points[0].y);
+        for (const point of solid.points.slice(1)) ctx.lineTo(point.x, point.y);
+        if (solid.closed) {
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
   };
   const updateStatus = () => {
     status.textContent = scene.characterName + " · (" + Math.round(actor.x) +
@@ -367,6 +398,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph) {
     }, { signal: listeners.signal });
   }
   talkButton.addEventListener("click", interact, { signal: listeners.signal });
+  vectorOverlay.addEventListener("change", draw, { signal: listeners.signal });
   const reset = section.querySelector("#play-reset");
   reset.addEventListener("click", () => {
     clearHeld();
