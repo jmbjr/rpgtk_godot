@@ -1,6 +1,6 @@
 import { resolveAsset } from "./model.mjs";
-import { compileTk3Interaction, finishTk3Fight, abandonTk3Fight }
-  from "./tk3-script-slice.mjs";
+import { compileTk3Interaction, finishTk3Fight, abandonTk3Fight,
+  startTk3Script } from "./tk3-script-slice.mjs";
 
 // Toolkit 3.1 calls a configurable combat plugin for fightEnemy().
 // This module resolves only the source contract: ENE, BKG and the
@@ -85,3 +85,51 @@ export function simulateTk3FightVictory(state, encounter) {
 export function cancelTk3FightTest(state) {
   return abandonTk3Fight(state);
 }
+
+// Toolkit FIGHT_LOST uses the GAM game-over program when configured;
+// otherwise Toolkit displays "Game over." and calls reset().
+// This browser compatibility test never guesses the native battle result.
+// The caller supplies the decoded GAM of the current archive, not a
+// game-name-specific configuration.
+export function simulateTk3FightDefeat(state, encounter, artifacts, mainPath) {
+  if (!state?.pendingFight || !state.execution ||
+      !encounter || encounter.path !== state.pendingFight.path)
+    return { status: "inactive", state };
+  const main = artifacts?.get(mainPath);
+  if (!valid(main, "gam")) {
+    const diagnostic = issue(mainPath || "(main file)", 1,
+      "Cannot resolve defeat policy without the decoded GAM.");
+    return { status: "error", state: { ...state,
+      execution: null, pendingFight: null, scriptStack: [],
+      diagnostic, message: "" } };
+  }
+  // A defeat never executes the ENE's victory or escape PRG, and it does
+  // not resume the triggering placed-object program after the loss.
+  const cleared = { ...state, execution: null, pendingFight: null,
+    scriptStack: [], message: "", diagnostic: null };
+  const configured = main.configuration?.combat?.gameOverProgram?.trim() || "";
+  if (!configured || configured.toLowerCase() === "none") {
+    return { status: "gameover", state: cleared,
+      policy: "native-default-reset" };
+  }
+  const root = encounter.path.match(/^(.*\/)Prg\/[^/]+\.prg$/i)?.[1] ?? null;
+  const found = resolveAsset([...artifacts.keys()], "Prg", configured, root);
+  if (found.status !== "resolved") {
+    const diagnostic = issue(mainPath, 1, "GAM game-over program " +
+      configured + " is " + found.status + ".");
+    return { status: "error", state: { ...cleared, diagnostic } };
+  }
+  const asset = artifacts.get(found.path);
+  if (!valid(asset, "prg") || !Array.isArray(asset.program?.rows)) {
+    const diagnostic = issue(mainPath, 1,
+      "GAM game-over program " + found.path + " has no decoded source.");
+    return { status: "error", state: { ...cleared, diagnostic } };
+  }
+  const source = asset.program.rows.map(row => row.line).join("\n");
+  const compiled = compileTk3Interaction(source, found.path);
+  if (!compiled.ok) return { status: "error", state: {
+    ...cleared, diagnostic: compiled.diagnostic } };
+  return { ...startTk3Script(cleared, source, asset.path),
+    gameOverProgramPath: asset.path };
+}
+

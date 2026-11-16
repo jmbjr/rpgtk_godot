@@ -2457,7 +2457,8 @@ function remountTransferredBoard(request) {
       references, { scriptSession: request.scriptSession,
         innState: request.innState, legacyState: request.legacyState,
         arrivalFeedback: request.arrivalFeedback,
-        onTransfer: remountTransferredBoard });
+        onTransfer: remountTransferredBoard,
+        onRestart: launchPlayableScene });
     activePlayable?.destroy();
     activePlayable = replacement;
     byId("play-error").hidden = true;
@@ -2487,6 +2488,7 @@ function launchPlayableWithSession(scriptSession = null, startupPath = null) {
     byId("workspace").hidden = true;
     activePlayable = mountAuthoredBoard(panel, playableScene, artifacts,
       references, { onTransfer: remountTransferredBoard,
+        onRestart: launchPlayableScene,
         ...(scriptSession ? { scriptSession,
           arrivalFeedback: startupPath ?
             "GAM startup completed: " + startupPath +
