@@ -734,7 +734,32 @@ function fields(reader, names) {
   return { values, refs };
 }
 
+// Toolkit 3.1 CFile binary BKG 2.3 (background.cpp::open).
+// Unlike the old 2.0 text tilemap, this stores an authored image and
+// five audio references. Reading it never draws or executes the plugin.
+function readBinaryBackground(bytes) {
+  const reader = cursor(bytes);
+  const minor = header(reader, "RPGTLKIT BKG", [3]);
+  const image = reader.string();
+  const [music, select, choose, ready, invalid] =
+    Array.from({ length: 5 }, () => reader.string());
+  if (reader.remaining() !== 0)
+    throw new Error("Unexpected native BKG 2.3 trailing bytes.");
+  const audio = { Music: music, "Select sound": select,
+    "Choose sound": choose, "Ready sound": ready,
+    "Invalid action sound": invalid };
+  const refs = [];
+  if (image) refs.push(reference(image, "Battle background image"));
+  for (const [label, value] of Object.entries(audio)) {
+    if (value) refs.push(reference(value, label));
+  }
+  return { version: "2." + minor, image,
+    width: null, height: null, order: "native-image",
+    tiles: [], audio, shading: [], refs };
+}
+
 function readBackground(bytes) {
+  if (bytes[12] === 0) return readBinaryBackground(bytes);
   const reader = textReader(bytes, "RPGTLKIT BKG");
   const width = 19;
   const height = 11;
@@ -748,7 +773,59 @@ function readBackground(bytes) {
   return { width, height, order: "column-major", tiles, audio, shading, refs };
 }
 
+// Toolkit 3.1 CFile binary ENE 2.1, source:
+// vc/trans3/common/enemy.cpp::tagEnemy::open (binary branch).
+// Count fields are inclusive signed short maxima (-1 means no entries).
+function readBinaryEnemy(bytes) {
+  const reader = cursor(bytes);
+  const minor = header(reader, "RPGTLKIT ENEMY", [1]);
+  const name = reader.string();
+  const stats = { HP: reader.long(), "Special power": reader.long(),
+    Fight: reader.long(), Defense: reader.long() };
+  const canFlee = Boolean(reader.byte());
+  const sneakChance = reader.short();
+  const sneakUp = reader.short();
+  const counted = (label, item) => {
+    const max = reader.short();
+    if (max < -1 || max > 1023)
+      throw new Error("Unsupported native enemy " + label + " count.");
+    return Array.from({ length: max + 1 }, item);
+  };
+  const specialMoves = counted("special", () => reader.string());
+  const weaknesses = counted("weakness", () => reader.string());
+  const strengths = counted("strength", () => reader.string());
+  const ai = reader.byte();
+  const usesScript = Boolean(reader.byte());
+  const script = reader.string();
+  const xp = reader.long();
+  const gold = reader.long();
+  const win = reader.string(), escape = reader.string();
+  const animations = counted("artwork", () => reader.string());
+  const customAnimations = counted("custom animation", () =>
+    ({ name: reader.string(), value: reader.string() }));
+  if (reader.remaining() !== 0)
+    throw new Error("Unexpected native ENE 2.1 trailing bytes.");
+  const refs = [];
+  for (const [name, value] of [["Victory program", win],
+    ["Escape program", escape], ["Enemy AI program", script]]) {
+    if (value) refs.push(reference(value, name));
+  }
+  for (const [index, value] of specialMoves.entries())
+    if (value) refs.push(reference(value, "Special move · slot " + (index + 1)));
+  for (const [index, value] of animations.entries())
+    if (value) refs.push(reference(value, "Enemy animation · slot " + index));
+  for (const { name, value } of customAnimations)
+    if (value) refs.push(reference(value, "Custom animation · " + name));
+  return { version: "2." + minor, name, stats, canFlee,
+    sneakChance, sneakUp, width: null, height: null,
+    tileStride: 7, tiles: [], specialMoves, weaknesses, strengths,
+    ai, usesScript, script, xp, gold,
+    programs: { "Victory program": win, "Escape program": escape },
+    sounds: {}, animations, customAnimations, refs };
+}
+
 function readEnemy(bytes) {
+  if (bytes[14] === 0) return readBinaryEnemy(bytes);
   const reader = textReader(bytes, "RPGTLKIT ENEMY");
   const name = reader.string();
   const stats = Object.fromEntries(["HP", "Special power", "Fight", "Defense"].map(label => [label, reader.number()]));
