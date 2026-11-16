@@ -309,7 +309,9 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       return { program, marker };
     });
   const updatePlaytestMarkers = () => {
-    const guide = describePlayableTargets(scene, actorAtLayer());
+    const guide = describePlayableTargets(visibleScene(), actorAtLayer());
+    for (const [slot, marker] of targetMarkers)
+      marker.hidden = removedItemSlots.has(slot);
     locateMarker(playerMarker, guide.player);
     for (const target of guide.targets) {
       const marker = targetMarkers.get(target.slot);
@@ -321,9 +323,10 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       marker.classList.toggle("is-near",
         insideTk3BoardProgram(program, actorAtLayer()));
     const talking = Boolean(inn.conversation || legacy?.dialogue || legacy?.menu ||
-      scriptSession.execution?.waiting);
-    const instruction = talking ? (legacy?.menu ?
-      "Archive menu open: choose an option or close the menu below." :
+      activeFight || scriptSession.execution?.waiting);
+    const instruction = talking ? (activeFight ?
+      "Test encounter open: choose simulated victory or cancel below." :
+      legacy?.menu ? "Archive menu open: choose an option or close the menu below." :
       "Conversation active: use Next / Finish, E or Space.") :
       boardMarkers.some(m => m.program.kind === "step") ?
         guide.hint + " · Walk INTO a BOARD · STEP region to run its source PRG." :
@@ -521,6 +524,13 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     }
   };
   const updateStatus = () => {
+    fightPanel.hidden = !activeFight;
+    if (activeFight)
+      fightDetails.textContent = activeFight.name +
+        " · HP " + activeFight.hp + " · enemy " + activeFight.enemyPath +
+        " · background " + activeFight.backgroundPath +
+        " · authored victory " +
+        (activeFight.victoryProgram?.path ?? "(none)");
     updatePlaytestMarkers();
     renderSourceMenu();
     status.textContent = scene.characterName + " · (" + Math.round(actor.x) +
@@ -560,7 +570,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     scriptDiagnostic.textContent = legacy?.diagnostic?.text ||
       scriptSession.diagnostic?.text || "";
     scriptDiagnostic.hidden = !(legacy?.diagnostic || scriptSession.diagnostic);
-    dialoguePanel.hidden = Boolean(legacy?.menu) ||
+    dialoguePanel.hidden = Boolean(legacy?.menu || activeFight) ||
       !(current || sourceLine || scriptWaiting ||
         inn.clueMessage || legacy?.clueMessage);
     if (current) {
@@ -587,9 +597,9 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     }
     for (const control of runtimeControls) {
       control.button.disabled = Boolean(current || sourceLine || legacy?.menu ||
-        scriptWaiting);
+        activeFight || scriptWaiting);
     }
-    talkButton.disabled = Boolean(legacy?.menu) ||
+    talkButton.disabled = Boolean(legacy?.menu || activeFight) ||
       (!current && !sourceLine && !scriptWaiting && !near &&
         !genericTarget && !boardKeyTarget);
     talkButton.textContent = current ? (
@@ -600,7 +610,9 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
         "Finish conversation" : "Next line"
     ) : scriptWaiting ? "Next / Finish" :
       near ? "Talk at inn" : "Talk to object";
-    const hint = current || sourceLine || scriptWaiting ?
+    const hint = activeFight ?
+      "Test encounter: choose simulated victory or cancel below." :
+      current || sourceLine || scriptWaiting ?
       "Conversation active · press Next, E or Space." :
       near ? "At the locked inn: press Talk, E or Space." :
       genericTarget ? "Near " + genericTarget.filename + ": Talk runs " +
@@ -644,7 +656,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
 
   function triggerRuntimeProgram(action) {
     if (inn.conversation || legacy?.dialogue || legacy?.menu ||
-        scriptSession.execution?.waiting) return;
+        activeFight || scriptSession.execution?.waiting) return;
     const sourceMenu = sourceMenuPlans.get(action.path);
     if (sourceMenu) {
       if (!sourceMenu.ok) {
@@ -672,7 +684,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   }
 
   function interact() {
-    if (legacy?.menu) return;
+    if (legacy?.menu || activeFight) return;
     const tick = performance.now();
     const sourceTarget = selectTk3ScriptTarget(visibleScene(), actorAtLayer());
     const sourcePlan = sourceTarget && sourcePlans.get(sourceTarget.programPath);
@@ -753,7 +765,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   };
   const step = (direction, seconds) => {
     if (inn.conversation || legacy?.dialogue || legacy?.menu ||
-        scriptSession.execution?.waiting) return;
+        activeFight || scriptSession.execution?.waiting) return;
     const previous = actor;
     actor = stepMovement(actor, axes[direction], seconds, scene.world);
     if (actor.distance !== previous.distance) interactionFeedback = "";
@@ -769,7 +781,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     lastFrame = timestamp;
     const prior = actor;
     actor = stepMovement(actor, inn.conversation || legacy?.dialogue ||
-      legacy?.menu || scriptSession.execution?.waiting ?
+      legacy?.menu || activeFight || scriptSession.execution?.waiting ?
       { x: 0, y: 0 } : input(), seconds, scene.world);
     if (actor.distance !== prior.distance) interactionFeedback = "";
     if (!scriptSession.execution && runEnteredBoardProgram(prior)) return;
@@ -791,7 +803,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       if (!event.repeat) closeSourceMenu();
       return;
     }
-    if (legacy?.menu) return;
+    if (legacy?.menu || activeFight) return;
     if (event.code === "KeyE" || event.code === "Space") {
       // Focused buttons handle their native Space/Enter clicks, not a
       // duplicate global dialogue action.
@@ -814,7 +826,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     }
     if (!keyDirections.has(event.code)) return;
     if (!inn.conversation && !legacy?.dialogue && !legacy?.menu &&
-        !scriptSession.execution?.waiting)
+        !activeFight && !scriptSession.execution?.waiting)
       keyboardHeld.add(event.code);
     event.preventDefault();
   }, { signal: listeners.signal });
@@ -830,7 +842,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   for (const button of pad) {
     button.addEventListener("pointerdown", event => {
       if (inn.conversation || legacy?.dialogue || legacy?.menu ||
-          scriptSession.execution?.waiting) return;
+          activeFight || scriptSession.execution?.waiting) return;
       if (event.pointerType === "mouse" && event.button !== 0) return;
       event.preventDefault();
       button.setPointerCapture(event.pointerId);
@@ -869,6 +881,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     actor = initialMovementState(scene.world);
     inn = initialInnState();
     scriptSession = initialTk3ScriptState();
+    activeFight = null;
+    removedItemSlots.clear();
     legacy = sourcePlans.size || [...sourceMenuPlans.values()].some(p => p.ok) ?
       initialLegacyDialogueState(dialogueDefinitions) : null;
     activeMenuPlan = null;
