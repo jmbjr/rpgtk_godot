@@ -927,6 +927,31 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     updateStatus();
     draw();
   };
+  const simulateDefeat = () => {
+    if (!activeFight) return;
+    const current = activeFight;
+    const response = simulateTk3FightDefeat(scriptSession, current,
+      artifacts, scene.mainPath);
+    if (response.status === "inactive") return;
+    activeFight = null;
+    clearHeld();
+    if (response.status === "gameover") {
+      scriptSession = response.state;
+      gameOver = true;
+      gameOverMessage = "Game over. Toolkit would now reset because the GAM has no game-over PRG. Restart opening board to create a fresh browser session.";
+      interactionFeedback = "Simulated defeat (test only): no combat or rewards were executed.";
+    } else if (response.status === "error") {
+      scriptSession = response.state;
+      interactionFeedback = response.state.diagnostic?.text ||
+        "The GAM-configured game-over PRG cannot be executed.";
+    } else {
+      defeatProgramActive = true;
+      interactionFeedback = "Simulated defeat (test only): executing the GAM-defined game-over program. No native battle occurred.";
+      if (applyScriptStep(response)) return;
+    }
+    updateStatus();
+    draw();
+  };
   const abortFightTest = () => {
     if (!activeFight) return;
     const response = cancelTk3FightTest(scriptSession);
@@ -939,8 +964,18 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   };
   fightSimulate.addEventListener("click", simulateVictory,
     { signal: listeners.signal });
+  fightDefeat.addEventListener("click", simulateDefeat,
+    { signal: listeners.signal });
   fightAbort.addEventListener("click", abortFightTest,
     { signal: listeners.signal });
+  gameOverRestart.addEventListener("click", () => {
+    if (typeof options.onRestart === "function") {
+      options.onRestart();
+    } else {
+      // Standalone sandbox mount: use local Reset if no host scene launcher.
+      section.querySelector("#play-reset").click();
+    }
+  }, { signal: listeners.signal });
   talkButton.addEventListener("click", interact, { signal: listeners.signal });
   menuClose.addEventListener("click", closeSourceMenu, { signal: listeners.signal });
   for (const { action, button } of runtimeControls) {
