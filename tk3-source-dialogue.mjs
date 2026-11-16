@@ -190,7 +190,7 @@ const knownStatements = [
   /^send\s*\(\s*"[^"]+\.brd"\s*,\s*[A-Za-z_]\w*\s*,\s*[A-Za-z_]\w*\s*,\s*[A-Za-z_]\w*\s*\)\s*;?$/i,
 ];
 
-export function compileLegacyDialogue(program, artifacts, definitions) {
+export function compileLegacyDialogue(program, artifacts, definitions, scene = null) {
   const path = program?.path ?? "(unresolved PRG)";
   const source = sourceOf(program);
   if (source === null) return { ok: false, diagnostic: error(path, 1, "No decoded dialogue PRG.") };
@@ -248,8 +248,20 @@ export function compileLegacyDialogue(program, artifacts, definitions) {
       // The special case from source is a self-transfer using the
       // current player's position. Do not silently skip other transfers.
       const send = rows.find(row => /^send\s*\(/i.test(row.text));
-      if (send && !rows.some(row => /^playerLocation\s*\(/i.test(row.text)))
-        throw error(path, send.line, "Unsupported opening Send without sourced playerLocation().");
+      if (send) {
+        const args = send.text.match(/^send\s*\(\s*"([^"]+)"\s*,\s*(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*\)\s*;?$/i);
+        const playerLoc = rows.find(row => /^playerLocation\s*\(/i.test(row.text));
+        const pos = playerLoc?.text.match(/^playerLocation\s*\(\s*"([^"]+)"\s*,\s*(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*\)\s*;?$/i);
+        const root = scene?.boardPath?.match(/^(.*\/)Boards\/[^/]+\.brd$/i)?.[1];
+        const dest = args && root ?
+          resolveAsset([...artifacts.keys()], "Boards", args[1], root) : null;
+        if (!args || !pos || !scene?.ok || !root ||
+            pos[1].toLowerCase() !== scene.characterName?.toLowerCase() ||
+            args.slice(2).some((value, i) => value.toLowerCase() !==
+              pos[i + 2].toLowerCase()) ||
+            dest?.status !== "resolved" || dest.path !== scene.boardPath)
+          throw error(path, send.line, "Opening Send must use the current player's sourced location and the same resolved board.");
+      }
     }
     if (!first.length || (checked !== -1 && !repeat.length))
       throw error(path, rows[0]?.line ?? 1, "Missing first/repeat SetTxt dialogue.");
