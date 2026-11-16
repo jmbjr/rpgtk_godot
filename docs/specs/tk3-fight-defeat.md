@@ -39,10 +39,11 @@ uses a demo, character, enemy, or game-specific name.
 - Configured, uniquely resolved, supported game-over PRG:
   discard the interrupted encounter program and execute that
   PRG with the existing bounded interpreter (including
-  `mwin`, `wait` and variable writes). A completed program
-  exposes a restart option; no subsequent automatic native
-  reset is guessed. Unsupported script statements produce
-  their real program path and line.
+  `mwin`, `wait` and variable writes). When that program
+  completes, control returns to the current playable board:
+  the pinned engine does **not** reset implicitly in this branch.
+  Reset remains a separate browser action. Unsupported script
+  statements produce their real program path and line.
 - Missing, ambiguous, invalid or undecodable GAM-bound PRG:
   show a path/line diagnostic rather than silently presenting
   native defeat, executing an unrelated program or faking
