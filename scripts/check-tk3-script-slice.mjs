@@ -340,8 +340,9 @@ for (const symbol of ["startPlacedTk3Script", "advanceTk3Script",
   "selectTk3ScriptTarget", "initialTk3ScriptState", "activateAuthoredInn",
   "initialInnState"])
   assert.ok(browser.includes(symbol), symbol);
-assert.match(browser, /inn\.conversation \|\| scriptSession\.execution\?\.waiting/);
+assert.match(browser, /inn\.conversation \|\| legacy\?\.dialogue/);
+assert.match(browser, /scriptSession\.execution\?\.waiting/);
 assert.match(workflow, /node scripts\/check-tk3-script-slice\.mjs/);
 assert.match(workflow, /node scripts\/build-tk3-script-fixtures\.mjs site/);
-assert.match(workflow, /tk3-script-slice\.mjs tk3-board-transfer\.mjs tk3-gam-startup\.mjs tk3-runtime-keys\.mjs site\//);
+assert.match(workflow, /tk3-script-slice\.mjs tk3-board-transfer\.mjs tk3-gam-startup\.mjs tk3-runtime-keys\.mjs tk3-source-dialogue\.mjs site\//);
 console.log("Toolkit 3 source-backed message subset and both full production archive fixtures passed.");

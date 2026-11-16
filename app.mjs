@@ -2455,7 +2455,8 @@ function remountTransferredBoard(request) {
   try {
     const replacement = mountAuthoredBoard(panel, request.scene, artifacts,
       references, { scriptSession: request.scriptSession,
-        innState: request.innState, arrivalFeedback: request.arrivalFeedback,
+        innState: request.innState, legacyState: request.legacyState,
+        arrivalFeedback: request.arrivalFeedback,
         onTransfer: remountTransferredBoard });
     activePlayable?.destroy();
     activePlayable = replacement;
