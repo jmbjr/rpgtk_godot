@@ -630,6 +630,40 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   };
 
   function applyScriptStep(stepped) {
+    if (stepped.status === "fight") {
+      const resolved = resolveTk3FightRequest(stepped, artifacts);
+      scriptSession = resolved.state;
+      activeFight = resolved.status === "ready" ? resolved.encounter : null;
+      interactionFeedback = activeFight ?
+        "Source fightEnemy() reached. This test requires a manual simulated outcome; no battle plugin is running." :
+        resolved.state?.diagnostic?.text || "Fight source could not be resolved.";
+      clearHeld();
+      return false;
+    }
+    if (stepped.status === "effect") {
+      const e = stepped.effect;
+      scriptSession = stepped.state;
+      const valid = e?.kind === "erase-item" && e.alias === "source" &&
+        e.sourceBoardPath === scene.boardPath &&
+        Number.isInteger(e.sourceItemSlot) &&
+        placed.some(p => p.slot === e.sourceItemSlot);
+      if (!valid) {
+        const diagnostic = { path: e?.path ?? "(script)", line: e?.line ?? 1,
+          text: (e?.path ?? "(script)") + ":" + (e?.line ?? 1) +
+            ": eraseItem() source item is not present on this board." };
+        scriptSession = { ...scriptSession, execution: null, scriptStack: [],
+          diagnostic };
+        interactionFeedback = diagnostic.text;
+        clearHeld();
+        return false;
+      }
+      rememberRemoved(e.sourceItemSlot);
+      interactionFeedback = "Source RPGCode erased item slot " + e.sourceItemSlot +
+        " from the current board.";
+      const next = resumeTk3Effect(scriptSession);
+      if (next.status === "inactive") return false;
+      return applyScriptStep(next);
+    }
     const response = stepped.status === "transfer" ?
       resolveTk3BoardTransfer(stepped, scene, artifacts, graph) : stepped;
     scriptSession = response.state;
@@ -864,6 +898,31 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       if (event.detail === 0) step(button.dataset.move, 1 / 20);
     }, { signal: listeners.signal });
   }
+  const simulateVictory = () => {
+    if (!activeFight) return;
+    const current = activeFight;
+    activeFight = null;
+    interactionFeedback = "Simulated battle victory; executing " +
+      (current.victoryProgram?.path || "no source victory program") +
+      " (native fight plugin and rewards were NOT simulated).";
+    if (applyScriptStep(simulateTk3FightVictory(scriptSession, current))) return;
+    updateStatus();
+    draw();
+  };
+  const abortFightTest = () => {
+    if (!activeFight) return;
+    const response = cancelTk3FightTest(scriptSession);
+    scriptSession = response.state;
+    activeFight = null;
+    interactionFeedback = "Battle test cancelled; no victory, rewards, or source win script.";
+    clearHeld();
+    updateStatus();
+    draw();
+  };
+  fightSimulate.addEventListener("click", simulateVictory,
+    { signal: listeners.signal });
+  fightAbort.addEventListener("click", abortFightTest,
+    { signal: listeners.signal });
   talkButton.addEventListener("click", interact, { signal: listeners.signal });
   menuClose.addEventListener("click", closeSourceMenu, { signal: listeners.signal });
   for (const { action, button } of runtimeControls) {
