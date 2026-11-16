@@ -94,6 +94,7 @@ jobs:
           node scripts/check-playability-audit.mjs
           node scripts/check-playable-scene.mjs
           node scripts/check-placed-sprites.mjs
+          node scripts/check-itm-activation-fallback.mjs
           node scripts/check-imported-inn.mjs
           node scripts/check-vector-collision.mjs
           node scripts/check-bstw-title.mjs
