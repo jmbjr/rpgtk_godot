@@ -10,6 +10,32 @@ Tracks [#92](https://github.com/jmbjr/rpgtk_godot/issues/92) and the independent
 - [common/enemy.cpp](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/common/enemy.cpp#L45-L109) decodes the referenced victory and escape program names from the actual ENE source format.
 - The owner's local demo, inspected read-only, contains `demo/Prg/man.prg` with `mwin` / `wait` / `mwincls` / `fightEnemy("pirate.ene", "bkg.bkg");`, `demo/Enemy/pirate.ene` with enemy name Pirate Bob and `win.prg` referenced, and `demo/Prg/win.prg` with `mwin("Arr, ye beat me!"); wait(); mwincls(); eraseItem("source");`. These originals never enter the repo.
 
+## Independent TK3.1 binary formats
+
+The first synthetic fight regression exposed an additional **real
+original-game blocker**: the existing artifact decoder understood only
+text ENE/BKG formats. The owner's local `pirate.ene` is binary
+`RPGTLKIT ENEMY` **2.1** (Pirate Bob, HP 34, Fight 4,
+Defense 2, XP 23, GP 4, victory `win.prg`), and `bkg.bkg`
+is binary `RPGTLKIT BKG` **2.3** (image `bkg.jpg`,
+music `VIP - Boss1.mid`).
+
+The updated production decoder follows the pinned
+[enemy.cpp binary branch](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/common/enemy.cpp#L46-L123)
+and
+[background.cpp binary branch](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/common/background.cpp#L56-L96):
+typed fields, inclusive count tables, victory/escape PRGs, custom
+animations, and BKG image/audio references. The original ENE has
+two optional zero trailing bytes from this legacy editor; other
+trailing garbage is rejected. Text ENE 2.0/BKG 2.0 stays supported.
+
+Harbor uses legacy **text** ENE/BKG fixtures; Grove uses different,
+source-owned **binary 2.1/2.3** fixtures. Both exercise the same
+production archive decoder and battle bridge in CI. The owner's
+original binary file fields were inspected read-only locally;
+the optional original ZIP production-JS test and actual browser
+test were **not** run on the owner's archive here.
+
 ## What this PR does
 
 The pure generic RPGCode interpreter now recognizes the **actual** `fightEnemy("name.ene", "name.bkg")` syntax as a suspension point, and `eraseItem("source")` as a validated side-effect request. A pure battle bridge resolves the ENE and BKG from the **same archive root**, checks ENE source attributes and the uniquely resolved victory PRG, then compiles the victory PRG before offering a test outcome. Unsupported or ambiguous references report the calling script's path and line. Variables remain in one script session.
