@@ -9,6 +9,9 @@ import { nearAuthoredInn, activateAuthoredInn } from "./imported-inn.mjs";
 import { initialTk3ScriptState, selectTk3ScriptTarget, startPlacedTk3Script,
   advanceTk3Script } from "../../tk3-script-slice.mjs";
 import { resolveTk3BoardTransfer } from "../../tk3-board-transfer.mjs";
+import { PRG_STOPS_MOVEMENT, insideTk3BoardProgram,
+  selectTk3BoardStep, selectTk3BoardKey, startTk3BoardProgram }
+  from "../../tk3-board-programs.mjs";
 import { readLegacyDialogueDefinitions, compileLegacyDialogue,
   initialLegacyDialogueState, openLegacyDialogue, advanceLegacyDialogue,
   currentLegacyDialogue } from "../../tk3-source-dialogue.mjs";
@@ -176,7 +179,21 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (placement.isInnDoor) row.classList.add("play-inn-entry");
     diagnostic.append(row);
   }
+  for (const program of scene.boardPrograms ?? []) {
+    const row = document.createElement("li");
+    const p = program.bounds;
+    row.textContent = "Board program " + program.slot + " · " +
+      program.kind.toUpperCase() + " · " +
+      (p ? "(" + p.minX + "–" + p.maxX + ", " +
+        p.minY + "–" + p.maxY + ", layer " + program.layer + ")" :
+        "no supported activation polygon") +
+      " · " + program.raw + " · " + program.status +
+      (program.reason ? " (" + program.reason + ")" : "");
+    diagnostic.append(row);
+  }
   const innLabel = section.querySelector("#play-inn");
+  innLabel.hidden = !scene.innDoor && scene.innStatus !== "ambiguous";
+  innLabel.style.display = innLabel.hidden ? "none" : "";
   if (scene.innDoor) {
     const p = scene.innDoor;
     innLabel.textContent = "Inn door: slot " + p.slot + " at (" +
@@ -258,6 +275,20 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   const playerMarker = makeMarker("player", initialGuidance.player.label);
   const targetMarkers = new Map(initialGuidance.targets.map(target =>
     [target.slot, makeMarker("target", target.label + " · TALK")]));
+  const boardMarkers = (scene.boardPrograms ?? [])
+    .filter(program => program.status === "resolved" && program.bounds)
+    .map(program => {
+      const marker = makeMarker("target", "BOARD · " +
+        (program.kind === "step" ? "STEP" : "TALK"));
+      const midX = (program.bounds.minX + program.bounds.maxX) / 2;
+      const midY = (program.bounds.minY + program.bounds.maxY) / 2;
+      locateMarker(marker, {
+        xPct: 100 * midX / canvas.width, yPct: 100 * midY / canvas.height,
+        labelLeft: midX > canvas.width * 0.68,
+        labelAbove: midY > canvas.height * 0.72,
+      });
+      return { program, marker };
+    });
   const updatePlaytestMarkers = () => {
     const guide = describePlayableTargets(scene, actorAtLayer());
     locateMarker(playerMarker, guide.player);
@@ -267,11 +298,17 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       locateMarker(marker, target);
       marker.classList.toggle("is-near", target.inRange);
     }
+    for (const { program, marker } of boardMarkers)
+      marker.classList.toggle("is-near",
+        insideTk3BoardProgram(program, actorAtLayer()));
     const talking = Boolean(inn.conversation || legacy?.dialogue || legacy?.menu ||
       scriptSession.execution?.waiting);
     const instruction = talking ? (legacy?.menu ?
       "Archive menu open: choose an option or close the menu below." :
-      "Conversation active: use Next / Finish, E or Space.") : guide.hint;
+      "Conversation active: use Next / Finish, E or Space.") :
+      boardMarkers.some(m => m.program.kind === "step") ?
+        guide.hint + " · Walk INTO a BOARD · STEP region to run its source PRG." :
+        guide.hint;
     if (targetHint.textContent !== instruction) targetHint.textContent = instruction;
     markerLayer.hidden = !markerToggle.checked;
   };
@@ -424,6 +461,26 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       ctx.fillText("INN DOOR", labelX, labelY);
       ctx.restore();
     }
+    // Show source program polygons separately from collision: these
+    // cyan areas contain RPGCode, not door ITMs or solid wall vectors.
+    if (markerToggle.checked) {
+      ctx.save();
+      ctx.strokeStyle = "#50efff";
+      ctx.fillStyle = "rgba(80,239,255,0.12)";
+      ctx.lineWidth = 2;
+      for (const program of scene.boardPrograms ?? []) {
+        if (program.status !== "resolved" || program.layer !== scene.start.layer ||
+            !program.closed || program.points.length < 3) continue;
+        ctx.beginPath();
+        ctx.moveTo(program.points[0].x, program.points[0].y);
+        for (const point of program.points.slice(1))
+          ctx.lineTo(point.x, point.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
     // A diagnostic overlay makes the verified walls easy to check on
     // Android. It never changes game collision, character or dialogue.
     if (vectorOverlay.checked && collision?.solids?.length) {
@@ -456,15 +513,28 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     const sourceLine = currentLegacyDialogue(legacy);
     const scriptWaiting = Boolean(scriptSession.execution?.waiting);
     const genericTarget = selectTk3ScriptTarget(scene, actorAtLayer());
+    const boardKeyTarget = !genericTarget ?
+      selectTk3BoardKey(scene, actorAtLayer()) : null;
     const sourceTarget = genericTarget && sourcePlans.has(genericTarget.programPath) ?
       genericTarget : null;
     const near = nearAuthoredInn(actorAtLayer(), scene) && !sourceTarget;
-    const innIndex = scene.innDoor && sourcePlans.get(scene.innDoor.programPath)?.eventIndex;
+    // A source-defined clue system is optional. Do not invent BSTW's
+    // 13-clue total or inn visits for an independent imported TK3 game.
+    const sourceClues = Number.isInteger(legacy?.variables?.maxclues) &&
+      Number.isFinite(legacy?.variables?.clues);
+    const showClues = sourceClues || Boolean(scene.innDoor);
+    const innIndex = scene.innDoor &&
+      sourcePlans.get(scene.innDoor.programPath)?.eventIndex;
     const innVisits = innIndex !== undefined && innIndex !== null ?
       (legacy?.variables.checked?.[innIndex] ?? 0) : inn.checkedInn;
-    hud.textContent = "Clues: " + (legacy?.variables.clues ?? inn.clues) +
-      " / " + (legacy?.variables.maxclues ?? inn.maxClues) +
-      " · Inn visits: " + innVisits;
+    hud.hidden = !showClues;
+    hud.style.display = showClues ? "" : "none";
+    if (showClues) {
+      const found = sourceClues ? legacy.variables.clues : inn.clues;
+      const total = sourceClues ? legacy.variables.maxclues : inn.maxClues;
+      hud.textContent = "Clues: " + found + " / " + total +
+        (scene.innDoor ? " · Inn visits: " + innVisits : "");
+    } else hud.textContent = "";
     scriptVariables.textContent = "Script variables (session): " +
       (Object.entries(scriptSession.variables).map(([name, value]) =>
         name + " = " + JSON.stringify(value)).join(" · ") || "(none yet)");
@@ -501,7 +571,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
         scriptWaiting);
     }
     talkButton.disabled = Boolean(legacy?.menu) ||
-      (!current && !sourceLine && !scriptWaiting && !near && !genericTarget);
+      (!current && !sourceLine && !scriptWaiting && !near &&
+        !genericTarget && !boardKeyTarget);
     talkButton.textContent = current ? (
       inn.conversation.index + 1 === conversationMessages(inn.conversation).length ?
         "Finish conversation" : "Next line"
@@ -515,7 +586,13 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       near ? "At the locked inn: press Talk, E or Space." :
       genericTarget ? "Near " + genericTarget.filename + ": Talk runs " +
         genericTarget.programPath + " from this ZIP." :
-      "Approach a marked TALK object or INN DOOR.";
+      boardKeyTarget ? "Inside a board-program region: press Talk, E or Space to run " +
+        boardKeyTarget.raw + "." :
+      (scene.boardPrograms ?? []).some(p => p.status === "resolved" &&
+        p.kind === "step") ?
+        "Walk into a cyan BOARD · STEP area to activate the authored program." :
+      scene.innDoor ? "Approach a marked TALK object or INN DOOR." :
+        "Approach an authored TALK object or source board program.";
     const message = interactionFeedback || legacy?.diagnostic?.text ||
       scriptSession.diagnostic?.text || hint;
     if (feedback.textContent !== message) feedback.textContent = message;
@@ -606,12 +683,17 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       draw();
       return;
     }
-    if (scriptSession.execution?.waiting ||
+    const boardKey = !scriptSession.execution?.waiting &&
+      !selectTk3ScriptTarget(scene, actorAtLayer()) ?
+      selectTk3BoardKey(scene, actorAtLayer()) : null;
+    if (scriptSession.execution?.waiting || boardKey ||
         (!inn.conversation && !nearAuthoredInn(actorAtLayer(), scene) &&
           selectTk3ScriptTarget(scene, actorAtLayer()))) {
       const stepped = scriptSession.execution?.waiting ?
         advanceTk3Script(scriptSession) :
-        startPlacedTk3Script(scriptSession, scene, actorAtLayer(), artifacts);
+        boardKey ? startTk3BoardProgram(scriptSession, boardKey) :
+          startPlacedTk3Script(scriptSession, scene, actorAtLayer(), artifacts);
+      if (boardKey && (boardKey.flags & PRG_STOPS_MOVEMENT)) clearHeld();
       if (applyScriptStep(stepped)) return;
     } else {
       const response = inn.conversation ?
@@ -637,12 +719,26 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     updateStatus();
     draw();
   }
+  // This is a step-ON program region, not an ITM Talk activation. The
+  // browser approximates Toolkit's collision base by the actor foot point.
+  const runEnteredBoardProgram = before => {
+    const program = selectTk3BoardStep(scene,
+      { ...before, layer: scene.start.layer }, actorAtLayer());
+    if (!program) return false;
+    const response = startTk3BoardProgram(scriptSession, program);
+    const transferred = applyScriptStep(response);
+    if (!transferred &&
+        ((program.flags & PRG_STOPS_MOVEMENT) || response.status !== "completed"))
+      clearHeld();
+    return transferred;
+  };
   const step = (direction, seconds) => {
     if (inn.conversation || legacy?.dialogue || legacy?.menu ||
         scriptSession.execution?.waiting) return;
     const previous = actor;
     actor = stepMovement(actor, axes[direction], seconds, scene.world);
     if (actor.distance !== previous.distance) interactionFeedback = "";
+    if (runEnteredBoardProgram(previous)) return;
     if (actor.facing !== priorFacing) walkMs = 0;
     priorFacing = actor.facing;
     if (!actor.moving || !previous.moving) walkMs = 0;
@@ -657,6 +753,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       legacy?.menu || scriptSession.execution?.waiting ?
       { x: 0, y: 0 } : input(), seconds, scene.world);
     if (actor.distance !== prior.distance) interactionFeedback = "";
+    if (!scriptSession.execution && runEnteredBoardProgram(prior)) return;
     if (actor.facing !== priorFacing || (!prior.moving && actor.moving)) walkMs = 0;
     if (actor.moving) walkMs += Math.min(seconds, 0.05) * 1000;
     else walkMs = 0;

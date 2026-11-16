@@ -1,5 +1,6 @@
 import { mainFileBindings } from "./model.mjs";
 import { mapBoardPlacements } from "./placed-sprites.mjs";
+import { mapTk3BoardPrograms } from "./tk3-board-programs.mjs";
 import { ACTOR_RADIUS, circleBlocked } from "./experiments/movement-sandbox/engine.mjs";
 import { compileBoardVectorCollision } from "./vector-collision.mjs";
 
@@ -124,6 +125,9 @@ export function buildPlayableScene(artifacts, graph, selectedMain = null, option
   if (issues.length) return { ok: false, issues };
 
   const placements = mapBoardPlacements(board, artifacts, graph);
+  // Native board-level program areas exist independently of placed ITMs.
+  // The actual source filename may be inline RPGCode (e.g. Send(...)).
+  const boardPrograms = mapTk3BoardPrograms(board, artifacts);
   const innTargets = placements.filter(placement => placement.isInnDoor);
   const innDoor = innTargets.length === 1 ? {
     slot: innTargets[0].slot, position: { ...innTargets[0].position },
@@ -161,7 +165,7 @@ export function buildPlayableScene(artifacts, graph, selectedMain = null, option
       runs: board.runs.map(run => ({ ...run, tile: tiles.get(run.index) })),
     },
     walking: walks,
-    placements, innDoor,
+    placements, boardPrograms, innDoor,
     innStatus: innTargets.length === 1 ? "resolved" :
       innTargets.length ? "ambiguous" : "missing",
     // Pure sandbox stepper sees only verified TT_SOLID geometry.
