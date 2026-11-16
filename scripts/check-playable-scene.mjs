@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import JSZip from "../vendor/jszip.min.js";
 import { readArtifacts, buildReferences } from "../artifacts.mjs";
 import { openGameArchive } from "../archive.mjs";
-import { buildPlayableScene } from "../playable-scene.mjs";
+import { buildPlayableScene, ZERO_DELAY_ANIMATION_SECONDS } from "../playable-scene.mjs";
 import { initialMovementState, circleBlocked, stepMovement, ACTOR_RADIUS }
   from "../experiments/movement-sandbox/engine.mjs";
 import { nativeMainFixture } from "../docs/specs/fixtures/native-main-29-fixtures.mjs";
@@ -44,6 +44,39 @@ for (const direction of ["south", "north", "east", "west"]) {
     frame.path.endsWith(".tst") && frame.tile >= 1));
 }
 assert.deepEqual(scene.walking.south.frames.map(frame => frame.tile), [14, 15]);
+assert.equal(scene.walking.south.nativePauseSeconds, 0.15);
+assert.equal(ZERO_DELAY_ANIMATION_SECONDS, 1 / 60);
+
+// Some genuine TK3.1 ANM 2.3 files store 0 seconds between walking
+// frames. Exercise the actual binary archive -> native decoder -> source
+// graph -> playable scene, not merely an injected scene object.
+for (const direction of ["south", "north", "east", "west"]) {
+  const filename = "test_" + direction + ".anm";
+  const bytes = Buffer.from(nativeAnims.get(filename));
+  bytes.writeDoubleLE(0, bytes.length - 8);
+  zip.file("BSTW/Misc/" + filename, bytes);
+}
+const zeroRead = await readArtifacts(zip, {});
+const zeroArtifacts = zeroRead.artifacts;
+const zeroGraph = buildReferences(zeroArtifacts);
+const zeroScene = buildPlayableScene(zeroArtifacts, zeroGraph);
+assert.equal(zeroScene.ok, true, JSON.stringify(zeroScene.issues));
+for (const direction of ["south", "north", "east", "west"]) {
+  assert.equal(zeroScene.walking[direction].nativePauseSeconds, 0);
+  assert.equal(zeroScene.walking[direction].pauseSeconds,
+    ZERO_DELAY_ANIMATION_SECONDS);
+  assert.deepEqual(zeroScene.walking[direction].frames,
+    scene.walking[direction].frames,
+    "Zero delay is a timing property; source artwork stays unchanged.");
+}
+const badDelay = new Map(zeroArtifacts);
+badDelay.set("BSTW/Misc/test_north.anm", {
+  ...zeroArtifacts.get("BSTW/Misc/test_north.anm"), pauseSeconds: -0.1,
+});
+assert.ok(buildPlayableScene(badDelay, zeroGraph).issues
+  .some(issue => issue.code === "unsupported-animation"),
+  "A negative delay is still invalid.");
+
 assert.ok(scene.world.rows.every(row => row === "..."));
 assert.match(scene.collisionPolicy, /bounds-only/);
 
