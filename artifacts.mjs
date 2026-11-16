@@ -803,6 +803,10 @@ function readBinaryEnemy(bytes) {
   const animations = counted("artwork", () => reader.string());
   const customAnimations = counted("custom animation", () =>
     ({ name: reader.string(), value: reader.string() }));
+  // Some 3.1 editors write one final zero-filled short after the
+  // declared custom animation list. Preserve strict EOF otherwise.
+  if (reader.remaining() === 2 && reader.short() !== 0)
+    throw new Error("Unexpected native ENE 2.1 final short.");
   if (reader.remaining() !== 0)
     throw new Error("Unexpected native ENE 2.1 trailing bytes.");
   const refs = [];
