@@ -130,8 +130,9 @@ for (const spec of scriptFixtureSpecs) {
   invalidZip.file(spec.root + "/Prg/ClueKit.prg",
     "method updateClues(note)\n{\n if(remainingclues == 0)\n {\n " +
       spec.variable + "END = 1\n }\n}\n");
-  invalidZip.file(spec.root + "/Prg/" + spec.script,
-    source.replace("    clues++", '    PluginHelp("unknown DLL")\n    clues++'));
+  const invalidSource = source.replace("    clues++",
+    '    PluginHelp("unknown DLL")\n    clues++');
+  invalidZip.file(spec.root + "/Prg/" + spec.script, invalidSource);
   const failed = await parse(invalidZip);
   const failDef = readLegacyDialogueDefinitions(failed.artifacts, failed.scene);
   const bad = compileLegacyDialogue(failed.artifacts.get(target.programPath),
@@ -139,7 +140,7 @@ for (const spec of scriptFixtureSpecs) {
   assert.equal(bad.ok, false);
   assert.equal(bad.diagnostic.path, target.programPath);
   assert.equal(bad.diagnostic.line,
-    source.split("\n").findIndex(line => line.includes('PluginHelp("unknown DLL")')) + 1);
+    invalidSource.split("\n").findIndex(line => line.includes('PluginHelp("unknown DLL")')) + 1);
   assert.match(bad.diagnostic.text, /Unsupported legacy dialogue statement/);
   console.log(spec.id + ": source-only dialogue, one-time clue, strict cooldown, repeat/reset and unsupported-line diagnostics passed.");
 }
