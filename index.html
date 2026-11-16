@@ -138,6 +138,15 @@
           <div id="play-source-menu-profiles" class="play-menu-actions" role="group" aria-label="Source-defined player selection" hidden></div>
           <button type="button" id="play-source-menu-close">Back / Close menu</button>
         </section>
+        <section id="play-fight-test" class="play-source-menu" hidden aria-labelledby="play-fight-heading">
+          <h3 id="play-fight-heading">Source encounter · browser compatibility test</h3>
+          <p id="play-fight-details" role="status">The archive references an enemy and battle background.</p>
+          <p class="technical">This viewer does not execute the configured Toolkit battle plugin. Simulate victory only to test the enemy's authored victory RPGCode; no combat, XP, gold or native victory calculation is simulated.</p>
+          <div class="play-menu-actions">
+            <button type="button" id="play-fight-simulate" class="play-source-choice">Simulate victory (test only)</button>
+            <button type="button" id="play-fight-abort" class="play-source-choice">Cancel test (no victory)</button>
+          </div>
+        </section>
         <p id="play-feedback" class="sandbox-landmark" role="status" aria-live="polite">Approach an authored object to talk.</p>
         <p id="play-script-variables" class="technical" role="status">Script variables (session): (none yet)</p>
         <p id="play-script-diagnostic" class="technical" role="alert" hidden></p>
