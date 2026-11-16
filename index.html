@@ -141,11 +141,17 @@
         <section id="play-fight-test" class="play-source-menu" hidden aria-labelledby="play-fight-heading">
           <h3 id="play-fight-heading">Source encounter · browser compatibility test</h3>
           <p id="play-fight-details" role="status">The archive references an enemy and battle background.</p>
-          <p class="technical">This viewer does not execute the configured Toolkit battle plugin. Simulate victory only to test the enemy's authored victory RPGCode; no combat, XP, gold or native victory calculation is simulated.</p>
+          <p class="technical">This viewer does not execute the configured Toolkit battle plugin. Choose a test outcome to inspect the archive's source RPGCode path. No attacks, XP, gold, battle math or native outcome calculation are simulated.</p>
           <div class="play-menu-actions">
             <button type="button" id="play-fight-simulate" class="play-source-choice">Simulate victory (test only)</button>
-            <button type="button" id="play-fight-abort" class="play-source-choice">Cancel test (no victory)</button>
+            <button type="button" id="play-fight-defeat" class="play-source-choice">Simulate defeat (test only)</button>
+            <button type="button" id="play-fight-abort" class="play-source-choice">Cancel test (no outcome)</button>
           </div>
+        </section>
+        <section id="play-gameover-test" class="play-source-menu" hidden aria-labelledby="play-gameover-heading">
+          <h3 id="play-gameover-heading">Game over · browser compatibility test</h3>
+          <p id="play-gameover-note" role="status">The archive's native fallback game-over behavior has been reached.</p>
+          <button type="button" id="play-gameover-restart" class="play-source-choice">Restart opening board</button>
         </section>
         <p id="play-feedback" class="sandbox-landmark" role="status" aria-live="polite">Approach an authored object to talk.</p>
         <p id="play-script-variables" class="technical" role="status">Script variables (session): (none yet)</p>
