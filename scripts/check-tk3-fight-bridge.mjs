@@ -17,6 +17,32 @@ import { buildScriptFixtureZip, scriptFixtureSpecs }
 const enemyBase = fixtures.find(f => f.path === "Enemy/foe.ene")?.bytes;
 const backgroundBase = fixtures.find(f => f.path === "Bkrounds/room.bkg")?.bytes;
 assert.ok(enemyBase && backgroundBase);
+const packed = (...parts) => Buffer.concat(parts);
+const zstr = value => Buffer.from(value + "\0","ascii");
+const word = (...numbers) => {
+  const data=Buffer.alloc(numbers.length*2);
+  numbers.forEach((n,i)=>data.writeInt16LE(n,i*2));
+  return data;
+};
+const long = (...numbers) => {
+  const data=Buffer.alloc(numbers.length*4);
+  numbers.forEach((n,i)=>data.writeInt32LE(n,i*4));
+  return data;
+};
+function binaryEnemyBytes(name, win) {
+  return packed(zstr("RPGTLKIT ENEMY"),word(2,1),zstr(name),
+    long(12,3,2,1),Buffer.from([1]),word(0,0),
+    // Inclusive special count 0 (one empty entry); no weaknesses,
+    // strengths, graphics or custom animations.
+    word(0),zstr(""),word(-1),word(-1),
+    Buffer.from([0,0]),zstr(""),long(4,2),
+    zstr(win),zstr(""),word(-1),word(-1),word(0));
+}
+function binaryBackgroundBytes(name) {
+  return packed(zstr("RPGTLKIT BKG"),word(2,3),
+    zstr(name),...Array.from({length:5},()=>zstr("")));
+}
+
 function enemyBytes(name, win) {
   // Exact native ENE 2.0 layout from the independent format fixture.
   const tiles = Array(133).fill("");
@@ -50,8 +76,12 @@ async function sample(spec, change = {}) {
   zip.file(root+"/Prg/"+spec.script,change.start ??
     encounterScript(spec));
   if (!change.noEnemy) zip.file(root+"/Enemy/"+enemy,
-    enemyBytes("Guardian of "+spec.id, change.noWin ? "" : win));
-  if (!change.noBkg) zip.file(root+"/Bkrounds/"+bkg, backgroundBase);
+    spec.id==="grove" ?
+      binaryEnemyBytes("Guardian of "+spec.id,change.noWin?"":win) :
+      enemyBytes("Guardian of "+spec.id, change.noWin ? "" : win));
+  if (!change.noBkg) zip.file(root+"/Bkrounds/"+bkg,
+    spec.id==="grove" ?
+      binaryBackgroundBytes("arena_"+spec.id+".png") : backgroundBase);
   if (!change.noWin) zip.file(root+"/Prg/"+win,change.win ?? victoryScript(spec));
   if (change.duplicateEnemy) zip.file(root+"/Enemy/"+enemy.toUpperCase(),
     enemyBytes("Duplicate guardian",win));
@@ -89,6 +119,10 @@ for (const spec of scriptFixtureSpecs) {
       artifacts.get(spec.root+"/Bkrounds/"+game.bkg) ?? {}),
   }));
   assert.equal(ready.encounter.name,"Guardian of "+spec.id);
+  assert.equal(artifacts.get(spec.root+"/Enemy/"+game.enemy).version,
+    spec.id==="grove"?"2.1":undefined);
+  assert.equal(artifacts.get(spec.root+"/Bkrounds/"+game.bkg).order,
+    spec.id==="grove"?"native-image":"column-major");
   assert.equal(ready.encounter.hp,12);
   assert.equal(ready.encounter.victoryProgram?.path,
     spec.root+"/Prg/"+win);
