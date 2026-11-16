@@ -6,6 +6,9 @@ import { compileBoardVectorCollision } from "./vector-collision.mjs";
 // Source-only scene mapping. Never runs the GAM startup program, RPGCode,
 // native vector blocking, DLLs or plugins. UI consumers must check ok first.
 const HEADINGS = ["South", "North", "East", "West"];
+// Toolkit 3.1 allows 0-second ANM delays and renders them at its current
+// frame cadence. The browser must avoid dividing by 0 when animating.
+export const ZERO_DELAY_ANIMATION_SECONDS = 1 / 60;
 const decoded = (asset, type) =>
   asset?.type === type && asset.decodeStatus === "decoded" && !asset.error;
 
@@ -104,11 +107,18 @@ export function buildPlayableScene(artifacts, graph, selectedMain = null, option
       if (tile) frames.push({ ...tile, transparentColor: frame.transparentColor });
     }
     if (!frames.length || !Number.isFinite(animation.pauseSeconds) ||
-        animation.pauseSeconds <= 0) {
-      fail("unsupported-animation", heading + " has no playable frames or positive animation pause.");
+        animation.pauseSeconds < 0) {
+      fail("unsupported-animation", heading +
+        " has no playable frames or valid nonnegative animation pause.");
     }
     walks[heading.toLowerCase()] = {
-      path: animation.path, frames, pauseSeconds: animation.pauseSeconds,
+      path: animation.path, frames,
+      // Positive authored delays are exact. Native delay==0 means the next
+      // frame can render immediately; use one 60-Hz display frame in the
+      // browser to preserve valid source animation without infinite FPS.
+      pauseSeconds: animation.pauseSeconds === 0 ?
+        ZERO_DELAY_ANIMATION_SECONDS : animation.pauseSeconds,
+      nativePauseSeconds: animation.pauseSeconds,
     };
   }
   if (issues.length) return { ok: false, issues };
