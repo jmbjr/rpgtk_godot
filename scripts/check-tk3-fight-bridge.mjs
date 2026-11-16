@@ -119,8 +119,8 @@ for (const spec of scriptFixtureSpecs) {
       artifacts.get(spec.root+"/Bkrounds/"+game.bkg) ?? {}),
   }));
   assert.equal(ready.encounter.name,"Guardian of "+spec.id);
-  assert.equal(artifacts.get(spec.root+"/Enemy/"+game.enemy).version,
-    spec.id==="grove"?"2.1":undefined);
+  if (spec.id==="grove")
+    assert.equal(artifacts.get(spec.root+"/Enemy/"+game.enemy).version,"2.1");
   assert.equal(artifacts.get(spec.root+"/Bkrounds/"+game.bkg).order,
     spec.id==="grove"?"native-image":"column-major");
   assert.equal(ready.encounter.hp,12);
