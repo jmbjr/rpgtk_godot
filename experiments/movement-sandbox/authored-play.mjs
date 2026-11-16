@@ -193,7 +193,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   if (dialogueDefinitions.supported) for (const placement of placed) {
     if (placement.programStatus !== "resolved" || !placement.programPath) continue;
     const plan = compileLegacyDialogue(
-      artifacts.get(placement.programPath), artifacts, dialogueDefinitions);
+      artifacts.get(placement.programPath), artifacts, dialogueDefinitions, scene);
     if (plan.ok) sourcePlans.set(placement.programPath, plan);
   }
   let legacy = options.legacyState ??
