@@ -79,7 +79,13 @@ for (const spec of scriptFixtureSpecs) {
   assert.equal(waiting.encounter.background,game.bkg);
   assert.equal(waiting.state.pendingFight.enemy,game.enemy);
   const ready=resolveTk3FightRequest(waiting,artifacts);
-  assert.equal(ready.status,"ready",ready.state?.diagnostic?.text);
+  assert.equal(ready.status,"ready",JSON.stringify({
+    diagnostic:ready.state?.diagnostic?.text,
+    enemy: (({type,decodeStatus,error}) => ({type,decodeStatus,error}))(
+      artifacts.get(spec.root+"/Enemy/"+game.enemy) ?? {}),
+    background: (({type,decodeStatus,error}) => ({type,decodeStatus,error}))(
+      artifacts.get(spec.root+"/Bkrounds/"+game.bkg) ?? {}),
+  }));
   assert.equal(ready.encounter.name,"Guardian of "+spec.id);
   assert.equal(ready.encounter.hp,12);
   assert.equal(ready.encounter.victoryProgram?.path,
