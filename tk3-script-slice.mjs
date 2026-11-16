@@ -86,6 +86,8 @@ export function compileTk3Interaction(source, path) {
       const wait = /^wait\s*\(\s*\)$/i.test(s);
       const clear = /^mwincls\s*\(\s*\)$/i.test(s);
       const send = s.match(/^send\s*\(\s*("[^"]*")\s*,\s*([^,()]+)\s*,\s*([^,()]+)\s*(?:,\s*([^,()]+)\s*)?\)$/i);
+      const fight = s.match(/^fightEnemy\s*\(\s*("[^"]*")\s*,\s*("[^"]*")\s*\)$/i);
+      const erase = s.match(/^eraseItem\s*\(\s*("[^"]*")\s*\)$/i);
       const assignment = s.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/);
       if (message) nodes.push({ op: "mwin", value: expression(message[1], path, row.line), line: row.line });
       else if (wait) nodes.push({ op: "wait", line: row.line });
@@ -96,6 +98,11 @@ export function compileTk3Interaction(source, path) {
         y: expression(send[3], path, row.line),
         layer: send[4] ? expression(send[4], path, row.line) :
           { kind: "number", value: 1 }, line: row.line });
+      else if (fight) nodes.push({ op: "fight",
+        enemy: expression(fight[1], path, row.line),
+        background: expression(fight[2], path, row.line), line: row.line });
+      else if (erase) nodes.push({ op: "erase",
+        alias: expression(erase[1], path, row.line), line: row.line });
       else if (assignment) nodes.push({ op: "assign", name: assignment[1].toLowerCase(),
         value: expression(assignment[2], path, row.line), line: row.line });
       else fail(row, "Unsupported RPGCode statement: " + s);
@@ -147,12 +154,18 @@ function evaluate(node, vars) {
 
 function run(state) {
   const vars = { ...state.variables };
-  const exec = { ...state.execution };
+  let exec = { ...state.execution };
+  const scriptStack = [...(state.scriptStack ?? [])];
   let message = state.message;
   for (let steps = 0; steps < MAX_STEPS; steps++) {
     if (exec.pc >= exec.instructions.length) {
+      if (scriptStack.length) {
+        exec = { ...scriptStack.pop() };
+        continue;
+      }
       return { status: "completed", state: { ...state, variables: vars,
-        message, execution: null, runs: state.runs + 1, diagnostic: null } };
+        message, execution: null, scriptStack: [],
+        runs: state.runs + 1, diagnostic: null } };
     }
     const node = exec.instructions[exec.pc++];
     if (node.op === "assign") vars[node.name] = evaluate(node.value, vars);
@@ -175,10 +188,28 @@ function run(state) {
         x: evaluate(node.x, vars), y: evaluate(node.y, vars),
         layer: evaluate(node.layer, vars),
       } };
+    } else if (node.op === "fight") {
+      const encounter = {
+        path: exec.path, line: node.line,
+        enemy: evaluate(node.enemy, vars),
+        background: evaluate(node.background, vars),
+      };
+      return { status: "fight", encounter,
+        state: { ...state, variables: vars, message,
+          execution: exec, scriptStack,
+          pendingFight: encounter, diagnostic: null } };
+    } else if (node.op === "erase") {
+      const effect = { kind: "erase-item", alias: evaluate(node.alias, vars),
+        path: exec.path, line: node.line,
+        sourceItemSlot: exec.sourceItemSlot ?? null,
+        sourceBoardPath: exec.sourceBoardPath ?? null };
+      return { status: "effect", effect,
+        state: { ...state, variables: vars,
+          message, execution: exec, scriptStack, diagnostic: null } };
     } else if (node.op === "wait") {
       exec.waiting = true;
       return { status: "waiting", state: { ...state, variables: vars,
-        message, execution: exec, diagnostic: null }, line: node.line };
+        message, execution: exec, scriptStack, diagnostic: null }, line: node.line };
     } else {
       return { status: "error", state: { ...state, variables: vars,
         message, execution: null, diagnostic: issue(exec.path, node.line,
@@ -191,13 +222,47 @@ function run(state) {
     message, execution: null, diagnostic } };
 }
 
-export function startTk3Script(state, source, path) {
-  if (state.execution) return { status: "busy", state };
+export function startTk3Script(state, source, path, context = {}) {
+  if (state.execution || state.pendingFight) return { status: "busy", state };
   const compiled = compileTk3Interaction(source, path);
   if (!compiled.ok) return { status: "error", state: { ...state,
     message: "", diagnostic: compiled.diagnostic, execution: null } };
   return run({ ...state, message: "", diagnostic: null,
-    execution: { path, instructions: compiled.instructions, pc: 0, waiting: false } });
+    execution: { path, instructions: compiled.instructions, pc: 0,
+      waiting: false, sourceItemSlot: context.sourceItemSlot ?? null,
+      sourceBoardPath: context.sourceBoardPath ?? null } });
+}
+
+// Resume after an approved outside effect, such as erasing the
+// triggering item. Unlike Send(), no board remount is involved.
+export function resumeTk3Effect(state) {
+  if (!state.execution || state.execution.waiting || state.pendingFight)
+    return { status: "inactive", state };
+  return run(state);
+}
+
+// A battle outcome is explicit. Running its victory program is an
+// external decision: the interpreter never guesses the native plugin result.
+export function finishTk3Fight(state, victory = null) {
+  if (!state.pendingFight || !state.execution)
+    return { status: "inactive", state };
+  if (victory?.path && Array.isArray(victory.instructions)) {
+    const parent = state.execution;
+    return run({ ...state, pendingFight: null,
+      execution: { path: victory.path, instructions: victory.instructions,
+        pc: 0, waiting: false, sourceItemSlot: parent.sourceItemSlot,
+        sourceBoardPath: parent.sourceBoardPath },
+      scriptStack: [...(state.scriptStack ?? []), parent],
+      message: "", diagnostic: null });
+  }
+  return run({ ...state, pendingFight: null, diagnostic: null });
+}
+
+export function abandonTk3Fight(state) {
+  if (!state.pendingFight) return { status: "inactive", state };
+  return { status: "aborted", state: { ...state,
+    execution: null, pendingFight: null, scriptStack: [],
+    message: "", diagnostic: null } };
 }
 
 export function advanceTk3Script(state) {
@@ -249,5 +314,6 @@ export function startPlacedTk3Script(state, scene, actor, artifacts) {
     return { status: "error", target, state: { ...state, diagnostic, execution: null, message: "" } };
   }
   const source = program.program.rows.map(row => row.line).join("\n");
-  return { ...startTk3Script(state, source, target.programPath), target };
+  return { ...startTk3Script(state, source, target.programPath,
+    { sourceItemSlot: target.slot, sourceBoardPath: scene.boardPath }), target };
 }

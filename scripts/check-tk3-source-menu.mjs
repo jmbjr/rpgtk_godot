@@ -224,7 +224,7 @@ for(const symbol of ["compileTk3SourceMenu","openTk3SourceMenu",
   "selectTk3SourceMenu","confirmTk3MenuProfile","cancelTk3SourceMenu"])
   assert.ok(browser.includes(symbol));
 assert.match(workflow,/node scripts\/check-tk3-source-menu\.mjs/);
-assert.match(workflow,/tk3-source-menu\.mjs site\//);
+assert.match(workflow,/tk3-source-menu\.mjs tk3-fight-bridge\.mjs site\//);
 console.log("Source-owned synthetic menus and imported board UI wiring passed.");
 
 // Original archive is LOCAL/READ ONLY, and must never run in GitHub Actions.
