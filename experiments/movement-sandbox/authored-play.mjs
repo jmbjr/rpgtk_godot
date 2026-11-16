@@ -185,6 +185,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   let inn = options.innState ?? initialInnState();
   let scriptSession = options.scriptSession ?? initialTk3ScriptState();
   const runtimeActions = listTk3RuntimeKeys(scene, artifacts);
+  runtimeButtons.replaceChildren();
   const runtimeControls = runtimeActions.map(action => {
     const button = document.createElement("button");
     button.type = "button";
