@@ -114,7 +114,7 @@ for (const spec of scriptFixtureSpecs) {
   assert.equal(done.state.pendingFight,null);
   assert.deepEqual(done.state.scriptStack,[]);
   assert.equal(startPlacedTk3Script(initialTk3ScriptState(),
-    scene,player,artifacts).status,"waiting",
+    scene,spec.position,artifacts).status,"waiting",
     "Fresh game launch restores original source object and state.");
 
   const rejected=cancelTk3FightTest(ready.state);
