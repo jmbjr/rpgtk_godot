@@ -36,7 +36,10 @@ export function compileTk3Interaction(source, path) {
     return { ok: false, diagnostic: issue(path, MAX_LINES + 1,
       "Program exceeds the 300-line subset limit.") };
   const rows = lines.map((raw, index) => ({
-    line: index + 1, text: raw.trim().replace(/^#(?=[A-Za-z_])/, ""),
+    // A final semicolon is an optional Toolkit statement terminator.
+    // Do not split multi-statement lines or strip characters inside strings.
+    line: index + 1, text: raw.trim().replace(/;$/, "")
+      .replace(/^#(?=[A-Za-z_])/, ""),
   })).filter(row => row.text && !/^(?:\/\/|\*|\/\*)/.test(row.text));
   let offset = 0;
   const current = () => rows[offset];
