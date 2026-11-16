@@ -131,6 +131,16 @@ for(const spec of scriptFixtureSpecs) {
   assert.equal(startTk3BoardProgram(initialTk3ScriptState(),
     selectTk3BoardKey(keyed.scene,entered)).status,"transfer");
 
+  for(const flags of [4,5]) {
+    const stoppingZip=await buildScriptFixtureZip(spec);
+    stoppingZip.file(boardPath,patchOne(source,script,{flags}));
+    const stopping=await parsed(stoppingZip);
+    const trigger=stopping.scene.boardPrograms[0];
+    assert.equal(trigger.status,"resolved");
+    assert.equal(trigger.kind,flags===4?"step":"keypress");
+    assert.equal(trigger.flags & 4,4,
+      "Native PRG_STOPS_MOVEMENT is not an unsupported activation flag.");
+  }
   for(const [sourceText,options,expectedStatus] of [
     [script,{flags:2},"unsupported"],
     [script,{activate:1},"unsupported"],
