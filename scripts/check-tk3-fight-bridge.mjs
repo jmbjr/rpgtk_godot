@@ -207,6 +207,12 @@ for (const spec of scriptFixtureSpecs) {
   assert.equal(finishLoss.state.variables["loss_"+spec.id],1);
   assert.equal(finishLoss.state.variables["defeated_"+spec.id],undefined);
   assert.equal(finishLoss.state.erasedItems,undefined);
+  const afterDefeatScript=startPlacedTk3Script(finishLoss.state,
+    scriptedGame.scene,spec.position,scriptedGame.artifacts);
+  assert.equal(afterDefeatScript.status,"waiting",
+    "Toolkit returns normally after a configured game-over PRG; no implicit reset.");
+  assert.equal(afterDefeatScript.state.variables["loss_"+spec.id],1,
+    "Existing session values remain after the authored game-over PRG.");
 
   for(const [gameOverName,gameOverSource,error] of [
     ["lost_"+spec.id+".prg",undefined,/missing/i],
