@@ -512,15 +512,28 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     const sourceLine = currentLegacyDialogue(legacy);
     const scriptWaiting = Boolean(scriptSession.execution?.waiting);
     const genericTarget = selectTk3ScriptTarget(scene, actorAtLayer());
+    const boardKeyTarget = !genericTarget ?
+      selectTk3BoardKey(scene, actorAtLayer()) : null;
     const sourceTarget = genericTarget && sourcePlans.has(genericTarget.programPath) ?
       genericTarget : null;
     const near = nearAuthoredInn(actorAtLayer(), scene) && !sourceTarget;
-    const innIndex = scene.innDoor && sourcePlans.get(scene.innDoor.programPath)?.eventIndex;
+    // A source-defined clue system is optional. Do not invent BSTW's
+    // 13-clue total or inn visits for an independent imported TK3 game.
+    const sourceClues = Number.isInteger(legacy?.variables?.maxclues) &&
+      Number.isFinite(legacy?.variables?.clues);
+    const showClues = sourceClues || Boolean(scene.innDoor);
+    const innIndex = scene.innDoor &&
+      sourcePlans.get(scene.innDoor.programPath)?.eventIndex;
     const innVisits = innIndex !== undefined && innIndex !== null ?
       (legacy?.variables.checked?.[innIndex] ?? 0) : inn.checkedInn;
-    hud.textContent = "Clues: " + (legacy?.variables.clues ?? inn.clues) +
-      " / " + (legacy?.variables.maxclues ?? inn.maxClues) +
-      " · Inn visits: " + innVisits;
+    hud.hidden = !showClues;
+    hud.style.display = showClues ? "" : "none";
+    if (showClues) {
+      const found = sourceClues ? legacy.variables.clues : inn.clues;
+      const total = sourceClues ? legacy.variables.maxclues : inn.maxClues;
+      hud.textContent = "Clues: " + found + " / " + total +
+        (scene.innDoor ? " · Inn visits: " + innVisits : "");
+    } else hud.textContent = "";
     scriptVariables.textContent = "Script variables (session): " +
       (Object.entries(scriptSession.variables).map(([name, value]) =>
         name + " = " + JSON.stringify(value)).join(" · ") || "(none yet)");
@@ -557,7 +570,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
         scriptWaiting);
     }
     talkButton.disabled = Boolean(legacy?.menu) ||
-      (!current && !sourceLine && !scriptWaiting && !near && !genericTarget);
+      (!current && !sourceLine && !scriptWaiting && !near &&
+        !genericTarget && !boardKeyTarget);
     talkButton.textContent = current ? (
       inn.conversation.index + 1 === conversationMessages(inn.conversation).length ?
         "Finish conversation" : "Next line"
@@ -571,7 +585,13 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       near ? "At the locked inn: press Talk, E or Space." :
       genericTarget ? "Near " + genericTarget.filename + ": Talk runs " +
         genericTarget.programPath + " from this ZIP." :
-      "Approach a marked TALK object or INN DOOR.";
+      boardKeyTarget ? "Inside a board-program region: press Talk, E or Space to run " +
+        boardKeyTarget.raw + "." :
+      (scene.boardPrograms ?? []).some(p => p.status === "resolved" &&
+        p.kind === "step") ?
+        "Walk into a cyan BOARD · STEP area to activate the authored program." :
+      scene.innDoor ? "Approach a marked TALK object or INN DOOR." :
+        "Approach an authored TALK object or source board program.";
     const message = interactionFeedback || legacy?.diagnostic?.text ||
       scriptSession.diagnostic?.text || hint;
     if (feedback.textContent !== message) feedback.textContent = message;
@@ -662,12 +682,16 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       draw();
       return;
     }
-    if (scriptSession.execution?.waiting ||
+    const boardKey = !scriptSession.execution?.waiting &&
+      !selectTk3ScriptTarget(scene, actorAtLayer()) ?
+      selectTk3BoardKey(scene, actorAtLayer()) : null;
+    if (scriptSession.execution?.waiting || boardKey ||
         (!inn.conversation && !nearAuthoredInn(actorAtLayer(), scene) &&
           selectTk3ScriptTarget(scene, actorAtLayer()))) {
       const stepped = scriptSession.execution?.waiting ?
         advanceTk3Script(scriptSession) :
-        startPlacedTk3Script(scriptSession, scene, actorAtLayer(), artifacts);
+        boardKey ? startTk3BoardProgram(scriptSession, boardKey) :
+          startPlacedTk3Script(scriptSession, scene, actorAtLayer(), artifacts);
       if (applyScriptStep(stepped)) return;
     } else {
       const response = inn.conversation ?
@@ -693,12 +717,24 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     updateStatus();
     draw();
   }
+  // This is a step-ON program region, not an ITM Talk activation. The
+  // browser approximates Toolkit's collision base by the actor foot point.
+  const runEnteredBoardProgram = before => {
+    const program = selectTk3BoardStep(scene,
+      { ...before, layer: scene.start.layer }, actorAtLayer());
+    if (!program) return false;
+    const response = startTk3BoardProgram(scriptSession, program);
+    const transferred = applyScriptStep(response);
+    if (!transferred && response.status !== "completed") clearHeld();
+    return transferred;
+  };
   const step = (direction, seconds) => {
     if (inn.conversation || legacy?.dialogue || legacy?.menu ||
         scriptSession.execution?.waiting) return;
     const previous = actor;
     actor = stepMovement(actor, axes[direction], seconds, scene.world);
     if (actor.distance !== previous.distance) interactionFeedback = "";
+    if (runEnteredBoardProgram(previous)) return;
     if (actor.facing !== priorFacing) walkMs = 0;
     priorFacing = actor.facing;
     if (!actor.moving || !previous.moving) walkMs = 0;
@@ -713,6 +749,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       legacy?.menu || scriptSession.execution?.waiting ?
       { x: 0, y: 0 } : input(), seconds, scene.world);
     if (actor.distance !== prior.distance) interactionFeedback = "";
+    if (!scriptSession.execution && runEnteredBoardProgram(prior)) return;
     if (actor.facing !== priorFacing || (!prior.moving && actor.moving)) walkMs = 0;
     if (actor.moving) walkMs += Math.min(seconds, 0.05) * 1000;
     else walkMs = 0;
