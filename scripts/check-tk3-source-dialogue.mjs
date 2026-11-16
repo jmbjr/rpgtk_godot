@@ -31,7 +31,7 @@ for (const spec of scriptFixtureSpecs) {
   const eventName = spec.id + "event";
   const lastName = "Last" + spec.id + "Talk";
   const firstText = spec.characterName + ": The " + spec.itemName +
-    " gave one clue.";
+    " gave one clue." + (spec.id === "grove" ? "\nThe orchard remembers." : "");
   const repeatText = spec.characterName + ": This object is already known.";
   const awardText = "A clue from " + spec.itemName;
   const source = [
@@ -41,8 +41,18 @@ for (const spec of scriptFixtureSpecs) {
     "  if(checked[" + eventName + "] == 0)", "  {",
     "    TalkPanel->setMwin(" + spec.characterName + "MwinID, \"mwin" +
       spec.characterName + ".png\")",
-    "    TalkPanel->SetTxt(" + spec.characterName + "MwinID, " +
-      JSON.stringify(firstText) + ")",
+    ...(spec.id === "grove" ? [
+      "    TalkPanel->freezeMwin(" + spec.characterName + "MwinID, 1)",
+      "    TalkPanel->SetTxt(" + spec.characterName + "MwinID, " +
+        JSON.stringify(firstText.split("\n")[0]) + ", eSkipEOT)",
+      "    TalkPanel->SetTxt(" + spec.characterName + "MwinID, eNewLine, eSkipEOT)",
+      "    TalkPanel->SetTxt(" + spec.characterName + "MwinID, " +
+        JSON.stringify(firstText.split("\n")[1]) + ", eSkipEOT)",
+      "    TalkPanel->freezeMwin(" + spec.characterName + "MwinID, 0)",
+    ] : [
+      "    TalkPanel->SetTxt(" + spec.characterName + "MwinID, " +
+        JSON.stringify(firstText) + ")",
+    ]),
     "    TalkPanel->Close()",
     "    clues++", "    updateClues(" + JSON.stringify(awardText) + ")",
     "  }", "  else", "  {",
@@ -128,7 +138,8 @@ for (const spec of scriptFixtureSpecs) {
     failed.artifacts, failDef);
   assert.equal(bad.ok, false);
   assert.equal(bad.diagnostic.path, target.programPath);
-  assert.equal(bad.diagnostic.line, 11);
+  assert.equal(bad.diagnostic.line,
+    source.split("\n").findIndex(line => line.includes('PluginHelp("unknown DLL")')) + 1);
   assert.match(bad.diagnostic.text, /Unsupported legacy dialogue statement/);
   console.log(spec.id + ": source-only dialogue, one-time clue, strict cooldown, repeat/reset and unsupported-line diagnostics passed.");
 }
