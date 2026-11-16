@@ -5,6 +5,7 @@ import JSZip from "../vendor/jszip.min.js";
 import { openGameArchive } from "../archive.mjs";
 import { readArtifacts, buildReferences } from "../artifacts.mjs";
 import { buildPlayableScene } from "../playable-scene.mjs";
+import { mainFileBindings } from "../model.mjs";
 import { readLegacyDialogueDefinitions, initialLegacyDialogueState }
   from "../tk3-source-dialogue.mjs";
 import { listTk3RuntimeKeys } from "../tk3-runtime-keys.mjs";
@@ -103,7 +104,12 @@ async function load(fixture) {
 for(const spec of scriptFixtureSpecs) {
   const {fixture,game}=await synthetic(spec);
   const {artifacts,scene,def,action}=await load(fixture);
-  assert.equal(action.path,spec.root+"/Prg/choices_"+spec.id+".prg");
+  assert.equal(action.path,spec.root+"/Prg/choices_"+spec.id+".prg",
+    JSON.stringify({ action,
+      sourcePaths:[...artifacts.keys()].filter(x=>x.includes("choices_")),
+      binding:new Map(mainFileBindings(artifacts.get(scene.mainPath),
+        [...artifacts.keys()])).get(action.evidence),
+      startup:artifacts.get(scene.mainPath)?.startup }));
   assert.equal(def.supported,true);
   const plan=compileTk3SourceMenu(artifacts,scene,action,def);
   assert.equal(plan.ok,true,plan?.diagnostic?.text);
