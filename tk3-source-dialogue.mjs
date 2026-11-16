@@ -184,7 +184,7 @@ const knownStatements = [
   new RegExp("^if\\s*\\(\\s*"+ident+"\\s*>\\s*"+ident+"\\s*\\)\\s*$", "i"),
   new RegExp("^if\\s*\\(\\s*"+ident+"\\s*\\[\\s*"+ident+"\\s*\\]\\s*==\\s*0\\s*\\)\\s*$", "i"),
   /^(?:\{|\}|else)$/i,
-  new RegExp("^"+ident+"\\s*\\(\\s*\"(?:[^\"\\\\]|\\\\.)*\"\\s*\\)\\s*;?$", "i"),
+  /^updateClues\s*\(\s*"(?:[^"\\]|\\.)*"\s*\)\s*;?$/i,
   new RegExp("^local\\s*\\(\\s*"+ident+"\\s*\\)\\s*;?$", "i"),
   new RegExp("^playerLocation\\s*\\(\\s*\"[^\"]+\"\\s*,\\s*"+ident+"\\s*,\\s*"+ident+"\\s*,\\s*"+ident+"\\s*\\)\\s*;?$", "i"),
   /^send\s*\(\s*"[^"]+\.brd"\s*,\s*[A-Za-z_]\w*\s*,\s*[A-Za-z_]\w*\s*,\s*[A-Za-z_]\w*\s*\)\s*;?$/i,
