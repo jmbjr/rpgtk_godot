@@ -45,7 +45,7 @@ async function synthetic(spec, opts={}) {
   const layout="Layout_"+spec.id+".prg", book="MenuBook_"+spec.id+".prg";
   const events=game.names.map((_,i)=>"event_"+spec.id+"_"+i);
   const init=[
-    "maxclues = 6", "ItemTalkThreshold = 500",
+    "maxclues = "+(opts.maxclues ?? 6), "ItemTalkThreshold = 500",
     ...events.map((e,i)=>e+" = "+i),
     ...game.names.map((name,i)=>
       'CampCmap->setGraphic(SIDEMENU, '+i+',0,"mm'+name+'_inactive.png")'),
@@ -87,6 +87,7 @@ async function synthetic(spec, opts={}) {
   if(opts.badUpdate) helper=helper.replace('updateClues("Learned '+
     game.names[0]+' in '+game.id+'")','Send("outside.brd",1,1)');
   fixture.file(root+book,helper);
+  if(opts.ambiguous)fixture.file(root+book.toUpperCase(),helper);
   return {fixture,game,prgName,events,book,helper};
 }
 async function load(fixture) {
@@ -168,6 +169,7 @@ for(const spec of scriptFixtureSpecs) {
 
   for(const [variant,word] of [
     [{badInclude:true},"missing"],
+    [{ambiguous:true},"ambiguous"],
     [{removeLabels:true},"no label"],
     [{unknownEvent:true},"Unknown source clue event"],
     [{badUpdate:true},"Expected exactly one"],
@@ -181,6 +183,35 @@ for(const spec of scriptFixtureSpecs) {
     assert.ok(invalid.diagnostic.line>=1);
     assert.match(invalid.diagnostic.text,new RegExp(word,"i"));
   }
+  // Integrated synthetic session: seven clues from *other* source
+  // interactions already exist. The six menu events occupy distinct
+  // indices and must complete the same thirteen-clue state, not reset it.
+  const linked=await synthetic(spec,{maxclues:13});
+  const combined=await load(linked.fixture);
+  const combinedPlan=compileTk3SourceMenu(combined.artifacts,combined.scene,
+    combined.action,combined.def);
+  assert.equal(combinedPlan.ok,true,combinedPlan?.diagnostic?.text);
+  let combinedState=initialLegacyDialogueState(combined.def);
+  const priorChecked=Array(13).fill(0).map((_,i)=>i>=6?1:0);
+  combinedState={...combinedState,variables:{...combinedState.variables,
+    clues:7, remainingclues:6, checked:priorChecked}};
+  combinedState=openTk3SourceMenu(combinedState,combinedPlan).state;
+  for(const option of combinedPlan.choices) {
+    let outcome=selectTk3SourceMenu(combinedState,combinedPlan,option.index);
+    if(outcome.status==="choose-profile")
+      outcome=confirmTk3MenuProfile(outcome.state,combinedPlan,
+        combinedPlan.profiles[0].index);
+    assert.equal(outcome.status,"clue");
+    combinedState=outcome.state;
+  }
+  assert.equal(combinedState.variables.clues,13);
+  assert.equal(combinedState.variables.remainingclues,0);
+  assert.equal(combinedState.variables[game.award],1,
+    "Source helper's ending flag must be set only after all 13 clues");
+  assert.deepEqual(combinedState.variables.checked,Array(13).fill(1),
+    "Earlier seven source interactions must keep their checked state");
+  assert.equal(selectTk3SourceMenu(combinedState,combinedPlan,0)
+    .state.variables.clues,13,"Repeat menu visit cannot exceed 13");
   console.log(spec.id+": six source-owned CCmap menu clues, profile/cancel, repeat, reset, final flag and error paths passed.");
 }
 const html=await readFile(new URL("../index.html",import.meta.url),"utf8");
