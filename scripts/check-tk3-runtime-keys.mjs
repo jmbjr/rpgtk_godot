@@ -33,7 +33,7 @@ async function configureZip(options = {}) {
   zip.file(gamPath, bytes);
   if (!options.omitProgram) zip.file(keyPath,
     options.source ?? keyProgram);
-  if (options.duplicate) zip.file("Extra/Prg/ENDDEMO.prg", keyProgram);
+  if (options.duplicate) zip.file(spec.root + "/Prg/ENDDEMO.PRG", keyProgram);
   const parsed = await openGameArchive(
     await zip.generateAsync({ type: "uint8array" }),
     b => JSZip.loadAsync(b));
