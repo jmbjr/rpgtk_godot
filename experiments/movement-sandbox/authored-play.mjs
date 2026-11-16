@@ -693,15 +693,17 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
         text: stepped.transfer.path + ":" + stepped.transfer.line +
           ": Send(): browser scene-transfer callback is unavailable." } };
     }
-    if (defeatProgramActive && response.status === "completed") {
+    // Native FIGHT_LOST calls the GAM's game-over PRG and returns when
+    // that PRG finishes. Only the *absent-PRG* branch invokes reset().
+    const finishedDefeatPrg = defeatProgramActive &&
+      response.status === "completed";
+    if (defeatProgramActive &&
+        ["completed", "error"].includes(response.status))
       defeatProgramActive = false;
-      gameOver = true;
-      gameOverMessage = "GAM game-over RPGCode finished. This browser does not execute an additional native reset. Restart to begin a new session.";
-    }
-    if (defeatProgramActive && response.status === "error")
-      defeatProgramActive = false;
-    interactionFeedback = response.status === "completed" ?
-      "Source RPGCode program finished. Variables persist until Reset." : "";
+    interactionFeedback = finishedDefeatPrg ?
+      "GAM game-over RPGCode completed; Toolkit does not implicitly reset after a configured program." :
+      response.status === "completed" ?
+        "Source RPGCode program finished. Variables persist until Reset." : "";
     if (["waiting", "completed", "error"].includes(response.status)) clearHeld();
     return false;
   }
