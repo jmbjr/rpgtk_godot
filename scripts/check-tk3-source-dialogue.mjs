@@ -160,7 +160,8 @@ if (process.argv[2]) {
     "mwinStartBoardLoad.prg"];
   for (const filename of expected) {
     const asset = original.artifacts.get("BSTW/Prg/" + filename);
-    const p = compileLegacyDialogue(asset, original.artifacts, definitions);
+    const p = compileLegacyDialogue(asset, original.artifacts, definitions,
+      original.scene);
     assert.equal(p.ok, true, filename + ": " + p.diagnostic?.text);
     assert.ok(p.first.length);
     console.log(filename + ": " + p.first.length + " original first-visit lines, " +
