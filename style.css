@@ -352,3 +352,10 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
   .bstw-title-panel { padding: .65rem; }
   .bstw-title-panel .sandbox-panel-heading { gap: .4rem; }
 }
+
+/* GAM-declared runtime RPGCode shortcuts; buttons also work on touch. */
+.play-runtime-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: .5rem 0; }
+.play-runtime-button { font: inherit; padding: .45rem .7rem; border-radius: .5rem;
+  border: 1px solid var(--border, #aaa); background: #342d32; color: #fff7e7;
+  cursor: pointer; }
+.play-runtime-button:disabled { cursor: default; opacity: .45; }

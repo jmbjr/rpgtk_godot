@@ -9,6 +9,7 @@ import { nearAuthoredInn, activateAuthoredInn } from "./imported-inn.mjs";
 import { initialTk3ScriptState, selectTk3ScriptTarget, startPlacedTk3Script,
   advanceTk3Script } from "../../tk3-script-slice.mjs";
 import { resolveTk3BoardTransfer } from "../../tk3-board-transfer.mjs";
+import { listTk3RuntimeKeys, startTk3RuntimeKey } from "../../tk3-runtime-keys.mjs";
 import { describePlayableTargets } from "./playtest-guidance.mjs";
 
 // Reuse the sandbox movement engine and keyboard/touch input. Only the
@@ -67,6 +68,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   const dialogueText = section.querySelector("#play-dialogue-text");
   const dialogueProgress = section.querySelector("#play-dialogue-progress");
   const talkButton = section.querySelector("#play-talk");
+  const runtimeButtons = section.querySelector("#play-runtime-actions");
   const scriptVariables = section.querySelector("#play-script-variables");
   const scriptDiagnostic = section.querySelector("#play-script-diagnostic");
   const pad = [...section.querySelectorAll("[data-move]")];
@@ -182,6 +184,20 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   // A fresh mount always starts with a fresh, in-memory inn conversation.
   let inn = options.innState ?? initialInnState();
   let scriptSession = options.scriptSession ?? initialTk3ScriptState();
+  const runtimeActions = listTk3RuntimeKeys(scene, artifacts);
+  runtimeButtons.replaceChildren();
+  const runtimeControls = runtimeActions.map(action => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "play-runtime-button";
+    button.textContent = (action.label || "Source key " + action.key) +
+      " · " + action.program;
+    button.title = action.status === "resolved" ?
+      "Run the configured archive RPGCode program" :
+      "Unresolved source program; activate to see the diagnostic";
+    runtimeButtons.append(button);
+    return { action, button };
+  });
   let interactionFeedback = options.arrivalFeedback ?? "";
   const actorAtLayer = () => ({ ...actor, layer: scene.start.layer });
 
@@ -357,6 +373,9 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       dialogueText.textContent = inn.clueMessage;
       dialogueProgress.textContent = "1 / " + inn.maxClues + " clues found";
     }
+    for (const control of runtimeControls) {
+      control.button.disabled = Boolean(current || scriptWaiting);
+    }
     talkButton.disabled = !current && !scriptWaiting && !near && !genericTarget;
     talkButton.textContent = current ? (
       inn.conversation.index + 1 === conversationMessages(inn.conversation).length ?
@@ -372,6 +391,37 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (feedback.textContent !== message) feedback.textContent = message;
   };
 
+  function applyScriptStep(stepped) {
+    const response = stepped.status === "transfer" ?
+      resolveTk3BoardTransfer(stepped, scene, artifacts, graph) : stepped;
+    scriptSession = response.state;
+    if (response.transferred) {
+      clearHeld();
+      if (typeof options.onTransfer === "function") {
+        options.onTransfer({ scene: response.scene, scriptSession, innState: inn,
+          fromBoardPath: response.fromBoardPath,
+          arrivalFeedback: "Send() arrived at " + response.toBoardPath +
+            " · (" + response.spawn.x + ", " + response.spawn.y +
+            ", layer " + response.spawn.layer + ")." });
+        return true;
+      }
+      scriptSession = { ...scriptSession, execution: null, diagnostic: {
+        text: stepped.transfer.path + ":" + stepped.transfer.line +
+          ": Send(): browser scene-transfer callback is unavailable." } };
+    }
+    interactionFeedback = response.status === "completed" ?
+      "Source RPGCode program finished. Variables persist until Reset." : "";
+    if (["waiting", "completed", "error"].includes(response.status)) clearHeld();
+    return false;
+  }
+
+  function triggerRuntimeProgram(action) {
+    if (inn.conversation || scriptSession.execution?.waiting) return;
+    if (applyScriptStep(startTk3RuntimeKey(scriptSession, action, artifacts))) return;
+    updateStatus();
+    draw();
+  }
+
   function interact() {
     // Timestamp is injected into the same deterministic adapter as the
     // synthetic lab; exact 500ms remains blocked after completion.
@@ -382,31 +432,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       const stepped = scriptSession.execution?.waiting ?
         advanceTk3Script(scriptSession) :
         startPlacedTk3Script(scriptSession, scene, actorAtLayer(), artifacts);
-      const response = stepped.status === "transfer" ?
-        resolveTk3BoardTransfer(stepped, scene, artifacts, graph) : stepped;
-      scriptSession = response.state;
-      if (response.transferred) {
-        // Transfer is transactional: the pure resolver first validates the
-        // target scene. A separate app-owned callback remounts it without
-        // discarding script variables, visits or script continuation state.
-        clearHeld();
-        if (typeof options.onTransfer === "function") {
-          options.onTransfer({ scene: response.scene, scriptSession, innState: inn,
-            fromBoardPath: response.fromBoardPath,
-            arrivalFeedback: "Send() arrived at " + response.toBoardPath +
-              " · (" + response.spawn.x + ", " + response.spawn.y +
-              ", layer " + response.spawn.layer + ")." });
-          return;
-        }
-        // A standalone renderer is not allowed to silently claim a swap.
-        scriptSession = { ...scriptSession, execution: null, diagnostic: {
-          text: stepped.transfer.path + ":" + stepped.transfer.line +
-            ": Send(): browser scene-transfer callback is unavailable." } };
-      }
-      interactionFeedback = response.status === "completed" ?
-        "Source RPGCode program finished. Variables persist until Reset." : "";
-      if (response.status === "waiting" || response.status === "completed" ||
-          response.status === "error") clearHeld();
+      if (applyScriptStep(stepped)) return;
     } else {
       const response = inn.conversation ?
         advanceInn(inn, tick) : activateAuthoredInn(inn, actorAtLayer(), tick, scene);
@@ -470,6 +496,17 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       if (!event.repeat) interact();
       return;
     }
+    // The native engine maps GAM runtime key characters through the
+    // user's keyboard layout to scan codes. Browser key events are a
+    // documented approximation, with one run per keydown (no auto-repeat).
+    const keyName = event.key.length === 1 ? event.key.toUpperCase() : event.key;
+    const runtime = runtimeActions.find(action => action.label === keyName);
+    if (runtime && !inn.conversation && !scriptSession.execution?.waiting &&
+        !event.target?.closest?.("button, a, [role=button]")) {
+      event.preventDefault();
+      if (!event.repeat) triggerRuntimeProgram(runtime);
+      return;
+    }
     if (!keyDirections.has(event.code)) return;
     if (!inn.conversation && !scriptSession.execution?.waiting)
       keyboardHeld.add(event.code);
@@ -509,6 +546,10 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     }, { signal: listeners.signal });
   }
   talkButton.addEventListener("click", interact, { signal: listeners.signal });
+  for (const { action, button } of runtimeControls) {
+    button.addEventListener("click", () => triggerRuntimeProgram(action),
+      { signal: listeners.signal });
+  }
   vectorOverlay.addEventListener("change", draw, { signal: listeners.signal });
   markerToggle.addEventListener("change", () => {
     updatePlaytestMarkers();

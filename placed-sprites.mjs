@@ -86,14 +86,27 @@ export function mapBoardPlacements(board, artifacts, graph) {
           art = { status: "unsupported", reason: "Artwork inspection failed: " + error.message };
         }
       }
-      const scriptEdge = edges.find(e =>
-        e.evidence === "Native sprite activation program · slot " + sprite.slot);
+      // Toolkit 3.1 CItem::open(): the board's prgActivate overrides the
+      // ITM's itmPrgPickUp; an *empty* board field inherits the ITM value.
+      // Never fall back merely because an explicit board PRG is missing.
+      const boardProgram = sprite.activationProgram || "";
+      const itemProgram = itemResolved ?
+        (item.programs?.["Pickup program"] || "") : "";
+      const effectiveProgram = boardProgram || itemProgram;
+      const programSource = boardProgram ? "board" :
+        itemProgram ? "item" : "unset";
+      const scriptEdge = programSource === "board" ?
+        edges.find(e =>
+          e.evidence === "Native sprite activation program · slot " + sprite.slot) :
+        programSource === "item" ?
+          (graph.outgoing.get(item.path) ?? []).find(e =>
+            e.evidence === "Pickup program" && e.value === itemProgram) : null;
       const program = artifacts.get(scriptEdge?.to);
       const programResolved = scriptEdge?.status === "Resolved" && valid(program, "prg");
-      // Only a resolved script edge with the exact named target identifies
-      // the inn. A similarly named door ITM is not sufficient.
-      const isInnDoor = programResolved &&
-        basename(sprite.activationProgram) === "mwininn.prg" &&
+      // Preserve the BSTW inn's strict authored board activation identity.
+      // An identically named item alone does not select that door.
+      const isInnDoor = programSource === "board" && programResolved &&
+        basename(boardProgram) === "mwininn.prg" &&
         basename(program.path) === "mwininn.prg";
       const { x, y, layer } = sprite.position ?? {};
       const positionValid = Number.isFinite(x) && Number.isFinite(y) &&
@@ -102,10 +115,11 @@ export function mapBoardPlacements(board, artifacts, graph) {
         slot: sprite.slot, filename: sprite.filename, name: itemResolved ? item.name : sprite.filename,
         itemPath: itemResolved ? item.path : itemEdge?.to ?? null, itemStatus,
         position: sprite.position, positionStatus: positionValid ? "valid" : "invalid",
-        activationProgram: sprite.activationProgram ?? "",
+        activationProgram: effectiveProgram, boardActivationProgram: boardProgram,
+        programSource,
         programPath: programResolved ? program.path : scriptEdge?.to ?? null,
         programStatus: programResolved ? "resolved" :
-          sprite.activationProgram ? "missing" : "unset",
+          effectiveProgram ? "missing" : "unset",
         isInnDoor, artStatus: art.status, artReason: art.reason ?? "",
         artSource: art.source ?? null, animationPath: art.animationPath ?? null,
         artwork: art.artwork ?? null,

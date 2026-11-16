@@ -125,5 +125,5 @@ assert.match(app, /launchPlayableWithSession\(outcome\.scriptSession, outcome\.s
 assert.match(app, /function launchPlayableScene\(\)/);
 assert.match(app, /requestBstwNewSession\(bstwTitle, playableScene\)/);
 assert.match(flow, /node scripts\/check-tk3-startup\.mjs/);
-assert.match(flow, /tk3-gam-startup\.mjs site\//);
+assert.match(flow, /tk3-gam-startup\.mjs tk3-runtime-keys\.mjs site\//);
 console.log("GAM startup passed: production synthetic ZIP -> configured PRG -> scalar -> placed-object dialogue; direct launch, fresh session, missing/ambiguous paths, and atomic unsupported-command diagnostics.");
