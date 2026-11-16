@@ -167,7 +167,7 @@ for(const symbol of ["selectTk3BoardStep","selectTk3BoardKey",
 assert.match(client,/hud\.hidden = !showClues/);
 assert.match(client,/innLabel\.hidden = !scene\.innDoor/);
 assert.match(flow,/node scripts\/check-tk3-board-programs\.mjs/);
-assert.match(flow,/tk3-board-programs\.mjs site\//);
+assert.match(flow,/tk3-board-programs\.mjs tk3-gam-startup\.mjs/);
 console.log("Non-BSTW HUD condition and source board-trigger presentation are wired.");
 
 // Optional source inspection of the owner's unmodified *test-only* demo ZIP.
