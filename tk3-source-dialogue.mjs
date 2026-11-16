@@ -127,7 +127,17 @@ function bodyAt(rows, conditionalIndex) {
 }
 
 function extractLines(rows, start, end, path) {
-  const lines = [], portraits = new Map();
+  const lines = [], portraits = new Map(), frozen = new Map();
+  const speaker = slot =>
+    portraits.get(slot.toLowerCase()) ||
+      (slot.replace(/mwinid\d*$/i, "") || slot);
+  const flush = (slot, fallbackLine) => {
+    const key = slot.toLowerCase(), entry = frozen.get(key);
+    if (!entry) return;
+    if (entry.text) lines.push({ speaker: speaker(slot), text: entry.text,
+      path, line: entry.line ?? fallbackLine });
+    frozen.delete(key);
+  };
   for (let i = start; i < end; i++) {
     const row = rows[i];
     const text = row.text;
@@ -137,22 +147,33 @@ function extractLines(rows, start, end, path) {
       if (name) portraits.set(slotArt[1].toLowerCase(),
         name.replace(/.*[\\/]/, "").replace(/\.[^.]+$/, "").replace(/^mwin/i, ""));
     }
-    const say = text.match(new RegExp("^"+ident+"->setTxt\\s*\\(\\s*("+ident+")\\s*,\\s*(\"(?:[^\"\\\\]|\\\\.)*\")\\s*\\)\\s*;?$", "i"));
-    if (say) {
-      const message = quotes(say[2]);
-      if (message === null) throw error(path, row.line, "Unsupported dialogue string.");
-      const fallback = say[1].replace(/mwinid\d*$/i, "") || say[1];
-      lines.push({ speaker: portraits.get(say[1].toLowerCase()) || fallback,
-        text: message, path, line: row.line });
+    const freeze = text.match(new RegExp("^"+ident+"->freezeMwin\\s*\\(\\s*("+ident+")\\s*,\\s*([01])\\s*\\)\\s*;?$", "i"));
+    if (freeze) {
+      if (freeze[2] === "1") frozen.set(freeze[1].toLowerCase(),
+        { text: "", line: null });
+      else flush(freeze[1], row.line);
+      continue;
     }
+    const say = text.match(new RegExp("^"+ident+"->setTxt\\s*\\(\\s*("+ident+")\\s*,\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|eNewLine)\\s*(?:,\\s*eSkipEOT\\s*)?\\)\\s*;?$", "i"));
+    if (!say) continue;
+    const message = /^enewline$/i.test(say[2]) ? "\n" : quotes(say[2]);
+    if (message === null) throw error(path, row.line, "Unsupported dialogue string.");
+    const active = frozen.get(say[1].toLowerCase());
+    if (active) {
+      active.text += message;
+      if (active.line === null) active.line = row.line;
+    } else lines.push({ speaker: speaker(say[1]), text: message,
+      path, line: row.line });
   }
+  if (frozen.size) throw error(path, rows[end - 1]?.line ?? 1,
+    "Unclosed frozen message window.");
   return lines;
 }
 
 const knownStatements = [
   /^#include\s*\(\s*"[^"]+"\s*\)\s*;?$/i,
-  new RegExp("^"+ident+"->(?:setMwin|setProfile|setTextMode|setDelay)\\s*\\(.*\\)\\s*;?$", "i"),
-  new RegExp("^"+ident+"->setTxt\\s*\\(\\s*"+ident+"\\s*,\\s*\"(?:[^\"\\\\]|\\\\.)*\"\\s*\\)\\s*;?$", "i"),
+  new RegExp("^"+ident+"->(?:setMwin|setProfile|setTextMode|setDelay|freezeMwin)\\s*\\(.*\\)\\s*;?$", "i"),
+  new RegExp("^"+ident+"->setTxt\\s*\\(\\s*"+ident+"\\s*,\\s*(?:\"(?:[^\"\\\\]|\\\\.)*\"|eNewLine)\\s*(?:,\\s*eSkipEOT\\s*)?\\)\\s*;?$", "i"),
   new RegExp("^"+ident+"->Close\\s*\\(\\s*\\)\\s*;?$", "i"),
   /^clues\s*\+\+\s*;?$/i,
   new RegExp("^"+ident+"\\s*\\+\\+\\s*;?$", "i"),
