@@ -9,7 +9,7 @@ import { compileTk3Interaction, initialTk3ScriptState,
   startPlacedTk3Script, advanceTk3Script, resumeTk3Effect,
   startTk3Script } from "../tk3-script-slice.mjs";
 import { resolveTk3FightRequest, simulateTk3FightVictory,
-  cancelTk3FightTest } from "../tk3-fight-bridge.mjs";
+  simulateTk3FightDefeat, cancelTk3FightTest } from "../tk3-fight-bridge.mjs";
 import { fixtures } from "../docs/specs/fixtures/format-fixtures.mjs";
 import { buildScriptFixtureZip, scriptFixtureSpecs }
   from "../docs/specs/fixtures/tk3-script-interaction-fixtures.mjs";
@@ -71,6 +71,19 @@ function victoryScript(spec) {
 }
 async function sample(spec, change = {}) {
   const zip = await buildScriptFixtureZip(spec);
+  if (Object.hasOwn(change, "gameOverName")) {
+    const gamBytes = Buffer.from(await zip.file(spec.main).async("uint8array"));
+    const old = Buffer.from("gameover.prg\0", "ascii");
+    const at = gamBytes.indexOf(old);
+    assert.ok(at >= 0 && gamBytes.indexOf(old, at + 1) === -1,
+      "Native GAM game-over binding must be unique.");
+    zip.file(spec.main, Buffer.concat([gamBytes.subarray(0, at),
+      Buffer.from(change.gameOverName + "\0", "ascii"),
+      gamBytes.subarray(at + old.length)]));
+    if (change.gameOverSource && change.gameOverName)
+      zip.file(spec.root + "/Prg/" + change.gameOverName,
+        change.gameOverSource);
+  }
   const root = spec.root, enemy = "opponent_"+spec.id+".ene",
     bkg = "field_"+spec.id+".bkg", win = "reward_"+spec.id+".prg";
   zip.file(root+"/Prg/"+spec.script,change.start ??
@@ -151,6 +164,67 @@ for (const spec of scriptFixtureSpecs) {
     scene,spec.position,artifacts).status,"waiting",
     "Fresh game launch restores original source object and state.");
 
+  // Pinned Toolkit FIGHT_LOST: either execute the GAM-configured
+  // game-over PRG or (if unset) show "Game over" then reset.
+  const defaultGame=await sample(spec,{gameOverName:""});
+  const defaultFight=advanceTk3Script(defaultGame.script.state);
+  const defaultReady=resolveTk3FightRequest(defaultFight,
+    defaultGame.artifacts);
+  assert.equal(defaultReady.status,"ready",defaultReady.state.diagnostic?.text);
+  const defaultDefeat=simulateTk3FightDefeat(defaultReady.state,
+    defaultReady.encounter,defaultGame.artifacts,defaultGame.scene.mainPath);
+  assert.equal(defaultDefeat.status,"gameover");
+  assert.equal(defaultDefeat.policy,"native-default-reset");
+  assert.equal(defaultDefeat.state.pendingFight,null);
+  assert.equal(defaultDefeat.state.execution,null);
+  assert.equal(defaultDefeat.state.variables["defeated_"+spec.id],undefined);
+  assert.equal(defaultDefeat.state.erasedItems,undefined,
+    "Defeat may not remove the enemy or grant a victory.");
+
+  const lossName="defeat_"+spec.id+".prg";
+  const scriptedGame=await sample(spec,{
+    gameOverName:lossName,
+    gameOverSource:[
+      'mwin("'+spec.characterName+': Defeated on this path.");',
+      "wait();", "mwincls();", "loss_"+spec.id+" = 1;",
+    ].join("\n"),
+  });
+  const scriptedFight=advanceTk3Script(scriptedGame.script.state);
+  const scriptedReady=resolveTk3FightRequest(scriptedFight,
+    scriptedGame.artifacts);
+  const scriptedDefeat=simulateTk3FightDefeat(scriptedReady.state,
+    scriptedReady.encounter,scriptedGame.artifacts,
+    scriptedGame.scene.mainPath);
+  assert.equal(scriptedDefeat.status,"waiting",scriptedDefeat.state.diagnostic?.text);
+  assert.equal(scriptedDefeat.gameOverProgramPath,
+    spec.root+"/Prg/"+lossName);
+  assert.equal(scriptedDefeat.state.message,
+    spec.characterName+": Defeated on this path.");
+  assert.equal(scriptedDefeat.state.pendingFight,null);
+  assert.equal(scriptedDefeat.state.scriptStack.length,0);
+  const finishLoss=advanceTk3Script(scriptedDefeat.state);
+  assert.equal(finishLoss.status,"completed",finishLoss.state.diagnostic?.text);
+  assert.equal(finishLoss.state.variables["loss_"+spec.id],1);
+  assert.equal(finishLoss.state.variables["defeated_"+spec.id],undefined);
+  assert.equal(finishLoss.state.erasedItems,undefined);
+
+  for(const [gameOverName,gameOverSource,error] of [
+    ["lost_"+spec.id+".prg",undefined,/missing/i],
+    ["badloss_"+spec.id+".prg",'UnsupportedCommand();',/Unsupported RPGCode/i],
+  ]) {
+    const invalid=await sample(spec,{gameOverName,gameOverSource});
+    const interrupted=advanceTk3Script(invalid.script.state);
+    const resolved=resolveTk3FightRequest(interrupted,invalid.artifacts);
+    const failed=simulateTk3FightDefeat(resolved.state,resolved.encounter,
+      invalid.artifacts,invalid.scene.mainPath);
+    assert.equal(failed.status,"error");
+    assert.equal(failed.state.execution,null);
+    assert.equal(failed.state.pendingFight,null);
+    assert.match(failed.state.diagnostic.text,error);
+    assert.equal(failed.state.diagnostic.path,
+      gameOverSource ? spec.root+"/Prg/"+gameOverName : spec.main);
+    assert.equal(failed.state.diagnostic.line,1);
+  }
   const rejected=cancelTk3FightTest(ready.state);
   assert.equal(rejected.status,"aborted");
   assert.equal(rejected.state.variables["defeated_"+spec.id],undefined);
@@ -190,10 +264,16 @@ for (const spec of scriptFixtureSpecs) {
 const html=await readFile(new URL("../index.html",import.meta.url),"utf8");
 const app=await readFile(new URL("../experiments/movement-sandbox/authored-play.mjs",import.meta.url),"utf8");
 const workflow=await readFile(new URL("../.github/workflows/pages.yml",import.meta.url),"utf8");
+const appShell=await readFile(new URL("../app.mjs",import.meta.url),"utf8");
+assert.match(appShell,/onRestart: launchPlayableScene/,
+  "Game over restart must mount the archive's opening board, not just current board.");
 for(const id of ["play-fight-test","play-fight-details","play-fight-simulate",
-  "play-fight-abort"])assert.ok(html.includes('id="'+id+'"'));
+  "play-fight-defeat","play-fight-abort","play-gameover-test",
+  "play-gameover-note","play-gameover-restart"])
+  assert.ok(html.includes('id="'+id+'"'));
 for(const symbol of ["resolveTk3FightRequest","simulateTk3FightVictory",
-  "cancelTk3FightTest","resumeTk3Effect","removedItemSlots"])
+  "simulateTk3FightDefeat","cancelTk3FightTest","resumeTk3Effect",
+  "removedItemSlots","gameOverRestart"])
   assert.ok(app.includes(symbol));
 assert.match(workflow,/node scripts\/check-tk3-fight-bridge\.mjs/);
 assert.match(workflow,/tk3-fight-bridge\.mjs site\//);
@@ -229,5 +309,10 @@ if(process.argv[2]) {
   assert.equal(erase.status,"effect",erase.state.diagnostic?.text);
   assert.equal(erase.effect.sourceItemSlot,pirate.slot);
   assert.equal(resumeTk3Effect(erase.state).status,"completed");
-  console.log("Owner ZIP read-only: original Pirate Bob ENE/BKG, win.prg, and source eraseItem all resolve via production archive.");
+  // The owner's original GAM does not specify a game-over PRG.
+  const actualLoss=simulateTk3FightDefeat(plan.state,plan.encounter,
+    artifacts,scene.mainPath);
+  assert.equal(actualLoss.status,"gameover",
+    actualLoss.state?.diagnostic?.text);
+  console.log("Owner ZIP read-only: original Pirate Bob win/erase and the GAM default defeat→reset policy resolve through production archive.");
 }
