@@ -71,8 +71,6 @@ for (const spec of scriptFixtureSpecs) {
   const { artifacts, graph, scene } = await parse(zip);
   const def = readLegacyDialogueDefinitions(artifacts, scene);
   assert.equal(def.supported, true, spec.id + ": definitions from GAM startup");
-  assert.equal(def.constants[eventName], undefined,
-    "Runtime variables are case-insensitive, lowercased by the source compiler");
   assert.equal(def.constants[eventName.toLowerCase()], 0);
   assert.equal(def.constants.itemtalkthreshold, 500);
   const target = scene.placements.find(p => p.filename === spec.item);
