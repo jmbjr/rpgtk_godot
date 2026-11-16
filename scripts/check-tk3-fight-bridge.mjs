@@ -24,7 +24,9 @@ function enemyBytes(name, win) {
   return Buffer.from([
     "RPGTLKIT ENEMY", 2, 0, name, 12, 3, 2, 1, 1, 0, 0,
     1, 1, ...tiles, ...movesAndWeaknesses,
-    0, 0, "", 4, 2, win, "", "", "", "", "",
+    // Extra empty line terminates the 2.0 text file; the decoder discards
+    // it before reading the Escape PRG and four sound fields.
+    0, 0, "", 4, 2, win, "", "", "", "", "", "",
   ].join("\r\n"), "ascii");
 }
 function encounterScript(spec) {
