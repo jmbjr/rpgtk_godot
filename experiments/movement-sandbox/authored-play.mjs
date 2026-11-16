@@ -9,6 +9,8 @@ import { nearAuthoredInn, activateAuthoredInn } from "./imported-inn.mjs";
 import { initialTk3ScriptState, selectTk3ScriptTarget, startPlacedTk3Script,
   advanceTk3Script } from "../../tk3-script-slice.mjs";
 import { resolveTk3BoardTransfer } from "../../tk3-board-transfer.mjs";
+import { insideTk3BoardProgram, selectTk3BoardStep, selectTk3BoardKey,
+  startTk3BoardProgram } from "../../tk3-board-programs.mjs";
 import { readLegacyDialogueDefinitions, compileLegacyDialogue,
   initialLegacyDialogueState, openLegacyDialogue, advanceLegacyDialogue,
   currentLegacyDialogue } from "../../tk3-source-dialogue.mjs";
@@ -176,7 +178,21 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (placement.isInnDoor) row.classList.add("play-inn-entry");
     diagnostic.append(row);
   }
+  for (const program of scene.boardPrograms ?? []) {
+    const row = document.createElement("li");
+    const p = program.bounds;
+    row.textContent = "Board program " + program.slot + " · " +
+      program.kind.toUpperCase() + " · " +
+      (p ? "(" + p.minX + "–" + p.maxX + ", " +
+        p.minY + "–" + p.maxY + ", layer " + program.layer + ")" :
+        "no supported activation polygon") +
+      " · " + program.raw + " · " + program.status +
+      (program.reason ? " (" + program.reason + ")" : "");
+    diagnostic.append(row);
+  }
   const innLabel = section.querySelector("#play-inn");
+  innLabel.hidden = !scene.innDoor && scene.innStatus !== "ambiguous";
+  innLabel.style.display = innLabel.hidden ? "none" : "";
   if (scene.innDoor) {
     const p = scene.innDoor;
     innLabel.textContent = "Inn door: slot " + p.slot + " at (" +
@@ -258,6 +274,20 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   const playerMarker = makeMarker("player", initialGuidance.player.label);
   const targetMarkers = new Map(initialGuidance.targets.map(target =>
     [target.slot, makeMarker("target", target.label + " · TALK")]));
+  const boardMarkers = (scene.boardPrograms ?? [])
+    .filter(program => program.status === "resolved" && program.bounds)
+    .map(program => {
+      const marker = makeMarker("target", "BOARD · " +
+        (program.kind === "step" ? "STEP" : "TALK"));
+      const midX = (program.bounds.minX + program.bounds.maxX) / 2;
+      const midY = (program.bounds.minY + program.bounds.maxY) / 2;
+      locateMarker(marker, {
+        xPct: 100 * midX / canvas.width, yPct: 100 * midY / canvas.height,
+        labelLeft: midX > canvas.width * 0.68,
+        labelAbove: midY > canvas.height * 0.72,
+      });
+      return { program, marker };
+    });
   const updatePlaytestMarkers = () => {
     const guide = describePlayableTargets(scene, actorAtLayer());
     locateMarker(playerMarker, guide.player);
@@ -267,11 +297,17 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       locateMarker(marker, target);
       marker.classList.toggle("is-near", target.inRange);
     }
+    for (const { program, marker } of boardMarkers)
+      marker.classList.toggle("is-near",
+        insideTk3BoardProgram(program, actorAtLayer()));
     const talking = Boolean(inn.conversation || legacy?.dialogue || legacy?.menu ||
       scriptSession.execution?.waiting);
     const instruction = talking ? (legacy?.menu ?
       "Archive menu open: choose an option or close the menu below." :
-      "Conversation active: use Next / Finish, E or Space.") : guide.hint;
+      "Conversation active: use Next / Finish, E or Space.") :
+      boardMarkers.some(m => m.program.kind === "step") ?
+        guide.hint + " · Walk INTO a BOARD · STEP region to run its source PRG." :
+        guide.hint;
     if (targetHint.textContent !== instruction) targetHint.textContent = instruction;
     markerLayer.hidden = !markerToggle.checked;
   };
@@ -422,6 +458,26 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       ctx.fillRect(labelX - 2, labelY - 12, 70, 15);
       ctx.fillStyle = "#ffe17c";
       ctx.fillText("INN DOOR", labelX, labelY);
+      ctx.restore();
+    }
+    // Show source program polygons separately from collision: these
+    // cyan areas contain RPGCode, not door ITMs or solid wall vectors.
+    if (markerToggle.checked) {
+      ctx.save();
+      ctx.strokeStyle = "#50efff";
+      ctx.fillStyle = "rgba(80,239,255,0.12)";
+      ctx.lineWidth = 2;
+      for (const program of scene.boardPrograms ?? []) {
+        if (program.status !== "resolved" || program.layer !== scene.start.layer ||
+            !program.closed || program.points.length < 3) continue;
+        ctx.beginPath();
+        ctx.moveTo(program.points[0].x, program.points[0].y);
+        for (const point of program.points.slice(1))
+          ctx.lineTo(point.x, point.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
       ctx.restore();
     }
     // A diagnostic overlay makes the verified walls easy to check on
