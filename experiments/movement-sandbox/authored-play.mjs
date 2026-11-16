@@ -9,6 +9,9 @@ import { nearAuthoredInn, activateAuthoredInn } from "./imported-inn.mjs";
 import { initialTk3ScriptState, selectTk3ScriptTarget, startPlacedTk3Script,
   advanceTk3Script } from "../../tk3-script-slice.mjs";
 import { resolveTk3BoardTransfer } from "../../tk3-board-transfer.mjs";
+import { readLegacyDialogueDefinitions, compileLegacyDialogue,
+  initialLegacyDialogueState, openLegacyDialogue, advanceLegacyDialogue,
+  currentLegacyDialogue } from "../../tk3-source-dialogue.mjs";
 import { listTk3RuntimeKeys, startTk3RuntimeKey } from "../../tk3-runtime-keys.mjs";
 import { describePlayableTargets } from "./playtest-guidance.mjs";
 
@@ -184,6 +187,20 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   // A fresh mount always starts with a fresh, in-memory inn conversation.
   let inn = options.innState ?? initialInnState();
   let scriptSession = options.scriptSession ?? initialTk3ScriptState();
+  // Compile only fully supported source programs; never guess from names.
+  const dialogueDefinitions = readLegacyDialogueDefinitions(artifacts, scene);
+  const sourcePlans = new Map();
+  if (dialogueDefinitions.supported) for (const placement of placed) {
+    if (placement.programStatus !== "resolved" || !placement.programPath) continue;
+    const plan = compileLegacyDialogue(
+      artifacts.get(placement.programPath), artifacts, dialogueDefinitions);
+    if (plan.ok) sourcePlans.set(placement.programPath, plan);
+  }
+  let legacy = options.legacyState ??
+    (sourcePlans.size ? initialLegacyDialogueState(dialogueDefinitions,
+      scriptSession.variables) : null);
+  if (legacy) scriptSession = { ...scriptSession,
+    variables: { ...scriptSession.variables, ...legacy.variables } };
   const runtimeActions = listTk3RuntimeKeys(scene, artifacts);
   runtimeButtons.replaceChildren();
   const runtimeControls = runtimeActions.map(action => {
@@ -233,7 +250,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       locateMarker(marker, target);
       marker.classList.toggle("is-near", target.inRange);
     }
-    const talking = Boolean(inn.conversation || scriptSession.execution?.waiting);
+    const talking = Boolean(inn.conversation || legacy?.dialogue ||
+      scriptSession.execution?.waiting);
     const instruction = talking ?
       "Conversation active: use Next / Finish, E or Space." : guide.hint;
     if (targetHint.textContent !== instruction) targetHint.textContent = instruction;
@@ -346,48 +364,69 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       (actor.blocked ? " · blocked" : "") + " · " + scene.collisionPolicy;
 
     const current = currentInnMessage(inn);
+    const sourceLine = currentLegacyDialogue(legacy);
     const scriptWaiting = Boolean(scriptSession.execution?.waiting);
-    const near = nearAuthoredInn(actorAtLayer(), scene);
     const genericTarget = selectTk3ScriptTarget(scene, actorAtLayer());
-    hud.textContent = "Clues: " + inn.clues + " / " + inn.maxClues +
-      " · Inn visits: " + inn.checkedInn;
+    const sourceTarget = genericTarget && sourcePlans.has(genericTarget.programPath) ?
+      genericTarget : null;
+    const near = nearAuthoredInn(actorAtLayer(), scene) && !sourceTarget;
+    const innIndex = scene.innDoor && sourcePlans.get(scene.innDoor.programPath)?.eventIndex;
+    const innVisits = innIndex !== undefined && innIndex !== null ?
+      (legacy?.variables.checked?.[innIndex] ?? 0) : inn.checkedInn;
+    hud.textContent = "Clues: " + (legacy?.variables.clues ?? inn.clues) +
+      " / " + (legacy?.variables.maxclues ?? inn.maxClues) +
+      " · Inn visits: " + innVisits;
     scriptVariables.textContent = "Script variables (session): " +
       (Object.entries(scriptSession.variables).map(([name, value]) =>
         name + " = " + JSON.stringify(value)).join(" · ") || "(none yet)");
-    scriptDiagnostic.textContent = scriptSession.diagnostic?.text || "";
-    scriptDiagnostic.hidden = !scriptSession.diagnostic;
-    dialoguePanel.hidden = !(current || scriptWaiting || inn.clueMessage);
+    scriptDiagnostic.textContent = legacy?.diagnostic?.text ||
+      scriptSession.diagnostic?.text || "";
+    scriptDiagnostic.hidden = !(legacy?.diagnostic || scriptSession.diagnostic);
+    dialoguePanel.hidden = !(current || sourceLine || scriptWaiting ||
+      inn.clueMessage || legacy?.clueMessage);
     if (current) {
       dialogueSpeaker.textContent = current.speaker;
       dialogueText.textContent = current.text;
       dialogueProgress.textContent = "Line " + (inn.conversation.index + 1) +
         " / " + conversationMessages(inn.conversation).length;
+    } else if (sourceLine) {
+      dialogueSpeaker.textContent = sourceLine.speaker + " · original RPGCode";
+      dialogueText.textContent = sourceLine.text;
+      dialogueProgress.textContent = sourceLine.path + ":" + sourceLine.line +
+        " · " + (legacy.dialogue.index + 1) + " / " + legacy.dialogue.lines.length;
     } else if (scriptWaiting) {
       const running = scriptSession.execution;
       const waitLine = running.instructions[running.pc - 1]?.line ?? 1;
       dialogueSpeaker.textContent = scene.characterName + " · archive RPGCode";
       dialogueText.textContent = scriptSession.message || "(Waiting for input)";
       dialogueProgress.textContent = running.path + ":" + waitLine;
-    } else if (inn.clueMessage) {
+    } else if (legacy?.clueMessage || inn.clueMessage) {
       dialogueSpeaker.textContent = "Clue discovered";
-      dialogueText.textContent = inn.clueMessage;
-      dialogueProgress.textContent = "1 / " + inn.maxClues + " clues found";
+      dialogueText.textContent = legacy?.clueMessage || inn.clueMessage;
+      dialogueProgress.textContent = String(legacy?.variables.clues ?? inn.clues) +
+        " / " + String(legacy?.variables.maxclues ?? inn.maxClues) + " clues found";
     }
     for (const control of runtimeControls) {
-      control.button.disabled = Boolean(current || scriptWaiting);
+      control.button.disabled = Boolean(current || sourceLine || scriptWaiting);
     }
-    talkButton.disabled = !current && !scriptWaiting && !near && !genericTarget;
+    talkButton.disabled = !current && !sourceLine && !scriptWaiting &&
+      !near && !genericTarget;
     talkButton.textContent = current ? (
       inn.conversation.index + 1 === conversationMessages(inn.conversation).length ?
         "Finish conversation" : "Next line"
+    ) : sourceLine ? (
+      legacy.dialogue.index + 1 === legacy.dialogue.lines.length ?
+        "Finish conversation" : "Next line"
     ) : scriptWaiting ? "Next / Finish" :
       near ? "Talk at inn" : "Talk to object";
-    const hint = current || scriptWaiting ? "Conversation active · press Next, E or Space." :
+    const hint = current || sourceLine || scriptWaiting ?
+      "Conversation active · press Next, E or Space." :
       near ? "At the locked inn: press Talk, E or Space." :
       genericTarget ? "Near " + genericTarget.filename + ": Talk runs " +
         genericTarget.programPath + " from this ZIP." :
       "Approach a marked TALK object or INN DOOR.";
-    const message = interactionFeedback || scriptSession.diagnostic?.text || hint;
+    const message = interactionFeedback || legacy?.diagnostic?.text ||
+      scriptSession.diagnostic?.text || hint;
     if (feedback.textContent !== message) feedback.textContent = message;
   };
 
