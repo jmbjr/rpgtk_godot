@@ -191,9 +191,9 @@ Bruce walking, authored three doors, and a paraphrased inn
 dialogue awarding one clue. The browser currently **does not
 execute** the actual `menuTitle.prg`, `mwininn.prg` or
 `ENDDEMO.prg` scripts; it does not expose six clue-awarding
-menus, the Q ending binding, or full `CMwin` rendering.
+menus, a runnable Q ending script, or full `CMwin` rendering.
 
-**New bounded capability in this PR:** the production
+**First new bounded capability in this PR:** the production
 `BRD → ITM → PRG` mapper now implements native
 `CItem::open` precedence: an explicitly named BRD program
 wins; if and **only if** the BRD program field is empty, use
@@ -204,6 +204,20 @@ Talk targets**. Their original scripts are still unsupported
 by the narrow interpreter and should produce exact
 path/line diagnostics rather than fabricated conversations.
 A distinct synthetic Grove ZIP variant proves this mapping.
+
+**Second bounded capability:** the production GAM runtime-key table
+now resolves each configured PRG by source name and exposes it via
+keyboard (one press per keydown) and touch buttons. The pinned
+[3.1 key loader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/common/mainfile.cpp#L129-L164)
+and [input dispatch](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/input/input.cpp#L243-L252)
+confirm the GAM mapping and PRG invocation. The browser uses
+DOM keys, not native DirectInput keyboard-layout scan codes, and
+suppresses auto-repeat. Q therefore reaches the *actual*
+`BSTW/Prg/ENDDEMO.prg` through the generic interpreter, which
+currently emits a correct `ENDDEMO.prg:1` unsupported-include
+diagnostic instead of fabricating an ending. A separate
+source-owned Grove ZIP variant proves a conditional **Q ending**
+reading a variable earned from an ITM interaction.
 
 **Capabilities still needed to play all 13 clues to the end:**
 1. **Startup + runtime session:** source `InitVar`/`CArray`
@@ -220,10 +234,10 @@ A distinct synthetic Grove ZIP variant proves this mapping.
    cursor/selection, six first-time menu clue branches,
    profile selection where required. Save/Load branches
    need not be implemented for the ending.
-4. **Ending dispatch:** native GAM runtime Q →
-   `ENDDEMO.prg`, conditional `ENDDEMO == 1`,
-   `TxtBox`/`CMwin` dialogue and safe browser exit
-   semantics for `windows()`.
+4. **Ending behavior:** Q/PRG resolution and dispatch are now
+   supported; the original `ENDDEMO.prg` still needs
+   `#include`, conditional `ENDDEMO == 1`, `TxtBox`/`CMwin`
+   dialogue and safe browser exit semantics for `windows()`.
 
 These are **multiple interacting systems**, not a missing
 one-line plugin command. Recommend a grouped next PR for
@@ -244,7 +258,9 @@ parity until each behavior is tested.
   buildPlayableScene → startPlacedTk3Script` path to test
   ITM inheritance, explicit board override and missing/
   ambiguous references. Existing BSTW/Harbor/Grove/Lantern
-  and Pages checks remain mandatory.
+  and Pages checks remain mandatory. The second synthetic Q-key
+  regression checks dispatch and a conditional ending after an
+  earlier placed-object variable assignment.
 - A SHA-gated optional local test in
   [check-itm-activation-fallback.mjs](../../scripts/check-itm-activation-fallback.mjs)
   validates all **seven original** links using the actual
