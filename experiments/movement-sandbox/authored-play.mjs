@@ -7,7 +7,9 @@ import { initialInnState, advanceInn, currentInnMessage, conversationMessages }
   from "./inn-dialogue.mjs";
 import { nearAuthoredInn, activateAuthoredInn } from "./imported-inn.mjs";
 import { initialTk3ScriptState, selectTk3ScriptTarget, startPlacedTk3Script,
-  advanceTk3Script } from "../../tk3-script-slice.mjs";
+  advanceTk3Script, resumeTk3Effect } from "../../tk3-script-slice.mjs";
+import { resolveTk3FightRequest, simulateTk3FightVictory,
+  cancelTk3FightTest } from "../../tk3-fight-bridge.mjs";
 import { resolveTk3BoardTransfer } from "../../tk3-board-transfer.mjs";
 import { PRG_STOPS_MOVEMENT, insideTk3BoardProgram,
   selectTk3BoardStep, selectTk3BoardKey, startTk3BoardProgram }
@@ -82,6 +84,10 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   const menuProfiles = section.querySelector("#play-source-menu-profiles");
   const menuNote = section.querySelector("#play-source-menu-note");
   const menuClose = section.querySelector("#play-source-menu-close");
+  const fightPanel = section.querySelector("#play-fight-test");
+  const fightDetails = section.querySelector("#play-fight-details");
+  const fightSimulate = section.querySelector("#play-fight-simulate");
+  const fightAbort = section.querySelector("#play-fight-abort");
   const scriptVariables = section.querySelector("#play-script-variables");
   const scriptDiagnostic = section.querySelector("#play-script-diagnostic");
   const pad = [...section.querySelectorAll("[data-move]")];
@@ -211,6 +217,19 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   // A fresh mount always starts with a fresh, in-memory inn conversation.
   let inn = options.innState ?? initialInnState();
   let scriptSession = options.scriptSession ?? initialTk3ScriptState();
+  let activeFight = null;
+  const removedItemSlots = new Set(
+    scriptSession.erasedItems?.[scene.boardPath] ?? []);
+  const availablePlacements = () =>
+    placed.filter(placement => !removedItemSlots.has(placement.slot));
+  const visibleScene = () => ({ ...scene, placements: availablePlacements() });
+  const rememberRemoved = slot => {
+    removedItemSlots.add(slot);
+    scriptSession = { ...scriptSession, erasedItems: {
+      ...scriptSession.erasedItems,
+      [scene.boardPath]: [...removedItemSlots],
+    } };
+  };
   // Compile only fully supported source programs; never guess from names.
   const dialogueDefinitions = readLegacyDialogueDefinitions(artifacts, scene);
   const sourcePlans = new Map();
@@ -413,7 +432,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       ctx.drawImage(layerCanvases[layer - 1], 0, 0);
       // Native board renders a layer's tiles and then its sprites;
       // approximate same-layer collision-base Z ordering by stored Y/X.
-      const actors = spriteDrawOrder(placed,
+      const actors = spriteDrawOrder(availablePlacements(),
         { x: actor.x, y: actor.y, layer: scene.start.layer }, layer);
       for (const entry of actors) {
         if (entry.kind === "player") {
@@ -512,7 +531,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     const current = currentInnMessage(inn);
     const sourceLine = currentLegacyDialogue(legacy);
     const scriptWaiting = Boolean(scriptSession.execution?.waiting);
-    const genericTarget = selectTk3ScriptTarget(scene, actorAtLayer());
+    const genericTarget = selectTk3ScriptTarget(visibleScene(), actorAtLayer());
     const boardKeyTarget = !genericTarget ?
       selectTk3BoardKey(scene, actorAtLayer()) : null;
     const sourceTarget = genericTarget && sourcePlans.has(genericTarget.programPath) ?
@@ -655,7 +674,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   function interact() {
     if (legacy?.menu) return;
     const tick = performance.now();
-    const sourceTarget = selectTk3ScriptTarget(scene, actorAtLayer());
+    const sourceTarget = selectTk3ScriptTarget(visibleScene(), actorAtLayer());
     const sourcePlan = sourceTarget && sourcePlans.get(sourceTarget.programPath);
     if (legacy?.dialogue || (legacy && sourcePlan &&
         !inn.conversation && !scriptSession.execution?.waiting)) {
@@ -684,15 +703,15 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       return;
     }
     const boardKey = !scriptSession.execution?.waiting &&
-      !selectTk3ScriptTarget(scene, actorAtLayer()) ?
+      !selectTk3ScriptTarget(visibleScene(), actorAtLayer()) ?
       selectTk3BoardKey(scene, actorAtLayer()) : null;
     if (scriptSession.execution?.waiting || boardKey ||
         (!inn.conversation && !nearAuthoredInn(actorAtLayer(), scene) &&
-          selectTk3ScriptTarget(scene, actorAtLayer()))) {
+          selectTk3ScriptTarget(visibleScene(), actorAtLayer()))) {
       const stepped = scriptSession.execution?.waiting ?
         advanceTk3Script(scriptSession) :
         boardKey ? startTk3BoardProgram(scriptSession, boardKey) :
-          startPlacedTk3Script(scriptSession, scene, actorAtLayer(), artifacts);
+          startPlacedTk3Script(scriptSession, visibleScene(), actorAtLayer(), artifacts);
       if (boardKey && (boardKey.flags & PRG_STOPS_MOVEMENT)) clearHeld();
       if (applyScriptStep(stepped)) return;
     } else {
