@@ -42,7 +42,7 @@ async function synthetic(spec, opts={}) {
   asBuffer.writeInt16LE(13,offset);
   fixture.file(main,asBuffer);
   const root=spec.root+"/Prg/";
-  const layout="Layout_"+spec.id+".prg", book="Choices_"+spec.id+".prg";
+  const layout="Layout_"+spec.id+".prg", book="MenuBook_"+spec.id+".prg";
   const events=game.names.map((_,i)=>"event_"+spec.id+"_"+i);
   const init=[
     "maxclues = 6", "ItemTalkThreshold = 500",
