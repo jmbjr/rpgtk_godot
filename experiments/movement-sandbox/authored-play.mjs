@@ -9,8 +9,9 @@ import { nearAuthoredInn, activateAuthoredInn } from "./imported-inn.mjs";
 import { initialTk3ScriptState, selectTk3ScriptTarget, startPlacedTk3Script,
   advanceTk3Script } from "../../tk3-script-slice.mjs";
 import { resolveTk3BoardTransfer } from "../../tk3-board-transfer.mjs";
-import { insideTk3BoardProgram, selectTk3BoardStep, selectTk3BoardKey,
-  startTk3BoardProgram } from "../../tk3-board-programs.mjs";
+import { PRG_STOPS_MOVEMENT, insideTk3BoardProgram,
+  selectTk3BoardStep, selectTk3BoardKey, startTk3BoardProgram }
+  from "../../tk3-board-programs.mjs";
 import { readLegacyDialogueDefinitions, compileLegacyDialogue,
   initialLegacyDialogueState, openLegacyDialogue, advanceLegacyDialogue,
   currentLegacyDialogue } from "../../tk3-source-dialogue.mjs";
@@ -692,6 +693,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
         advanceTk3Script(scriptSession) :
         boardKey ? startTk3BoardProgram(scriptSession, boardKey) :
           startPlacedTk3Script(scriptSession, scene, actorAtLayer(), artifacts);
+      if (boardKey && (boardKey.flags & PRG_STOPS_MOVEMENT)) clearHeld();
       if (applyScriptStep(stepped)) return;
     } else {
       const response = inn.conversation ?
@@ -725,7 +727,9 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (!program) return false;
     const response = startTk3BoardProgram(scriptSession, program);
     const transferred = applyScriptStep(response);
-    if (!transferred && response.status !== "completed") clearHeld();
+    if (!transferred &&
+        ((program.flags & PRG_STOPS_MOVEMENT) || response.status !== "completed"))
+      clearHeld();
     return transferred;
   };
   const step = (direction, seconds) => {
