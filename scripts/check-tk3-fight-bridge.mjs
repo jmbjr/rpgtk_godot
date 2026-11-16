@@ -24,7 +24,7 @@ function enemyBytes(name, win) {
   return Buffer.from([
     "RPGTLKIT ENEMY", 2, 0, name, 12, 3, 2, 1, 1, 0, 0,
     1, 1, ...tiles, ...movesAndWeaknesses,
-    0, 0, "", 4, 2, win, "", "", "", "", "", "",
+    0, 0, "", 4, 2, win, "", "", "", "", "",
   ].join("\r\n"), "ascii");
 }
 function encounterScript(spec) {
