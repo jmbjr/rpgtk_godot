@@ -150,7 +150,7 @@ const flow = await readFile(new URL("../.github/workflows/pages.yml", import.met
 assert.match(js, /compileLegacyDialogue/);
 assert.match(js, /openLegacyDialogue/);
 assert.match(js, /advanceLegacyDialogue/);
-assert.match(flow, /tk3-source-dialogue\.mjs site\//);
+assert.match(flow, /tk3-source-dialogue\.mjs tk3-source-menu\.mjs site\//);
 assert.match(flow, /node scripts\/check-tk3-source-dialogue\.mjs/);
 assert.match(html, /id="play-script-variables"/);
 console.log("Source-owned class dialogue projection: two different native game ZIPs passed.");

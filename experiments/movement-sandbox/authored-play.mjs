@@ -13,6 +13,8 @@ import { readLegacyDialogueDefinitions, compileLegacyDialogue,
   initialLegacyDialogueState, openLegacyDialogue, advanceLegacyDialogue,
   currentLegacyDialogue } from "../../tk3-source-dialogue.mjs";
 import { listTk3RuntimeKeys, startTk3RuntimeKey } from "../../tk3-runtime-keys.mjs";
+import { compileTk3SourceMenu, openTk3SourceMenu, selectTk3SourceMenu,
+  confirmTk3MenuProfile, cancelTk3SourceMenu } from "../../tk3-source-menu.mjs";
 import { describePlayableTargets } from "./playtest-guidance.mjs";
 
 // Reuse the sandbox movement engine and keyboard/touch input. Only the
@@ -72,6 +74,11 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   const dialogueProgress = section.querySelector("#play-dialogue-progress");
   const talkButton = section.querySelector("#play-talk");
   const runtimeButtons = section.querySelector("#play-runtime-actions");
+  const menuPanel = section.querySelector("#play-source-menu");
+  const menuActions = section.querySelector("#play-source-menu-actions");
+  const menuProfiles = section.querySelector("#play-source-menu-profiles");
+  const menuNote = section.querySelector("#play-source-menu-note");
+  const menuClose = section.querySelector("#play-source-menu-close");
   const scriptVariables = section.querySelector("#play-script-variables");
   const scriptDiagnostic = section.querySelector("#play-script-diagnostic");
   const pad = [...section.querySelectorAll("[data-move]")];
@@ -202,6 +209,15 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   if (legacy) scriptSession = { ...scriptSession,
     variables: { ...scriptSession.variables, ...legacy.variables } };
   const runtimeActions = listTk3RuntimeKeys(scene, artifacts);
+  const sourceMenuPlans = new Map(runtimeActions.map(action =>
+    [action.path, compileTk3SourceMenu(artifacts, scene, action, dialogueDefinitions)])
+    .filter(([, plan]) => plan !== null));
+  let activeMenuPlan = null;
+  if (!legacy && [...sourceMenuPlans.values()].some(plan => plan.ok)) {
+    legacy = initialLegacyDialogueState(dialogueDefinitions, scriptSession.variables);
+    scriptSession = { ...scriptSession,
+      variables: { ...scriptSession.variables, ...legacy.variables } };
+  }
   runtimeButtons.replaceChildren();
   const runtimeControls = runtimeActions.map(action => {
     const button = document.createElement("button");
@@ -216,6 +232,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     return { action, button };
   });
   let interactionFeedback = options.arrivalFeedback ?? "";
+  let lastMenuUiSignature = null;
   const actorAtLayer = () => ({ ...actor, layer: scene.start.layer });
 
   // Separate DOM labels remain a readable size even when a tiny source
@@ -250,10 +267,11 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       locateMarker(marker, target);
       marker.classList.toggle("is-near", target.inRange);
     }
-    const talking = Boolean(inn.conversation || legacy?.dialogue ||
+    const talking = Boolean(inn.conversation || legacy?.dialogue || legacy?.menu ||
       scriptSession.execution?.waiting);
-    const instruction = talking ?
-      "Conversation active: use Next / Finish, E or Space." : guide.hint;
+    const instruction = talking ? (legacy?.menu ?
+      "Archive menu open: choose an option or close the menu below." :
+      "Conversation active: use Next / Finish, E or Space.") : guide.hint;
     if (targetHint.textContent !== instruction) targetHint.textContent = instruction;
     markerLayer.hidden = !markerToggle.checked;
   };
@@ -278,6 +296,76 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     pointerHeld.clear();
     for (const button of pad) button.classList.remove("held");
     lastFrame = null;
+  };
+  const syncMenuState = result => {
+    legacy = result.state;
+    scriptSession = { ...scriptSession,
+      variables: { ...scriptSession.variables, ...legacy.variables } };
+    interactionFeedback = result.status === "clue" ?
+      "Source menu clue recorded. " +
+      Math.max(0, legacy.variables.maxclues - legacy.variables.clues) +
+      " remaining." : result.status === "repeat" ?
+      "Already visited: no second clue." : "";
+    clearHeld();
+    updateStatus();
+    draw();
+  };
+  function chooseMenuAction(index) {
+    if (!activeMenuPlan || !legacy?.menu) return;
+    syncMenuState(selectTk3SourceMenu(legacy, activeMenuPlan, index));
+  }
+  function chooseMenuProfile(index) {
+    if (!activeMenuPlan || !legacy?.menu) return;
+    syncMenuState(confirmTk3MenuProfile(legacy, activeMenuPlan, index));
+  }
+  function closeSourceMenu() {
+    if (!legacy?.menu) return;
+    syncMenuState(cancelTk3SourceMenu(legacy));
+    if (!legacy.menu) activeMenuPlan = null;
+  }
+  const renderSourceMenu = () => {
+    const open = Boolean(legacy?.menu && activeMenuPlan);
+    menuPanel.hidden = !open;
+    if (!open) { lastMenuUiSignature = null; return; }
+    const mode = legacy.menu.phase;
+    const uiSignature = JSON.stringify([mode, legacy.menu.selectedIndex,
+      legacy.menu.message, legacy.variables.checked]);
+    if (uiSignature === lastMenuUiSignature) return;
+    lastMenuUiSignature = uiSignature;
+    const current = activeMenuPlan.choices.find(c =>
+      c.index === legacy.menu.selectedIndex);
+    menuNote.textContent = legacy.menu.message ||
+      (mode === "profile" ?
+        "Choose a source-defined party member for " + current?.label +
+        ". Cancel will not consume a clue." :
+        "Choose a source menu option. First visits yield one clue.");
+    menuClose.textContent = mode === "profile" ?
+      "Back to menu" : "Close menu";
+    menuActions.hidden = mode !== "choices";
+    menuProfiles.hidden = mode !== "profile";
+    menuActions.replaceChildren();
+    menuProfiles.replaceChildren();
+    if (mode === "choices") for (const item of activeMenuPlan.choices) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "play-source-choice";
+      button.textContent = item.label +
+        (legacy.variables.checked?.[item.eventIndex] ?
+          " · already visited" : " · clue available") +
+        (item.needsProfile ? " · choose player" : "");
+      button.addEventListener("click", () => chooseMenuAction(item.index),
+        { signal: listeners.signal });
+      menuActions.append(button);
+    }
+    if (mode === "profile") for (const member of activeMenuPlan.profiles) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "play-source-choice";
+      button.textContent = member.name;
+      button.addEventListener("click", () => chooseMenuProfile(member.index),
+        { signal: listeners.signal });
+      menuProfiles.append(button);
+    }
   };
   const draw = () => {
     const bg = scene.board.background;
@@ -358,6 +446,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   };
   const updateStatus = () => {
     updatePlaytestMarkers();
+    renderSourceMenu();
     status.textContent = scene.characterName + " · (" + Math.round(actor.x) +
       ", " + Math.round(actor.y) + ", layer " + scene.start.layer + ") · " +
       actor.facing + (actor.moving ? " · walking" : " · standing") +
@@ -382,8 +471,9 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     scriptDiagnostic.textContent = legacy?.diagnostic?.text ||
       scriptSession.diagnostic?.text || "";
     scriptDiagnostic.hidden = !(legacy?.diagnostic || scriptSession.diagnostic);
-    dialoguePanel.hidden = !(current || sourceLine || scriptWaiting ||
-      inn.clueMessage || legacy?.clueMessage);
+    dialoguePanel.hidden = Boolean(legacy?.menu) ||
+      !(current || sourceLine || scriptWaiting ||
+        inn.clueMessage || legacy?.clueMessage);
     if (current) {
       dialogueSpeaker.textContent = current.speaker;
       dialogueText.textContent = current.text;
@@ -407,10 +497,11 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
         " / " + String(legacy?.variables.maxclues ?? inn.maxClues) + " clues found";
     }
     for (const control of runtimeControls) {
-      control.button.disabled = Boolean(current || sourceLine || scriptWaiting);
+      control.button.disabled = Boolean(current || sourceLine || legacy?.menu ||
+        scriptWaiting);
     }
-    talkButton.disabled = !current && !sourceLine && !scriptWaiting &&
-      !near && !genericTarget;
+    talkButton.disabled = Boolean(legacy?.menu) ||
+      (!current && !sourceLine && !scriptWaiting && !near && !genericTarget);
     talkButton.textContent = current ? (
       inn.conversation.index + 1 === conversationMessages(inn.conversation).length ?
         "Finish conversation" : "Next line"
@@ -456,14 +547,36 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   }
 
   function triggerRuntimeProgram(action) {
-    if (inn.conversation || legacy?.dialogue ||
+    if (inn.conversation || legacy?.dialogue || legacy?.menu ||
         scriptSession.execution?.waiting) return;
+    const sourceMenu = sourceMenuPlans.get(action.path);
+    if (sourceMenu) {
+      if (!sourceMenu.ok) {
+        scriptSession = { ...scriptSession, diagnostic: sourceMenu.diagnostic };
+        interactionFeedback = sourceMenu.diagnostic.text;
+      } else {
+        if (!legacy) legacy = initialLegacyDialogueState(dialogueDefinitions,
+          scriptSession.variables);
+        const outcome = openTk3SourceMenu(legacy, sourceMenu);
+        legacy = outcome.state;
+        if (outcome.status === "open") {
+          activeMenuPlan = sourceMenu;
+          scriptSession = { ...scriptSession, diagnostic: null };
+          interactionFeedback = "Source menu opened from " + sourceMenu.entryPath;
+          clearHeld();
+        }
+      }
+      updateStatus();
+      draw();
+      return;
+    }
     if (applyScriptStep(startTk3RuntimeKey(scriptSession, action, artifacts))) return;
     updateStatus();
     draw();
   }
 
   function interact() {
+    if (legacy?.menu) return;
     const tick = performance.now();
     const sourceTarget = selectTk3ScriptTarget(scene, actorAtLayer());
     const sourcePlan = sourceTarget && sourcePlans.get(sourceTarget.programPath);
@@ -525,7 +638,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     draw();
   }
   const step = (direction, seconds) => {
-    if (inn.conversation || legacy?.dialogue ||
+    if (inn.conversation || legacy?.dialogue || legacy?.menu ||
         scriptSession.execution?.waiting) return;
     const previous = actor;
     actor = stepMovement(actor, axes[direction], seconds, scene.world);
@@ -541,7 +654,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     lastFrame = timestamp;
     const prior = actor;
     actor = stepMovement(actor, inn.conversation || legacy?.dialogue ||
-      scriptSession.execution?.waiting ?
+      legacy?.menu || scriptSession.execution?.waiting ?
       { x: 0, y: 0 } : input(), seconds, scene.world);
     if (actor.distance !== prior.distance) interactionFeedback = "";
     if (actor.facing !== priorFacing || (!prior.moving && actor.moving)) walkMs = 0;
@@ -557,6 +670,12 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (event.altKey || event.ctrlKey || event.metaKey ||
         /^(INPUT|TEXTAREA|SELECT)$/.test(event.target?.tagName ?? "") ||
         event.target?.isContentEditable) return;
+    if (legacy?.menu && event.code === "Escape") {
+      event.preventDefault();
+      if (!event.repeat) closeSourceMenu();
+      return;
+    }
+    if (legacy?.menu) return;
     if (event.code === "KeyE" || event.code === "Space") {
       // Focused buttons handle their native Space/Enter clicks, not a
       // duplicate global dialogue action.
@@ -578,7 +697,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       return;
     }
     if (!keyDirections.has(event.code)) return;
-    if (!inn.conversation && !legacy?.dialogue &&
+    if (!inn.conversation && !legacy?.dialogue && !legacy?.menu &&
         !scriptSession.execution?.waiting)
       keyboardHeld.add(event.code);
     event.preventDefault();
@@ -594,7 +713,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   }, { signal: listeners.signal });
   for (const button of pad) {
     button.addEventListener("pointerdown", event => {
-      if (inn.conversation || legacy?.dialogue ||
+      if (inn.conversation || legacy?.dialogue || legacy?.menu ||
           scriptSession.execution?.waiting) return;
       if (event.pointerType === "mouse" && event.button !== 0) return;
       event.preventDefault();
@@ -618,6 +737,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     }, { signal: listeners.signal });
   }
   talkButton.addEventListener("click", interact, { signal: listeners.signal });
+  menuClose.addEventListener("click", closeSourceMenu, { signal: listeners.signal });
   for (const { action, button } of runtimeControls) {
     button.addEventListener("click", () => triggerRuntimeProgram(action),
       { signal: listeners.signal });
@@ -633,7 +753,10 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     actor = initialMovementState(scene.world);
     inn = initialInnState();
     scriptSession = initialTk3ScriptState();
-    legacy = sourcePlans.size ? initialLegacyDialogueState(dialogueDefinitions) : null;
+    legacy = sourcePlans.size || [...sourceMenuPlans.values()].some(p => p.ok) ?
+      initialLegacyDialogueState(dialogueDefinitions) : null;
+    activeMenuPlan = null;
+    lastMenuUiSignature = null;
     if (legacy) scriptSession = { ...scriptSession,
       variables: { ...legacy.variables } };
     interactionFeedback = "";

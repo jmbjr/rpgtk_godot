@@ -106,7 +106,7 @@ assert.match(browser, /listTk3RuntimeKeys\(scene, artifacts\)/);
 assert.match(browser, /startTk3RuntimeKey\(scriptSession, action, artifacts\)/);
 assert.match(browser, /event\.key\.toUpperCase/);
 assert.match(flow, /node scripts\/check-tk3-runtime-keys\.mjs/);
-assert.match(flow, /tk3-runtime-keys\.mjs tk3-source-dialogue\.mjs site\//);
+assert.match(flow, /tk3-runtime-keys\.mjs tk3-source-dialogue\.mjs tk3-source-menu\.mjs site\//);
 console.log("Runtime GAM Q key passed: production synthetic ZIP -> configured key -> PRG -> variable-dependent ending; missing, ambiguous, unsupported scripts and fresh state.");
 
 // Optional read-only original ZIP proof. No Windows DLL is ever executed.

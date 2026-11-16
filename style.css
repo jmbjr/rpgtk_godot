@@ -359,3 +359,20 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
   border: 1px solid var(--border, #aaa); background: #342d32; color: #fff7e7;
   cursor: pointer; }
 .play-runtime-button:disabled { cursor: default; opacity: .45; }
+
+/* Source-derived Toolkit CCmap choices. Game sprites and movement stay untouched. */
+.play-source-menu { margin: .75rem 0; padding: .85rem;
+  border: 1px solid #aa9170; border-radius: .65rem;
+  background: #211e22; color: #f7eadb; }
+.play-source-menu[hidden], .play-menu-actions[hidden] { display: none !important; }
+.play-source-menu h3 { margin: 0 0 .35rem; font-size: 1.05rem; }
+.play-source-menu p { line-height: 1.4; margin: .4rem 0 .7rem; }
+.play-menu-actions { display: grid; grid-template-columns:
+  repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: .5rem;
+  margin: .7rem 0; }
+.play-source-choice { text-align: left; color: #fff5dc;
+  border: 1px solid #ae9164; background: #343038; border-radius: .5rem;
+  padding: .75rem; min-height: 3rem; font: inherit; cursor: pointer; }
+.play-source-choice:focus-visible, #play-source-menu-close:focus-visible {
+  outline: 3px solid #d7ecff; outline-offset: 2px; }
+#play-source-menu-close { margin-top: .35rem; min-height: 2.75rem; }
