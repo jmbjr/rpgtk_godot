@@ -437,7 +437,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (response.transferred) {
       clearHeld();
       if (typeof options.onTransfer === "function") {
-        options.onTransfer({ scene: response.scene, scriptSession, innState: inn,
+        options.onTransfer({ scene: response.scene, scriptSession,
+          innState: inn, legacyState: legacy,
           fromBoardPath: response.fromBoardPath,
           arrivalFeedback: "Send() arrived at " + response.toBoardPath +
             " · (" + response.spawn.x + ", " + response.spawn.y +
@@ -455,16 +456,43 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   }
 
   function triggerRuntimeProgram(action) {
-    if (inn.conversation || scriptSession.execution?.waiting) return;
+    if (inn.conversation || legacy?.dialogue ||
+        scriptSession.execution?.waiting) return;
     if (applyScriptStep(startTk3RuntimeKey(scriptSession, action, artifacts))) return;
     updateStatus();
     draw();
   }
 
   function interact() {
-    // Timestamp is injected into the same deterministic adapter as the
-    // synthetic lab; exact 500ms remains blocked after completion.
     const tick = performance.now();
+    const sourceTarget = selectTk3ScriptTarget(scene, actorAtLayer());
+    const sourcePlan = sourceTarget && sourcePlans.get(sourceTarget.programPath);
+    if (legacy?.dialogue || (legacy && sourcePlan &&
+        !inn.conversation && !scriptSession.execution?.waiting)) {
+      const response = legacy.dialogue ?
+        advanceLegacyDialogue(legacy, tick) :
+        openLegacyDialogue(legacy, sourcePlan, tick);
+      legacy = response.state;
+      if (response.status === "completed") {
+        scriptSession = { ...scriptSession,
+          variables: { ...scriptSession.variables, ...legacy.variables } };
+        interactionFeedback = response.clueGained ?
+          "Original source clue recorded; " +
+          Math.max(0, legacy.variables.maxclues - legacy.variables.clues) +
+          " remaining." : "Original source conversation finished.";
+        clearHeld();
+      } else if (response.status === "cooldown") {
+        interactionFeedback = "Wait " + response.remainingMs + " ms to talk again.";
+      } else if (response.status === "already-visited") {
+        interactionFeedback = "This one-time source interaction is complete.";
+      } else {
+        interactionFeedback = "";
+        if (response.status === "waiting") clearHeld();
+      }
+      updateStatus();
+      draw();
+      return;
+    }
     if (scriptSession.execution?.waiting ||
         (!inn.conversation && !nearAuthoredInn(actorAtLayer(), scene) &&
           selectTk3ScriptTarget(scene, actorAtLayer()))) {
@@ -497,7 +525,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     draw();
   }
   const step = (direction, seconds) => {
-    if (inn.conversation || scriptSession.execution?.waiting) return;
+    if (inn.conversation || legacy?.dialogue ||
+        scriptSession.execution?.waiting) return;
     const previous = actor;
     actor = stepMovement(actor, axes[direction], seconds, scene.world);
     if (actor.distance !== previous.distance) interactionFeedback = "";
@@ -511,7 +540,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     const seconds = lastFrame === null ? 0 : Math.max(0, (timestamp - lastFrame) / 1000);
     lastFrame = timestamp;
     const prior = actor;
-    actor = stepMovement(actor, inn.conversation || scriptSession.execution?.waiting ?
+    actor = stepMovement(actor, inn.conversation || legacy?.dialogue ||
+      scriptSession.execution?.waiting ?
       { x: 0, y: 0 } : input(), seconds, scene.world);
     if (actor.distance !== prior.distance) interactionFeedback = "";
     if (actor.facing !== priorFacing || (!prior.moving && actor.moving)) walkMs = 0;
@@ -540,14 +570,16 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     // documented approximation, with one run per keydown (no auto-repeat).
     const keyName = event.key.length === 1 ? event.key.toUpperCase() : event.key;
     const runtime = runtimeActions.find(action => action.label === keyName);
-    if (runtime && !inn.conversation && !scriptSession.execution?.waiting &&
+    if (runtime && !inn.conversation && !legacy?.dialogue &&
+        !scriptSession.execution?.waiting &&
         !event.target?.closest?.("button, a, [role=button]")) {
       event.preventDefault();
       if (!event.repeat) triggerRuntimeProgram(runtime);
       return;
     }
     if (!keyDirections.has(event.code)) return;
-    if (!inn.conversation && !scriptSession.execution?.waiting)
+    if (!inn.conversation && !legacy?.dialogue &&
+        !scriptSession.execution?.waiting)
       keyboardHeld.add(event.code);
     event.preventDefault();
   }, { signal: listeners.signal });
@@ -562,7 +594,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   }, { signal: listeners.signal });
   for (const button of pad) {
     button.addEventListener("pointerdown", event => {
-      if (inn.conversation || scriptSession.execution?.waiting) return;
+      if (inn.conversation || legacy?.dialogue ||
+          scriptSession.execution?.waiting) return;
       if (event.pointerType === "mouse" && event.button !== 0) return;
       event.preventDefault();
       button.setPointerCapture(event.pointerId);
@@ -600,6 +633,9 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     actor = initialMovementState(scene.world);
     inn = initialInnState();
     scriptSession = initialTk3ScriptState();
+    legacy = sourcePlans.size ? initialLegacyDialogueState(dialogueDefinitions) : null;
+    if (legacy) scriptSession = { ...scriptSession,
+      variables: { ...legacy.variables } };
     interactionFeedback = "";
     priorFacing = actor.facing;
     walkMs = 0;
