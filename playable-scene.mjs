@@ -18,12 +18,16 @@ const decoded = (asset, type) =>
 // opening bindings must identify the same unique root. A nested GAM owns
 // its directory and cannot borrow opening files from sibling projects.
 export function createTk3PlayContext(indexed, main) {
+  if (!main) {
+    return { scene: { ok: false, issues: [{ code: "unsupported-main",
+      detail: "A unique, decoded native GAM 2.9 Main File is required." }] } };
+  }
   const paths = [...indexed.keys()];
-  const mainPath = main?.path ?? "";
+  const mainPath = main.path;
   let projectRoot = mainPath.slice(0, mainPath.lastIndexOf("/") + 1);
   const candidates = paths.flatMap(path =>
     path.match(/^(.*\/)?Boards\/[^/]+\.brd$/i)?.slice(1).map(root => root ?? "") ?? []);
-  if (main && !projectRoot &&
+  if (!projectRoot &&
       resolveAsset(paths, "Boards", main.board, "").status === "missing" &&
       resolveAsset(paths, "Chrs", main.character, "").status === "missing") {
     const roots = [...new Set(candidates)].filter(root =>
@@ -35,11 +39,16 @@ export function createTk3PlayContext(indexed, main) {
         detail: "The embedded GAM matches more than one archive project root." }] } };
     }
   }
-  const nestedRoots = candidates.filter(root => root !== projectRoot &&
-    root.toLowerCase().startsWith(projectRoot.toLowerCase()));
+  const projectKey = projectRoot.toLowerCase();
+  const nestedRoots = new Set(paths.flatMap(path => {
+    const match = path.match(/^(.*\/)?(?:Boards|Chrs|Prg|Item|Misc|Tiles|Bitmap|Enemy|Bkrounds|Media)\//i);
+    const root = match?.[1]?.toLowerCase();
+    return root && root !== projectKey && root.startsWith(projectKey) ? [root] : [];
+  }));
+  const excluded = [...nestedRoots];
   const artifacts = new Map([...indexed].filter(([path]) =>
-    path === mainPath || (path.toLowerCase().startsWith(projectRoot.toLowerCase()) &&
-      !nestedRoots.some(root => path.toLowerCase().startsWith(root.toLowerCase())))));
+    path === mainPath || (path.toLowerCase().startsWith(projectKey) &&
+      !excluded.some(root => path.toLowerCase().startsWith(root.toLowerCase())))));
   const graph = buildReferences(artifacts);
   const scene = buildPlayableScene(artifacts, graph, main, { projectRoot });
   return { main, artifacts, graph, scene };

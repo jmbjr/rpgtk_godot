@@ -83,6 +83,7 @@ export async function buildBrowserGame(id, options = {}) {
     addFight(zip, originalRoot, false);
     // A duplicate helper outside the GAM project must never be imported.
     zip.file("Foreign/Prg/weather_clock.prg", "method ReportTide()\n{\nwrong = 1\n}");
+    zip.file(originalRoot + "Foreign/Prg/mwininn.prg", 'mwin("Foreign decoy.")\nwait()');
     zip.file(originalRoot + spec.main, gam);
     zip.remove(spec.main);
   } else {
