@@ -142,7 +142,7 @@ assert.match(page, /id="play-close"/);
 assert.match(page, /id="play-reset"/);
 for (const direction of ["north", "south", "east", "west"])
   assert.match(page, new RegExp('data-move="' + direction + '"'));
-assert.match(browser, /buildPlayableScene/);
+assert.match(browser, /createTk3PlayContext/);
 assert.match(browser, /mountAuthoredBoard/);
 assert.match(browser, /playableScene\.ok/);
 

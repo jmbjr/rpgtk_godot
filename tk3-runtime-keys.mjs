@@ -23,7 +23,7 @@ export function listTk3RuntimeKeys(scene, artifacts) {
   if (main?.type !== "gam" || main.decodeStatus !== "decoded" ||
       !main.configuration?.runtimeKeys) return [];
   const config = main.configuration;
-  const refs = new Map(mainFileBindings(main, [...artifacts.keys()]));
+  const refs = new Map(mainFileBindings(main, [...artifacts.keys()], scene.projectRoot));
   const rows = [
     { slot: -1, key: config.runtimeKeys.runKey,
       program: config.runtimeProgram, evidence: "Runtime program" },
@@ -43,7 +43,7 @@ export function listTk3RuntimeKeys(scene, artifacts) {
         binding?.status === "resolved" ? "unsupported" :
         binding?.status || "missing";
       return { ...row, label: readableKey(row.key),
-        path: archivePath, status };
+        path: archivePath, status, projectRoot: scene.projectRoot };
     });
 }
 
@@ -57,5 +57,6 @@ export function startTk3RuntimeKey(state, action, artifacts) {
   if (source?.type !== "prg" || !Array.isArray(source.program?.rows))
     return { status: "error", state: { ...state, message: "", execution: null,
       diagnostic: error(path, 1, "GAM runtime script has no decoded source.") } };
-  return startTk3Script(state, source.program.rows.map(row => row.line).join("\n"), path);
+  return startTk3Script(state, source.program.rows.map(row => row.line).join("\n"), path,
+    { artifacts, projectRoot: action.projectRoot });
 }

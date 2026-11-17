@@ -115,13 +115,13 @@ export function selectTk3BoardKey(scene, actor) {
     insideTk3BoardProgram(program, actor)) ?? null;
 }
 
-export function startTk3BoardProgram(state, program) {
+export function startTk3BoardProgram(state, program, artifacts, projectRoot) {
   if (state?.execution) return { status: "busy", state };
   if (!program || program.status !== "resolved") {
     const path = program?.programPath ?? "(board program)";
     return { status: "error", state: { ...state, execution: null, message: "",
       diagnostic: diagnostic(path, 1, program?.reason || "Unresolved board program.") } };
   }
-  return { ...startTk3Script(state, program.source, program.programPath),
+  return { ...startTk3Script(state, program.source, program.programPath, { artifacts, projectRoot }),
     boardProgram: program };
 }

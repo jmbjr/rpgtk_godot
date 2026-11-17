@@ -21,14 +21,15 @@ function failed(response, message) {
       scriptStack: [], diagnostic, message: "" } };
 }
 
-export function resolveTk3FightRequest(response, artifacts) {
+export function resolveTk3FightRequest(response, artifacts, projectRoot) {
   if (response?.status !== "fight" || !response.encounter ||
       !response.state?.pendingFight)
     return { status: "inactive", state: response?.state };
   const requested = response.encounter;
-  const root = requested.path.match(/^(.*\/)Prg\/[^/]+\.prg$/i)?.[1] ?? null;
+  const root = projectRoot ?? requested.path.match(/^(.*\/)?Prg\/[^/]+\.prg$/i)?.[1] ??
+    (/^Prg\//i.test(requested.path) ? "" : null);
   const names = [...artifacts.keys()];
-  if (!root) return failed(response, "Fight source has no identifiable archive root.");
+  if (root === null) return failed(response, "Fight source has no identifiable archive root.");
   for (const [key, value] of [["enemy", requested.enemy],
     ["background", requested.background]]) {
     if (typeof value !== "string" || !/^[^\\/:"*?<>|]+\.[A-Za-z0-9]+$/i.test(value))
@@ -59,7 +60,7 @@ export function resolveTk3FightRequest(response, artifacts) {
       return failed(response, "Enemy victory program " + ref.path +
         " has no decoded source.");
     const source = asset.program.rows.map(row => row.line).join("\n");
-    const compiled = compileTk3Interaction(source, asset.path);
+    const compiled = compileTk3Interaction(source, asset.path, { artifacts, projectRoot: root });
     if (!compiled.ok) return failed(response,
       "Enemy victory program contains unsupported syntax at " +
         compiled.diagnostic.text);
@@ -91,7 +92,7 @@ export function cancelTk3FightTest(state) {
 // This browser compatibility test never guesses the native battle result.
 // The caller supplies the decoded GAM of the current archive, not a
 // game-name-specific configuration.
-export function simulateTk3FightDefeat(state, encounter, artifacts, mainPath) {
+export function simulateTk3FightDefeat(state, encounter, artifacts, mainPath, projectRoot) {
   if (!state?.pendingFight || !state.execution ||
       !encounter || encounter.path !== state.pendingFight.path)
     return { status: "inactive", state };
@@ -112,7 +113,7 @@ export function simulateTk3FightDefeat(state, encounter, artifacts, mainPath) {
     return { status: "gameover", state: cleared,
       policy: "native-default-reset" };
   }
-  const root = encounter.path.match(/^(.*\/)Prg\/[^/]+\.prg$/i)?.[1] ?? null;
+  const root = projectRoot ?? encounter.path.match(/^(.*\/)?Prg\/[^/]+\.prg$/i)?.[1] ?? null;
   const found = resolveAsset([...artifacts.keys()], "Prg", configured, root);
   if (found.status !== "resolved") {
     const diagnostic = issue(mainPath, 1, "GAM game-over program " +
@@ -126,10 +127,10 @@ export function simulateTk3FightDefeat(state, encounter, artifacts, mainPath) {
     return { status: "error", state: { ...cleared, diagnostic } };
   }
   const source = asset.program.rows.map(row => row.line).join("\n");
-  const compiled = compileTk3Interaction(source, found.path);
+  const compiled = compileTk3Interaction(source, found.path, { artifacts, projectRoot: root });
   if (!compiled.ok) return { status: "error", state: {
     ...cleared, diagnostic: compiled.diagnostic } };
-  return { ...startTk3Script(cleared, source, asset.path),
+  return { ...startTk3Script(cleared, source, asset.path, { artifacts, projectRoot: root }),
     gameOverProgramPath: asset.path };
 }
 

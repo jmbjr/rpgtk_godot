@@ -1,3 +1,5 @@
+import { resolveAsset } from "./model.mjs";
+
 // Bounded Toolkit 3 RPGCode subset: one statement per line, braces on
 // separate lines, case-insensitive names, simple scalar expressions.
 // This is a deliberately small interpreter, not a full RPGCode runtime.
@@ -27,102 +29,161 @@ function expression(source, path, line) {
   throw issue(path, line, "Unsupported expression: " + source.trim());
 }
 
-export function compileTk3Interaction(source, path) {
+export function compileTk3Interaction(source, path, { artifacts, projectRoot } = {}) {
   if (!path || typeof path !== "string" || typeof source !== "string")
     return { ok: false, diagnostic: issue(path || "(unresolved program)", 1,
       "Program source is unavailable.") };
-  const lines = source.replace(/\r\n?|\n/g, "\n").split("\n");
-  if (lines.length > MAX_LINES)
-    return { ok: false, diagnostic: issue(path, MAX_LINES + 1,
-      "Program exceeds the 300-line subset limit.") };
-  const rows = lines.map((raw, index) => ({
-    // A final semicolon is an optional Toolkit statement terminator.
-    // Do not split multi-statement lines or strip characters inside strings.
-    line: index + 1, text: raw.trim().replace(/;$/, "")
-      .replace(/^#(?=[A-Za-z_])/, ""),
-  })).filter(row => row.text && !/^(?:\/\/|\*|\/\*)/.test(row.text));
-  let offset = 0;
-  const current = () => rows[offset];
-  function fail(row, message) { throw issue(path, row?.line ?? lines.length,
-    message); }
+  const methods = new Map();
+  const activeFiles = new Set();
+  const loadedFiles = new Set();
+  const root = projectRoot ?? path.match(/^(.*\/)?Prg\/[^/]+$/i)?.[1] ?? "";
 
-  function parseBlock(nesting, closeRequired = false) {
-    if (nesting > MAX_DEPTH) fail(current(), "Too many nested blocks.");
-    const nodes = [];
-    while (offset < rows.length) {
-      const row = current();
-      const s = row.text;
-      if (s === "}") {
-        if (!closeRequired) fail(row, "Unexpected closing brace.");
-        offset++;
-        return nodes;
-      }
-      if (/^else\b/i.test(s) || s === "{") fail(row,
-        "Unexpected block token: " + s);
-      const conditional = s.match(/^if\s*\(\s*(.+?)\s*==\s*(.+?)\s*\)$/i);
-      if (conditional) {
-        const cond = { lhs: expression(conditional[1], path, row.line),
-          rhs: expression(conditional[2], path, row.line) };
-        offset++;
-        const opening = current();
-        if (opening?.text !== "{") fail(opening || row,
-          "Expected { on the line after if(...).");
-        offset++;
-        const thenBody = parseBlock(nesting + 1, true);
-        let elseBody = [];
-        if (/^else$/i.test(current()?.text || "")) {
-          const otherwise = current();
+  function parseFile(source, path, included = false) {
+    const lines = source.split(/\r\n?|\n/);
+    if (lines.length > MAX_LINES)
+      throw issue(path, MAX_LINES + 1, "Program exceeds the 300-line subset limit.");
+    const rows = lines.map((raw, index) => ({
+      line: index + 1, text: raw.trim().replace(/;$/, "")
+        .replace(/^#(?=[A-Za-z_])/, ""),
+    })).filter(row => row.text && !/^(?:\/\/|\*|\/\*)/.test(row.text));
+    let offset = 0;
+    const current = () => rows[offset];
+    function fail(row, message) { throw issue(path, row?.line ?? lines.length, message); }
+
+    function parseBlock(nesting, closeRequired = false) {
+      if (nesting > MAX_DEPTH) fail(current(), "Too many nested blocks.");
+      const nodes = [];
+      while (offset < rows.length) {
+        const row = current();
+        const s = row.text;
+        if (s === "}") {
+          if (!closeRequired) fail(row, "Unexpected closing brace.");
           offset++;
-          if (current()?.text !== "{") fail(current() || otherwise,
-            "Expected { on the line after else.");
-          offset++;
-          elseBody = parseBlock(nesting + 1, true);
+          return nodes;
         }
-        nodes.push({ op: "if", cond, thenBody, elseBody, line: row.line });
-        continue;
+        if (/^else\b/i.test(s) || s === "{") fail(row,
+          "Unexpected block token: " + s);
+        const include = s.match(/^include\s*\(\s*"([^"]+)"\s*\)$/i);
+        const method = s.match(/^method\s+([A-Za-z_]\w*)\s*\(\s*\)$/i);
+        if (include && artifacts && nesting === 0) {
+          const file = include[1];
+          if (!/^[A-Za-z0-9_. -]+\.prg$/i.test(file) || file.includes(".."))
+            fail(row, "An include must name one project PRG file.");
+          const found = resolveAsset([...artifacts.keys()], "Prg", file, root);
+          if (found.status !== "resolved") fail(row, "Included PRG " + file + " is " + found.status + ".");
+          if (activeFiles.has(found.path)) fail(row, "Cyclic include: " + found.path + ".");
+          if (!loadedFiles.has(found.path)) {
+            if (loadedFiles.size >= 16 || activeFiles.size >= MAX_DEPTH)
+              fail(row, "Include limit exceeded.");
+            const asset = artifacts.get(found.path);
+            if (asset?.type !== "prg" || asset.decodeStatus !== "decoded" ||
+                asset.error || !Array.isArray(asset.program?.rows))
+              fail(row, "Included PRG " + found.path + " has no decoded source.");
+            loadedFiles.add(found.path);
+            parseFile(asset.program.rows.map(r => r.line).join("\n"), found.path, true);
+          }
+          offset++;
+          continue;
+        }
+        if (method && artifacts && nesting === 0) {
+          const name = method[1].toLowerCase();
+          if (methods.has(name)) fail(row, "Duplicate free method: " + method[1] + "().");
+          if (rows[++offset]?.text !== "{") fail(current() || row, "Expected { after method declaration.");
+          offset++;
+          const body = parseBlock(nesting + 1, true);
+          if (methods.has(name)) fail(row, "Duplicate free method: " + method[1] + "().");
+          methods.set(name, body);
+          continue;
+        }
+        if (included && nesting === 0)
+          fail(row, "Included PRGs may declare free methods and includes only.");
+        const conditional = s.match(/^if\s*\(\s*(.+?)\s*==\s*(.+?)\s*\)$/i);
+        if (conditional) {
+          const cond = { lhs: expression(conditional[1], path, row.line),
+            rhs: expression(conditional[2], path, row.line) };
+          offset++;
+          const opening = current();
+          if (opening?.text !== "{") fail(opening || row,
+            "Expected { on the line after if(...).");
+          offset++;
+          const thenBody = parseBlock(nesting + 1, true);
+          let elseBody = [];
+          if (/^else$/i.test(current()?.text || "")) {
+            const otherwise = current();
+            offset++;
+            if (current()?.text !== "{") fail(current() || otherwise,
+              "Expected { on the line after else.");
+            offset++;
+            elseBody = parseBlock(nesting + 1, true);
+          }
+          nodes.push({ op: "if", cond, thenBody, elseBody, path, line: row.line });
+          continue;
+        }
+        if (/^if\b/i.test(s)) fail(row, "Unsupported if syntax; use if (value == value).");
+        const message = s.match(/^mwin\s*\(\s*("[^"]*")\s*\)$/i);
+        const wait = /^wait\s*\(\s*\)$/i.test(s);
+        const clear = /^mwincls\s*\(\s*\)$/i.test(s);
+        const send = s.match(/^send\s*\(\s*("[^"]*")\s*,\s*([^,()]+)\s*,\s*([^,()]+)\s*(?:,\s*([^,()]+)\s*)?\)$/i);
+        const fight = s.match(/^fightEnemy\s*\(\s*("[^"]*")\s*,\s*("[^"]*")\s*\)$/i);
+        const erase = s.match(/^eraseItem\s*\(\s*("[^"]*")\s*\)$/i);
+        const assignment = s.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/);
+        if (message) nodes.push({ op: "mwin", value: expression(message[1], path, row.line), line: row.line });
+        else if (wait) nodes.push({ op: "wait", line: row.line });
+        else if (clear) nodes.push({ op: "clear", line: row.line });
+        else if (send) nodes.push({ op: "send",
+          file: expression(send[1], path, row.line),
+          x: expression(send[2], path, row.line),
+          y: expression(send[3], path, row.line),
+          layer: send[4] ? expression(send[4], path, row.line) :
+            { kind: "number", value: 1 }, line: row.line });
+        else if (fight) nodes.push({ op: "fight",
+          enemy: expression(fight[1], path, row.line),
+          background: expression(fight[2], path, row.line), line: row.line });
+        else if (erase) nodes.push({ op: "erase",
+          alias: expression(erase[1], path, row.line), line: row.line });
+        else if (assignment) nodes.push({ op: "assign", name: assignment[1].toLowerCase(),
+          value: expression(assignment[2], path, row.line), line: row.line });
+        else if (artifacts && /^[A-Za-z_]\w*\s*\(\s*\)$/.test(s))
+          nodes.push({ op: "call", name: s.slice(0, s.indexOf("(")).trim().toLowerCase(), line: row.line });
+        else fail(row, "Unsupported RPGCode statement: " + s);
+        nodes.at(-1).path = path;
+        offset++;
       }
-      if (/^if\b/i.test(s)) fail(row, "Unsupported if syntax; use if (value == value).");
-      const message = s.match(/^mwin\s*\(\s*("[^"]*")\s*\)$/i);
-      const wait = /^wait\s*\(\s*\)$/i.test(s);
-      const clear = /^mwincls\s*\(\s*\)$/i.test(s);
-      const send = s.match(/^send\s*\(\s*("[^"]*")\s*,\s*([^,()]+)\s*,\s*([^,()]+)\s*(?:,\s*([^,()]+)\s*)?\)$/i);
-      const fight = s.match(/^fightEnemy\s*\(\s*("[^"]*")\s*,\s*("[^"]*")\s*\)$/i);
-      const erase = s.match(/^eraseItem\s*\(\s*("[^"]*")\s*\)$/i);
-      const assignment = s.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/);
-      if (message) nodes.push({ op: "mwin", value: expression(message[1], path, row.line), line: row.line });
-      else if (wait) nodes.push({ op: "wait", line: row.line });
-      else if (clear) nodes.push({ op: "clear", line: row.line });
-      else if (send) nodes.push({ op: "send",
-        file: expression(send[1], path, row.line),
-        x: expression(send[2], path, row.line),
-        y: expression(send[3], path, row.line),
-        layer: send[4] ? expression(send[4], path, row.line) :
-          { kind: "number", value: 1 }, line: row.line });
-      else if (fight) nodes.push({ op: "fight",
-        enemy: expression(fight[1], path, row.line),
-        background: expression(fight[2], path, row.line), line: row.line });
-      else if (erase) nodes.push({ op: "erase",
-        alias: expression(erase[1], path, row.line), line: row.line });
-      else if (assignment) nodes.push({ op: "assign", name: assignment[1].toLowerCase(),
-        value: expression(assignment[2], path, row.line), line: row.line });
-      else fail(row, "Unsupported RPGCode statement: " + s);
-      offset++;
+      if (closeRequired) fail(rows.at(-1), "Unclosed { block.");
+      return nodes;
     }
-    if (closeRequired) fail(rows.at(-1), "Unclosed { block.");
+    activeFiles.add(path);
+    const nodes = parseBlock(0);
+    activeFiles.delete(path);
     return nodes;
   }
+
   try {
-    const nodes = parseBlock(0);
+    const nodes = parseFile(source, path);
     const instructions = [];
+    const calls = new Set();
+    let expanded = 0;
     function emit(sequence) {
       for (const node of sequence) {
+        if (++expanded >= MAX_STEPS)
+          throw issue(node.path, node.line, "Expanded program exceeds the instruction budget.");
+        if (node.op === "call") {
+          const body = methods.get(node.name);
+          if (!body || calls.has(node.name) || calls.size >= MAX_DEPTH)
+            throw issue(node.path, node.line, "Unsupported RPGCode statement: " +
+              node.name + "() (missing, recursive, or too deeply nested free method).");
+          calls.add(node.name);
+          emit(body);
+          calls.delete(node.name);
+          continue;
+        }
         if (node.op !== "if") { instructions.push(node); continue; }
         const test = instructions.length;
-        instructions.push({ op: "if", cond: node.cond, line: node.line, jump: -1 });
+        instructions.push({ op: "if", cond: node.cond, path: node.path, line: node.line, jump: -1 });
         emit(node.thenBody);
         if (node.elseBody.length) {
           const jump = instructions.length;
-          instructions.push({ op: "jump", jump: -1, line: node.line });
+          instructions.push({ op: "jump", jump: -1, path: node.path, line: node.line });
           instructions[test].jump = instructions.length;
           emit(node.elseBody);
           instructions[jump].jump = instructions.length;
@@ -183,14 +244,14 @@ function run(state) {
       // not call CProgram::end(). Yield a transfer request to the caller
       // and resume the same program counter on successful scene swap.
       return { status: "transfer", state: { ...state, variables: vars,
-        message, execution: exec, diagnostic: null }, transfer: {
-        path: exec.path, line: node.line, file: evaluate(node.file, vars),
+        message, execution: exec, scriptStack, diagnostic: null }, transfer: {
+        path: node.path ?? exec.path, line: node.line, file: evaluate(node.file, vars),
         x: evaluate(node.x, vars), y: evaluate(node.y, vars),
         layer: evaluate(node.layer, vars),
       } };
     } else if (node.op === "fight") {
       const encounter = {
-        path: exec.path, line: node.line,
+        path: node.path ?? exec.path, line: node.line,
         enemy: evaluate(node.enemy, vars),
         background: evaluate(node.background, vars),
       };
@@ -200,7 +261,7 @@ function run(state) {
           pendingFight: encounter, diagnostic: null } };
     } else if (node.op === "erase") {
       const effect = { kind: "erase-item", alias: evaluate(node.alias, vars),
-        path: exec.path, line: node.line,
+        path: node.path ?? exec.path, line: node.line,
         sourceItemSlot: exec.sourceItemSlot ?? null,
         sourceBoardPath: exec.sourceBoardPath ?? null };
       return { status: "effect", effect,
@@ -224,7 +285,7 @@ function run(state) {
 
 export function startTk3Script(state, source, path, context = {}) {
   if (state.execution || state.pendingFight) return { status: "busy", state };
-  const compiled = compileTk3Interaction(source, path);
+  const compiled = compileTk3Interaction(source, path, context);
   if (!compiled.ok) return { status: "error", state: { ...state,
     message: "", diagnostic: compiled.diagnostic, execution: null } };
   return run({ ...state, message: "", diagnostic: null,
@@ -282,7 +343,7 @@ export function resumeTk3Transfer(state) {
 // counter so the actor can talk, move and retry from the current board.
 export function rejectTk3Transfer(state, transfer, message) {
   const diagnostic = issue(transfer.path, transfer.line, message);
-  return { status: "error", state: { ...state, execution: null,
+  return { status: "error", state: { ...state, execution: null, scriptStack: [],
     message: "", diagnostic } };
 }
 
@@ -315,5 +376,5 @@ export function startPlacedTk3Script(state, scene, actor, artifacts) {
   }
   const source = program.program.rows.map(row => row.line).join("\n");
   return { ...startTk3Script(state, source, target.programPath,
-    { sourceItemSlot: target.slot, sourceBoardPath: scene.boardPath }), target };
+    { artifacts, projectRoot: scene.projectRoot, sourceItemSlot: target.slot, sourceBoardPath: scene.boardPath }), target };
 }

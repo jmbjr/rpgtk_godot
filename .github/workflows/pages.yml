@@ -132,6 +132,10 @@ jobs:
         run: node scripts/build-tk3-script-fixtures.mjs site
       - name: Verify published viewer modules
         run: node scripts/check-staged-site.mjs site
+      - name: Check staged TK3 play in Chromium
+        run: |
+          npx playwright install --with-deps chromium
+          node scripts/check-tk3-browser.mjs site
       - name: Build and verify Toolkit 2 test games
         run: |
           node scripts/build-tk2-test-game.mjs site/tk2-test-game.zip
