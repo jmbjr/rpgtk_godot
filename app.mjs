@@ -4,7 +4,7 @@ import { openGameArchive } from "./archive.mjs";
 import { traceProgramDependencies, traceProjectDependencies } from "./script-trace.mjs";
 import { auditProjectPlugins } from "./plugin-audit.mjs";
 import { assessPlayability } from "./playability-audit.mjs";
-import { buildPlayableScene } from "./playable-scene.mjs";
+import { createTk3PlayContext } from "./playable-scene.mjs";
 import { assessBstwTitle, requestBstwNewSession } from "./bstw-title.mjs";
 import { mountAuthoredBoard } from "./experiments/movement-sandbox/authored-play.mjs";
 import { executeGamStartup } from "./tk3-gam-startup.mjs";
@@ -41,6 +41,8 @@ function status(id, message, error = false) {
 let catalog;
 let archive = null;
 let playableScene = null;
+let playContext = null;
+let launchMode = null;
 let bstwTitle = null;
 let activePlayable = null;
 let titleDisplayRequest = 0;
@@ -2448,58 +2450,65 @@ function closeBstwTitle() {
   if (!activePlayable) byId("workspace").hidden = !archive;
 }
 
-// Transfer remounts the already-resolved destination, retaining only the
-// explicit per-session state. Initial Play / title New still start fresh.
-function remountTransferredBoard(request) {
-  const panel = byId("play-stage");
+const playTemplate = byId("play-stage").cloneNode(true);
+
+function mountPlayable(scene, options) {
+  // Stage a complete replacement off-DOM. Failed rendering keeps the old
+  // canvas, input listeners, current position and animation frame intact.
+  const panel = playTemplate.cloneNode(true);
+  panel.hidden = false;
+  const replacement = mountAuthoredBoard(panel, scene, playContext.artifacts,
+    playContext.graph, { ...options, onTransfer: remountTransferredBoard,
+      onRestart: () => launchPlayableWithSession(launchMode) });
+  panel.querySelector("#play-close").addEventListener("click", () => {
+    closePlayable();
+    byId("play-bstw").focus({ preventScroll: true });
+  });
+  activePlayable?.destroy();
+  byId("play-stage").replaceWith(panel);
+  activePlayable = replacement;
+  byId("workspace").hidden = true;
+  panel.focus({ preventScroll: true });
+  return { panel, replacement };
+}
+
+function remountTransferredBoard({ scene, ...options }) {
+  let replacement;
   try {
-    const replacement = mountAuthoredBoard(panel, request.scene, artifacts,
-      references, { scriptSession: request.scriptSession,
-        innState: request.innState, legacyState: request.legacyState,
-        arrivalFeedback: request.arrivalFeedback,
-        onTransfer: remountTransferredBoard,
-        onRestart: launchPlayableScene });
-    activePlayable?.destroy();
-    activePlayable = replacement;
-    byId("play-error").hidden = true;
+    ({ replacement } = mountPlayable(scene, options));
   } catch (error) {
-    // The transfer already passed pure validation; unexpected browser
-    // rendering failure should not destroy the working previous mount.
-    status("play-error", "Cannot render transferred board: " + error.message, true);
-    byId("play-error").hidden = false;
+    return "Unable to render destination: " + error.message;
   }
+  replacement.continueTransfer();
+  return null;
 }
 
-// Direct board launch and the established BSTW title/New flow intentionally
-// skip arbitrary GAM startup execution. Their existing contract is unchanged.
 function launchPlayableScene() {
-  return launchPlayableWithSession();
+  return launchPlayableWithSession("direct");
 }
 
-// The optional GAM startup route seeds the same source-owned interaction
-// session; the board, character, and source references are not special-cased.
-function launchPlayableWithSession(scriptSession = null, startupPath = null) {
+function launchPlayableWithSession(mode) {
   if (!playableScene?.ok) return false;
-  closeBstwTitle();
-  closePlayable();
-  const panel = byId("play-stage");
+  const outcome = mode === "gam" ?
+    executeGamStartup(playContext.artifacts, playableScene) : null;
+  if (outcome && !outcome.ok) {
+    status("gam-startup-status", "Startup blocked: " +
+      outcome.diagnostic.text + " · Direct board play remains available.", true);
+    return false;
+  }
+  const arrivalFeedback = outcome ? (outcome.startupPath ?
+    "GAM startup completed: " + outcome.startupPath :
+    "No GAM startup PRG configured; opening the initial board.") :
+    "Direct board launch: GAM startup was bypassed.";
   try {
-    panel.hidden = false;
-    byId("workspace").hidden = true;
-    activePlayable = mountAuthoredBoard(panel, playableScene, artifacts,
-      references, { onTransfer: remountTransferredBoard,
-        onRestart: launchPlayableScene,
-        ...(scriptSession ? { scriptSession,
-          arrivalFeedback: startupPath ?
-            "GAM startup completed: " + startupPath +
-            " · session variables are available to source object programs." :
-            "No GAM startup PRG configured; opening the initial board." } : {}) });
-    byId("play-error").hidden = true;
+    const { panel } = mountPlayable(playableScene,
+      { scriptSession: outcome?.scriptSession, arrivalFeedback, legacyCompatibility: mode === "bstw" });
+    launchMode = mode;
+    closeBstwTitle();
     panel.scrollIntoView({ behavior: "instant", block: "start" });
-    panel.focus({ preventScroll: true });
+    status("gam-startup-status", arrivalFeedback);
     return true;
   } catch (error) {
-    closePlayable();
     status("play-eligibility", "Unable to render board: " + error.message, true);
     return false;
   }
@@ -2568,31 +2577,8 @@ function showBstwTitle() {
   panel.focus({ preventScroll: true });
 }
 
-byId("play-close").addEventListener("click", () => {
-  closePlayable();
-  byId("play-bstw").focus({ preventScroll: true });
-});
-byId("play-bstw").addEventListener("click", () => {
-  if (!activePlayable) {
-    status("gam-startup-status", "Direct board launch: the GAM startup PRG was bypassed.");
-    launchPlayableScene();
-  }
-});
-byId("play-gam-startup").addEventListener("click", () => {
-  if (activePlayable || !playableScene?.ok) return;
-  const outcome = executeGamStartup(artifacts, playableScene);
-  if (!outcome.ok) {
-    // Compilation and lifecycle gating are atomic: even assignments before
-    // an unsupported command have not been applied to the new session.
-    status("gam-startup-status", "Startup blocked: " +
-      outcome.diagnostic.text + " · Direct board play remains available.", true);
-    return;
-  }
-  status("gam-startup-status", outcome.status === "skipped" ?
-    "The GAM has no startup PRG; opening the initial board." :
-    "Ran source startup: " + outcome.startupPath);
-  launchPlayableWithSession(outcome.scriptSession, outcome.startupPath);
-});
+byId("play-bstw").addEventListener("click", launchPlayableScene);
+byId("play-gam-startup").addEventListener("click", () => launchPlayableWithSession("gam"));
 byId("open-bstw-title").addEventListener("click", showBstwTitle);
 byId("bstw-title-back").addEventListener("click", () => {
   closeBstwTitle();
@@ -2604,7 +2590,7 @@ byId("bstw-title-new").addEventListener("click", () => {
     status("bstw-title-status", action.reason, true);
     return;
   }
-  launchPlayableScene();
+  launchPlayableWithSession("bstw");
 });
 
 async function loadArchive(name, readBytes) {
@@ -2612,6 +2598,8 @@ async function loadArchive(name, readBytes) {
   closeBstwTitle();
   closePlayable();
   playableScene = null;
+  playContext = null;
+  launchMode = null;
   bstwTitle = null;
   byId("open-bstw-title").disabled = true;
   byId("play-gam-startup").disabled = true;
@@ -2649,7 +2637,8 @@ async function loadArchive(name, readBytes) {
     selectDefault(true);
     // The runtime always follows the GAM embedded in the selected game ZIP,
     // never an unrelated separately uploaded GAM.
-    playableScene = buildPlayableScene(artifacts, references, archiveMainFile);
+    playContext = createTk3PlayContext(artifacts, archiveMainFile);
+    playableScene = playContext.scene;
     bstwTitle = assessBstwTitle(artifacts, archiveMainFile, playableScene);
     byId("play-launch").hidden = false;
     byId("open-bstw-title").disabled = !bstwTitle.ok;

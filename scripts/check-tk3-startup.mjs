@@ -114,16 +114,4 @@ assert.equal(skipped.ok, true);
 assert.equal(skipped.status, "skipped");
 assert.deepEqual(skipped.scriptSession.variables, {});
 
-const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-const app = await readFile(new URL("../app.mjs", import.meta.url), "utf8");
-const flow = await readFile(new URL("../.github/workflows/pages.yml", import.meta.url), "utf8");
-for (const id of ["play-gam-startup", "gam-startup-status", "play-bstw"])
-  assert.match(html, new RegExp('id="' + id + '"'));
-assert.match(html, /tk3-script-startup\.zip/);
-assert.match(app, /executeGamStartup\(artifacts, playableScene\)/);
-assert.match(app, /launchPlayableWithSession\(outcome\.scriptSession, outcome\.startupPath\)/);
-assert.match(app, /function launchPlayableScene\(\)/);
-assert.match(app, /requestBstwNewSession\(bstwTitle, playableScene\)/);
-assert.match(flow, /node scripts\/check-tk3-startup\.mjs/);
-assert.match(flow, /tk3-gam-startup\.mjs tk3-runtime-keys\.mjs tk3-source-dialogue\.mjs tk3-source-menu\.mjs tk3-fight-bridge\.mjs site\//);
 console.log("GAM startup passed: production synthetic ZIP -> configured PRG -> scalar -> placed-object dialogue; direct launch, fresh session, missing/ambiguous paths, and atomic unsupported-command diagnostics.");

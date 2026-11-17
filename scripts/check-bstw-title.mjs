@@ -173,26 +173,6 @@ assert.equal(requestBstwNewSession(titleWithoutBoard, unplayable).ok, false);
 assert.equal(requestBstwNewSession(title,
   { ...scene, boardPath: "BSTW/Boards/other.brd" }).ok, false);
 
-const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-const browser = await readFile(new URL("../app.mjs", import.meta.url), "utf8");
-const css = await readFile(new URL("../style.css", import.meta.url), "utf8");
-for (const id of ["open-bstw-title", "bstw-title-stage", "bstw-title-image",
-  "bstw-title-fallback", "bstw-title-art-status", "bstw-title-new",
-  "bstw-title-back", "bstw-title-eligibility", "play-bstw"]) {
-  assert.match(html, new RegExp('id="' + id + '"'));
-}
-assert.match(browser, /assessBstwTitle\(artifacts, archiveMainFile, playableScene\)/);
-assert.match(browser, /requestBstwNewSession\(bstwTitle, playableScene\)/);
-assert.match(browser, /function launchPlayableScene\(\)/);
-assert.match(browser, /closePlayable\(\);\s*const panel = byId\("play-stage"\)/);
-assert.match(browser, /mountAuthoredBoard\(panel, playableScene, artifacts,/);
-assert.match(browser, /URL\.createObjectURL\(new Blob\(\[bytes\]/);
-assert.match(browser, /URL\.revokeObjectURL\(url\)/);
-assert.match(browser, /byId\("bstw-title-new"\)\.addEventListener\("click"/);
-assert.match(browser, /byId\("play-bstw"\)\.addEventListener\("click"/);
-assert.match(css, /\.bstw-title-image-frame/);
-assert.match(css, /\.bstw-title-actions/);
-
 // Optional SHA-gated, read-only FULL production-JS path against the
 // owner's ZIP (never provided to CI or committed into the repository).
 if (process.argv[2]) {

@@ -126,10 +126,10 @@ export function resolveAsset(paths, folder, name, root = null) {
   return { status: matches.length ? "ambiguous" : "missing" };
 }
 
-export function mainFileBindings(mainFile, paths) {
-  const startup = resolveAsset(paths.filter(path => /\.prg$/i.test(path)), "Prg", mainFile.startup);
+export function mainFileBindings(mainFile, paths, projectRoot) {
+  const startup = resolveAsset(paths.filter(path => /\.prg$/i.test(path)), "Prg", mainFile.startup, projectRoot);
   const folder = startup.path?.slice(0, startup.path.lastIndexOf("/"));
-  const startupRoot = folder === undefined ? null : folder.slice(0, folder.lastIndexOf("/") + 1);
+  const startupRoot = projectRoot ?? (folder === undefined ? null : folder.slice(0, folder.lastIndexOf("/") + 1));
   const bindings = [
     ["Configured startup", { ...startup, value: mainFile.startup }],
     ["Opening board", { ...resolveAsset(paths, "Boards", mainFile.board, startupRoot), value: mainFile.board }],

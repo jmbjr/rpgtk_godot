@@ -96,7 +96,7 @@ const bad = startTk3RuntimeKey(initialTk3ScriptState(), badAction, unsupported.a
 assert.equal(bad.status, "error");
 assert.equal(bad.state.diagnostic.path, keyPath);
 assert.equal(bad.state.diagnostic.line, 1);
-assert.match(bad.state.diagnostic.text, /Unsupported RPGCode/);
+assert.match(bad.state.diagnostic.text, /Included PRG legacy\.prg is missing/);
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const browser = await readFile(new URL("../experiments/movement-sandbox/authored-play.mjs", import.meta.url), "utf8");

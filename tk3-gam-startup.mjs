@@ -25,7 +25,7 @@ export function executeGamStartup(artifacts, scene) {
       "The source GAM is missing or unsupported.") };
   }
 
-  const binding = new Map(mainFileBindings(main, [...artifacts.keys()]))
+  const binding = new Map(mainFileBindings(main, [...artifacts.keys()], scene.projectRoot))
     .get("Configured startup");
   // Native setUpGame simply skips the startup stage when the GAM field is
   // empty, then opens its configured initial board normally.
@@ -40,7 +40,7 @@ export function executeGamStartup(artifacts, scene) {
   const boardRoot = scene.boardPath?.match(/^(.*\/)Boards\/[^/]+\.brd$/i)?.[1];
   const mainRoot = main.path.includes("/") ?
     main.path.slice(0, main.path.lastIndexOf("/") + 1) : "";
-  const fallback = (boardRoot ?? mainRoot) +
+  const fallback = (scene.projectRoot ?? boardRoot ?? mainRoot) +
     "Prg/" + (main.startup || "(unset).prg");
   const path = binding?.path || fallback;
   if (binding?.status !== "resolved") {

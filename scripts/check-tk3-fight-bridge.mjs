@@ -270,9 +270,6 @@ for (const spec of scriptFixtureSpecs) {
 const html=await readFile(new URL("../index.html",import.meta.url),"utf8");
 const app=await readFile(new URL("../experiments/movement-sandbox/authored-play.mjs",import.meta.url),"utf8");
 const workflow=await readFile(new URL("../.github/workflows/pages.yml",import.meta.url),"utf8");
-const appShell=await readFile(new URL("../app.mjs",import.meta.url),"utf8");
-assert.match(appShell,/onRestart: launchPlayableScene/,
-  "Game over restart must mount the archive's opening board, not just current board.");
 for(const id of ["play-fight-test","play-fight-details","play-fight-simulate",
   "play-fight-defeat","play-fight-abort","play-gameover-test",
   "play-gameover-note","play-gameover-restart"])

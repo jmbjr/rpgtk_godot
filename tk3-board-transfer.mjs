@@ -6,7 +6,8 @@ import { rejectTk3Transfer, resumeTk3Transfer } from "./tk3-script-slice.mjs";
 // whenever a destination is missing/ambiguous/unsupported or invalid.
 // Native Source: trans3/rpgcode/functions.cpp::send; coords.cpp::tileToPixel
 // and CProgram.cpp::run (the loop continues after Send).
-export function resolveTk3BoardTransfer(response, currentScene, artifacts, graph) {
+export function resolveTk3BoardTransfer(response, currentScene, artifacts, graph,
+  { deferResume = false } = {}) {
   if (response?.status !== "transfer" || !response.transfer)
     return { ...response, scene: currentScene };
   const transfer = response.transfer;
@@ -23,7 +24,7 @@ export function resolveTk3BoardTransfer(response, currentScene, artifacts, graph
   // resolveAsset is the same archive resolver used by mainFileBindings.
   // The project root follows the current source board, so a duplicate
   // basename from a different included game cannot hijack a Send().
-  const root = rootMatch[1] || "";
+  const root = currentScene.projectRoot ?? rootMatch[1] ?? "";
   const resolved = resolveAsset([...artifacts.keys()], "Boards", file, root);
   if (resolved.status !== "resolved")
     return fail("Destination " + JSON.stringify(file) + " is " + resolved.status + ".");
@@ -45,10 +46,10 @@ export function resolveTk3BoardTransfer(response, currentScene, artifacts, graph
     return fail("Coordinates (" + x + ", " + y + ") are outside destination bounds.");
   const main = artifacts.get(currentScene.mainPath);
   const next = buildPlayableScene(artifacts, graph, main,
-    { boardPath: resolved.path, start: { x, y, layer } });
+    { projectRoot: currentScene.projectRoot, boardPath: resolved.path, start: { x, y, layer } });
   if (!next.ok) return fail("Destination " + resolved.path +
     " is not playable: " + next.issues.map(i => i.detail).join("; "));
-  const continued = resumeTk3Transfer(response.state);
+  const continued = deferResume ? response : resumeTk3Transfer(response.state);
   return {
     ...continued, scene: next,
     fromBoardPath: currentScene.boardPath,

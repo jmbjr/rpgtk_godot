@@ -7,7 +7,7 @@ import { initialInnState, advanceInn, currentInnMessage, conversationMessages }
   from "./inn-dialogue.mjs";
 import { nearAuthoredInn, activateAuthoredInn } from "./imported-inn.mjs";
 import { initialTk3ScriptState, selectTk3ScriptTarget, startPlacedTk3Script,
-  advanceTk3Script, resumeTk3Effect } from "../../tk3-script-slice.mjs";
+  advanceTk3Script, resumeTk3Effect, resumeTk3Transfer, rejectTk3Transfer } from "../../tk3-script-slice.mjs";
 import { resolveTk3FightRequest, simulateTk3FightVictory,
   simulateTk3FightDefeat, cancelTk3FightTest } from "../../tk3-fight-bridge.mjs";
 import { resolveTk3BoardTransfer } from "../../tk3-board-transfer.mjs";
@@ -48,6 +48,10 @@ function pixelCanvas(pixels, width = 32, height = 32) {
 
 export function mountAuthoredBoard(section, scene, artifacts, graph, options = {}) {
   if (!scene.ok) throw Error("Cannot mount an unresolved playable scene.");
+  if (!options.legacyCompatibility) {
+    scene = { ...scene, innDoor: null, innStatus: null,
+      placements: scene.placements.map(placement => ({ ...placement, isInnDoor: false })) };
+  }
   section.querySelector("#play-heading").textContent =
     "Authored board · " + scene.boardPath;
   const canvas = section.querySelector("#play-canvas");
@@ -223,7 +227,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   let scriptSession = options.scriptSession ?? initialTk3ScriptState();
   let activeFight = null;
   let gameOver = false;
-  let defeatProgramActive = false;
+  let defeatProgramActive = options.defeatProgramActive ?? false;
   let gameOverMessage = "";
   const removedItemSlots = new Set(
     scriptSession.erasedItems?.[scene.boardPath] ?? []);
@@ -238,7 +242,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     } };
   };
   // Compile only fully supported source programs; never guess from names.
-  const dialogueDefinitions = readLegacyDialogueDefinitions(artifacts, scene);
+  const dialogueDefinitions = options.legacyCompatibility && readLegacyDialogueDefinitions(artifacts, scene);
   const sourcePlans = new Map();
   if (dialogueDefinitions.supported) for (const placement of placed) {
     if (placement.programStatus !== "resolved" || !placement.programPath) continue;
@@ -252,7 +256,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   if (legacy) scriptSession = { ...scriptSession,
     variables: { ...scriptSession.variables, ...legacy.variables } };
   const runtimeActions = listTk3RuntimeKeys(scene, artifacts);
-  const sourceMenuPlans = new Map(runtimeActions.map(action =>
+  const sourceMenuPlans = new Map((options.legacyCompatibility ? runtimeActions : []).map(action =>
     [action.path, compileTk3SourceMenu(artifacts, scene, action, dialogueDefinitions)])
     .filter(([, plan]) => plan !== null));
   let activeMenuPlan = null;
@@ -595,10 +599,10 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
         " · " + (legacy.dialogue.index + 1) + " / " + legacy.dialogue.lines.length;
     } else if (scriptWaiting) {
       const running = scriptSession.execution;
-      const waitLine = running.instructions[running.pc - 1]?.line ?? 1;
+      const wait = running.instructions[running.pc - 1];
       dialogueSpeaker.textContent = scene.characterName + " · archive RPGCode";
       dialogueText.textContent = scriptSession.message || "(Waiting for input)";
-      dialogueProgress.textContent = running.path + ":" + waitLine;
+      dialogueProgress.textContent = (wait?.path ?? running.path) + ":" + (wait?.line ?? 1);
     } else if (legacy?.clueMessage || inn.clueMessage) {
       dialogueSpeaker.textContent = "Clue discovered";
       dialogueText.textContent = legacy?.clueMessage || inn.clueMessage;
@@ -642,7 +646,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
 
   function applyScriptStep(stepped) {
     if (stepped.status === "fight") {
-      const resolved = resolveTk3FightRequest(stepped, artifacts);
+      const resolved = resolveTk3FightRequest(stepped, artifacts, scene.projectRoot);
       scriptSession = resolved.state;
       activeFight = resolved.status === "ready" ? resolved.encounter : null;
       interactionFeedback = activeFight ?
@@ -675,24 +679,21 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       if (next.status === "inactive") return false;
       return applyScriptStep(next);
     }
-    const response = stepped.status === "transfer" ?
-      resolveTk3BoardTransfer(stepped, scene, artifacts, graph) : stepped;
-    scriptSession = response.state;
+    let response = stepped.status === "transfer" ?
+      resolveTk3BoardTransfer(stepped, scene, artifacts, graph, { deferResume: true }) : stepped;
     if (response.transferred) {
       clearHeld();
-      if (typeof options.onTransfer === "function") {
-        options.onTransfer({ scene: response.scene, scriptSession,
-          innState: inn, legacyState: legacy,
-          fromBoardPath: response.fromBoardPath,
-          arrivalFeedback: "Send() arrived at " + response.toBoardPath +
-            " · (" + response.spawn.x + ", " + response.spawn.y +
-            ", layer " + response.spawn.layer + ")." });
-        return true;
-      }
-      scriptSession = { ...scriptSession, execution: null, diagnostic: {
-        text: stepped.transfer.path + ":" + stepped.transfer.line +
-          ": Send(): browser scene-transfer callback is unavailable." } };
+      const failure = options.onTransfer?.({ scene: response.scene,
+        scriptSession: response.state, defeatProgramActive, legacyCompatibility: options.legacyCompatibility,
+        innState: inn, legacyState: legacy,
+        arrivalFeedback: "Send() arrived at " + response.toBoardPath +
+          " · (" + response.spawn.x + ", " + response.spawn.y +
+          ", layer " + response.spawn.layer + ")." });
+      if (failure === null) return true;
+      response = rejectTk3Transfer(response.state, stepped.transfer,
+        "Send(): " + (failure ?? "browser scene-transfer callback is unavailable."));
     }
+    scriptSession = response.state;
     // Native FIGHT_LOST calls the GAM's game-over PRG and returns when
     // that PRG finishes. Only the *absent-PRG* branch invokes reset().
     const finishedDefeatPrg = defeatProgramActive &&
@@ -776,7 +777,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
           selectTk3ScriptTarget(visibleScene(), actorAtLayer()))) {
       const stepped = scriptSession.execution?.waiting ?
         advanceTk3Script(scriptSession) :
-        boardKey ? startTk3BoardProgram(scriptSession, boardKey) :
+        boardKey ? startTk3BoardProgram(scriptSession, boardKey, artifacts, scene.projectRoot) :
           startPlacedTk3Script(scriptSession, visibleScene(), actorAtLayer(), artifacts);
       if (boardKey && (boardKey.flags & PRG_STOPS_MOVEMENT)) clearHeld();
       if (applyScriptStep(stepped)) return;
@@ -810,7 +811,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     const program = selectTk3BoardStep(scene,
       { ...before, layer: scene.start.layer }, actorAtLayer());
     if (!program) return false;
-    const response = startTk3BoardProgram(scriptSession, program);
+    const response = startTk3BoardProgram(scriptSession, program, artifacts, scene.projectRoot);
     const transferred = applyScriptStep(response);
     if (!transferred &&
         ((program.flags & PRG_STOPS_MOVEMENT) || response.status !== "completed"))
@@ -858,24 +859,19 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       return;
     }
     if (legacy?.menu || activeFight || gameOver) return;
-    if (event.code === "KeyE" || event.code === "Space") {
-      // Focused buttons handle their native Space/Enter clicks, not a
-      // duplicate global dialogue action.
-      if (event.target?.closest?.("button, a, [role=button]")) return;
-      event.preventDefault();
-      if (!event.repeat) interact();
-      return;
-    }
-    // The native engine maps GAM runtime key characters through the
-    // user's keyboard layout to scan codes. Browser key events are a
-    // documented approximation, with one run per keydown (no auto-repeat).
-    const keyName = event.key.length === 1 ? event.key.toUpperCase() : event.key;
-    const runtime = runtimeActions.find(action => action.label === keyName);
-    if (runtime && !inn.conversation && !legacy?.dialogue &&
-        !scriptSession.execution?.waiting &&
-        !event.target?.closest?.("button, a, [role=button]")) {
+    const talkShortcut = event.code === "KeyE" || event.code === "Space";
+    const buttonFocused = event.target?.closest?.("button, a, [role=button]");
+    const modal = inn.conversation || legacy?.dialogue || scriptSession.execution?.waiting;
+    const keyName = event.key === " " ? "SPACE" : event.key.toUpperCase();
+    const runtime = runtimeActions.find(action => action.label?.toUpperCase() === keyName);
+    if (runtime && !modal && !(buttonFocused && ["Enter", "Space"].includes(runtime.label))) {
       event.preventDefault();
       if (!event.repeat) triggerRuntimeProgram(runtime);
+      return;
+    }
+    if (talkShortcut && !buttonFocused) {
+      event.preventDefault();
+      if (!event.repeat) interact();
       return;
     }
     if (!keyDirections.has(event.code)) return;
@@ -933,7 +929,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (!activeFight) return;
     const current = activeFight;
     const response = simulateTk3FightDefeat(scriptSession, current,
-      artifacts, scene.mainPath);
+      artifacts, scene.mainPath, scene.projectRoot);
     if (response.status === "inactive") return;
     activeFight = null;
     clearHeld();
@@ -991,6 +987,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   }, { signal: listeners.signal });
   const reset = section.querySelector("#play-reset");
   reset.addEventListener("click", () => {
+    if (options.onRestart) { options.onRestart(); return; }
     clearHeld();
     actor = initialMovementState(scene.world);
     inn = initialInnState();
@@ -1017,6 +1014,12 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   updateStatus();
   requestId = requestAnimationFrame(animate);
   return {
+    continueTransfer() {
+      if (!applyScriptStep(resumeTk3Transfer(scriptSession))) {
+        draw();
+        updateStatus();
+      }
+    },
     destroy() {
       clearHeld();
       listeners.abort();
