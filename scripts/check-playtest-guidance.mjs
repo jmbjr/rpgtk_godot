@@ -57,7 +57,7 @@ for (const spec of scriptFixtureSpecs) {
     { ...walked, layer: scene.start.layer });
   assert.equal(reached.targets[0].inRange, true);
   assert.match(reached.hint, /Within Talk range/);
-  assert.match(reached.hint, /Press Talk, E or Space/);
+  assert.match(reached.hint, /Use Talk/);
 
   const wrongLayer = describePlayableTargets(scene,
     { ...actor, layer: scene.start.layer + 1 });
