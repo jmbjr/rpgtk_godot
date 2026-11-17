@@ -280,7 +280,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     const instruction = talking ? (gameOver ?
       "Game over: restart the opening board to begin a new session." :
       activeFight ? "Test encounter open: choose a test outcome or cancel below." :
-      adapter?.menuOpen ? "Choose an option or close the menu below." :
+      adapter?.busy && !adapter.canAdvance ? "Use the active panel to continue." :
       "Conversation active: use Next / Finish.") :
       boardMarkers.some(m => m.program.kind === "step") ?
         guide.hint + " · Walk INTO a BOARD · STEP region to run its source PRG." :
@@ -420,7 +420,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       dialogueProgress.textContent = (wait?.path ?? running.path) + ":" + (wait?.line ?? 1);
     }
     for (const { button } of runtimeControls) button.disabled = busy();
-    talkButton.disabled = Boolean(adapter?.menuOpen || activeFight || gameOver) ||
+    talkButton.disabled = Boolean((adapter?.busy && !adapter.canAdvance) || activeFight || gameOver) ||
       !(adapter?.canAdvance || scriptWaiting || target || boardKey);
     talkButton.textContent = adapter?.canAdvance || scriptWaiting ? "Next / Finish" : "Talk";
     const hint = gameOver ?
@@ -513,7 +513,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   }
 
   function interact() {
-    if (adapter?.menuOpen || activeFight || gameOver) return;
+    if ((adapter?.busy && !adapter.canAdvance) || activeFight || gameOver) return;
     if (scriptSession.execution?.waiting) {
       if (applyScriptStep(advanceTk3Script(scriptSession))) return;
     } else {

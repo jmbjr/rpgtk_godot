@@ -10,6 +10,7 @@ const error = (path, line, message) => ({
   path, line, message, text: path + ":" + line + ": " + message,
 });
 const ident = "[A-Za-z_][A-Za-z_0-9]*";
+const setText = new RegExp("^"+ident+"->setTxt\\s*\\(\\s*("+ident+")\\s*,\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|eNewLine)\\s*(?:,\\s*eSkipEOT\\s*)?\\)\\s*;?$", "i");
 const quotes = source => {
   try { return JSON.parse(source); } catch { return null; }
 };
@@ -126,7 +127,7 @@ function bodyAt(rows, conditionalIndex) {
   throw Error("Unclosed dialogue branch.");
 }
 
-function extractLines(rows, start, end, path) {
+function extractLines(rows, start, end, path, plainMessage = null) {
   const lines = [], portraits = new Map(), frozen = new Map();
   const speaker = slot =>
     portraits.get(slot.toLowerCase()) ||
@@ -141,6 +142,11 @@ function extractLines(rows, start, end, path) {
   for (let i = start; i < end; i++) {
     const row = rows[i];
     const text = row.text;
+    const plain = plainMessage?.(row);
+    if (plain) {
+      lines.push({ ...plain, path, line: row.line });
+      continue;
+    }
     const slotArt = text.match(new RegExp("^"+ident+"->setMwin\\s*\\(\\s*("+ident+")\\s*,\\s*(\"[^\"]*\")\\s*\\)\\s*;?$", "i"));
     if (slotArt) {
       const name = quotes(slotArt[2]);
@@ -154,7 +160,7 @@ function extractLines(rows, start, end, path) {
       else flush(freeze[1], row.line);
       continue;
     }
-    const say = text.match(new RegExp("^"+ident+"->setTxt\\s*\\(\\s*("+ident+")\\s*,\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|eNewLine)\\s*(?:,\\s*eSkipEOT\\s*)?\\)\\s*;?$", "i"));
+    const say = text.match(setText);
     if (!say) continue;
     const message = /^enewline$/i.test(say[2]) ? "\n" : quotes(say[2]);
     if (message === null) throw error(path, row.line, "Unsupported dialogue string.");
@@ -173,7 +179,7 @@ function extractLines(rows, start, end, path) {
 const knownStatements = [
   /^#include\s*\(\s*"[^"]+"\s*\)\s*;?$/i,
   new RegExp("^"+ident+"->(?:setMwin|setProfile|setTextMode|setDelay|freezeMwin)\\s*\\(.*\\)\\s*;?$", "i"),
-  new RegExp("^"+ident+"->setTxt\\s*\\(\\s*"+ident+"\\s*,\\s*(?:\"(?:[^\"\\\\]|\\\\.)*\"|eNewLine)\\s*(?:,\\s*eSkipEOT\\s*)?\\)\\s*;?$", "i"),
+  setText,
   new RegExp("^"+ident+"->Close\\s*\\(\\s*\\)\\s*;?$", "i"),
   /^clues\s*\+\+\s*;?$/i,
   new RegExp("^"+ident+"\\s*\\+\\+\\s*;?$", "i"),
@@ -349,4 +355,66 @@ export function advanceLegacyDialogue(state, now) {
         [d.plan.lastTick]: now } : state.lastTalk,
       clueMessage: d.first ? d.plan.clueText : null },
   };
+}
+
+// The audited BSTW ending is a guarded sequence of archive-authored
+// message-window pages, followed by native windows(). The caller has
+// already verified the GAM action and owns the browser completion UI.
+const endingExit = /^windows\s*\(\s*\)\s*;?$/i;
+const endingGuard = /^if\s*\(\s*enddemo\s*==\s*1\s*\)$/i;
+const includeStatement = /^#include\s*\(\s*"[^"]+"\s*\)\s*;?$/i;
+const endingVisual = /^(?:[A-Za-z_]\w*\s*->\s*(?:setMwin|setProfile|setTextMode|setDelay|freezeMwin|show|hide|close)|local|wait|delay|mwincls|setimage|clear|fontSize|fontFace|fontColor|bold|italics)\s*\(.*\)\s*;?$/i;
+const endingSetup = /^(?:TxtBox|[A-Za-z_]\w*MwinId\d*)\s*=\s*-?\d+\s*;?$/i;
+const endingPlain = /^(?:TxtBox|mwin)\s*\(\s*("(?:[^"\\]|\\.)*")\s*\)\s*;?$/i;
+
+export function compileBstwEnding(program, artifacts) {
+  const path = program?.path ?? "(unresolved ending PRG)";
+  const source = sourceOf(program);
+  if (source === null) return { ok: false, diagnostic: error(path, 1, "Ending PRG has no decoded source.") };
+  const fail = (row, message) => { throw error(path, row?.line ?? 1, message); };
+  const rows = normalized(source).flatMap(row => {
+    const text = row.text.replace(/^#(?!include\b)/i, "");
+    const opening = text.match(/^((?:if\s*\(.*\)|else))\s*(\{)$/i);
+    const closing = text.match(/^(.*\)\s*;?)\s*(\})$/);
+    const split = opening || closing;
+    return split ? [{ ...row, text: split[1] }, { ...row, text: split[2] }] : [{ ...row, text }];
+  });
+  try {
+    if (rows.length > 220) fail(rows[220], "Ending projection exceeds 220 statements.");
+    checkIncludeMethods(artifacts, path, rows, []);
+    const guardIndex = rows.findIndex(row => endingGuard.test(row.text));
+    if (guardIndex === -1) fail(rows[0], "Expected the source ending guard ENDDEMO == 1.");
+    for (const row of rows.slice(0, guardIndex)) {
+      if (!includeStatement.test(row.text) && !endingVisual.test(row.text) && !endingSetup.test(row.text))
+        fail(row, "Unsupported statement before the ending guard.");
+    }
+    const range = bodyAt(rows, guardIndex);
+    const exit = rows[range.end - 1];
+    const exits = rows.filter(row => endingExit.test(row.text));
+    if (exits.length !== 1 || exit !== exits[0])
+      fail(exits[0] ?? rows[guardIndex], "Expected one terminal windows() inside the ending guard.");
+    if (range.next < rows.length) {
+      if (rows[range.next].text.toLowerCase() !== "else" ||
+          bodyAt(rows, range.next).next !== rows.length)
+        fail(rows[range.next], "Unsupported control flow after the ending guard.");
+    }
+    for (const row of rows.slice(range.start, range.end - 1)) {
+      if (!setText.test(row.text) && !endingPlain.test(row.text) &&
+          !endingVisual.test(row.text) && !endingSetup.test(row.text))
+        fail(row, "Unsupported statement in the ending dialogue.");
+    }
+    const pages = extractLines(rows, range.start, range.end - 1, path, row => {
+      const literal = row.text.match(endingPlain)?.[1];
+      if (!literal) return null;
+      const text = quotes(literal);
+      if (text === null) fail(row, "Unsupported ending dialogue string.");
+      return { speaker: "Archive dialogue", text };
+    });
+    if (!pages.some(page => /\S/.test(page.text)))
+      fail(rows[guardIndex], "The guarded ending has no supported archive dialogue.");
+    return { ok: true, path, flag: "enddemo", pages, exitLine: exit.line };
+  } catch (e) {
+    return { ok: false, diagnostic: e?.path && e?.line ? e :
+      error(path, rows.find(row => endingGuard.test(row.text))?.line ?? 1, e?.message || String(e)) };
+  }
 }
