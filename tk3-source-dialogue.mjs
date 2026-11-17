@@ -10,7 +10,7 @@ const error = (path, line, message) => ({
   path, line, message, text: path + ":" + line + ": " + message,
 });
 const ident = "[A-Za-z_][A-Za-z_0-9]*";
-const setText = new RegExp("^"+ident+"->setTxt\\s*\\(\\s*("+ident+")\\s*,\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|eNewLine)\\s*(?:,\\s*eSkipEOT\\s*)?\\)\\s*;?$", "i");
+const setText = new RegExp("^"+ident+"->setTxt\\s*\\(\\s*("+ident+")\\s*,\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|eNewLine)\\s*(?:,\\s*(?:eSkipEOT|0)\\s*)?\\)\\s*;?$", "i");
 const quotes = source => {
   try { return JSON.parse(source); } catch { return null; }
 };
@@ -365,7 +365,9 @@ const endingGuard = /^if\s*\(\s*enddemo\s*==\s*1\s*\)$/i;
 const includeStatement = /^#include\s*\(\s*"[^"]+"\s*\)\s*;?$/i;
 const endingVisual = /^(?:[A-Za-z_]\w*\s*->\s*(?:setMwin|setProfile|setTextMode|setDelay|freezeMwin|show|hide|close)|local|wait|delay|mwincls|setimage|clear|fontSize|fontFace|fontColor|bold|italics)\s*\(.*\)\s*;?$/i;
 const endingSetup = /^(?:TxtBox|[A-Za-z_]\w*MwinId\d*)\s*=\s*-?\d+\s*;?$/i;
-const endingPlain = /^(?:TxtBox|mwin)\s*\(\s*("(?:[^"\\]|\\.)*")\s*\)\s*;?$/i;
+const endingPlain = /^(?:TxtBox(?:->setTxt)?|mwin)\s*\(\s*("(?:[^"\\]|\\.)*")\s*\)\s*;?$/i;
+// The text-only ending has no Toolkit canvas to capture or WAV cue to play.
+const endingPresentation = /^(?:wav\s*\(\s*"[^"]+"\s*\)|TxtBox2->grabScreen\s*\(\s*\))\s*;?$/i;
 
 export function compileBstwEnding(program, artifacts) {
   const path = program?.path ?? "(unresolved ending PRG)";
@@ -400,7 +402,8 @@ export function compileBstwEnding(program, artifacts) {
     }
     for (const row of rows.slice(range.start, range.end - 1)) {
       if (!setText.test(row.text) && !endingPlain.test(row.text) &&
-          !endingVisual.test(row.text) && !endingSetup.test(row.text))
+          !endingVisual.test(row.text) && !endingSetup.test(row.text) &&
+          !endingPresentation.test(row.text))
         fail(row, "Unsupported statement in the ending dialogue.");
     }
     const pages = extractLines(rows, range.start, range.end - 1, path, row => {

@@ -86,10 +86,11 @@ export function prepareBstwCompatibility({ archive, context }) {
       if (placement !== eligibleInn) continue;
       innPlacement = placement;
     }
-    if (definitions.supported) {
-      const plan = compileLegacyDialogue(artifacts.get(placement.programPath), artifacts, definitions, scene);
-      if (plan.ok) sourcePlans.set(placement.slot, plan);
-    }
+    const plan = definitions.supported ?
+      compileLegacyDialogue(artifacts.get(placement.programPath), artifacts, definitions, scene) :
+      { ok: false, diagnostic: { text: placement.programPath +
+        ": BSTW clue definitions could not be read from the configured GAM startup." } };
+    sourcePlans.set(placement.slot, plan);
   }
   const actions = listTk3RuntimeKeys(scene, artifacts);
   const menuAction = actions.find(action =>
@@ -155,7 +156,7 @@ function mountTitle(archive, title, scene, { onBack, onNew }) {
 }
 
 function createSession(opening, definitions, sourcePlans, innPlacement, menu, menuAction, ending) {
-  const projected = Boolean(sourcePlans.size || menu);
+  const projected = Boolean(menu) || [...sourcePlans.values()].some(plan => plan.ok);
   const initial = projected ? initialLegacyDialogueState(definitions) : null;
   const initialVariables = { ...initial?.variables,
     ...(ending?.plan.ok ? { [ending.plan.flag]: 0 } : {}) };
@@ -266,12 +267,16 @@ function createSession(opening, definitions, sourcePlans, innPlacement, menu, me
             return true;
           }
           const plan = canonical && target && sourcePlans.get(target.slot);
-          if (legacy?.dialogue || plan) {
+          if (legacy?.dialogue || plan?.ok) {
             const result = legacy.dialogue ?
               advanceLegacyDialogue(snapshot(), now) : openLegacyDialogue(snapshot(), plan, now);
             apply(result);
             feedback = result.status === "cooldown" ? "Wait " + result.remainingMs + " ms to talk again." :
               result.status === "already-visited" ? "This one-time interaction is complete." : "";
+            return true;
+          }
+          if (plan && !isInn(target)) {
+            feedback = plan.diagnostic.text;
             return true;
           }
           if (!inn?.conversation && !isInn(target)) return false;

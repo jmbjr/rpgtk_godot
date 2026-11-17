@@ -113,3 +113,11 @@ At the baseline, `compileTk3SourceMenu()` claims the entry and emits a menu-spec
 At implementation handoff record fresh actual-ZIP execution separately from source inspection, synthetic CI, deployed owner use and original Toolkit editor/runtime tests. Hash the exact local file being used. Report bytes unavailable or the last reached step explicitly. Keep private ZIPs and their contents, including DLLs and source, out of Git, CI and deployment.
 
 For the owner browser retest after merge, open the diagnostic TK3.10 ZIP via **Play opening board (direct)**. Talk to the old man, step into the authored region to reach `out.brd`, and approach the pirate. Use **Simulate victory (test only)** and complete the win dialogue, then confirm the pirate disappears. Reset and repeat with **Simulate defeat (test only)**. Restart should return to the opening board with fresh state. Check for generic status at each step. For BSTW, explicitly select compatibility and choose **New**, then verify Bruce moves, the inn opens first/repeat dialogue and the clue is awarded once. Open the bound clue menu, confirm or cancel a profile choice, and check that state follows the approved adapter contract.
+
+The implementer later ran the uploaded `demo_tk310_start_board_playable(1).zip`
+in local staged Chromium and verified its SHA-256 matched the diagnostic package
+above. Direct board play reached the old man's dialogue, the authored step
+transfer to `out.brd`, and the pirate encounter. Simulated victory played the
+win dialogue and removed the pirate. After reset, simulated defeat opened Game
+Over and Restart returned to `start.brd` with a fresh session. The browser
+requested no BSTW compatibility modules during this run.

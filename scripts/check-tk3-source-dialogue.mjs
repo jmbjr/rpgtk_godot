@@ -151,8 +151,10 @@ const endingPath = "BSTW/Prg/ENDDEMO.prg";
 const endingProgram = endingGame.artifacts.get(endingPath);
 const ending = compileBstwEnding(endingProgram, endingGame.artifacts);
 assert.equal(ending.ok, true, ending.diagnostic?.text);
-assert.equal(ending.pages.length, 3);
+assert.equal(ending.pages.length, 4);
 assert.match(ending.pages[1].text, /records your work\.\nThank you/);
+assert.equal(ending.pages[2].text, "Synthetic finale complete.");
+assert.equal(ending.pages[3].text, "Synthetic credits.");
 const compileEndingSource = source => compileBstwEnding({
   ...endingProgram, program: { rows: source.split("\n").map(line => ({ line })) },
 }, endingGame.artifacts);
@@ -161,6 +163,7 @@ for (const [source, reason] of [
   [bstwEndingFixture.replace("windows()\n}", "}\nwindows()"), /terminal windows/],
   [bstwEndingFixture.replace("windows()", "windows()\nwindows()"), /terminal windows/],
   [bstwEndingFixture.replace('theMwin->Close()', 'fightEnemy("x", "y")'), /Unsupported statement/],
+  [bstwEndingFixture.replace('wav("synthetic.wav")', 'wav(soundVar)'), /Unsupported statement/],
   [bstwEndingFixture.replace("CMwin.prg", "foreign.prg"), /foreign.prg is missing/],
 ]) {
   const rejected = compileEndingSource(source);

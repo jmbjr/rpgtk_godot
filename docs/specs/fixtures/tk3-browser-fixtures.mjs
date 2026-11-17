@@ -140,7 +140,7 @@ function bstwClueSource({ label, event }) {
 
 export const bstwEndingFixture = [
   '#include("CMwin.prg")', '#include("common.prg")', "if(ENDDEMO == 1)", "{",
-  "local(TxtBox)", "TxtBox = 0",
+  'wav("synthetic.wav")', "TxtBox2->grabScreen()",
   'theMwin->SetMwin(TxtBox,"mwinGuide.png")',
   'theMwin->SetTxt(TxtBox,"Synthetic ending: the station is restored.")',
   "theMwin->FreezeMwin(TxtBox,1)",
@@ -148,7 +148,8 @@ export const bstwEndingFixture = [
   "theMwin->SetTxt(TxtBox,eNewLine,eSkipEOT)",
   'theMwin->SetTxt(TxtBox,"Thank you, traveler.",eSkipEOT)',
   "theMwin->FreezeMwin(TxtBox,0)",
-  'TxtBox("Synthetic finale complete.")',
+  'TxtBox->SetTxt("Synthetic finale complete.")',
+  'TxtBox2->SetTxt(TxtBox,"Synthetic credits.",0)',
   "theMwin->Close()", "windows()", "}",
 ].join("\n");
 

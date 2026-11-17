@@ -33,7 +33,8 @@ Explorer**. Reset on the play panel starts a fresh Compatibility → New
 session with zero clues and an unset ending flag. This is a text and
 input projection of the recognized source path. Toolkit canvas layouts,
 visual effects and delays are represented by a single browser panel
-with manual page advancement. The opening Loyalis interaction retains
+with manual page advancement. The panel skips the ending's WAV cues
+and screen capture. The opening Loyalis interaction retains
 the existing same-board reload approximation described in the
 [source dialogue notes](tk3-source-dialogue.md).
 
@@ -47,15 +48,24 @@ completion via both controls, and reset. The unchanged test path for
 the two independent generated TK3 archives checks generic behavior and
 the absence of adapter module requests.
 
-The original BSTW_EXPO_DEMO.zip was unavailable for this implementation.
-Its recorded SHA-256 is
-77d6d4180948196106e3d4dad7e2ee62144b30fac8c7ac5491048740e9864300.
-The existing local-only source check also validates the Q binding and
-ending projection when given the checksum-matching file.
+The uploaded `BSTW_EXPO_DEMO.zip` matched SHA-256
+`77d6d4180948196106e3d4dad7e2ee62144b30fac8c7ac5491048740e9864300`.
+The implementer verified the unmodified ZIP in local staged Chromium.
+Compatibility → New opened Loyalis's 12 pages. The browser route
+earned all 13 clues, including a repeat inn visit and a cancelled then
+confirmed profile choice. Q stayed locked at 0 and 12 clues. After the
+last clue, keyboard Q opened 19 authored ending pages, followed by
+Demo complete at the source `windows()` call. Reset restored 0 clues
+and locked the ending again.
+
+On pre-fix `main` (`bfbc4e2`), **Play opening board (direct diagnostic)**
+reproduced the 300-line interpreter error in `CMwin.prg` when talking to
+Loyalis. The same build opened his conversation from Compatibility → New.
+The local-only source check validates the Q binding and ending projection
+when given the checksum-matching file.
 
     node scripts/check-tk3-source-dialogue.mjs "/path/to/BSTW_EXPO_DEMO.zip"
 
-That command checks source decoding and projection. Actual-ZIP browser
-execution, the original Toolkit runtime, and owner acceptance of the
-deployed build are separate checkpoints. Keep the private archive and
-its contents local.
+That command checks source decoding and projection. The original Toolkit
+runtime and owner acceptance of the deployed build remain separate
+checkpoints. Keep the private archive and its contents local.
