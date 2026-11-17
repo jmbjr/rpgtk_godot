@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import { chromium } from "playwright";
+import JSZip from "../vendor/jszip.min.js";
 import { buildBrowserGame, buildBstwBrowserGame, bstwPlacedRoute } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { nativeMainFixture } from "../docs/specs/fixtures/native-main-29-fixtures.mjs";
 
@@ -223,6 +224,7 @@ try {
       return Number(at?.[1]) >= destination - 3;
     }, x));
   };
+  const loyalis = bstwPlacedRoute.find(target => target.slot === 6);
   const choose = label => control("play-source-menu").getByRole("button", { name: label }).click();
   const openMenu = async () => {
     await page.keyboard.press("m");
@@ -321,6 +323,28 @@ try {
   await click("bstw-ending-close");
   assert.equal(await control("play-hud").count(), 0);
   await control("play-launch").waitFor();
+
+  const rejectedDialogue = await JSZip.loadAsync(await buildBstwBrowserGame());
+  const openingPath = "BSTW/Prg/mwinStartBoardLoad.prg";
+  const openingSource = await rejectedDialogue.file(openingPath).async("string");
+  rejectedDialogue.file(openingPath, openingSource + "\nunsupportedOpeningAction()");
+  const helperPath = "BSTW/Prg/CMwin.prg";
+  const helperSource = await rejectedDialogue.file(helperPath).async("string");
+  rejectedDialogue.file(helperPath, helperSource + "\n" + "// Synthetic helper comment\n".repeat(300));
+  await archive("eligible-bstw-rejected-dialogue.zip", await rejectedDialogue.generateAsync({ type: "nodebuffer" }));
+  await directPlay();
+  await walkTo(loyalis.x);
+  await talk();
+  await expectText("play-script-diagnostic", /CMwin\.prg:301: Program exceeds the 300-line subset limit/);
+  await click("play-close");
+  await optIn();
+  await walkTo(loyalis.x);
+  await talk();
+  await expectText("play-feedback", openingPath + ":" + (openingSource.split("\n").length + 1) +
+    ": Unsupported legacy dialogue statement: unsupportedOpeningAction()");
+  assert.equal(await control("play-script-diagnostic").isVisible(), false);
+  await clues(0);
+  await click("play-close");
 
   await archive("eligible-fallback.zip", await buildBstwBrowserGame({ fallback: true, endingKey: 118 }));
   await optIn();
