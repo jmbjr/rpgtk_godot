@@ -249,6 +249,8 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 /* Imported source-board play view: D-pad precedes the canvas on phones. */
 .play-launch { display: flex; gap: .7rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; }
 .play-launch[hidden], .play-panel[hidden] { display: none; }
+.play-launch summary { cursor: pointer; color: var(--gold); }
+.play-launch details[open] > summary { margin-bottom: .5rem; }
 .play-panel { max-width: 940px; margin: 1rem auto; }
 .play-panel > .technical { line-height: 1.45; }
 .play-pad-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; justify-content: center; }

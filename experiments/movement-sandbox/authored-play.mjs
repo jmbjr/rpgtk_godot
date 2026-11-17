@@ -77,6 +77,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   const gameOverRestart = section.querySelector("#play-gameover-restart");
   const scriptVariables = section.querySelector("#play-script-variables");
   const scriptDiagnostic = section.querySelector("#play-script-diagnostic");
+  const scriptRecovery = section.querySelector("#play-script-recovery");
   const pad = [...section.querySelectorAll("[data-move]")];
   const ctx = canvas?.getContext("2d", { alpha: false });
   if (!ctx) throw Error("The browser cannot create a 2D canvas.");
@@ -411,6 +412,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
         name + " = " + JSON.stringify(value)).join(" · ") || "(none yet)");
     scriptDiagnostic.textContent = scriptSession.diagnostic?.text || "";
     scriptDiagnostic.hidden = !scriptSession.diagnostic;
+    scriptRecovery.hidden = Boolean(adapter) || scriptDiagnostic.hidden;
     dialoguePanel.hidden = !scriptWaiting || Boolean(activeFight || gameOver);
     if (!dialoguePanel.hidden) {
       const running = scriptSession.execution;

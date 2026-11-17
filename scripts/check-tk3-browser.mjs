@@ -43,7 +43,10 @@ try {
   const board = value => expectText("play-heading", value);
   const talk = () => click("play-talk");
   const gamPlay = () => click("play-gam-startup");
-  const directPlay = () => click("play-direct");
+  const directPlay = async () => {
+    await control("play-board-diagnostics").locator("summary").click();
+    await click("play-direct");
+  };
   const archive = async (name, buffer) => {
     await control("archive").setInputFiles({ name, mimeType: "application/zip", buffer });
     await expectText("archive-status", /files/);
@@ -69,6 +72,7 @@ try {
   await archive("harbor-browser.zip", await buildBrowserGame("harbor"));
   await gamPlay();
   await board(/HarborLab\/Boards\/wharf.brd/);
+  await expectText("play-launch-mode", /Game startup/);
   await variables(/launched = 7.*clues = 3.*maxclues = 9/);
   await page.keyboard.press("e");
   await expectText("play-dialogue-text", /tide is rising/);
@@ -170,12 +174,16 @@ try {
 
   await archive("blocked-browser.zip", await buildBrowserGame("harbor", { blockStartup: true }));
   await gamPlay();
-  await expectText("gam-startup-status", /harbor_start.prg:2/);
+  await expectText("gam-startup-status", /harbor_start.prg:2.*Compatibility or Board diagnostics/);
+  assert.equal(await control("play-direct").isVisible(), false);
   await directPlay();
+  await expectText("play-launch-mode", /Direct board diagnostic/);
   await variables(/none yet/);
   await move("ArrowRight", () => board(/channel.brd/));
+  await expectText("play-launch-mode", /Direct board diagnostic/);
   await click("play-reset");
   await board(/wharf.brd/);
+  await expectText("play-launch-mode", /Direct board diagnostic/);
   await variables(/none yet/);
   const noAdapter = async () => {
     assert.equal(await page.locator("#play-hud, #play-inn, #bstw-title-stage, #play-source-menu, #bstw-ending").count(), 0);
@@ -183,30 +191,44 @@ try {
   };
   await noAdapter();
   await click("play-close");
-  await archive("eligible-bstw.zip", await buildBstwBrowserGame());
+  const bstw = await JSZip.loadAsync(await buildBstwBrowserGame());
+  const helperPath = "BSTW/Prg/CMwin.prg";
+  const helperSource = await bstw.file(helperPath).async("string");
+  bstw.file(helperPath, helperSource + "\n" + "// Synthetic helper comment\n".repeat(300));
+  await archive("eligible-bstw.zip", await bstw.generateAsync({ type: "nodebuffer" }));
   await gamPlay();
   await expectText("gam-startup-status", /Startup blocked: BSTW\/Prg\/menuTitle.prg:1/);
   await noAdapter();
   await directPlay();
   await board(/BSTW\/Boards\/start.brd/);
   await noAdapter();
+  assert.equal(await control("play-script-recovery").isVisible(), false);
+  const walkTo = async x => {
+    await move("ArrowRight", () => page.waitForFunction(destination => {
+      const at = document.querySelector("#play-status").textContent.match(/\((\d+),/);
+      return Number(at?.[1]) >= destination - 3;
+    }, x));
+  };
+  const loyalis = bstwPlacedRoute.find(target => target.slot === 6);
+  await walkTo(loyalis.x);
   await talk();
-  await expectText("play-script-diagnostic", /CMwin.prg/);
+  await expectText("play-script-diagnostic", /CMwin\.prg:301: Program exceeds the 300-line subset limit/);
   await page.keyboard.press("q");
   await expectText("play-script-diagnostic", /CMwin.prg/);
   await noAdapter();
-  await click("play-close");
-  await page.locator("#play-compatibility summary").click();
-  await page.getByRole("button", { name: "Bruce Saves the World! compatibility" }).waitFor();
-  assert.deepEqual(adapterRequests, []);
-  await page.locator("#play-compatibility summary").click();
+  const compatibilityChoice = page.getByRole("button", { name: "Bruce Saves the World! compatibility" });
+  await click("play-script-recovery");
+  await compatibilityChoice.waitFor();
+  await noAdapter();
   const optIn = async () => {
-    await page.locator("#play-compatibility summary").click();
-    await page.getByRole("button", { name: "Bruce Saves the World! compatibility" }).click();
+    if (!await compatibilityChoice.isVisible())
+      await page.locator("#play-compatibility summary").click();
+    await compatibilityChoice.click();
     await control("bstw-title-stage").waitFor();
     await control("bstw-title-image").waitFor();
     await click("bstw-title-new");
     await board(/BSTW\/Boards\/start.brd/);
+    await expectText("play-launch-mode", /BSTW compatibility/);
   };
   const qButton = page.getByRole("button", { name: /^Q · ENDDEMO\.prg$/i });
   const endWithKey = () => page.keyboard.press("q");
@@ -218,13 +240,6 @@ try {
     await control("bstw-ending").waitFor({ state: "hidden" });
     assert.doesNotMatch(await control("bstw-message").textContent(), /Synthetic ending/);
   };
-  const walkTo = async x => {
-    await move("ArrowRight", () => page.waitForFunction(destination => {
-      const at = document.querySelector("#play-status").textContent.match(/\((\d+),/);
-      return Number(at?.[1]) >= destination - 3;
-    }, x));
-  };
-  const loyalis = bstwPlacedRoute.find(target => target.slot === 6);
   const choose = label => control("play-source-menu").getByRole("button", { name: label }).click();
   const openMenu = async () => {
     await page.keyboard.press("m");
@@ -326,14 +341,10 @@ try {
   assert.equal(await control("play-hud").count(), 0);
   await control("play-launch").waitFor();
 
-  const rejectedDialogue = await JSZip.loadAsync(await buildBstwBrowserGame());
   const openingPath = "BSTW/Prg/mwinStartBoardLoad.prg";
-  const openingSource = await rejectedDialogue.file(openingPath).async("string");
-  rejectedDialogue.file(openingPath, openingSource + "\nunsupportedOpeningAction()");
-  const helperPath = "BSTW/Prg/CMwin.prg";
-  const helperSource = await rejectedDialogue.file(helperPath).async("string");
-  rejectedDialogue.file(helperPath, helperSource + "\n" + "// Synthetic helper comment\n".repeat(300));
-  await archive("eligible-bstw-rejected-dialogue.zip", await rejectedDialogue.generateAsync({ type: "nodebuffer" }));
+  const openingSource = await bstw.file(openingPath).async("string");
+  bstw.file(openingPath, openingSource + "\nunsupportedOpeningAction()");
+  await archive("eligible-bstw-rejected-dialogue.zip", await bstw.generateAsync({ type: "nodebuffer" }));
   await directPlay();
   await walkTo(loyalis.x);
   await talk();
@@ -357,6 +368,7 @@ try {
   assert.equal(await qButton.count(), 0);
   await page.getByRole("button", { name: "V · ENDDEMO.prg" }).tap();
   await expectText("play-script-diagnostic", /CMwin.prg/);
+  assert.equal(await control("play-script-recovery").isVisible(), false);
   assert.equal(await control("bstw-ending").isVisible(), false);
   // Loading a different archive while playing drops the compatibility mode
   // and all its DOM, as a user can do from the persistent archive input.
