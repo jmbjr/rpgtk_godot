@@ -136,7 +136,7 @@ rejected(noFrameset, "unresolved-tile");
 const page = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const browser = await readFile(new URL("../app.mjs", import.meta.url), "utf8");
 assert.match(page, /id="play-launch"/);
-assert.match(page, /id="play-bstw"/);
+assert.match(page, /id="play-direct"/);
 assert.match(page, /id="play-canvas"/);
 assert.match(page, /id="play-close"/);
 assert.match(page, /id="play-reset"/);

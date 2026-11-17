@@ -337,10 +337,8 @@ for (const id of ["play-dialogue", "play-talk", "play-script-variables",
 for (const id of ["harbor", "grove"])
   assert.ok(html.includes("tk3-script-" + id + ".zip"));
 for (const symbol of ["startPlacedTk3Script", "advanceTk3Script",
-  "selectTk3ScriptTarget", "initialTk3ScriptState", "activateAuthoredInn",
-  "initialInnState"])
+  "selectTk3ScriptTarget", "initialTk3ScriptState"])
   assert.ok(browser.includes(symbol), symbol);
-assert.match(browser, /inn\.conversation \|\| legacy\?\.dialogue/);
 assert.match(browser, /scriptSession\.execution\?\.waiting/);
 assert.match(workflow, /node scripts\/check-tk3-script-slice\.mjs/);
 assert.match(workflow, /node scripts\/build-tk3-script-fixtures\.mjs site/);

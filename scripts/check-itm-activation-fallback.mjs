@@ -65,7 +65,7 @@ assert.equal(inherited.programSource, "item");
 assert.equal(inherited.activationProgram, "pickup.prg");
 assert.equal(inherited.programPath, itemProgramPath);
 assert.equal(inherited.programStatus, "resolved");
-assert.equal(inherited.isInnDoor, false);
+assert.equal(Object.hasOwn(inherited, "isInnDoor"), false);
 const itemArtifact = fall.artifacts.get(inherited.itemPath);
 assert.equal(itemArtifact.programs["Pickup program"], "pickup.prg");
 
@@ -134,6 +134,6 @@ if (process.argv[2]) {
     assert.equal(p.programStatus, "resolved");
     assert.deepEqual(p.position, position);
   }
-  assert.equal(scene.innDoor?.slot, 3);
+  assert.equal(scene.placements.find(p => p.slot === 3)?.programSource, "board");
   console.log("Owner BSTW SHA-gated archive passed: all seven original ITM/BRD activation links resolve through production scene mapping.");
 }

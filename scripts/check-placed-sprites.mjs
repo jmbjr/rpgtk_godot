@@ -83,14 +83,11 @@ assert.equal(scene.placements[0].artwork.tile, 14);
 assert.deepEqual([scene.placements[3].artwork.width, scene.placements[3].artwork.height],
   [96, 96]);
 assert.equal(scene.placements[3].artSource, "Walk South animation");
-assert.deepEqual(scene.placements.map(p => p.isInnDoor), [false, true, false, false]);
+assert.ok(scene.placements.every(p => !Object.hasOwn(p, "isInnDoor")));
 assert.equal(scene.placements[1].programStatus, "resolved");
 assert.equal(scene.placements[2].programStatus, "resolved");
-assert.deepEqual(scene.innDoor, {
-  slot: 1, position: { x: 68, y: 90, layer: 2 },
-  itemPath: "BSTW/Item/door.itm", programPath: "BSTW/Prg/mwininn.prg",
-});
-assert.equal(scene.innStatus, "resolved");
+assert.equal(scene.placements[1].programPath, "BSTW/Prg/mwininn.prg");
+assert.equal(scene.placements[1].programSource, "board");
 
 const layer1 = spriteDrawOrder(scene.placements, { x: 42, y: 35, layer: 1 }, 1);
 assert.deepEqual(layer1.map(entry => entry.kind === "player" ? "player" : entry.slot),
@@ -110,16 +107,15 @@ assert.equal(fallback.ok, true);
 assert.equal(fallback.placements[0].itemStatus, "resolved");
 assert.equal(fallback.placements[0].artStatus, "missing");
 assert.equal(fallback.placements[0].artwork, null);
-assert.equal(fallback.innDoor.slot, 1);
-// Missing ITM keeps a diagnosable placement and still finds the inn
-// from its board activation program.
+assert.equal(fallback.placements[1].programStatus, "resolved");
+// Missing ITM keeps a diagnosable placement and its board activation reference.
 const withoutItem = new Map(artifacts);
 withoutItem.delete("BSTW/Item/door.itm");
 const noItem = buildPlayableScene(withoutItem, buildReferences(withoutItem));
 assert.equal(noItem.ok, true);
 assert.equal(noItem.placements[1].itemStatus, "missing");
 assert.equal(noItem.placements[1].artStatus, "missing");
-assert.equal(noItem.innDoor.slot, 1);
+assert.equal(noItem.placements[1].programStatus, "resolved");
 const unsupported = new Map(artifacts);
 unsupported.set("BSTW/Item/jim.itm", { ...jim, version: 6 });
 const unsupportedScene = buildPlayableScene(unsupported, buildReferences(unsupported));
@@ -138,7 +134,6 @@ const missingScript = new Map(artifacts);
 missingScript.delete("BSTW/Prg/mwininn.prg");
 const noScript = buildPlayableScene(missingScript, buildReferences(missingScript));
 assert.equal(noScript.ok, true);
-assert.equal(noScript.innDoor, null);
 assert.equal(noScript.placements[1].programStatus, "missing");
 // A second resolved mwininn link cannot silently choose the wrong door.
 const ambiguous = new Map(artifacts);
@@ -151,18 +146,17 @@ const secondBoard = { ...board,
 ambiguous.set(board.path, secondBoard);
 const twoInns = buildPlayableScene(ambiguous, buildReferences(ambiguous));
 assert.equal(twoInns.ok, true);
-assert.equal(twoInns.innStatus, "ambiguous");
-assert.equal(twoInns.innDoor, null);
+assert.equal(twoInns.placements.filter(p => p.programPath === "BSTW/Prg/mwininn.prg").length, 2);
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const client = await readFile(new URL(
   "../experiments/movement-sandbox/authored-play.mjs", import.meta.url), "utf8");
-assert.match(html, /id="play-inn"/);
+assert.doesNotMatch(html, /id="play-inn"/);
 assert.match(html, /id="play-placements"/);
 assert.match(client, /spriteDrawOrder/);
 assert.match(client, /spritePixelOrigin/);
 assert.match(client, /tileBitmapSprite/);
-assert.match(client, /INN DOOR/);
+assert.doesNotMatch(client, /INN DOOR/);
 
 // Optional production-JS check of owner's original ZIP, NEVER CI input.
 if (process.argv[2]) {
@@ -187,17 +181,15 @@ if (process.argv[2]) {
   assert.ok(realScene.placements.every(p =>
     p.itemStatus === "resolved" && p.artStatus === "resolved"),
     "Every recorded BSTW start.brd sprite has a decoded ITM and first-frame artwork");
-  assert.deepEqual(realScene.innDoor?.position, { x: 207, y: 349, layer: 1 });
-  assert.equal(realScene.innDoor?.slot, 3);
-  const inn = realScene.placements.find(p => p.isInnDoor);
+  const inn = realScene.placements.find(p => p.slot === 3);
   assert.equal(inn.filename.toLowerCase(), "door.itm");
   assert.equal(inn.programPath, "BSTW/Prg/mwininn.prg");
   assert.ok(realScene.placements.filter(p => p.filename.toLowerCase() === "door.itm").length >= 2);
   assert.ok(realScene.placements
     .filter(p => p.filename.toLowerCase() === "door.itm" && p.slot !== 3)
-    .every(p => !p.isInnDoor));
+    .every(p => p.programPath !== inn.programPath));
   console.log("Read-only BSTW production-JS placements:", realScene.placements.map(p =>
-    [p.slot, p.filename, p.position, p.itemStatus, p.artStatus, p.isInnDoor]));
+    [p.slot, p.filename, p.position, p.itemStatus, p.artStatus, p.programPath]));
 }
 
-console.log("Placed sprites passed: ITM/ANM/TST and TBM first frames, source anchors, layer/Y order, no-art resilience and inn identification by resolved PRG.");
+console.log("Placed sprites passed: ITM/ANM/TST and TBM first frames, source anchors, layer/Y order, no-art resilience and resolved placement PRG provenance.");
