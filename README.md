@@ -132,7 +132,8 @@ launch mode. The two fight outcome buttons are browser test actions.
 
 For the BSTW Expo Demo, open **Compatibility**, select **Bruce Saves
 the World! compatibility**, then choose **New**. The optional
-profile owns the source-backed title, inn and clue menu. Generic play
+profile owns the source-backed title, placed dialogue, clue menu and
+[Expo Demo ending](docs/specs/bstw-browser-ending.md). Generic play
 continues to use the archive's scripts and reports unsupported source
 at its file and line. See the [browser compatibility boundary](docs/specs/tk3-browser-compatibility-boundary.md).
 
