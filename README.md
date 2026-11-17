@@ -125,17 +125,19 @@ outside the corresponding binary decoders.
 ## Play an imported Toolkit 3 game
 
 **Play game** follows the ZIP's embedded Toolkit 3.1 GAM and runs its
-supported startup before opening the configured board. **Play opening
-board (direct diagnostic)** opens that board with a fresh session and
-bypasses startup. Reset and fallback Game Over restart use the same
-launch mode. The two fight outcome buttons are browser test actions.
+supported startup before opening the configured board. **Board diagnostics
+→ Play opening board (direct diagnostic)** opens that board with a fresh
+session and bypasses startup. The player shows the active launch mode.
+Reset and fallback Game Over restart use that mode. The two fight outcome
+buttons are browser test actions.
 
 For the BSTW Expo Demo, open **Compatibility**, select **Bruce Saves
 the World! compatibility**, then choose **New**. The optional
 profile owns the source-backed title, placed dialogue, clue menu and
 [Expo Demo ending](docs/specs/bstw-browser-ending.md). Generic play
-continues to use the archive's scripts and reports unsupported source
-at its file and line. See the [browser compatibility boundary](docs/specs/tk3-browser-compatibility-boundary.md).
+reports unsupported source at its file and line. **Choose compatibility
+mode** beside that error returns to the launch options with Compatibility
+open. See the [browser compatibility boundary](docs/specs/tk3-browser-compatibility-boundary.md).
 
 ## Smoke test
 
