@@ -122,6 +122,20 @@ text Main File startup fields as well as the 2.2 binary layout. Older text
 asset formats such as the boards, characters and items in DustBall remain
 outside the corresponding binary decoders.
 
+## Play an imported Toolkit 3 game
+
+**Play game** follows the ZIP's embedded Toolkit 3.1 GAM and runs its
+supported startup before opening the configured board. **Play opening
+board (direct diagnostic)** opens that board with a fresh session and
+bypasses startup. Reset and fallback Game Over restart use the same
+launch mode. The two fight outcome buttons are browser test actions.
+
+For the BSTW Expo Demo, open **Compatibility**, select **Bruce Saves
+the World! compatibility**, then choose **New**. The optional
+profile owns the source-backed title, inn and clue menu. Generic play
+continues to use the archive's scripts and reports unsupported source
+at its file and line. See the [browser compatibility boundary](docs/specs/tk3-browser-compatibility-boundary.md).
+
 ## Smoke test
 
 With Node.js 22 or later, run the fixture checks directly.

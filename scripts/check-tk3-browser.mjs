@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import { chromium } from "playwright";
-import { buildBrowserGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
+import { buildBrowserGame, buildBstwBrowserGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { nativeMainFixture } from "../docs/specs/fixtures/native-main-29-fixtures.mjs";
 
 const site = resolve(process.argv[2] ?? "site");
@@ -25,9 +25,14 @@ await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
 let browser;
 try {
   browser = await chromium.launch({ executablePath: process.env.TK3_CHROMIUM || undefined });
-  const page = await browser.newPage();
+  const page = await browser.newPage({ hasTouch: true });
   page.setDefaultTimeout(5000);
   const errors = [];
+  const adapterRequests = [];
+  page.on("request", request => {
+    if (/\/(?:bstw-(?:compatibility|title)|tk3-source-(?:dialogue|menu)|imported-inn|inn-dialogue)\./.test(request.url()))
+      adapterRequests.push(request.url());
+  });
   page.on("pageerror", error => errors.push(error.message));
   const base = "http://127.0.0.1:" + server.address().port;
   const control = id => page.locator("#" + id);
@@ -37,7 +42,7 @@ try {
   const board = value => expectText("play-heading", value);
   const talk = () => click("play-talk");
   const gamPlay = () => click("play-gam-startup");
-  const directPlay = () => click("play-bstw");
+  const directPlay = () => click("play-direct");
   const archive = async (name, buffer) => {
     await control("archive").setInputFiles({ name, mimeType: "application/zip", buffer });
     await expectText("archive-status", /files/);
@@ -69,7 +74,7 @@ try {
   await expectText("play-dialogue-progress", /HarborLab\/Prg\/weather_clock.prg:5/);
   await page.keyboard.press("e");
   await variables(/caller_resumed = 1/);
-  await page.getByRole("button", { name: "E · station_report.prg" }).click();
+  await page.getByRole("button", { name: "E · station_report.prg" }).tap();
   await expectText("play-dialogue-text", /tide is rising/);
   await talk();
   await variables(/caller_resumed = 2/);
@@ -125,6 +130,9 @@ try {
   await gamPlay();
   await board(/^Authored board · Boards\/meadow.brd$/);
   await variables(/none yet/);
+  const positioned = await control("play-status").textContent();
+  await page.getByRole("button", { name: "Move south" }).tap();
+  assert.notEqual(await control("play-status").textContent(), positioned);
   await talk();
   await board(/ridge.brd/);
   await variables(/travelled = 1/);
@@ -137,6 +145,13 @@ try {
   await talk();
   await variables(/won = 1/);
   assert.equal(await control("play-talk").isDisabled(), true);
+  await page.keyboard.press("t");
+  await board(/meadow.brd/);
+  await expectText("play-dialogue-text", /Return to the ridge/);
+  await talk();
+  await board(/ridge.brd/);
+  assert.equal(await control("play-talk").isDisabled(), true);
+  await variables(/won = 1/);
   await click("play-reset");
   await board(/meadow.brd/);
   await variables(/none yet/);
@@ -161,8 +176,94 @@ try {
   await click("play-reset");
   await board(/wharf.brd/);
   await variables(/none yet/);
+  const noAdapter = async () => {
+    assert.equal(await page.locator("#play-hud, #play-inn, #bstw-title-stage, #play-source-menu").count(), 0);
+    assert.deepEqual(adapterRequests, []);
+  };
+  await noAdapter();
+  await click("play-close");
+  await archive("eligible-bstw.zip", await buildBstwBrowserGame());
+  await gamPlay();
+  await expectText("gam-startup-status", /Startup blocked: BSTW\/Prg\/menuTitle.prg:1/);
+  await noAdapter();
+  await directPlay();
+  await board(/BSTW\/Boards\/start.brd/);
+  await noAdapter();
+  await talk();
+  await expectText("play-script-diagnostic", /CMwin.prg/);
+  await noAdapter();
+  await click("play-close");
+  await page.locator("#play-compatibility summary").click();
+  await page.getByRole("button", { name: "Bruce Saves the World! compatibility" }).waitFor();
+  assert.deepEqual(adapterRequests, []);
+  await page.locator("#play-compatibility summary").click();
+  const optIn = async () => {
+    await page.locator("#play-compatibility summary").click();
+    await page.getByRole("button", { name: "Bruce Saves the World! compatibility" }).click();
+    await control("bstw-title-stage").waitFor();
+    await control("bstw-title-image").waitFor();
+    await click("bstw-title-new");
+    await board(/BSTW\/Boards\/start.brd/);
+  };
+  await optIn();
+  assert.ok(adapterRequests.some(url => url.endsWith("/bstw-compatibility.mjs")));
+  await expectText("play-hud", /Clues: 0 \/ 13 · Inn visits: 0/);
+  await talk();
+  await expectText("bstw-message", /First visit to the inn/);
+  await talk();
+  await expectText("play-hud", /Clues: 1 \/ 13 · Inn visits: 1/);
+  await talk();
+  await expectText("play-feedback", /Wait .* ms to talk again/);
+  await page.waitForTimeout(510); // Browser model uses a strict >500 ms source threshold.
+  await talk();
+  await expectText("bstw-message", /Repeat visit to the inn/);
+  await talk();
+  await expectText("play-hud", /Clues: 1 \/ 13 · Inn visits: 2/);
+  // The unclaimed GAM key still runs through the interpreter. Its two sends
+  // carry the adapter session and its source writes through both remounts.
+  await page.keyboard.press("t");
+  await variables(/unrelated = 1/);
+  await board(/BSTW\/Boards\/start.brd/);
+  await expectText("play-hud", /Clues: 1 \/ 13 · Inn visits: 2/);
+  await page.keyboard.press("m");
+  await control("play-source-menu").waitFor();
+  const choose = label => control("play-source-menu").getByRole("button", { name: label }).click();
+  await choose(/^Tactics/);
+  await control("play-source-menu-profiles").waitFor();
+  await click("play-source-menu-close");
+  await expectText("play-source-menu-note", /cancelled/i);
+  await expectText("play-hud", /Clues: 1 \/ 13/);
+  await choose(/^Tactics/);
+  await choose("Bruce");
+  await expectText("play-hud", /Clues: 2 \/ 13/);
+  for (const name of [/^Items/, /^Equipment/, /^Status/, /^Options/, /^System/]) {
+    await choose(name);
+    if (await control("play-source-menu-profiles").isVisible()) await choose("Bruce");
+  }
+  await expectText("play-hud", /Clues: 7 \/ 13/);
+  await variables(/unrelated = 1/);
+  await click("play-source-menu-close");
+  await click("play-reset");
+  await expectText("play-hud", /Clues: 0 \/ 13 · Inn visits: 0/);
+  assert.doesNotMatch(await control("play-script-variables").textContent(), /unrelated/);
+  await click("play-close");
+  assert.equal(await control("play-hud").count(), 0);
+
+  await archive("eligible-fallback.zip", await buildBstwBrowserGame({ fallback: true }));
+  await optIn();
+  await talk();
+  await expectText("bstw-message", /ask at the inn/);
+  for (let i = 0; i < 4; i++) await talk();
+  await expectText("play-hud", /Clues: 1 \/ 13 · Inn visits: 1/);
+  // Loading a different archive while playing drops the compatibility mode
+  // and all its DOM, as a user can do from the persistent archive input.
+  await archive("fresh-grove.zip", await buildBrowserGame("grove"));
+  await gamPlay();
+  await board(/meadow.brd/);
+  assert.equal(await control("play-hud").count(), 0);
+  await variables(/none yet/);
   assert.deepEqual(errors, []);
-  console.log("Staged browser passed: two independent TK3 ZIPs, inspector isolation, rooted GAM helper, keyboard and touch controls, Send continuation, both fight outcomes and launch-mode reset.");
+  console.log("Staged browser passed: two independent TK3 ZIPs, inspector isolation, rooted GAM helper, keyboard and touch controls, Send continuation, both fight outcomes, launch-mode reset, and explicit BSTW title, inn, menu and session cleanup.");
 } finally {
   await browser?.close();
   server.close();

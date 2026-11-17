@@ -36,12 +36,12 @@ export function assessPlayability(artifacts, graph, mainFile = null, { interacti
   const stages = [];
 
   stages.push({
-    id: "title", label: "Title and New-game selection", source: startup.path,
+    id: "title", label: "Configured startup", source: startup.path,
     status: decoded(program, "prg") ? "source-linked" : "missing",
     references: [startup],
     facts: decoded(program, "prg") ? [
-      "Startup RPGCode is indexed; its menu branches are not executed.",
-      "Menu input and the transition to the opening board require runtime behavior.",
+      "The archive links to a decoded startup program.",
+      "Source links do not establish which startup commands the browser supports.",
     ] : ["Configured startup is not decoded RPGCode."],
     sourceLines: sourceLines(program, [
       /case\s+0\s*:/i, /\binitvar\s*\(/i, /\bsetplayer\s*\(/i,
@@ -103,14 +103,24 @@ export function assessPlayability(artifacts, graph, mainFile = null, { interacti
   });
 
   const requested = interactionProgram?.toLowerCase() ?? null;
-  const chosen = (decoded(board, "brd") ? board.sprites ?? [] : []).find(item =>
-    item.activationProgram && (!requested ||
-      item.activationProgram.toLowerCase() === requested)) ?? null;
   const edges = graph.outgoing.get(board?.path) ?? [];
-  const scriptEdge = chosen && edges.find(edge =>
-    edge.evidence === "Native sprite activation program · slot " + chosen.slot);
-  const itemEdge = chosen && edges.find(edge =>
-    edge.evidence === "Native board sprite · slot " + chosen.slot);
+  const candidates = (decoded(board, "brd") ? board.sprites ?? [] : []).map(sprite => {
+    const itemEdge = edges.find(edge => edge.evidence === "Native board sprite · slot " + sprite.slot);
+    const item = artifacts.get(itemEdge?.to);
+    const override = sprite.activationProgram;
+    const activationProgram = override || item?.programs?.["Pickup program"];
+    const scriptEdge = override ?
+      edges.find(edge => edge.evidence === "Native sprite activation program · slot " + sprite.slot) :
+      (graph.outgoing.get(item?.path) ?? []).find(edge =>
+        edge.evidence === "Pickup program" && edge.value === activationProgram);
+    return { ...sprite, activationProgram, itemEdge, scriptEdge, override };
+  }).filter(sprite => sprite.activationProgram &&
+    (!requested || sprite.activationProgram.toLowerCase() === requested));
+  const chosen = candidates.find(sprite => sprite.override) ??
+    candidates.find(sprite => sprite.scriptEdge?.status === "Resolved") ?? candidates[0];
+  const itemEdge = chosen?.itemEdge;
+  const scriptEdge = chosen?.scriptEdge;
+  const boardProgramCount = board?.nativePrograms?.filter(program => program.filename).length ?? 0;
   const script = artifacts.get(scriptEdge?.to), item = artifacts.get(itemEdge?.to);
   const selectedInteraction = chosen ? {
     slot: chosen.slot, filename: chosen.filename, itemPath: itemEdge?.to ?? null,
@@ -127,14 +137,15 @@ export function assessPlayability(artifacts, graph, mainFile = null, { interacti
       ...(itemEdge ? [edgeValue(itemEdge)] : []),
       ...(scriptEdge ? [edgeValue(scriptEdge)] : []),
     ],
-    facts: selectedInteraction ? [
+    facts: [...(boardProgramCount ? [boardProgramCount + " stored board-program region(s)."] : []),
+      ...(selectedInteraction ? [
       "Slot " + chosen.slot + ": " + chosen.filename + " at (" +
         chosen.position.x + ", " + chosen.position.y + ", layer " + chosen.position.layer + ").",
       "Configured activation program: " + chosen.activationProgram + ".",
-      "Conditions, dialogue, clue state and plugin calls are not executed.",
+      "Activation provenance: " + (chosen.override ? "board override." : "item pickup program."),
     ] : [requested ?
       "No opening-board item activates " + interactionProgram + "." :
-      "No opening-board sprite has a configured activation program."],
+      "No opening-board sprite has a configured activation program."])],
     sourceLines: sourceLines(script, [
       /#include\s*\(/i, /\bgettickcount\s*\(/i, /\bchecked\s*\[/i,
       /\bsettxt\s*\(/i, /\bclues\s*\+\+/i, /\bupdateclues\s*\(/i,
@@ -142,11 +153,11 @@ export function assessPlayability(artifacts, graph, mainFile = null, { interacti
   });
 
   const gaps = [
-    { id: "title-control", stage: "title", need: "Translate New-menu input to a deterministic start transition.", acceptance: "New enters the configured board with the selected party." },
+    { id: "title-control", stage: "title", need: "Validate the archive startup and opening scene.", acceptance: "Supported startup completes and the configured actor enters the opening board." },
     { id: "board-movement", stage: "board", need: "Render actor input and movement with an explicit collision/vector policy.", acceptance: "Directional input moves a synthetic actor without crossing a known solid vector." },
     { id: "movement-fidelity", stage: "character", need: "Connect four heading ANMs with animation timing and frame selection.", acceptance: "Each cardinal input produces its expected animation." },
     { id: "item-activation", stage: "interaction", need: "Detect interaction range, target and stored activation conditions.", acceptance: "The selected item requests its configured script exactly once per activation." },
-    { id: "dialogue-state", stage: "interaction", need: "Implement only the necessary RPGCode dialogue/state subset through an explicit adapter.", acceptance: "First and repeat conversations differ and tracked clue state updates as specified." },
+    { id: "dialogue-state", stage: "interaction", need: "Check the selected source program against the supported RPGCode subset.", acceptance: "The archive program controls messages and variable updates." },
     { id: "plugin-scope", stage: "interaction", need: "Audit whether selected behaviors depend on a bundled DLL before writing adapters.", acceptance: "Each needed external call is mapped to a source-owned adapter or deferred." },
   ];
   return {

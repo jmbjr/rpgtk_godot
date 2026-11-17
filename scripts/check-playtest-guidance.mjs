@@ -57,7 +57,7 @@ for (const spec of scriptFixtureSpecs) {
     { ...walked, layer: scene.start.layer });
   assert.equal(reached.targets[0].inRange, true);
   assert.match(reached.hint, /Within Talk range/);
-  assert.match(reached.hint, /Press Talk, E or Space/);
+  assert.match(reached.hint, /Use Talk/);
 
   const wrongLayer = describePlayableTargets(scene,
     { ...actor, layer: scene.start.layer + 1 });
@@ -100,7 +100,7 @@ for (const id of ["play-target-hint", "play-map-frame", "play-map-markers",
 }
 assert.match(html, /id="play-markers-enabled" checked/);
 assert.match(html, /<details class="play-diagnostics">/);
-assert.match(js, /describePlayableTargets\(scene, actorAtLayer\(\)\)/);
+assert.match(js, /describePlayableTargets\(scene, actorAtLayer\(\), adapter\?\.label\)/);
 assert.match(js, /markerLayer\.replaceChildren\(\)/);
 assert.match(js, /updatePlaytestMarkers\(\)/);
 assert.match(js, /markerLayer\.hidden = !markerToggle\.checked/);

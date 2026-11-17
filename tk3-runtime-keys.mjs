@@ -49,7 +49,7 @@ export function listTk3RuntimeKeys(scene, artifacts) {
 
 export function startTk3RuntimeKey(state, action, artifacts) {
   if (state.execution) return { status: "busy", state };
-  const path = action.path || ("Prg/" + action.program);
+  const path = action.path || ((action.projectRoot ?? "") + "Prg/" + action.program);
   if (action.status !== "resolved")
     return { status: "error", state: { ...state, message: "", execution: null,
       diagnostic: error(path, 1, "GAM runtime program is " + action.status + ".") } };

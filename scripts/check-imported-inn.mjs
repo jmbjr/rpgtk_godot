@@ -11,7 +11,7 @@ import {
   initialInnState, currentInnMessage, conversationMessages, advanceInn,
 } from "../experiments/movement-sandbox/inn-dialogue.mjs";
 import {
-  authoredInnWorld, nearAuthoredInn, activateAuthoredInn,
+  findAuthoredInn, authoredInnWorld, nearAuthoredInn, activateAuthoredInn,
 } from "../experiments/movement-sandbox/imported-inn.mjs";
 import { nativeMainFixture } from "../docs/specs/fixtures/native-main-29-fixtures.mjs";
 import { board24Fixtures } from "../docs/specs/fixtures/board-24-fixtures.mjs";
@@ -64,13 +64,9 @@ const graph = buildReferences(artifacts);
 const scene = buildPlayableScene(artifacts, graph);
 assert.equal(scene.ok, true, JSON.stringify(scene.issues));
 assert.equal(scene.placements.length, 3);
-assert.deepEqual(scene.placements.map(p => p.isInnDoor),
-  [false, true, false], "Only the mwininn.prg placement is the inn");
-assert.equal(scene.innStatus, "resolved");
-assert.deepEqual(scene.innDoor, {
-  slot: 1, position: { x: 80, y: 40, layer: 1 },
-  itemPath: "BSTW/Item/door.itm", programPath: "BSTW/Prg/mwininn.prg",
-});
+assert.ok(scene.placements.every(p => !Object.hasOwn(p, "isInnDoor")));
+assert.equal(findAuthoredInn(scene).slot, 1);
+assert.equal(findAuthoredInn(scene).programPath, "BSTW/Prg/mwininn.prg");
 assert.deepEqual(authoredInnWorld(scene)?.landmark,
   { x: 80, y: 40, layer: 1 });
 assert.equal(INN_TALK_RANGE_PIXELS, 46);
@@ -151,7 +147,7 @@ const missingProgram = new Map(artifacts);
 missingProgram.delete("BSTW/Prg/mwininn.prg");
 const missingScene = buildPlayableScene(missingProgram, buildReferences(missingProgram));
 assert.equal(missingScene.ok, true);
-assert.equal(missingScene.innDoor, null);
+assert.equal(findAuthoredInn(missingScene), null);
 assert.equal(authoredInnWorld(missingScene), null);
 assert.equal(nearAuthoredInn(actor, missingScene), false);
 assert.equal(activateAuthoredInn(state, actor, 0, missingScene).outcome,
@@ -168,7 +164,7 @@ const notInn = {
 };
 noInnArtifacts.set(board.path, notInn);
 const otherOnly = buildPlayableScene(noInnArtifacts, buildReferences(noInnArtifacts));
-assert.equal(otherOnly.innDoor, null);
+assert.equal(findAuthoredInn(otherOnly), null);
 assert.equal(nearAuthoredInn(actor, otherOnly), false);
 
 const ambiguousArtifacts = new Map(artifacts);
@@ -181,26 +177,11 @@ ambiguousArtifacts.set(board.path, {
       { ...ref, value: "mwininn.prg" } : ref),
 });
 const ambiguous = buildPlayableScene(ambiguousArtifacts, buildReferences(ambiguousArtifacts));
-assert.equal(ambiguous.innStatus, "ambiguous");
-assert.equal(ambiguous.innDoor, null);
+assert.equal(findAuthoredInn(ambiguous), null);
 assert.equal(activateAuthoredInn(state, actor, 0, ambiguous).outcome,
   "unavailable");
 // No borrowed state from previous test case, scene or browser mount.
 assert.deepEqual(initialInnState(), state);
-
-const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-const client = await readFile(new URL("../experiments/movement-sandbox/authored-play.mjs", import.meta.url), "utf8");
-for (const id of ["play-talk", "play-hud", "play-feedback", "play-dialogue",
-  "play-dialogue-speaker", "play-dialogue-text", "play-dialogue-progress", "play-reset"])
-  assert.match(html, new RegExp('id="' + id + '"'));
-assert.match(client, /nearAuthoredInn/);
-assert.match(client, /activateAuthoredInn/);
-assert.match(client, /inn\.conversation \|\| legacy\?\.dialogue/,
-  "The imported inn and generic script must both freeze walking during dialogue");
-assert.match(client, /if \(!event\.repeat\) interact\(\)/);
-assert.match(client, /event\.code === "KeyE" \|\| event\.code === "Space"/);
-assert.match(client, /talkButton\.addEventListener\("click", interact/);
-assert.match(client, /inn = initialInnState\(\)/);
 
 // The optional local production JS path reads the owner's original archive
 // without copying it into the repository or passing it to GitHub Actions.
@@ -212,12 +193,14 @@ if (process.argv[2]) {
   const real = (await readArtifacts(original, {})).artifacts;
   const game = buildPlayableScene(real, buildReferences(real));
   assert.equal(game.ok, true, JSON.stringify(game.issues));
-  assert.deepEqual(game.innDoor, {
+  const inn = findAuthoredInn(game);
+  assert.deepEqual({ slot: inn?.slot, position: inn?.position,
+    itemPath: inn?.itemPath, programPath: inn?.programPath }, {
     slot: 3, position: { x: 207, y: 349, layer: 1 },
     itemPath: "BSTW/Item/door.itm", programPath: "BSTW/Prg/mwininn.prg",
   });
   assert.deepEqual(game.placements.filter(p => p.filename.toLowerCase() === "door.itm")
-    .map(p => [p.slot, p.isInnDoor]), [[3, true], [4, false], [5, false]]);
+    .map(p => [p.slot, p === inn]), [[3, true], [4, false], [5, false]]);
   assert.equal(nearAuthoredInn({ x: 207, y: 349, layer: 1 }, game), true);
   assert.equal(nearAuthoredInn({ x: 207, y: 349, layer: 2 }, game), false);
   const realOpened = activateAuthoredInn(initialInnState(),

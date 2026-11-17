@@ -24,7 +24,11 @@ export function createTk3PlayContext(indexed, main) {
   }
   const paths = [...indexed.keys()];
   const mainPath = main.path;
-  let projectRoot = mainPath.slice(0, mainPath.lastIndexOf("/") + 1);
+  const mainFolder = mainPath.slice(0, mainPath.lastIndexOf("/") + 1);
+  // Toolkit stores the GAM under Main/ beside the other asset folders.
+  // Packaged exports also put that GAM directly at the project root.
+  let projectRoot = /(?:^|\/)Main\/$/i.test(mainFolder) ?
+    mainFolder.slice(0, -"Main/".length) : mainFolder;
   const candidates = paths.flatMap(path =>
     path.match(/^(.*\/)?Boards\/[^/]+\.brd$/i)?.slice(1).map(root => root ?? "") ?? []);
   if (!projectRoot &&
@@ -169,12 +173,6 @@ export function buildPlayableScene(artifacts, graph, selectedMain = null, option
   // Native board-level program areas exist independently of placed ITMs.
   // The actual source filename may be inline RPGCode (e.g. Send(...)).
   const boardPrograms = mapTk3BoardPrograms(board, artifacts);
-  const innTargets = placements.filter(placement => placement.isInnDoor);
-  const innDoor = innTargets.length === 1 ? {
-    slot: innTargets[0].slot, position: { ...innTargets[0].position },
-    itemPath: innTargets[0].itemPath, programPath: innTargets[0].programPath,
-  } : null;
-
   let vectorCollision = compileBoardVectorCollision(board, start.layer);
   const world = {
     tileSize: 32, width: board.width, height: board.height,
@@ -206,9 +204,7 @@ export function buildPlayableScene(artifacts, graph, selectedMain = null, option
       runs: board.runs.map(run => ({ ...run, tile: tiles.get(run.index) })),
     },
     walking: walks,
-    placements, boardPrograms, innDoor,
-    innStatus: innTargets.length === 1 ? "resolved" :
-      innTargets.length ? "ambiguous" : "missing",
+    placements, boardPrograms,
     // Pure sandbox stepper sees only verified TT_SOLID geometry.
     world,
     collisionPolicy: vectorCollision.status + "; 9px circle; " + vectorCollision.reason,

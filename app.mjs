@@ -5,9 +5,9 @@ import { traceProgramDependencies, traceProjectDependencies } from "./script-tra
 import { auditProjectPlugins } from "./plugin-audit.mjs";
 import { assessPlayability } from "./playability-audit.mjs";
 import { createTk3PlayContext } from "./playable-scene.mjs";
-import { assessBstwTitle, requestBstwNewSession } from "./bstw-title.mjs";
 import { mountAuthoredBoard } from "./experiments/movement-sandbox/authored-play.mjs";
 import { executeGamStartup } from "./tk3-gam-startup.mjs";
+import { initialTk3ScriptState } from "./tk3-script-slice.mjs";
 import { mainFileBindings, readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
 import { defaultMidiTone, playMidi } from "./midi.mjs";
@@ -43,10 +43,10 @@ let archive = null;
 let playableScene = null;
 let playContext = null;
 let launchMode = null;
-let bstwTitle = null;
+let compatibilityTitle = null;
+let createCompatibilitySession = null;
+let compatibilityRequest = 0;
 let activePlayable = null;
-let titleDisplayRequest = 0;
-const titleBlobUrls = new Set();
 let tileMatchIndex;
 let archiveName;
 let paths = [];
@@ -1700,7 +1700,7 @@ function renderBoard(panel, board, edges) {
       }
     }
     if (showVectors?.checked) {
-      // Coordinate code 4 is the standard pixel layout in BSTW. Convert
+      // Coordinate code 4 stores absolute pixel coordinates. Convert
       // source pixel coordinates to the scaled 32px tile canvas; do not
       // assume this mapping for rotated/stacked isometric coordinate codes.
       const scale = tileSize / 32;
@@ -2432,21 +2432,16 @@ function showReference(group) {
 function closePlayable() {
   activePlayable?.destroy();
   activePlayable = null;
-  byId("play-stage").hidden = true;
-  byId("workspace").hidden = !archive || !byId("bstw-title-stage").hidden;
+  launchMode = null;
+  createCompatibilitySession = null;
+  byId("play-stage").replaceWith(playTemplate.cloneNode(true));
+  byId("workspace").hidden = !archive || Boolean(compatibilityTitle);
 }
 
-function closeBstwTitle() {
-  ++titleDisplayRequest;
-  const image = byId("bstw-title-image");
-  image.onload = null;
-  image.onerror = null;
-  image.removeAttribute("src");
-  image.hidden = true;
-  byId("bstw-title-fallback").hidden = false;
-  byId("bstw-title-stage").hidden = true;
-  for (const url of titleBlobUrls) URL.revokeObjectURL(url);
-  titleBlobUrls.clear();
+function closeCompatibilityTitle() {
+  ++compatibilityRequest;
+  compatibilityTitle?.destroy();
+  compatibilityTitle = null;
   if (!activePlayable) byId("workspace").hidden = !archive;
 }
 
@@ -2459,10 +2454,10 @@ function mountPlayable(scene, options) {
   panel.hidden = false;
   const replacement = mountAuthoredBoard(panel, scene, playContext.artifacts,
     playContext.graph, { ...options, onTransfer: remountTransferredBoard,
-      onRestart: () => launchPlayableWithSession(launchMode) });
+      onRestart: () => launchPlayableWithSession(launchMode, createCompatibilitySession) });
   panel.querySelector("#play-close").addEventListener("click", () => {
     closePlayable();
-    byId("play-bstw").focus({ preventScroll: true });
+    byId("play-gam-startup").focus({ preventScroll: true });
   });
   activePlayable?.destroy();
   byId("play-stage").replaceWith(panel);
@@ -2479,7 +2474,9 @@ function remountTransferredBoard({ scene, ...options }) {
   } catch (error) {
     return "Unable to render destination: " + error.message;
   }
-  replacement.continueTransfer();
+  queueMicrotask(() => {
+    if (activePlayable === replacement) replacement.continueTransfer();
+  });
   return null;
 }
 
@@ -2487,7 +2484,7 @@ function launchPlayableScene() {
   return launchPlayableWithSession("direct");
 }
 
-function launchPlayableWithSession(mode) {
+function launchPlayableWithSession(mode, createAdapter = null) {
   if (!playableScene?.ok) return false;
   const outcome = mode === "gam" ?
     executeGamStartup(playContext.artifacts, playableScene) : null;
@@ -2499,12 +2496,19 @@ function launchPlayableWithSession(mode) {
   const arrivalFeedback = outcome ? (outcome.startupPath ?
     "GAM startup completed: " + outcome.startupPath :
     "No GAM startup PRG configured; opening the initial board.") :
-    "Direct board launch: GAM startup was bypassed.";
+    createAdapter ? "Compatibility mode · fresh session." :
+      "Direct board launch: GAM startup was bypassed.";
   try {
-    const { panel } = mountPlayable(playableScene,
-      { scriptSession: outcome?.scriptSession, arrivalFeedback, legacyCompatibility: mode === "bstw" });
+    const adapter = createAdapter?.();
+    const scriptSession = adapter ? {
+      ...initialTk3ScriptState(), variables: { ...adapter.initialVariables },
+    } : outcome?.scriptSession;
+    const { panel } = mountPlayable(playableScene, { scriptSession, arrivalFeedback, adapter });
     launchMode = mode;
-    closeBstwTitle();
+    createCompatibilitySession = createAdapter;
+    closeCompatibilityTitle();
+    compatibilityControl.open = false;
+    compatibilityOptions.replaceChildren();
     panel.scrollIntoView({ behavior: "instant", block: "start" });
     status("gam-startup-status", arrivalFeedback);
     return true;
@@ -2514,94 +2518,58 @@ function launchPlayableWithSession(mode) {
   }
 }
 
-function showBstwTitle() {
-  if (!bstwTitle?.ok || !archive) return;
-  closePlayable();
-  closeBstwTitle();
-  const panel = byId("bstw-title-stage");
-  panel.hidden = false;
-  byId("workspace").hidden = true;
-  byId("bstw-title-new").disabled = !bstwTitle.newEnabled;
-  status("bstw-title-status", bstwTitle.newReason, !bstwTitle.newEnabled);
-
-  const art = bstwTitle.titleArt;
-  const newArt = bstwTitle.newArt;
-  const fallback = byId("bstw-title-fallback");
-  fallback.textContent = "Bruce Saves the World! Title artwork " +
-    (art?.filename ?? "(not set)") + " is " + (art?.status ?? "unknown") +
-    ". New remains available when the imported opening board is ready.";
-  const note = "Slideshow artwork " + (art?.filename ?? "(none)") +
-    ": " + (art?.status ?? "unknown") +
-    (art?.reason ? " — " + art.reason : "") +
-    ". Scripted New graphic " + (newArt?.filename ?? "(none)") +
-    ": " + (newArt?.status ?? "unknown") +
-    ". The button is a native accessible control rather than an emulated CCmap.";
-  status("bstw-title-art-status", note, art?.status !== "resolved");
-
-  if (art?.status === "resolved" && art.path) {
-    const sourceZip = archive;
-    const request = ++titleDisplayRequest;
-    const entry = sourceZip.file(art.path);
-    if (entry) {
-      void entry.async("uint8array").then(bytes => {
-        if (request !== titleDisplayRequest || sourceZip !== archive) return;
-        const mime = /\.png$/i.test(art.path) ? "image/png" :
-          /\.gif$/i.test(art.path) ? "image/gif" : "image/jpeg";
-        const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
-        titleBlobUrls.add(url);
-        const image = byId("bstw-title-image");
-        image.onload = () => {
-          if (request !== titleDisplayRequest) return;
-          image.hidden = false;
-          fallback.hidden = true;
-        };
-        image.onerror = () => {
-          if (request !== titleDisplayRequest) return;
-          image.hidden = true;
-          fallback.hidden = false;
-          status("bstw-title-art-status",
-            "The selected original title image could not be displayed; New remains available.", true);
-        };
-        image.src = url;
-      }).catch(error => {
-        if (request !== titleDisplayRequest) return;
-        status("bstw-title-art-status",
-          "Cannot read original title artwork: " + error.message, true);
-      });
-    } else {
-      status("bstw-title-art-status",
-        "The resolved image entry is unavailable in this ZIP; showing a text fallback.", true);
-    }
-  }
-  panel.scrollIntoView({ behavior: "instant", block: "start" });
-  panel.focus({ preventScroll: true });
-}
-
-byId("play-bstw").addEventListener("click", launchPlayableScene);
-byId("play-gam-startup").addEventListener("click", () => launchPlayableWithSession("gam"));
-byId("open-bstw-title").addEventListener("click", showBstwTitle);
-byId("bstw-title-back").addEventListener("click", () => {
-  closeBstwTitle();
-  byId("open-bstw-title").focus({ preventScroll: true });
-});
-byId("bstw-title-new").addEventListener("click", () => {
-  const action = requestBstwNewSession(bstwTitle, playableScene);
-  if (!action.ok) {
-    status("bstw-title-status", action.reason, true);
+const compatibilityControl = byId("play-compatibility");
+const compatibilityOptions = byId("compatibility-options");
+compatibilityControl.addEventListener("toggle", () => {
+  if (!compatibilityControl.open) {
+    compatibilityOptions.replaceChildren();
+    ++compatibilityRequest;
     return;
   }
-  launchPlayableWithSession("bstw");
+  const feedback = el("p", "", "technical");
+  feedback.setAttribute("role", "status");
+  const select = button("Bruce Saves the World! compatibility", async () => {
+    const request = ++compatibilityRequest;
+    const context = playContext;
+    const source = archive;
+    select.disabled = true;
+    try {
+      const { prepareBstwCompatibility } = await import("./bstw-compatibility.mjs");
+      if (request !== compatibilityRequest || source !== archive) return;
+      const profile = prepareBstwCompatibility({ archive: source, context });
+      if (!profile.ok) {
+        feedback.textContent = profile.detail;
+        return;
+      }
+      closePlayable();
+      compatibilityTitle = profile.mountTitle({
+        onBack: () => { closeCompatibilityTitle(); select.focus(); },
+        onNew: () => launchPlayableWithSession("compatibility", profile.createSession),
+      });
+      byId("play-stage").before(compatibilityTitle.host);
+      byId("workspace").hidden = true;
+      compatibilityTitle.panel.focus({ preventScroll: true });
+      compatibilityTitle.panel.scrollIntoView({ block: "start" });
+    } catch (error) {
+      if (request === compatibilityRequest)
+        feedback.textContent = "Compatibility unavailable: " + error.message;
+    } finally {
+      select.disabled = false;
+    }
+  });
+  compatibilityOptions.replaceChildren(select, feedback);
 });
+byId("play-direct").addEventListener("click", launchPlayableScene);
+byId("play-gam-startup").addEventListener("click", () => launchPlayableWithSession("gam"));
 
 async function loadArchive(name, readBytes) {
   const request = ++archiveRequest;
-  closeBstwTitle();
+  closeCompatibilityTitle();
   closePlayable();
   playableScene = null;
   playContext = null;
-  launchMode = null;
-  bstwTitle = null;
-  byId("open-bstw-title").disabled = true;
+  compatibilityControl.open = false;
+  compatibilityOptions.replaceChildren();
   byId("play-gam-startup").disabled = true;
   status("gam-startup-status", "");
   byId("play-launch").hidden = true;
@@ -2639,18 +2607,11 @@ async function loadArchive(name, readBytes) {
     // never an unrelated separately uploaded GAM.
     playContext = createTk3PlayContext(artifacts, archiveMainFile);
     playableScene = playContext.scene;
-    bstwTitle = assessBstwTitle(artifacts, archiveMainFile, playableScene);
     byId("play-launch").hidden = false;
-    byId("open-bstw-title").disabled = !bstwTitle.ok;
-    status("bstw-title-eligibility", bstwTitle.ok ?
-      "BSTW title recognized · source " + bstwTitle.startupPath +
-      " · image " + bstwTitle.titleArt.status +
-      " · New " + (bstwTitle.newEnabled ? "ready" : "unavailable") :
-      "Title unavailable: " + bstwTitle.detail, !bstwTitle.ok);
-    byId("play-bstw").disabled = !playableScene.ok;
+    byId("play-direct").disabled = !playableScene.ok;
     byId("play-gam-startup").disabled = !playableScene.ok;
     status("gam-startup-status", playableScene.ok ?
-      "Optional bounded GAM startup path · source PRG must complete synchronously." :
+      "Play follows the embedded GAM startup and opening board." :
       "GAM startup unavailable until the opening scene is playable.", !playableScene.ok);
     status("play-eligibility", playableScene.ok ?
       "Ready: " + playableScene.boardPath + " · " + playableScene.characterName +

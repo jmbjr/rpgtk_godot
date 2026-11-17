@@ -24,7 +24,7 @@ const formatDirection = (dx, dy) => {
 
 // Geometry is in original source pixels; labels are HTML/CSS at readable
 // screen-pixel sizes, regardless of canvas scaling on desktop or Android.
-export function describePlayableTargets(scene, actor) {
+export function describePlayableTargets(scene, actor, targetLabel) {
   const width = scene?.board?.width * 32;
   const height = scene?.board?.height * 32;
   if (!scene?.ok || !Number.isFinite(width) || !Number.isFinite(height) ||
@@ -49,8 +49,7 @@ export function describePlayableTargets(scene, actor) {
       const distance = Math.hypot(dx, dy);
       return {
         slot: p.slot,
-        label: p.isInnDoor && scene.innDoor?.slot === p.slot ?
-          "INN DOOR" : String(p.name || p.filename || "Object"),
+        label: targetLabel?.(p) ?? String(p.name || p.filename || "Object"),
         ...annotation(p.position, width, height),
         distance, inRange: distance <= PLAYTEST_TALK_RADIUS,
         dx, dy,
@@ -62,7 +61,7 @@ export function describePlayableTargets(scene, actor) {
   if (nearest) {
     hint = nearest.inRange ?
       "Within Talk range of " + nearest.label +
-        " (" + Math.round(nearest.distance) + " px away). Press Talk, E or Space." :
+        " (" + Math.round(nearest.distance) + " px away). Use Talk." :
       "Find " + nearest.label + ": " + Math.round(nearest.distance) +
         " px away. Move " + (formatDirection(nearest.dx, nearest.dy) ||
         "closer") + " until Talk activates.";

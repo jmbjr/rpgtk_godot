@@ -51,11 +51,10 @@
         <dl id="bindings" class="bindings" hidden></dl>
         <div id="main-data"></div>
         <div id="play-launch" class="play-launch" hidden>
-          <button type="button" id="open-bstw-title" disabled>Open BSTW title</button>
-          <span id="bstw-title-eligibility" class="technical" role="status"></span>
-          <button type="button" id="play-gam-startup" disabled>Run GAM startup + play</button>
+          <button type="button" id="play-gam-startup" disabled>Play game</button>
           <span id="gam-startup-status" class="technical" role="status" aria-live="polite"></span>
-          <button type="button" id="play-bstw" disabled>Play opening board (direct)</button>
+          <button type="button" id="play-direct" disabled>Play opening board (direct diagnostic)</button>
+          <details id="play-compatibility"><summary>Compatibility</summary><div id="compatibility-options"></div></details>
           <span id="play-eligibility" class="technical" role="status"></span>
         </div>
         <div class="sprite-controls">
@@ -64,32 +63,15 @@
         </div>
       </section>
 
-      <section id="bstw-title-stage" class="panel bstw-title-panel" aria-labelledby="bstw-title-heading" hidden tabindex="-1">
-        <div class="sandbox-panel-heading">
-          <h2 id="bstw-title-heading">Bruce Saves the World! · Title</h2>
-          <button type="button" id="bstw-title-back">Back to Game Explorer</button>
-        </div>
-        <p class="technical">A source-backed snapshot of BSTW's original title slideshow, not a running RPGCode menu. Only New is implemented.</p>
-        <div class="bstw-title-image-frame">
-          <img id="bstw-title-image" alt="Original BSTW title slideshow image from the uploaded ZIP" width="640" height="480" hidden>
-          <p id="bstw-title-fallback" class="bstw-title-fallback">Bruce Saves the World! The authored title artwork could not be displayed.</p>
-        </div>
-        <p id="bstw-title-art-status" class="technical" role="status">Artwork status will appear here.</p>
-        <div class="bstw-title-actions">
-          <button type="button" id="bstw-title-new" disabled>New</button>
-        </div>
-        <p id="bstw-title-status" class="technical" role="status">The New action opens a fresh supported board session.</p>
-      </section>
-
       <section id="play-stage" class="panel play-panel" aria-labelledby="play-heading" hidden tabindex="-1">
         <div class="sandbox-panel-heading">
           <h2 id="play-heading">Authored opening board</h2>
           <div class="sandbox-options">
-            <button type="button" id="play-reset">Reset to stored start</button>
+            <button type="button" id="play-reset">Reset to opening board</button>
             <button type="button" id="play-close">Back to file viewer</button>
           </div>
         </div>
-        <p class="technical">This scene uses the ZIP's own board tiles, character and placed objects. A small source-backed RPGCode message subset runs only when a compatible object is activated. The BSTW inn still uses its existing adapter.</p>
+        <p class="technical">This scene uses the ZIP's own board tiles, character and placed objects. Supported RPGCode runs from archive bindings.</p>
         <div class="play-pad-row">
           <span>Walk with WASD, arrows, or D-pad.</span>
           <div class="sandbox-dpad" role="group" aria-label="Move authored character">
@@ -119,25 +101,15 @@
           <p id="play-collision" class="technical" role="status">Collision policy: awaiting source board.</p>
           <label class="technical play-vector-toggle"><input type="checkbox" id="play-vector-overlay"> Show verified wall outlines</label>
         </details>
-        <div class="sandbox-hud" id="play-hud" aria-live="off">Clues: 0 / 13 · Inn visits: 0</div>
         <section class="sandbox-dialogue" id="play-dialogue" hidden aria-labelledby="play-dialogue-speaker">
           <div class="sandbox-dialogue-heading">
-            <strong id="play-dialogue-speaker">Bruce</strong>
-            <span id="play-dialogue-progress" class="technical">Line 1 / 4</span>
+            <strong id="play-dialogue-speaker"></strong>
+            <span id="play-dialogue-progress" class="technical"></span>
           </div>
-          <p id="play-dialogue-text">Inn conversation</p>
-          <p class="technical">BSTW inn dialogue is a paraphrased adapter; other supported source RPGCode messages are read from the selected archive. Includes, custom objects and plugins are not executed.</p>
+          <p id="play-dialogue-text"></p>
         </section>
-        <button id="play-talk" class="sandbox-talk" type="button" disabled aria-controls="play-dialogue">Talk at inn</button>
+        <button id="play-talk" class="sandbox-talk" type="button" disabled aria-controls="play-dialogue">Talk</button>
         <div id="play-runtime-actions" class="play-runtime-actions" role="group" aria-label="GAM configured runtime program keys"></div>
-        <section id="play-source-menu" class="play-source-menu" hidden aria-labelledby="play-source-menu-heading">
-          <h3 id="play-source-menu-heading">Archive RPGCode menu</h3>
-          <p class="technical">Source-defined choices and first-time clue effects. Graphical CCmap screens, equipment changes, saving and plugins are not executed.</p>
-          <p id="play-source-menu-note" role="status" aria-live="polite">Select a source menu item.</p>
-          <div id="play-source-menu-actions" class="play-menu-actions" role="group" aria-label="Source-defined menu choices"></div>
-          <div id="play-source-menu-profiles" class="play-menu-actions" role="group" aria-label="Source-defined player selection" hidden></div>
-          <button type="button" id="play-source-menu-close">Back / Close menu</button>
-        </section>
         <section id="play-fight-test" class="play-source-menu" hidden aria-labelledby="play-fight-heading">
           <h3 id="play-fight-heading">Source encounter · browser compatibility test</h3>
           <p id="play-fight-details" role="status">The archive references an enemy and battle background.</p>
@@ -156,13 +128,12 @@
         <p id="play-feedback" class="sandbox-landmark" role="status" aria-live="polite">Approach an authored object to talk.</p>
         <p id="play-script-variables" class="technical" role="status">Script variables (session): (none yet)</p>
         <p id="play-script-diagnostic" class="technical" role="alert" hidden></p>
-        <p id="play-inn" class="play-inn-label" role="status"></p>
         <details class="play-placements">
           <summary>Authored placements and artwork diagnostics</summary>
           <ol id="play-placements"></ol>
         </details>
         <p id="play-error" class="technical" role="status" hidden></p>
-        <p class="technical">Collision: supported same-layer TT_SOLID BRD 2.4 vectors use a 9-pixel browser circle; unsupported cases remain nonblocking with a visible fallback. Resolved sprite activation PRGs may use the documented narrow RPGCode subset. Incompatible programs show source path/line diagnostics. The original BSTW inn adapter remains supported.</p>
+        <p class="technical">Collision: supported same-layer TT_SOLID BRD 2.4 vectors use a 9-pixel browser circle; unsupported cases remain nonblocking with a visible fallback. Resolved sprite activation PRGs may use the documented narrow RPGCode subset. Incompatible programs show source path/line diagnostics.</p>
       </section>
 
       <section class="workspace" aria-label="Game archive workspace" id="workspace" hidden>
