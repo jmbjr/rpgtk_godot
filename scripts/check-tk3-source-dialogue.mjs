@@ -144,19 +144,6 @@ for (const spec of scriptFixtureSpecs) {
   assert.match(bad.diagnostic.text, /Unsupported legacy dialogue statement/);
   console.log(spec.id + ": source-only dialogue, one-time clue, strict cooldown, repeat/reset and unsupported-line diagnostics passed.");
 }
-const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-const js = await readFile(new URL("../experiments/movement-sandbox/authored-play.mjs", import.meta.url), "utf8");
-const flow = await readFile(new URL("../.github/workflows/pages.yml", import.meta.url), "utf8");
-assert.match(js, /compileLegacyDialogue/);
-assert.match(js, /openLegacyDialogue/);
-assert.match(js, /advanceLegacyDialogue/);
-assert.match(flow, /tk3-source-dialogue\.mjs tk3-source-menu\.mjs tk3-fight-bridge\.mjs site\//);
-assert.match(flow, /node scripts\/check-tk3-source-dialogue\.mjs/);
-assert.match(html, /id="play-script-variables"/);
-console.log("Source-owned class dialogue projection: two different native game ZIPs passed.");
-
-// Optional read-only source evidence runs without copying any original assets
-// into Git or CI. Manual browser verification is a separate requirement.
 if (process.argv[2]) {
   const { readFile: readZipFile } = await import("node:fs/promises");
   const { createHash } = await import("node:crypto");

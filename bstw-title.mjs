@@ -97,7 +97,7 @@ export function assessBstwTitle(artifacts, main, scene) {
   }
 
   const paths = [...artifacts.keys()];
-  const startupBinding = new Map(mainFileBindings(main, paths)).get("Configured startup");
+  const startupBinding = new Map(mainFileBindings(main, paths, scene?.projectRoot)).get("Configured startup");
   const startup = artifacts.get(startupBinding?.path);
   if (startupBinding?.status !== "resolved" || !decoded(startup, "prg")) {
     return unsupported("startup-unresolved",
@@ -114,7 +114,7 @@ export function assessBstwTitle(artifacts, main, scene) {
   }
 
   const startupDirectory = startup.path.slice(0, startup.path.lastIndexOf("/"));
-  const root = startupDirectory.slice(0, startupDirectory.lastIndexOf("/") + 1);
+  const root = scene?.projectRoot ?? startupDirectory.slice(0, startupDirectory.lastIndexOf("/") + 1);
   const titleArt = resolveTitleImage(paths, title.titleName, root);
   const newArt = resolveTitleImage(paths, title.newName, root);
   // A uniquely resolved image must also be an actual displayable media

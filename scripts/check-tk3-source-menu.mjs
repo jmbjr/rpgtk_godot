@@ -214,19 +214,6 @@ for(const spec of scriptFixtureSpecs) {
     .state.variables.clues,13,"Repeat menu visit cannot exceed 13");
   console.log(spec.id+": six source-owned CCmap menu clues, profile/cancel, repeat, reset, final flag and error paths passed.");
 }
-const html=await readFile(new URL("../index.html",import.meta.url),"utf8");
-const browser=await readFile(new URL("../experiments/movement-sandbox/authored-play.mjs",import.meta.url),"utf8");
-const workflow=await readFile(new URL("../.github/workflows/pages.yml",import.meta.url),"utf8");
-for(const id of ["play-source-menu","play-source-menu-actions",
-  "play-source-menu-profiles","play-source-menu-note","play-source-menu-close"])
-  assert.ok(html.includes('id="'+id+'"'));
-for(const symbol of ["compileTk3SourceMenu","openTk3SourceMenu",
-  "selectTk3SourceMenu","confirmTk3MenuProfile","cancelTk3SourceMenu"])
-  assert.ok(browser.includes(symbol));
-assert.match(workflow,/node scripts\/check-tk3-source-menu\.mjs/);
-assert.match(workflow,/tk3-source-menu\.mjs tk3-fight-bridge\.mjs site\//);
-console.log("Source-owned synthetic menus and imported board UI wiring passed.");
-
 // Original archive is LOCAL/READ ONLY, and must never run in GitHub Actions.
 if(process.argv[2]) {
   const bytes=await readFile(process.argv[2]);

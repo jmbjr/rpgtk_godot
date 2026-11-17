@@ -4,7 +4,6 @@ import { tileBitmapSprite } from "./sprites.mjs";
 // Keep one authored first frame; no script, activation, or item movement.
 const valid = (asset, type) =>
   asset?.type === type && asset.decodeStatus === "decoded" && !asset.error;
-const basename = path => (path || "").replaceAll("\\", "/").split("/").at(-1).toLowerCase();
 
 export function resolveInitialItemArtwork(item, artifacts, graph) {
   if (!valid(item, "itm")) return { status: "missing", reason: "ITM not decoded" };
@@ -103,11 +102,6 @@ export function mapBoardPlacements(board, artifacts, graph) {
             e.evidence === "Pickup program" && e.value === itemProgram) : null;
       const program = artifacts.get(scriptEdge?.to);
       const programResolved = scriptEdge?.status === "Resolved" && valid(program, "prg");
-      // Preserve the BSTW inn's strict authored board activation identity.
-      // An identically named item alone does not select that door.
-      const isInnDoor = programSource === "board" && programResolved &&
-        basename(boardProgram) === "mwininn.prg" &&
-        basename(program.path) === "mwininn.prg";
       const { x, y, layer } = sprite.position ?? {};
       const positionValid = Number.isFinite(x) && Number.isFinite(y) &&
         Number.isInteger(layer) && layer >= 1 && layer <= board.layers;
@@ -120,7 +114,11 @@ export function mapBoardPlacements(board, artifacts, graph) {
         programPath: programResolved ? program.path : scriptEdge?.to ?? null,
         programStatus: programResolved ? "resolved" :
           effectiveProgram ? "missing" : "unset",
-        isInnDoor, artStatus: art.status, artReason: art.reason ?? "",
+        activation: { type: sprite.activationType, condition: sprite.activate,
+          initialVariable: sprite.initialVariable, initialValue: sprite.initialValue,
+          finalVariable: sprite.finalVariable, finalValue: sprite.finalValue,
+          loadingVariable: sprite.loadingVariable, loadingValue: sprite.loadingValue },
+        artStatus: art.status, artReason: art.reason ?? "",
         artSource: art.source ?? null, animationPath: art.animationPath ?? null,
         artwork: art.artwork ?? null,
       };

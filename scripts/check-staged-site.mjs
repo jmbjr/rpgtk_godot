@@ -16,7 +16,7 @@ async function requireFile(path) {
 }
 for (const path of ["index.html", "app.mjs", "catalog.json", "style.css",
   "sandbox.html", "experiments/movement-sandbox/sandbox.css",
-  "vendor/jszip.min.js", "vendor/webaudio-tinysynth.js"]) {
+  "bstw-compatibility.css", "vendor/jszip.min.js", "vendor/webaudio-tinysynth.js"]) {
   await requireFile(path);
 }
 for (const page of ["index.html", "sandbox.html"]) {
