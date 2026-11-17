@@ -2,7 +2,7 @@ import { assessBstwTitle, requestBstwNewSession } from "./bstw-title.mjs";
 import { initialInnState, activateInn, advanceInn, currentInnMessage,
   conversationMessages } from "./experiments/movement-sandbox/inn-dialogue.mjs";
 import { readLegacyDialogueDefinitions, compileLegacyDialogue, initialLegacyDialogueState,
-  openLegacyDialogue, advanceLegacyDialogue, currentLegacyDialogue } from "./tk3-source-dialogue.mjs";
+  openLegacyDialogue, advanceLegacyDialogue, currentLegacyDialogue, compileBstwEnding } from "./tk3-source-dialogue.mjs";
 import { compileTk3SourceMenu, openTk3SourceMenu, selectTk3SourceMenu,
   confirmTk3MenuProfile, cancelTk3SourceMenu } from "./tk3-source-menu.mjs";
 import { findAuthoredInn } from "./experiments/movement-sandbox/imported-inn.mjs";
@@ -43,7 +43,12 @@ const playerMarkup = `
           <div id="play-source-menu-actions" class="play-menu-actions" role="group" aria-label="Source-defined menu choices"></div>
           <div id="play-source-menu-profiles" class="play-menu-actions" role="group" aria-label="Source-defined player selection" hidden></div>
           <button type="button" id="play-source-menu-close">Back / Close menu</button>
-        </section>`;
+        </section>
+  <section id="bstw-ending" class="play-source-menu" hidden tabindex="-1" aria-labelledby="bstw-ending-heading">
+    <h3 id="bstw-ending-heading">Demo complete</h3>
+    <p id="bstw-ending-source" class="technical"></p>
+    <button type="button" id="bstw-ending-close">Back to Game Explorer</button>
+  </section>`;
 
 // Audited opening-board placement provenance in #92.
 const placements = [
@@ -86,16 +91,24 @@ export function prepareBstwCompatibility({ archive, context }) {
       if (plan.ok) sourcePlans.set(placement.slot, plan);
     }
   }
-  const menuAction = listTk3RuntimeKeys(scene, artifacts).find(action =>
+  const actions = listTk3RuntimeKeys(scene, artifacts);
+  const menuAction = actions.find(action =>
     action.status === "resolved" && equals(action.path, root + "Prg/menuMain.prg"));
   const candidate = menuAction && compileTk3SourceMenu(artifacts, scene, menuAction, definitions);
   const menu = candidate?.ok && equals(candidate.path, root + "Prg/menus.prg") &&
     equals(candidate.method, "MainMenu") ? candidate : null;
 
+  const endingActions = actions.filter(action => action.label === "Q" &&
+    action.status === "resolved" && equals(action.path, root + "Prg/ENDDEMO.prg"));
+  const ending = endingActions.length === 1 ? {
+    action: endingActions[0],
+    plan: compileBstwEnding(artifacts.get(endingActions[0].path), artifacts),
+  } : null;
+
   return {
     ok: true,
     mountTitle: callbacks => mountTitle(archive, title, scene, callbacks),
-    createSession: () => createSession(scene, definitions, sourcePlans, innPlacement, menu, menuAction),
+    createSession: () => createSession(scene, definitions, sourcePlans, innPlacement, menu, menuAction, ending),
   };
 }
 
@@ -141,13 +154,16 @@ function mountTitle(archive, title, scene, { onBack, onNew }) {
   } };
 }
 
-function createSession(opening, definitions, sourcePlans, innPlacement, menu, menuAction) {
+function createSession(opening, definitions, sourcePlans, innPlacement, menu, menuAction, ending) {
   const projected = Boolean(sourcePlans.size || menu);
   const initial = projected ? initialLegacyDialogueState(definitions) : null;
-  const initialVariables = initial?.variables ?? {};
+  const initialVariables = { ...initial?.variables,
+    ...(ending?.plan.ok ? { [ending.plan.flag]: 0 } : {}) };
   let legacy = initial && { ...initial, variables: undefined };
   let inn = innPlacement && initialInnState();
   let feedback = "";
+  let endingPage = null;
+  let completed = false;
   return {
     initialVariables,
     mount({ section, scene, readVariables, writeVariables, refresh, signal }) {
@@ -160,7 +176,8 @@ function createSession(opening, definitions, sourcePlans, innPlacement, menu, me
       const profiles = get("play-source-menu-profiles");
       const close = get("play-source-menu-close");
       const canonical = scene.mainPath === opening.mainPath && scene.boardPath === opening.boardPath;
-      const current = () => currentLegacyDialogue(legacy) ?? (inn && currentInnMessage(inn));
+      const current = () => endingPage !== null ? ending.plan.pages[endingPage] :
+        currentLegacyDialogue(legacy) ?? (inn && currentInnMessage(inn));
       const isInn = target => canonical && innPlacement && target?.slot === innPlacement.slot;
       let menuSignature;
       const snapshot = () => ({ ...legacy, variables: readVariables() });
@@ -183,6 +200,10 @@ function createSession(opening, definitions, sourcePlans, innPlacement, menu, me
         return true;
       }
       close.addEventListener("click", dismiss, { signal });
+      const completion = get("bstw-ending");
+      get("bstw-ending-close").addEventListener("click", () => {
+        section.querySelector("#play-close").click();
+      }, { signal });
 
       function renderMenu() {
         const state = legacy?.menu;
@@ -213,19 +234,37 @@ function createSession(opening, definitions, sourcePlans, innPlacement, menu, me
       }
 
       return {
-        get busy() { return Boolean(current() || legacy?.menu); },
+        get busy() { return Boolean(completed || current() || legacy?.menu); },
         get menuOpen() { return Boolean(legacy?.menu); },
         get canAdvance() { return Boolean(current()); },
         get feedback() { return feedback; },
         label: target => isInn(target) ? "INN DOOR" : undefined,
         dismiss,
         runtime(action) {
+          if (ending && action.slot === ending.action.slot && action.path === ending.action.path) {
+            if (!ending.plan.ok) feedback = ending.plan.diagnostic.text;
+            else if (readVariables()[ending.plan.flag] !== 1)
+              feedback = "The ending is locked. Continue finding clues.";
+            else {
+              endingPage = 0;
+              feedback = "";
+            }
+            return true;
+          }
           if (!menu || action.slot !== menuAction.slot || action.path !== menuAction.path) return false;
           apply(openTk3SourceMenu(snapshot(), menu));
           feedback = "";
           return true;
         },
         talk(target, actor, now) {
+          if (endingPage !== null) {
+            if (endingPage + 1 < ending.plan.pages.length) endingPage++;
+            else {
+              endingPage = null;
+              completed = true;
+            }
+            return true;
+          }
           const plan = canonical && target && sourcePlans.get(target.slot);
           if (legacy?.dialogue || plan) {
             const result = legacy.dialogue ?
@@ -274,15 +313,23 @@ function createSession(opening, definitions, sourcePlans, innPlacement, menu, me
           const line = current();
           const clue = legacy?.clueMessage || inn?.clueMessage;
           const panel = get("bstw-dialogue");
-          panel.hidden = Boolean(blocked || legacy?.menu || !(line || clue));
+          panel.hidden = Boolean(completed || blocked || legacy?.menu || !(line || clue));
           if (!panel.hidden) {
             get("bstw-speaker").textContent = line?.speaker ?? "Clue discovered";
             get("bstw-message").textContent = line?.text ?? clue;
-            get("bstw-progress").textContent = legacy?.dialogue ?
+            get("bstw-progress").textContent = endingPage !== null ?
+              line.path + ":" + line.line + " · " + (endingPage + 1) + " / " + ending.plan.pages.length :
+              legacy?.dialogue ?
               (legacy.dialogue.index + 1) + " / " + legacy.dialogue.lines.length :
               inn?.conversation ? (inn.conversation.index + 1) + " / " +
                 conversationMessages(inn.conversation).length :
                 found + " / " + total + " clues found";
+          }
+          if (completed && completion.hidden) {
+            completion.hidden = false;
+            get("bstw-ending-source").textContent = ending.plan.path + ":" +
+              ending.plan.exitLine + " · windows() ends this browser playthrough.";
+            completion.focus({ preventScroll: true });
           }
           renderMenu();
         },

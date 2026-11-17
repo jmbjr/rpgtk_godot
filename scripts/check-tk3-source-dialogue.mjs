@@ -4,13 +4,15 @@ import JSZip from "../vendor/jszip.min.js";
 import { openGameArchive } from "../archive.mjs";
 import { readArtifacts, buildReferences } from "../artifacts.mjs";
 import { buildPlayableScene } from "../playable-scene.mjs";
+import { listTk3RuntimeKeys } from "../tk3-runtime-keys.mjs";
+import { bstwEndingFixture, buildBstwBrowserGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { selectTk3ScriptTarget } from "../tk3-script-slice.mjs";
 import { buildScriptFixtureZip, scriptFixtureSpecs }
   from "../docs/specs/fixtures/tk3-script-interaction-fixtures.mjs";
 import {
   readLegacyDialogueDefinitions, compileLegacyDialogue,
   initialLegacyDialogueState, openLegacyDialogue, advanceLegacyDialogue,
-  currentLegacyDialogue,
+  currentLegacyDialogue, compileBstwEnding,
 } from "../tk3-source-dialogue.mjs";
 
 async function parse(zip) {
@@ -144,6 +146,32 @@ for (const spec of scriptFixtureSpecs) {
   assert.match(bad.diagnostic.text, /Unsupported legacy dialogue statement/);
   console.log(spec.id + ": source-only dialogue, one-time clue, strict cooldown, repeat/reset and unsupported-line diagnostics passed.");
 }
+const endingGame = await parse(await JSZip.loadAsync(await buildBstwBrowserGame()));
+const endingPath = "BSTW/Prg/ENDDEMO.prg";
+const endingProgram = endingGame.artifacts.get(endingPath);
+const ending = compileBstwEnding(endingProgram, endingGame.artifacts);
+assert.equal(ending.ok, true, ending.diagnostic?.text);
+assert.equal(ending.pages.length, 3);
+assert.match(ending.pages[1].text, /records your work\.\nThank you/);
+const compileEndingSource = source => compileBstwEnding({
+  ...endingProgram, program: { rows: source.split("\n").map(line => ({ line })) },
+}, endingGame.artifacts);
+for (const [source, reason] of [
+  [bstwEndingFixture.replace("ENDDEMO == 1", "otherFlag == 1"), /ending guard/],
+  [bstwEndingFixture.replace("windows()\n}", "}\nwindows()"), /terminal windows/],
+  [bstwEndingFixture.replace("windows()", "windows()\nwindows()"), /terminal windows/],
+  [bstwEndingFixture.replace('theMwin->Close()', 'fightEnemy("x", "y")'), /Unsupported statement/],
+  [bstwEndingFixture.replace("CMwin.prg", "foreign.prg"), /foreign.prg is missing/],
+]) {
+  const rejected = compileEndingSource(source);
+  assert.equal(rejected.ok, false);
+  assert.equal(rejected.diagnostic.path, endingPath);
+  assert.match(rejected.diagnostic.text, reason);
+}
+assert.equal(compileEndingSource(bstwEndingFixture.replace("if(ENDDEMO == 1)\n{",
+  "if (ENDDEMO == 1) {").replace("windows()\n}", "windows();}")).ok, true);
+console.log("BSTW ending projection passed: source pages, guarded terminal, include resolution and rejection cases.");
+
 if (process.argv[2]) {
   const { readFile: readZipFile } = await import("node:fs/promises");
   const { createHash } = await import("node:crypto");
@@ -166,4 +194,11 @@ if (process.argv[2]) {
     console.log(filename + ": " + p.first.length + " original first-visit lines, " +
       p.repeat.length + " repeat lines, first-time clue from source.");
   }
+  const action = listTk3RuntimeKeys(original.scene, original.artifacts).find(entry => entry.label === "Q");
+  assert.equal(action?.path, endingPath);
+  const originalEnding = compileBstwEnding(original.artifacts.get(action.path), original.artifacts);
+  assert.equal(originalEnding.ok, true, originalEnding.diagnostic?.text);
+  console.log("Original ending source inspected locally: " + originalEnding.pages.length +
+    " pages and windows() at " + originalEnding.path + ":" + originalEnding.exitLine);
+
 }

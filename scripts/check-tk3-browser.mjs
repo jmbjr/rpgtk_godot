@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import { chromium } from "playwright";
-import { buildBrowserGame, buildBstwBrowserGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
+import { buildBrowserGame, buildBstwBrowserGame, bstwPlacedRoute } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { nativeMainFixture } from "../docs/specs/fixtures/native-main-29-fixtures.mjs";
 
 const site = resolve(process.argv[2] ?? "site");
@@ -177,7 +177,7 @@ try {
   await board(/wharf.brd/);
   await variables(/none yet/);
   const noAdapter = async () => {
-    assert.equal(await page.locator("#play-hud, #play-inn, #bstw-title-stage, #play-source-menu").count(), 0);
+    assert.equal(await page.locator("#play-hud, #play-inn, #bstw-title-stage, #play-source-menu, #bstw-ending").count(), 0);
     assert.deepEqual(adapterRequests, []);
   };
   await noAdapter();
@@ -190,6 +190,8 @@ try {
   await board(/BSTW\/Boards\/start.brd/);
   await noAdapter();
   await talk();
+  await expectText("play-script-diagnostic", /CMwin.prg/);
+  await page.keyboard.press("q");
   await expectText("play-script-diagnostic", /CMwin.prg/);
   await noAdapter();
   await click("play-close");
@@ -205,56 +207,131 @@ try {
     await click("bstw-title-new");
     await board(/BSTW\/Boards\/start.brd/);
   };
+  const qButton = page.getByRole("button", { name: /^Q · ENDDEMO\.prg$/i });
+  const endWithKey = () => page.keyboard.press("q");
+  const endWithButton = () => qButton.tap();
+  const clues = count => expectText("play-hud", "Clues: " + count + " / 13");
+  const locked = async activate => {
+    await activate();
+    await expectText("play-feedback", /ending is locked/i);
+    await control("bstw-ending").waitFor({ state: "hidden" });
+    assert.doesNotMatch(await control("bstw-message").textContent(), /Synthetic ending/);
+  };
+  const walkTo = async x => {
+    await move("ArrowRight", () => page.waitForFunction(destination => {
+      const at = document.querySelector("#play-status").textContent.match(/\((\d+),/);
+      return Number(at?.[1]) >= destination - 3;
+    }, x));
+  };
+  const choose = label => control("play-source-menu").getByRole("button", { name: label }).click();
+  const openMenu = async () => {
+    await page.keyboard.press("m");
+    await control("play-source-menu").waitFor();
+  };
+  const menuClue = async label => {
+    await choose(label);
+    if (await control("play-source-menu-profiles").isVisible()) await choose("Bruce");
+  };
+  const placedClues = async (start, repeatInn = false) => {
+    let count = start;
+    for (const target of bstwPlacedRoute) {
+      if (target.slot !== 3) await walkTo(target.x);
+      await talk();
+      await expectText("bstw-message", target.slot === 6 ? /Opening visit with Loyalis/ :
+        "First visit to the " + target.label);
+      await talk();
+      await clues(++count);
+      if (target.slot === 3 && repeatInn) {
+        await expectText("play-hud", /Inn visits: 1/);
+        await talk();
+        await expectText("play-feedback", /Wait .* ms to talk again/);
+        await page.waitForTimeout(510);
+        await talk();
+        await expectText("bstw-message", /Repeat visit to the inn/i);
+        await talk();
+        await expectText("play-hud", /Clues: 1 \/ 13 · Inn visits: 2/);
+        // An unclaimed GAM action executes two ordinary sends from the
+        // opening board. The same adapter instance and live variables survive.
+        await page.keyboard.press("t");
+        await variables(/unrelated = 1/);
+        await board(/BSTW\/Boards\/start.brd/);
+        await expectText("play-hud", /Clues: 1 \/ 13 · Inn visits: 2/);
+      }
+    }
+  };
+  const finish = async activate => {
+    await variables(/enddemo = 1/);
+    await activate();
+    await expectText("bstw-message", /Synthetic ending: the station is restored/);
+    await expectText("bstw-progress", /ENDDEMO.prg:8.*1 \/ 3/);
+    await talk();
+    await expectText("bstw-message", /The archive records your work\.\s+Thank you, traveler\./);
+    await talk();
+    await expectText("bstw-message", /Synthetic finale complete/);
+    assert.equal(await control("bstw-ending").isVisible(), false);
+    await talk();
+    await expectText("bstw-ending", /Demo complete/);
+    await expectText("bstw-ending-source", /ENDDEMO.prg:16.*windows\(\)/);
+    assert.equal(await qButton.isDisabled(), true);
+    assert.equal(await control("play-talk").isDisabled(), true);
+  };
+
   await optIn();
   assert.ok(adapterRequests.some(url => url.endsWith("/bstw-compatibility.mjs")));
-  await expectText("play-hud", /Clues: 0 \/ 13 · Inn visits: 0/);
-  await talk();
-  await expectText("bstw-message", /First visit to the inn/);
-  await talk();
-  await expectText("play-hud", /Clues: 1 \/ 13 · Inn visits: 1/);
-  await talk();
-  await expectText("play-feedback", /Wait .* ms to talk again/);
-  await page.waitForTimeout(510); // Browser model uses a strict >500 ms source threshold.
-  await talk();
-  await expectText("bstw-message", /Repeat visit to the inn/);
-  await talk();
-  await expectText("play-hud", /Clues: 1 \/ 13 · Inn visits: 2/);
-  // The unclaimed GAM key still runs through the interpreter. Its two sends
-  // carry the adapter session and its source writes through both remounts.
-  await page.keyboard.press("t");
-  await variables(/unrelated = 1/);
-  await board(/BSTW\/Boards\/start.brd/);
-  await expectText("play-hud", /Clues: 1 \/ 13 · Inn visits: 2/);
-  await page.keyboard.press("m");
-  await control("play-source-menu").waitFor();
-  const choose = label => control("play-source-menu").getByRole("button", { name: label }).click();
+  await clues(0);
+  await locked(endWithKey);
+  await locked(endWithButton);
+  await placedClues(0, true);
+  await openMenu();
   await choose(/^Tactics/);
   await control("play-source-menu-profiles").waitFor();
   await click("play-source-menu-close");
   await expectText("play-source-menu-note", /cancelled/i);
-  await expectText("play-hud", /Clues: 1 \/ 13/);
-  await choose(/^Tactics/);
-  await choose("Bruce");
-  await expectText("play-hud", /Clues: 2 \/ 13/);
-  for (const name of [/^Items/, /^Equipment/, /^Status/, /^Options/, /^System/]) {
-    await choose(name);
-    if (await control("play-source-menu-profiles").isVisible()) await choose("Bruce");
-  }
-  await expectText("play-hud", /Clues: 7 \/ 13/);
+  await clues(7);
+  await menuClue(/^Tactics/);
+  await clues(8);
+  await menuClue(/^Tactics/);
+  await clues(8);
+  for (const name of [/^Items/, /^Equipment/, /^Status/, /^Options/]) await menuClue(name);
+  await clues(12);
+  await click("play-source-menu-close");
+  await locked(endWithKey);
+  await openMenu();
+  await menuClue(/^System/);
+  await clues(13);
   await variables(/unrelated = 1/);
   await click("play-source-menu-close");
+  await finish(endWithKey);
+
+  // Fresh reset discards the completion and flag. Finishing with a placed
+  // clue last also drives the same authored gate through the live store.
   await click("play-reset");
   await expectText("play-hud", /Clues: 0 \/ 13 · Inn visits: 0/);
+  await variables(/enddemo = 0/);
   assert.doesNotMatch(await control("play-script-variables").textContent(), /unrelated/);
-  await click("play-close");
+  await locked(endWithButton);
+  await openMenu();
+  for (const label of [/^Items/, /^Tactics/, /^Equipment/, /^Status/, /^Options/, /^System/])
+    await menuClue(label);
+  await clues(6);
+  await click("play-source-menu-close");
+  await placedClues(6);
+  await clues(13);
+  await finish(endWithButton);
+  await click("bstw-ending-close");
   assert.equal(await control("play-hud").count(), 0);
+  await control("play-launch").waitFor();
 
-  await archive("eligible-fallback.zip", await buildBstwBrowserGame({ fallback: true }));
+  await archive("eligible-fallback.zip", await buildBstwBrowserGame({ fallback: true, endingKey: 118 }));
   await optIn();
   await talk();
   await expectText("bstw-message", /ask at the inn/);
   for (let i = 0; i < 4; i++) await talk();
   await expectText("play-hud", /Clues: 1 \/ 13 · Inn visits: 1/);
+  assert.equal(await qButton.count(), 0);
+  await page.getByRole("button", { name: "V · ENDDEMO.prg" }).tap();
+  await expectText("play-script-diagnostic", /CMwin.prg/);
+  assert.equal(await control("bstw-ending").isVisible(), false);
   // Loading a different archive while playing drops the compatibility mode
   // and all its DOM, as a user can do from the persistent archive input.
   await archive("fresh-grove.zip", await buildBrowserGame("grove"));
@@ -263,7 +340,7 @@ try {
   assert.equal(await control("play-hud").count(), 0);
   await variables(/none yet/);
   assert.deepEqual(errors, []);
-  console.log("Staged browser passed: two independent TK3 ZIPs, inspector isolation, rooted GAM helper, keyboard and touch controls, Send continuation, both fight outcomes, launch-mode reset, and explicit BSTW title, inn, menu and session cleanup.");
+  console.log("Staged browser passed: two independent TK3 ZIPs, inspector isolation, rooted GAM helper, keyboard and touch controls, Send continuation, both fight outcomes, launch-mode reset, and explicit BSTW New, 13 clues, both Q controls, source dialogue, browser completion, and reset.");
 } finally {
   await browser?.close();
   server.close();
