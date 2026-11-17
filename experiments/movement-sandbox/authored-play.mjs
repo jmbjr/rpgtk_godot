@@ -862,7 +862,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     const talkShortcut = event.code === "KeyE" || event.code === "Space";
     const buttonFocused = event.target?.closest?.("button, a, [role=button]");
     const modal = inn.conversation || legacy?.dialogue || scriptSession.execution?.waiting;
-    const keyName = event.key === " " ? "Space" : event.key.toUpperCase();
+    const keyName = event.key === " " ? "SPACE" : event.key.toUpperCase();
     const runtime = runtimeActions.find(action => action.label?.toUpperCase() === keyName);
     if (runtime && !modal && !(buttonFocused && ["Enter", "Space"].includes(runtime.label))) {
       event.preventDefault();

@@ -51,7 +51,7 @@ export async function buildBrowserGame(id, options = {}) {
   const spec = scriptFixtureSpecs.find(spec => spec.id === id);
   const harbor = id === "harbor";
   const zip = await buildScriptFixtureZip({ ...spec, script: harbor ? "mwininn.prg" : spec.script,
-    position: { x: 45, y: 27, layer: harbor ? 1 : 1 } });
+    position: { x: 45, y: 27, layer: 1 } });
   const originalRoot = spec.root + "/";
   let gam = await zip.file(spec.main).async("nodebuffer");
   gam = replace(gam, z("gameover.prg"), z(harbor ? "" : "recover.prg"));
@@ -71,7 +71,7 @@ export async function buildBrowserGame(id, options = {}) {
     const path = originalRoot + "Boards/" + spec.board;
     const onward = 'Send("beacon.brd", 19, 27, 2)';
     zip.file(path, zone(await zip.file(path).async("nodebuffer"),
-      options.failMount ? onward : 'send("channel.brd", 19, 27, 1)'));
+      'send("channel.brd", 19, 27, 1)'));
     zip.file(originalRoot + "Boards/channel.brd", await zip.file(originalRoot + "Boards/beacon.brd").async("nodebuffer"));
     // Exercise a post-Send fight request from a file-backed GAM action.
     gam = replace(gam, pack(short(8), short(96), short(32)), pack(short(104), short(96), short(32)));
