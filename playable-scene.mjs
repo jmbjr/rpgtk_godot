@@ -24,7 +24,11 @@ export function createTk3PlayContext(indexed, main) {
   }
   const paths = [...indexed.keys()];
   const mainPath = main.path;
-  let projectRoot = mainPath.slice(0, mainPath.lastIndexOf("/") + 1);
+  const mainFolder = mainPath.slice(0, mainPath.lastIndexOf("/") + 1);
+  // Toolkit stores the GAM under Main/ beside the other asset folders.
+  // Packaged exports also put that GAM directly at the project root.
+  let projectRoot = /(?:^|\/)Main\/$/i.test(mainFolder) ?
+    mainFolder.slice(0, -"Main/".length) : mainFolder;
   const candidates = paths.flatMap(path =>
     path.match(/^(.*\/)?Boards\/[^/]+\.brd$/i)?.slice(1).map(root => root ?? "") ?? []);
   if (!projectRoot &&
