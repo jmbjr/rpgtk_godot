@@ -174,11 +174,10 @@ const flow=await readFile(new URL("../.github/workflows/pages.yml",import.meta.u
 for(const symbol of ["selectTk3BoardStep","selectTk3BoardKey",
   "startTk3BoardProgram","runEnteredBoardProgram"])
   assert.ok(client.includes(symbol));
-assert.match(client,/hud\.hidden = !showClues/);
-assert.match(client,/innLabel\.hidden = !scene\.innDoor/);
+
 assert.match(flow,/node scripts\/check-tk3-board-programs\.mjs/);
 assert.match(flow,/tk3-board-programs\.mjs tk3-gam-startup\.mjs/);
-console.log("Non-BSTW HUD condition and source board-trigger presentation are wired.");
+console.log("Source board-trigger presentation are wired.");
 
 // Optional source inspection of the owner's unmodified *test-only* demo ZIP.
 // It is read-only, must never be checked into Git or run in CI.

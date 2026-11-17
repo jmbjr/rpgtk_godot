@@ -88,6 +88,7 @@ export async function buildBrowserGame(id, options = {}) {
     zip.remove(spec.main);
   } else {
     gam = replace(gam, z(spec.startup), z(""));
+    gam = replace(gam, pack(short(8), short(96), short(32)), pack(short(116), short(96), short(32)));
     const path = originalRoot + "Boards/" + spec.board;
     const board = await zip.file(path).async("nodebuffer");
     const inherited = replace(board, z(spec.script), z(""));
@@ -96,6 +97,8 @@ export async function buildBrowserGame(id, options = {}) {
     zip.file(originalRoot + "Boards/ridge.brd", destination);
     zip.file(originalRoot + "Prg/pickup.prg", 'Send("ridge.brd", 19, 27, 1)\ntravelled = 1');
     zip.file(originalRoot + "Prg/challenge.prg", fight);
+    zip.file(originalRoot + "Prg/runtime.prg",
+      'Send("meadow.brd", 19, 27, 1)\nmwin("Return to the ridge?")\nwait()\nSend("ridge.brd", 19, 27, 1)');
     zip.file(originalRoot + "Prg/recover.prg", 'Send("meadow.brd", 19, 27, 1)\nmwin("Recover on the meadow.")\nwait()\nrecovered = 1');
     addFight(zip, originalRoot, true);
     // Flat project layout, independent of the nested Harbor GAM.
@@ -105,5 +108,64 @@ export async function buildBrowserGame(id, options = {}) {
     zip.remove(originalRoot);
     zip.file(spec.main, gam);
   }
+  return zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
+}
+
+// The signatures are generated deliberately for the opt-in eligibility test.
+export async function buildBstwBrowserGame({ fallback = false } = {}) {
+  const spec = { ...scriptFixtureSpecs[0], root: "BSTW", main: "BSTW.gam", title: "BSTW",
+    startup: "menuTitle.prg", board: "start.brd", character: "bruce.tem",
+    script: "synthetic_unused.prg", item: "synthetic_unused.itm" };
+  const zip = await buildScriptFixtureZip(spec);
+  const main = await zip.file(spec.main).async("nodebuffer");
+  zip.file(spec.main, replace(replace(main, pack(short(29), z("menuMain.prg")),
+    pack(short(109), z("menuMain.prg"))), pack(short(8), short(96), short(32)),
+    pack(short(116), short(96), short(32))));
+  const field = (...values) => pack(...values.map(z));
+  const path = "BSTW/Boards/start.brd";
+  const board = await zip.file(path).async("nodebuffer");
+  const original = pack(short(1),
+    field(spec.item, spec.script, "", "", "", "", "", "", ""), short(0,1,78,45,1,-1),
+    field("door.itm", "openDoor.prg", "", "trigger", "01", "endTrigger", "done", "loading", "pending"),
+    short(1,1,68,90,2,-1));
+  const blank = pack(field("", "", "", "", "", "", "", "", ""), short(0,1,0,0,1,-1));
+  const door = pack(field("door.itm", "mwininn.prg", "", "", "", "", "", "", ""),
+    short(0,1,45,27,1,-1));
+  const startBoard = replace(board, original, pack(short(3), blank, blank, blank, door));
+  zip.file(path, startBoard);
+  zip.file("BSTW/Boards/return.brd", startBoard);
+  zip.file("BSTW/Item/door.itm", await zip.file("BSTW/Item/" + spec.item).async("nodebuffer"));
+  zip.file("BSTW/Prg/menuTitle.prg", [
+    '#include("init.prg")', '_party[0] = "Bruce"', '_party[1] = "Loyalis"',
+    'titleCmap->setGraphic(win0,0,0,"tNew.png")', 'iTitle[3] = "BSTW.png?"',
+    'Slideshow(iTitle,640,480,0,0)', 'switch(index)', '{', 'case 0:', '{',
+    '_party[0] = "Bruce"', 'setPlayer(0,"Bruce","Hero",1,1,1)',
+    '_party[1] = "Loyalis"', 'setPlayer(1,"Loyalis","Knight",1,1,1)', 'initCmaps()', 'end()', '}', '}',
+  ].join("\n"));
+  const pixel = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==", "base64");
+  zip.file("BSTW/Bitmap/BSTW.png", pixel);
+  zip.file("BSTW/Bitmap/tNew.png", pixel);
+  zip.file("BSTW/Prg/CMwin.prg", "method SetTxt(slot,text)\n{\n}");
+  const helper = "method updateClues(note)\n{\nif(remainingclues == 0)\n{\nenddemo = 1\n}\n}";
+  zip.file("BSTW/Prg/common.prg", helper);
+  const labels = ["Items", "Tactics", "Equipment", "Status", "Options", "System"];
+  zip.file("BSTW/Prg/init.prg", ["maxclues = 13", "itemtalkthreshold = 500", "einn = 6",
+    ...labels.map((name, index) => "ev" + index + " = " + index),
+    ...labels.map((name, index) => 'menu->setText(SIDEMENU,' + index + ',0,"' + name + '")'),
+    'menu->setGraphic(PROFMENU,0,0,"portrait" + _party[0] + ".png")', helper].join("\n"));
+  zip.file("BSTW/Prg/menuMain.prg", '#include("menus.prg")\nMainMenu()');
+  zip.file("BSTW/Prg/menus.prg", ["method MainMenu()", "{", "switch(index)", "{",
+    ...labels.flatMap((name,index) => ["case " + index + ":", "{",
+      ...([1,2,3].includes(index) ? ["menu->setActiveWinID(PROFMENU)", "if(index~=-1)", "{"] : []),
+      "if(checked[ev" + index + "]==0)", "{", "clues++", 'updateClues("Learned ' + name + '")', "}",
+      ...([1,2,3].includes(index) ? ["}"] : []), "checked[ev" + index + "]++", "}"]),
+    "}", "}"].join("\n"));
+  zip.file("BSTW/Prg/mwininn.prg", fallback ? 'mwin("The normal archive door.")\nwait()' :
+    ['#include("CMwin.prg")', '#include("common.prg")', "delta=getTickCount()-lastTalk",
+      "if(delta>itemtalkthreshold)", "{", "if(checked[einn]==0)", "{",
+      'dialogue->SetTxt(bruceMwinId,"First visit to the inn.")', "clues++", 'updateClues("Inn clue")', "}",
+      "else", "{", 'dialogue->SetTxt(bruceMwinId,"Repeat visit to the inn.")', "}",
+      "lastTalk=getTickCount()", "checked[einn]++", "}"].join("\n"));
+  zip.file("BSTW/Prg/runtime.prg", 'unrelated = unrelated + 1\nSend("return.brd", 19, 27, 1)\nSend("start.brd", 19, 27, 1)');
   return zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
 }

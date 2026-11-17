@@ -3,28 +3,20 @@ import { activateInn, nearInn } from "./inn-dialogue.mjs";
 // Adapt only the unique, source-resolved mwininn.prg BRD placement to the
 // existing scenario dialogue machine. Never interpret RPGCode or accept
 // a generic door.itm based on its filename.
-export function authoredInnWorld(scene) {
-  const door = scene?.innDoor;
-  const position = door?.position;
-  if (!scene?.ok || scene.innStatus !== "resolved" ||
-      !door?.programPath || !/\/mwininn\.prg$/i.test(door.programPath) ||
-      !Number.isInteger(door.slot) ||
-      ![position?.x, position?.y].every(Number.isFinite) ||
-      !Number.isInteger(position?.layer) || position.layer < 1 ||
-      position.layer > scene.board?.layers) return null;
+export function findAuthoredInn(scene, programPath = null) {
+  if (!scene?.ok) return null;
+  const candidates = scene.placements.filter(placement =>
+    placement.programSource === "board" && placement.programStatus === "resolved" &&
+    (programPath ? placement.programPath.toLowerCase() === programPath.toLowerCase() :
+      /(?:^|\/)mwininn\.prg$/i.test(placement.programPath)));
+  if (candidates.length !== 1) return null;
+  const door = candidates[0];
+  return door.positionStatus === "valid" ? door : null;
+}
 
-  const matching = (scene.placements ?? []).filter(placement =>
-    placement.isInnDoor && placement.programStatus === "resolved" &&
-    placement.slot === door.slot &&
-    placement.programPath === door.programPath &&
-    placement.positionStatus === "valid" &&
-    placement.position?.x === position.x &&
-    placement.position?.y === position.y &&
-    placement.position?.layer === position.layer);
-  if (matching.length !== 1) return null;
-  return {
-    landmark: { x: position.x, y: position.y, layer: position.layer },
-  };
+export function authoredInnWorld(scene) {
+  const door = findAuthoredInn(scene);
+  return door ? { landmark: { ...door.position } } : null;
 }
 
 // Same-layer gate is intentional: the original sandbox has no layers.
