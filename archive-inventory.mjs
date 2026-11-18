@@ -43,8 +43,14 @@ export function archiveInventory(files) {
     names.get(name).push(path);
   }
   const orderedRoots = [...roots.keys()].sort((a, b) => b.length - a.length);
-  const ownerOf = path => owners.get(path) ??
+  const physicalOwner = path => owners.get(path) ??
     roots.get(orderedRoots.find(root => normalized(path).startsWith(root)));
+  function ownerOf(path) {
+    const main = files instanceof Map ? files.get(path) : null;
+    if (main?.type === "gam" && main.decodeStatus === "decoded")
+      return projectForMain(main).root ?? physicalOwner(path);
+    return physicalOwner(path);
+  }
 
   function resolve(value, { projectRoot = null, folder, types } = {}) {
     if (!value || /^none$/i.test(value)) return { status: "unset" };
@@ -59,10 +65,10 @@ export function archiveInventory(files) {
     const requested = subdir && !name.startsWith(subdir) ? subdir + name : name;
     const accepted = types ?? folderTypes[normalized(expectedFolder || "")];
     const candidates = (names.get(basename(name)) ?? []).filter(path => {
+      if (accepted && !accepted.includes(typeOf(path))) return false;
       const owner = normalized(ownerOf(path) ?? "");
       if (key !== null && key !== owner) return false;
-      if (accepted && !accepted.includes(typeOf(path))) return false;
-      const relative = normalized(path).slice(owner.length);
+      const relative = normalized(path).slice(physicalOwner(path).length);
       return !(expectedFolder || name.includes("/")) || relative === requested;
     }).sort();
     const result = candidates.length === 1 ? { status: "resolved", path: candidates[0] } :
