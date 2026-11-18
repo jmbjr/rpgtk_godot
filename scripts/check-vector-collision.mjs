@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import JSZip from "../vendor/jszip.min.js";
 import { openGameArchive } from "../archive.mjs";
 import { readArtifacts, buildReferences } from "../artifacts.mjs";
+import { selectTk3ScriptTarget } from "../tk3-script-slice.mjs";
 import { buildPlayableScene } from "../playable-scene.mjs";
 import {
   VECTOR_SOLID, VECTOR_UNDER, MAX_COLLISION_POINTS,
@@ -13,10 +14,6 @@ import {
   WALK_SPEED, MAX_FRAME_SECONDS, ACTOR_RADIUS,
   initialMovementState, circleBlocked, stepMovement,
 } from "../experiments/movement-sandbox/engine.mjs";
-import { nearAuthoredInn, activateAuthoredInn }
-  from "../experiments/movement-sandbox/imported-inn.mjs";
-import { initialInnState, advanceInn }
-  from "../experiments/movement-sandbox/inn-dialogue.mjs";
 import { board24Fixtures } from "../docs/specs/fixtures/board-24-fixtures.mjs";
 
 assert.deepEqual([VECTOR_SOLID, VECTOR_UNDER, ACTOR_RADIUS], [1, 2, 9]);
@@ -153,8 +150,8 @@ if (process.argv[2]) {
   const scene = buildPlayableScene(artifacts, buildReferences(artifacts));
   assert.equal(scene.ok, true, JSON.stringify(scene.issues));
   assert.deepEqual(scene.start, { x: 107, y: 78, layer: 1 });
-  assert.deepEqual(scene.innDoor?.position, { x: 207, y: 349, layer: 1 });
-  assert.equal(scene.innDoor?.slot, 3);
+  const nearDoor = actor => selectTk3ScriptTarget(scene, actor)?.slot === 3;
+  assert.deepEqual(scene.placements.find(item => item.slot === 3).position, { x: 207, y: 349, layer: 1 });
   assert.equal(scene.world.vectorCollision.status, "active");
   assert.deepEqual(scene.world.vectorCollision.solids.map(v => v.slot),
     [3, 4, 5, 6, 7, 8]);
@@ -165,7 +162,7 @@ if (process.argv[2]) {
     "Solid inn-building interior is blocked");
   assert.equal(circleBlocked(scene.world, 207, 370), false,
     "The accessible south side of the inn is walkable");
-  assert.equal(nearAuthoredInn({ x: 207, y: 370, layer: 1 }, scene), true);
+  assert.equal(nearDoor({ x: 207, y: 370, layer: 1 }), true);
 
   // Search only the world grid, not original assets. An 8px scan
   // yields a conservative route with 9px radius clearance.
@@ -181,7 +178,7 @@ if (process.argv[2]) {
   for (let head = 0; head < queue.length && goal === null; head++) {
     const cell = queue[head];
     const at = xy(cell);
-    if (nearAuthoredInn({ ...at, layer: scene.start.layer }, scene)) {
+    if (nearDoor({ ...at, layer: scene.start.layer })) {
       goal = cell;
       break;
     }
@@ -213,16 +210,8 @@ if (process.argv[2]) {
     }
     assert.ok(Math.hypot(actor.x - after.x, actor.y - after.y) < 0.02);
   }
-  assert.equal(nearAuthoredInn({ ...actor, layer: scene.start.layer }, scene), true);
-  let inn = activateAuthoredInn(initialInnState(),
-    { ...actor, layer: scene.start.layer }, 0, scene);
-  assert.equal(inn.outcome, "opened");
-  for (let i = 0; i < 4; i++) {
-    inn = advanceInn(inn.state, i + 1);
-  }
-  assert.equal(inn.outcome, "completed");
-  assert.equal(inn.state.clues, 1);
+  assert.equal(nearDoor({ ...actor, layer: scene.start.layer }), true);
   console.log("Original BSTW production JS: 9 vectors → 6 solid L1 and 3 under L2, spawn clear, verified wall blocking, " +
-    route.length + " valid 8px grid stops to the reachable inn, first dialogue earns 1 clue.");
+    route.length + " valid 8px grid stops to the reachable source interaction.");
 }
 console.log("Vector collision passed: native TT_SOLID/TT_UNDER, open/closed, layer and geometry gates, swept bounds, sliding and fallback.");

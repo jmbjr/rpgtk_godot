@@ -7,7 +7,6 @@ import { assessPlayability } from "./playability-audit.mjs";
 import { createTk3PlayContext } from "./playable-scene.mjs";
 import { mountAuthoredBoard } from "./experiments/movement-sandbox/authored-play.mjs";
 import { executeGamStartup } from "./tk3-gam-startup.mjs";
-import { initialTk3ScriptState } from "./tk3-script-slice.mjs";
 import { mainFileBindings, readMainFile, resolveAsset } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
 import { defaultMidiTone, playMidi } from "./midi.mjs";
@@ -43,9 +42,6 @@ let archive = null;
 let playableScene = null;
 let playContext = null;
 let launchMode = null;
-let compatibilityTitle = null;
-let createCompatibilitySession = null;
-let compatibilityRequest = 0;
 let activePlayable = null;
 let tileMatchIndex;
 let archiveName;
@@ -93,7 +89,6 @@ const generalUserGs = {
   },
 };
 let inspectorRevision = 0;
-const demoStartup = "Demo/Prg/start.prg";
 const sourceNames = {
   R13: "RPGCODE.REF · Toolkit 2.13",
   R19: "rpgcodeEN.ref · Toolkit 2.19b",
@@ -210,8 +205,7 @@ function renderNativeMainConfig(main, bindings) {
 function selectDefault(newArchive = false) {
   mainFile = uploadedMainFile ?? archiveMainFile;
   const bindings = mainFile ? mainFileBindings(mainFile, paths) : [];
-  const demo = !mainFile && programs.includes(demoStartup) ? demoStartup : null;
-  selected = bindings[0]?.[1].path ?? demo;
+  selected = bindings[0]?.[1].path ?? null;
   selectedFolder = selected ? directory(selected) : (programs[0] ? directory(programs[0]) : folders[0]);
   tileSelection = undefined;
   selectedLine = undefined;
@@ -387,7 +381,6 @@ window.addEventListener("popstate", event => {
 function selectionLabel(path) {
   if (!path) return "";
   if (mainFile && resolveAsset(programs, "Prg", mainFile.startup).path === path) return "Configured startup";
-  if (!mainFile && path === demoStartup) return "Demo default";
   return "Selected file";
 }
 
@@ -2433,16 +2426,8 @@ function closePlayable() {
   activePlayable?.destroy();
   activePlayable = null;
   launchMode = null;
-  createCompatibilitySession = null;
   byId("play-stage").replaceWith(playTemplate.cloneNode(true));
-  byId("workspace").hidden = !archive || Boolean(compatibilityTitle);
-}
-
-function closeCompatibilityTitle() {
-  ++compatibilityRequest;
-  compatibilityTitle?.destroy();
-  compatibilityTitle = null;
-  if (!activePlayable) byId("workspace").hidden = !archive;
+  byId("workspace").hidden = !archive;
 }
 
 const playTemplate = byId("play-stage").cloneNode(true);
@@ -2455,23 +2440,14 @@ function mountPlayable(scene, options, mode = launchMode) {
   panel.querySelector("#play-launch-mode").textContent = {
     gam: "Launch mode: Game startup",
     direct: "Launch mode: Direct board diagnostic",
-    compatibility: "Launch mode: BSTW compatibility",
   }[mode];
   const replacement = mountAuthoredBoard(panel, scene, playContext.artifacts,
     playContext.graph, { ...options, onTransfer: remountTransferredBoard,
-      onRestart: () => launchPlayableWithSession(launchMode, createCompatibilitySession) });
+      onRestart: () => launchPlayableWithSession(launchMode) });
   panel.querySelector("#play-close").addEventListener("click", () => {
     closePlayable();
     byId("play-gam-startup").focus({ preventScroll: true });
   });
-  if (mode !== "compatibility") {
-    panel.querySelector("#play-script-recovery").addEventListener("click", () => {
-      closePlayable();
-      boardDiagnostics.open = false;
-      compatibilityControl.open = true;
-      compatibilityControl.querySelector("summary").focus();
-    });
-  }
   activePlayable?.destroy();
   byId("play-stage").replaceWith(panel);
   activePlayable = replacement;
@@ -2497,31 +2473,22 @@ function launchPlayableScene() {
   return launchPlayableWithSession("direct");
 }
 
-function launchPlayableWithSession(mode, createAdapter = null) {
+function launchPlayableWithSession(mode) {
   if (!playableScene?.ok) return false;
   const outcome = mode === "gam" ?
     executeGamStartup(playContext.artifacts, playableScene) : null;
   if (outcome && !outcome.ok) {
     status("gam-startup-status", "Startup blocked: " +
-      outcome.diagnostic.text + " · See Compatibility or Board diagnostics for launch options.", true);
+      outcome.diagnostic.text + " · Open Board diagnostics to bypass startup.", true);
     return false;
   }
   const arrivalFeedback = outcome ? (outcome.startupPath ?
     "GAM startup completed: " + outcome.startupPath :
     "No GAM startup PRG configured; opening the initial board.") :
-    createAdapter ? "Compatibility mode · fresh session." :
       "Direct board launch: GAM startup was bypassed.";
   try {
-    const adapter = createAdapter?.();
-    const scriptSession = adapter ? {
-      ...initialTk3ScriptState(), variables: { ...adapter.initialVariables },
-    } : outcome?.scriptSession;
-    const { panel } = mountPlayable(playableScene, { scriptSession, arrivalFeedback, adapter }, mode);
+    const { panel } = mountPlayable(playableScene, { scriptSession: outcome?.scriptSession, arrivalFeedback }, mode);
     launchMode = mode;
-    createCompatibilitySession = createAdapter;
-    closeCompatibilityTitle();
-    compatibilityControl.open = false;
-    compatibilityOptions.replaceChildren();
     boardDiagnostics.open = false;
     panel.scrollIntoView({ behavior: "instant", block: "start" });
     status("gam-startup-status", arrivalFeedback);
@@ -2532,59 +2499,15 @@ function launchPlayableWithSession(mode, createAdapter = null) {
   }
 }
 
-const compatibilityControl = byId("play-compatibility");
-const compatibilityOptions = byId("compatibility-options");
 const boardDiagnostics = byId("play-board-diagnostics");
-compatibilityControl.addEventListener("toggle", () => {
-  if (!compatibilityControl.open) {
-    compatibilityOptions.replaceChildren();
-    ++compatibilityRequest;
-    return;
-  }
-  const feedback = el("p", "", "technical");
-  feedback.setAttribute("role", "status");
-  const select = button("Bruce Saves the World! compatibility", async () => {
-    const request = ++compatibilityRequest;
-    const context = playContext;
-    const source = archive;
-    select.disabled = true;
-    try {
-      const { prepareBstwCompatibility } = await import("./bstw-compatibility.mjs");
-      if (request !== compatibilityRequest || source !== archive) return;
-      const profile = prepareBstwCompatibility({ archive: source, context });
-      if (!profile.ok) {
-        feedback.textContent = profile.detail;
-        return;
-      }
-      closePlayable();
-      compatibilityTitle = profile.mountTitle({
-        onBack: () => { closeCompatibilityTitle(); select.focus(); },
-        onNew: () => launchPlayableWithSession("compatibility", profile.createSession),
-      });
-      byId("play-stage").before(compatibilityTitle.host);
-      byId("workspace").hidden = true;
-      compatibilityTitle.panel.focus({ preventScroll: true });
-      compatibilityTitle.panel.scrollIntoView({ block: "start" });
-    } catch (error) {
-      if (request === compatibilityRequest)
-        feedback.textContent = "Compatibility unavailable: " + error.message;
-    } finally {
-      select.disabled = false;
-    }
-  });
-  compatibilityOptions.replaceChildren(select, feedback);
-});
 byId("play-direct").addEventListener("click", launchPlayableScene);
 byId("play-gam-startup").addEventListener("click", () => launchPlayableWithSession("gam"));
 
 async function loadArchive(name, readBytes) {
   const request = ++archiveRequest;
-  closeCompatibilityTitle();
   closePlayable();
   playableScene = null;
   playContext = null;
-  compatibilityControl.open = false;
-  compatibilityOptions.replaceChildren();
   boardDiagnostics.open = false;
   byId("play-gam-startup").disabled = true;
   status("gam-startup-status", "");

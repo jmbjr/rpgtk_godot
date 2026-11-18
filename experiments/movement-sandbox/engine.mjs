@@ -1,5 +1,14 @@
-import { SANDBOX_WORLD, solidAt } from "./world.mjs";
 import { circleBlockedByVectors } from "../../vector-collision.mjs";
+
+export function tileAt(world, col, row) {
+  if (!Number.isInteger(col) || !Number.isInteger(row) ||
+      col < 0 || row < 0 || col >= world.width || row >= world.height) return "#";
+  return world.rows[row][col];
+}
+
+function solidAt(world, col, row) {
+  return tileAt(world, col, row) === "#";
+}
 
 export const ACTOR_RADIUS = 9;
 export const WALK_SPEED = 112; // Source-owned test policy, pixels per second.
@@ -27,7 +36,7 @@ export function circleBlocked(world, x, y, radius = ACTOR_RADIUS) {
   return circleBlockedByVectors(world.vectorCollision, x, y, radius);
 }
 
-export function initialMovementState(world = SANDBOX_WORLD) {
+export function initialMovementState(world) {
   if (circleBlocked(world, world.spawn.x, world.spawn.y)) {
     throw Error("Movement sandbox spawn must not overlap a solid tile.");
   }
@@ -45,7 +54,7 @@ function axisInput(value) {
 // Deterministic pure update: input is {x, y} in {-1, 0, 1}, dt in
 // seconds. Diagonals are normalized. Maximum 4 px swept substeps and
 // independent axes enable sliding while preventing wall tunneling.
-export function stepMovement(state, input, dt, world = SANDBOX_WORLD) {
+export function stepMovement(state, input, dt, world) {
   const x = axisInput(input?.x), y = axisInput(input?.y);
   const elapsed = Number.isFinite(dt) ? Math.max(0, Math.min(dt, MAX_FRAME_SECONDS)) : 0;
   if ((!x && !y) || !elapsed) {
@@ -76,8 +85,4 @@ export function stepMovement(state, input, dt, world = SANDBOX_WORLD) {
     distance, frame: Math.floor(distance / 12) % 2,
     blocked,
   };
-}
-
-export function distanceToLandmark(state, world = SANDBOX_WORLD) {
-  return Math.hypot(state.x - world.landmark.x, state.y - world.landmark.y);
 }

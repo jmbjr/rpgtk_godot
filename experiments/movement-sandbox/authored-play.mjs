@@ -77,7 +77,6 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   const gameOverRestart = section.querySelector("#play-gameover-restart");
   const scriptVariables = section.querySelector("#play-script-variables");
   const scriptDiagnostic = section.querySelector("#play-script-diagnostic");
-  const scriptRecovery = section.querySelector("#play-script-recovery");
   const pad = [...section.querySelectorAll("[data-move]")];
   const ctx = canvas?.getContext("2d", { alpha: false });
   if (!ctx) throw Error("The browser cannot create a 2D canvas.");
@@ -236,15 +235,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     element.classList.toggle("label-above", item.labelAbove);
   };
   const listeners = new AbortController();
-  const adapter = options.adapter?.mount({ section, scene, signal: listeners.signal,
-    readVariables: () => scriptSession.variables,
-    writeVariables: patch => {
-      scriptSession = { ...scriptSession, variables: { ...scriptSession.variables, ...patch } };
-    },
-    refresh: () => { clearHeld(); draw(); updateStatus(); },
-  });
-  const busy = () => Boolean(adapter?.busy || activeFight || gameOver || scriptSession.execution?.waiting);
-  const initialGuidance = describePlayableTargets(scene, actorAtLayer(), adapter?.label);
+  const busy = () => Boolean(activeFight || gameOver || scriptSession.execution?.waiting);
+  const initialGuidance = describePlayableTargets(scene, actorAtLayer());
   markerLayer.replaceChildren();
   const playerMarker = makeMarker("player", initialGuidance.player.label);
   const targetMarkers = new Map(initialGuidance.targets.map(target =>
@@ -264,7 +256,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       return { program, marker };
     });
   const updatePlaytestMarkers = () => {
-    const guide = describePlayableTargets(visibleScene(), actorAtLayer(), adapter?.label);
+    const guide = describePlayableTargets(visibleScene(), actorAtLayer());
     for (const [slot, marker] of targetMarkers)
       marker.hidden = removedItemSlots.has(slot);
     locateMarker(playerMarker, guide.player);
@@ -281,7 +273,6 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     const instruction = talking ? (gameOver ?
       "Game over: restart the opening board to begin a new session." :
       activeFight ? "Test encounter open: choose a test outcome or cancel below." :
-      adapter?.busy && !adapter.canAdvance ? "Use the active panel to continue." :
       "Conversation active: use Next / Finish.") :
       boardMarkers.some(m => m.program.kind === "step") ?
         guide.hint + " · Walk INTO a BOARD · STEP region to run its source PRG." :
@@ -406,13 +397,11 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     const scriptWaiting = Boolean(scriptSession.execution?.waiting);
     const target = selectTk3ScriptTarget(visibleScene(), actorAtLayer());
     const boardKey = !target && selectTk3BoardKey(scene, actorAtLayer());
-    adapter?.render(target, activeFight || gameOver || scriptWaiting);
     scriptVariables.textContent = "Script variables (session): " +
       (Object.entries(scriptSession.variables).map(([name, value]) =>
         name + " = " + JSON.stringify(value)).join(" · ") || "(none yet)");
     scriptDiagnostic.textContent = scriptSession.diagnostic?.text || "";
     scriptDiagnostic.hidden = !scriptSession.diagnostic;
-    scriptRecovery.hidden = Boolean(adapter) || scriptDiagnostic.hidden;
     dialoguePanel.hidden = !scriptWaiting || Boolean(activeFight || gameOver);
     if (!dialoguePanel.hidden) {
       const running = scriptSession.execution;
@@ -422,20 +411,20 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       dialogueProgress.textContent = (wait?.path ?? running.path) + ":" + (wait?.line ?? 1);
     }
     for (const { button } of runtimeControls) button.disabled = busy();
-    talkButton.disabled = Boolean((adapter?.busy && !adapter.canAdvance) || activeFight || gameOver) ||
-      !(adapter?.canAdvance || scriptWaiting || target || boardKey);
-    talkButton.textContent = adapter?.canAdvance || scriptWaiting ? "Next / Finish" : "Talk";
+    talkButton.disabled = Boolean(activeFight || gameOver) ||
+      !(scriptWaiting || target || boardKey);
+    talkButton.textContent = scriptWaiting ? "Next / Finish" : "Talk";
     const hint = gameOver ?
       "Game over (test): restart the opening board to start fresh." :
       activeFight ? "Test encounter: choose a simulated outcome or cancel below." :
-      adapter?.canAdvance || scriptWaiting ?
+      scriptWaiting ?
       "Conversation active · use Next or the Talk shortcut." :
       target ? "Near " + target.filename + ": Talk runs " + target.programPath + " from this ZIP." :
       boardKey ? "Press Talk to run " + boardKey.raw + "." :
       (scene.boardPrograms ?? []).some(p => p.status === "resolved" && p.kind === "step") ?
       "Walk into a BOARD · STEP area to activate the authored program." :
       "Approach an authored Talk object or board program.";
-    const message = interactionFeedback || adapter?.feedback ||
+    const message = interactionFeedback ||
       scriptSession.diagnostic?.text || hint;
     if (feedback.textContent !== message) feedback.textContent = message;
   };
@@ -480,7 +469,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (response.transferred) {
       clearHeld();
       const failure = options.onTransfer?.({ scene: response.scene,
-        scriptSession: response.state, defeatProgramActive, adapter: options.adapter,
+        scriptSession: response.state, defeatProgramActive,
         arrivalFeedback: "Send() arrived at " + response.toBoardPath +
           " · (" + response.spawn.x + ", " + response.spawn.y +
           ", layer " + response.spawn.layer + ")." });
@@ -506,26 +495,20 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
 
   function triggerRuntimeProgram(action) {
     if (busy()) return;
-    if (adapter?.runtime(action)) {
-      interactionFeedback = "";
-      clearHeld();
-    } else if (applyScriptStep(startTk3RuntimeKey(scriptSession, action, artifacts))) return;
+    if (applyScriptStep(startTk3RuntimeKey(scriptSession, action, artifacts))) return;
     updateStatus();
     draw();
   }
 
   function interact() {
-    if ((adapter?.busy && !adapter.canAdvance) || activeFight || gameOver) return;
+    if (activeFight || gameOver) return;
     if (scriptSession.execution?.waiting) {
       if (applyScriptStep(advanceTk3Script(scriptSession))) return;
     } else {
       const actor = actorAtLayer();
       const target = selectTk3ScriptTarget(visibleScene(), actor);
       const boardKey = !target && selectTk3BoardKey(scene, actor);
-      if (adapter?.talk(target, actor, performance.now())) {
-        interactionFeedback = "";
-        clearHeld();
-      } else if (target || boardKey) {
+      if (target || boardKey) {
         const stepped = boardKey ?
           startTk3BoardProgram(scriptSession, boardKey, artifacts, scene.projectRoot) :
           startPlacedTk3Script(scriptSession, visibleScene(), actor, artifacts);
@@ -582,12 +565,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (event.altKey || event.ctrlKey || event.metaKey ||
         /^(INPUT|TEXTAREA|SELECT)$/.test(event.target?.tagName ?? "") ||
         event.target?.isContentEditable) return;
-    if (adapter?.menuOpen && event.code === "Escape") {
-      event.preventDefault();
-      if (!event.repeat) adapter.dismiss();
-      return;
-    }
-    if (adapter?.menuOpen || activeFight || gameOver) return;
+    if (activeFight || gameOver) return;
     const talkShortcut = event.code === "KeyE" || event.code === "Space";
     const buttonFocused = event.target?.closest?.("button, a, [role=button]");
     const modal = busy();

@@ -38,20 +38,13 @@ jobs:
           node --check tk3-board-programs.mjs
           node --check tk3-gam-startup.mjs
           node --check tk3-runtime-keys.mjs
-          node --check tk3-source-dialogue.mjs
-          node --check tk3-source-menu.mjs
           node --check tk3-fight-bridge.mjs
-          node --check bstw-title.mjs
-          node --check bstw-compatibility.mjs
           node --check placed-sprites.mjs
           node --check vector-collision.mjs
           node --check experiments/movement-sandbox/authored-play.mjs
           node --check experiments/movement-sandbox/playtest-guidance.mjs
           node --check experiments/movement-sandbox/world.mjs
           node --check experiments/movement-sandbox/engine.mjs
-          node --check experiments/movement-sandbox/inn-dialogue.mjs
-          node --check experiments/movement-sandbox/imported-inn.mjs
-          node --check experiments/movement-sandbox/sandbox.mjs
           node --check inspector-history.mjs
           node --check media.mjs
           node --check midi.mjs
@@ -101,19 +94,14 @@ jobs:
           node scripts/check-playable-scene.mjs
           node scripts/check-placed-sprites.mjs
           node scripts/check-itm-activation-fallback.mjs
-          node scripts/check-imported-inn.mjs
           node scripts/check-vector-collision.mjs
-          node scripts/check-bstw-title.mjs
           node scripts/check-tk3-script-slice.mjs
           node scripts/check-tk3-board-programs.mjs
           node scripts/check-tk3-startup.mjs
           node scripts/check-tk3-runtime-keys.mjs
-          node scripts/check-tk3-source-dialogue.mjs
-          node scripts/check-tk3-source-menu.mjs
           node scripts/check-tk3-fight-bridge.mjs
           node scripts/check-playtest-guidance.mjs
           node scripts/check-movement-sandbox.mjs
-          node scripts/check-inn-dialogue.mjs
           node scripts/check-inspector-history.mjs
           node scripts/check-connection-map.mjs
       - name: Check tileset PDF export
@@ -122,10 +110,9 @@ jobs:
         run: |
           mkdir -p site/vendor
           cp .nojekyll index.html style.css app.mjs archive.mjs model.mjs artifacts.mjs asset-format.mjs tile-palette.mjs records.mjs game-graph.mjs inspector-history.mjs connection-map.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs tile-matches.mjs tile-pdf.mjs catalog.json site/
-          cp native-board-tail.mjs script-trace.mjs save-state.mjs pe-inspect.mjs plugin-audit.mjs playability-audit.mjs playable-scene.mjs placed-sprites.mjs vector-collision.mjs bstw-title.mjs bstw-compatibility.mjs bstw-compatibility.css tk3-script-slice.mjs tk3-board-transfer.mjs tk3-board-programs.mjs tk3-gam-startup.mjs tk3-runtime-keys.mjs tk3-source-dialogue.mjs tk3-source-menu.mjs tk3-fight-bridge.mjs site/
+          cp native-board-tail.mjs script-trace.mjs save-state.mjs pe-inspect.mjs plugin-audit.mjs playability-audit.mjs playable-scene.mjs placed-sprites.mjs vector-collision.mjs tk3-script-slice.mjs tk3-board-transfer.mjs tk3-board-programs.mjs tk3-gam-startup.mjs tk3-runtime-keys.mjs tk3-fight-bridge.mjs site/
           mkdir -p site/experiments/movement-sandbox
-          cp sandbox.html site/
-          cp experiments/movement-sandbox/{world,engine,inn-dialogue,imported-inn,playtest-guidance,sandbox,authored-play}.mjs experiments/movement-sandbox/sandbox.css site/experiments/movement-sandbox/
+          cp experiments/movement-sandbox/{engine,playtest-guidance,authored-play}.mjs experiments/movement-sandbox/sandbox.css site/experiments/movement-sandbox/
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
           cp -R vendor/soundfont vendor/generaluser-gs vendor/piano-roll vendor/jspdf site/vendor/
           cp --parents experiments/dodge-tiles/{project,card-scene}.mjs site/
