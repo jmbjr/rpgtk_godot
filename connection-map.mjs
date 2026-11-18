@@ -1,7 +1,8 @@
 export function referenceDestination(edge, incoming, artifacts) {
   const path = incoming ? edge.from : edge.to;
   if (!artifacts.has(path) || (incoming && edge.external)) return;
-  return { path, tile: incoming ? undefined : edge.tile, line: incoming ? edge.line : undefined };
+  return { path, tile: incoming ? undefined : edge.tile, line: incoming ? edge.line : undefined,
+    ...(incoming && edge.inlineSlot !== undefined ? { inlineSlot: edge.inlineSlot } : {}) };
 }
 
 export function connectionCounts(edges, incoming) {

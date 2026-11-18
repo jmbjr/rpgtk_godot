@@ -42,7 +42,7 @@ assert.deepEqual(trace.steps.map(step => [step.path.split("/").at(-1), step.dept
 ]);
 assert.equal(trace.links.length, 7); // two direct includes, run expression, missing, Send is excluded, and 3 nested includes
 assert.deepEqual(trace.gaps.map(gap => [gap.status, gap.line, gap.value]), [
-  ["Dynamic", 3, "(next$)"], ["Missing", 4, "missing.prg"],
+  ["Dynamic", 3, "next$"], ["Missing", 4, "missing.prg"],
 ]);
 assert.equal(trace.truncated, false);
 assert.equal(trace.steps[3].from, "BSTW/Prg/A.prg");

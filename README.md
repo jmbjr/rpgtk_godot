@@ -39,7 +39,7 @@ selections within the open ZIP and reset when you open another one.
 
 Choose **Download connected game JSON** after opening an archive to export
 its decoded files, Main File bindings, and linked RPGCode evidence.
-See the [connected game JSON contract](docs/specs/connected-game.md).
+See the [connected game JSON contract](docs/specs/connected-game.md) and the [Explorer verification paths](docs/specs/explorer-release.md).
 
 To make print-and-play cards from your game, open its ZIP, select **Tiles** and
 a supported `.tst` file, then choose **Download print-and-play PDF** in the

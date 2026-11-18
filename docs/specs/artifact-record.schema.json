@@ -122,13 +122,13 @@
       "if": {
         "properties": {"format": {"const": "ene"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
       },
-      "then": {"properties": {"data": {"$ref": "#/$defs/ene"}}}
+      "then": {"properties": {"data": {"oneOf": [{"$ref": "#/$defs/ene"}, {"$ref": "#/$defs/eneNative"}]}}}
     },
     {
       "if": {
         "properties": {"format": {"const": "bkg"}, "decode": {"properties": {"status": {"enum": ["decoded", "partial"]}}}}
       },
-      "then": {"properties": {"data": {"$ref": "#/$defs/bkg"}}}
+      "then": {"properties": {"data": {"oneOf": [{"$ref": "#/$defs/bkg"}, {"$ref": "#/$defs/bkgNative"}]}}}
     },
     {
       "if": {
@@ -239,8 +239,10 @@
         "projectCandidates": {"type": "array", "items": {"type": "string"}},
         "evidence": {"type": "string"},
         "status": {
-          "enum": ["resolved", "missing", "ambiguous", "unset", "dynamic", "external", "tileset-unavailable", "tile-index-out-of-range"]
+          "enum": ["resolved", "missing", "ambiguous", "unset", "dynamic", "external", "unindexed", "tileset-unavailable", "tile-index-out-of-range"]
         },
+        "inlineSlot": {"type": "integer", "minimum": 0},
+        "argument": {"type": "integer", "minimum": 1},
         "line": {"type": "integer", "minimum": 1},
         "source": {
           "type": "object",
@@ -897,6 +899,7 @@
       "type": "object",
       "properties": {
         "slot": {"type": "integer", "minimum": 0},
+        "inlineSource": {"type": "string"},
         "filename": {"type": "string"}, "graphic": {"type": "string"},
         "initialVariable": {"type": "string"}, "initialValue": {"type": "string"},
         "finalVariable": {"type": "string"}, "finalValue": {"type": "string"},
@@ -1623,6 +1626,59 @@
         }
       },
       "required": ["byteLength", "width", "height", "order", "tiles", "audio", "shading"],
+      "additionalProperties": false
+    },
+    "eneNative": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "version": {"const": "2.1"},
+        "name": {"type": "string"},
+        "stats": {"$ref": "#/$defs/ene/properties/stats"},
+        "canFlee": {"type": "boolean"},
+        "usesScript": {"type": "boolean"},
+        "sneakChance": {"type": "integer"},
+        "sneakUp": {"type": "integer"},
+        "width": {"type": "null"},
+        "height": {"type": "null"},
+        "ai": {"type": "integer"},
+        "xp": {"type": "integer"},
+        "gold": {"type": "integer"},
+        "tileStride": {"const": 7},
+        "tiles": {"const": []},
+        "specialMoves": {"$ref": "#/$defs/nativeEnemyStringList"},
+        "weaknesses": {"$ref": "#/$defs/nativeEnemyStringList"},
+        "strengths": {"$ref": "#/$defs/nativeEnemyStringList"},
+        "script": {"type": "string"},
+        "programs": {"$ref": "#/$defs/ene/properties/programs"},
+        "sounds": {"const": {}},
+        "animations": {"$ref": "#/$defs/nativeEnemyStringList"},
+        "customAnimations": {
+          "type": "array", "maxItems": 1024,
+          "items": {"type": "object", "additionalProperties": false, "required": ["name", "value"],
+            "properties": {"name": {"type": "string"}, "value": {"type": "string"}}}
+        }
+      },
+      "required": ["version", "name", "stats", "tiles", "animations", "customAnimations"],
+      "additionalProperties": false
+    },
+    "nativeEnemyStringList": {
+      "type": "array", "maxItems": 1024, "items": {"type": "string"}
+    },
+    "bkgNative": {
+      "type": "object",
+      "properties": {
+        "byteLength": {"type": "integer", "minimum": 0},
+        "version": {"const": "2.3"},
+        "image": {"type": "string"},
+        "width": {"type": "null"},
+        "height": {"type": "null"},
+        "order": {"const": "native-image"},
+        "tiles": {"const": []},
+        "audio": {"$ref": "#/$defs/bkg/properties/audio"},
+        "shading": {"const": []}
+      },
+      "required": ["byteLength", "version", "image", "width", "height", "order", "tiles", "audio", "shading"],
       "additionalProperties": false
     },
     "spc": {

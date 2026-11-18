@@ -21,6 +21,15 @@ background editor section, and the pinned [compatibility reader](https://github.
 
 Line-oriented `RPGTLKIT BKG`, major 2, minor 0. The documented grid contains tile filenames, followed by audio and shading fields. These are tile references, not embedded image pixels.
 
+## Binary 2.3
+
+Read the NUL-terminated signature and little-endian i16 values 2 and 3.
+Six NUL-terminated strings follow in order: the background image, music,
+select, choose, ready and invalid-action sounds. The inspector previews the
+image and links to the audio slots. The connected record exposes
+`order: "native-image"` and empty tile and shading arrays.
+[Toolkit 3.1 background reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/common/background.cpp)
+
 ## Unsupported versions
 
 The revision-specific sections on this page describe only the listed, verified

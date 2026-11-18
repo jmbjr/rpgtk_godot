@@ -33,7 +33,8 @@ function referenceType(record, edge) {
   if (record.format === "prg") return "script-file";
   if (record.format === "brd") {
     if (edge.placements !== undefined) return "board-tile";
-    if (edge.evidence.startsWith("Board program ")) return "board-program";
+    if (edge.evidence.startsWith("Board program ") || edge.evidence.startsWith("Native board program · ")) return "board-program";
+    if (edge.inlineSlot !== undefined) return "script-file";
   }
   return "asset-reference";
 }

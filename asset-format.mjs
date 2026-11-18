@@ -9,6 +9,7 @@ const signatures = {
 const revisions = {
   gam: { text: ["2.0"], binary: ["2.2", "2.9"] }, tem: { text: ["2.0", "2.1", "2.2"], binary: ["2.3", "2.4", "2.8"] },
   brd: { text: ["2.0", "2.1"], binary: ["2.2", "2.3", "2.4"] }, itm: { text: ["2.0", "2.1"], binary: ["2.2", "2.3", "2.7"] },
+  ene: { text: ["2.0"], binary: ["2.1"] }, bkg: { text: ["2.0"], binary: ["2.3"] },
   ste: { text: ["2.0"], binary: ["2.2"] }, tan: { binary: ["2.0"] },
   anm: { text: ["2.0"], binary: ["2.3"] }, sav: { binary: ["3.4"] },
 };

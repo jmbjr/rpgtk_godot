@@ -280,6 +280,7 @@
       "type": "object", "additionalProperties": false,
       "required": ["label", "from", "path", "value", "status", "sourceLine", "trace"],
       "properties": {
+        "inlineSlot": {"type": "integer", "minimum": 0},
         "label": {"type": "string"},
         "from": {"type": ["string", "null"]},
         "path": {"type": ["string", "null"]},
@@ -305,6 +306,7 @@
       "type": "object", "additionalProperties": false,
       "required": ["path", "from", "line", "directive", "depth"],
       "properties": {
+        "inlineSlot": {"type": "integer", "minimum": 0},
         "path": {"type": "string"},
         "from": {"type": ["string", "null"]},
         "line": {"type": ["integer", "null"], "minimum": 1},
@@ -316,6 +318,7 @@
       "type": "object", "additionalProperties": false,
       "required": ["from", "value", "directive", "line", "to", "status", "depth"],
       "properties": {
+        "inlineSlot": {"type": "integer", "minimum": 0},
         "from": {"type": "string"},
         "value": {"type": "string"},
         "directive": {"type": "string"},
@@ -345,6 +348,8 @@
         "candidates": {"type": "array", "items": {"type": "string"}},
         "projectCandidates": {"type": "array", "items": {"type": "string"}},
         "value": {"type": "string"},
+        "inlineSlot": {"type": "integer", "minimum": 0},
+        "argument": {"type": "integer", "minimum": 1},
         "line": {"type": "integer", "minimum": 1},
         "placements": {"type": "integer", "minimum": 1},
         "position": {"$ref": "artifact-record.schema.json#/$defs/edge/properties/position"}

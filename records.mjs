@@ -9,10 +9,12 @@ export function artifactId(path, mainFile = false) {
 }
 
 function edgeRecord(edge) {
-  const { value, evidence, line, status, to, from, external, tile, tiles, position, candidates, projectCandidates } = edge;
+  const { value, evidence, line, status, to, from, external, tile, tiles, position, candidates, projectCandidates, inlineSlot, argument } = edge;
   return {
     value,
     evidence,
+    ...(inlineSlot === undefined ? {} : { inlineSlot }),
+    ...(argument === undefined ? {} : { argument }),
     ...(line === undefined ? {} : { line }),
     status: (status ?? "resolved").toLowerCase().replaceAll(" ", "-"),
     ...(from ? { source: { $ref: artifactId(from, external) } } : {}),

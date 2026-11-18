@@ -135,7 +135,7 @@ const missing = new Map(artifacts);
 missing.delete("main.gam");
 assert.equal(check(missing, options).root.status, "missing");
 
-const nativeZip = await JSZip.loadAsync(await buildBrowserGame("harbor"));
+const nativeZip = await JSZip.loadAsync(await buildBrowserGame("harbor", { nativeEncounters: true }));
 const { artifacts: native } = await readArtifacts(nativeZip, catalog);
 const shared = buildReferences(native);
 const nativeMain = native.get("HarborLab/Main/HarborLab.gam");
@@ -155,6 +155,11 @@ const probe = "HarborLab/Prg/trace_probe.prg";
 assert.equal(traceProgramDependencies(native, shared, probe).gaps[0].status, "Missing");
 assert.equal(connected.artifacts[artifactId(probe)].references.outgoing[0].status, "missing");
 assert.ok(connected.artifacts[artifactId("Foreign/Prg/sibling_only.prg")]);
+const inline = connected.artifacts[artifactId(play.scene.boardPath)].references.outgoing
+  .find(edge => edge.inlineSlot === 0);
+assert.equal(inline.target.$ref, artifactId("HarborLab/Boards/channel.brd"));
+assert.equal(inline.argument, 1);
+assert.equal(inline.line, 1);
 const same = shared.inventory.resolve("broken_helper.prg", { projectRoot: "HarborLab/", folder: "Prg" });
 assert.equal(same.path, "HarborLab/Prg/broken_helper.prg");
 assert.equal(shared.inventory.resolve("missing.brd", { projectRoot: "HarborLab/", folder: "Prg" }).status, "missing");
