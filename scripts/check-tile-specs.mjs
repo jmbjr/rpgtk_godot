@@ -26,7 +26,7 @@ for (const name of names) {
   const record = artifactRecord(artifacts.get(`Tiles/${name}`), graph);
   checkSchema(expected);
   checkSchema(record);
-  assert.deepEqual(record, expected, name);
+  assert.deepEqual(record, { ...expected, projectRoot: "" }, name);
   if (record.format === "tst") {
     assert.equal(record.data.tiles.length, record.data.count);
     const bytesPerTile = record.data.width * record.data.height * 3;

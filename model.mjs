@@ -1,3 +1,4 @@
+import { archiveInventory } from "./archive-inventory.mjs";
 const legacyText = new TextDecoder("windows-1252");
 
 function readTextMainFile(bytes) {
@@ -114,32 +115,33 @@ export function readMainFile(bytes) {
   };
 }
 
-export function resolveAsset(paths, folder, name, root = null) {
-  if (!name || name.toLowerCase() === "none") return { status: "unset" };
-  const requested = `${folder}/${name.replaceAll("\\", "/")}`.toLowerCase();
-  const matches = paths.filter(path => {
-    const lower = path.toLowerCase();
-    if (root !== null) return lower === `${root}${requested}`.toLowerCase();
-    return lower === requested || lower.endsWith(`/${requested}`);
-  });
-  if (matches.length === 1) return { status: "resolved", path: matches[0] };
-  return { status: matches.length ? "ambiguous" : "missing" };
+export function resolveAsset(files, folder, name, projectRoot = null) {
+  return archiveInventory(files).resolve(name, { folder, projectRoot });
 }
 
-export function mainFileBindings(mainFile, paths, projectRoot) {
-  const startup = resolveAsset(paths.filter(path => /\.prg$/i.test(path)), "Prg", mainFile.startup, projectRoot);
-  const folder = startup.path?.slice(0, startup.path.lastIndexOf("/"));
-  const startupRoot = projectRoot ?? (folder === undefined ? null : folder.slice(0, folder.lastIndexOf("/") + 1));
+export function mainFileBindings(mainFile, files, projectRoot) {
+  const inventory = archiveInventory(files);
+  const project = projectRoot === undefined ? inventory.projectForMain(mainFile) :
+    { status: "resolved", root: projectRoot };
+  const resolve = (folder, value) => {
+    if (project.status !== "ambiguous" || !value || /^none$/i.test(value))
+      return inventory.resolve(value, { folder, projectRoot: project.root });
+    const candidates = project.candidates.flatMap(root => {
+      const binding = inventory.resolve(value, { folder, projectRoot: root });
+      return binding.candidates ?? (binding.path ? [binding.path] : []);
+    });
+    return { status: "ambiguous", candidates, projectCandidates: project.candidates };
+  };
   const bindings = [
-    ["Configured startup", { ...startup, value: mainFile.startup }],
-    ["Opening board", { ...resolveAsset(paths, "Boards", mainFile.board, startupRoot), value: mainFile.board }],
-    ["Initial character", { ...resolveAsset(paths, "Chrs", mainFile.character, startupRoot), value: mainFile.character }],
+    ["Configured startup", { ...resolve("Prg", mainFile.startup), value: mainFile.startup }],
+    ["Opening board", { ...resolve("Boards", mainFile.board), value: mainFile.board }],
+    ["Initial character", { ...resolve("Chrs", mainFile.character), value: mainFile.character }],
   ];
   const config = mainFile.configuration;
   if (!config) return bindings;
   const add = (evidence, folderName, value) => {
     if (!value || value.toLowerCase() === "none") return;
-    const target = resolveAsset(paths, folderName, value, startupRoot);
+    const target = resolve(folderName, value);
     bindings.push([evidence, { ...target, value }]);
   };
   add("Runtime program", "Prg", config.runtimeProgram);

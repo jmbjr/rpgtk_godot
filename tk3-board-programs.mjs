@@ -1,3 +1,4 @@
+import { archiveInventory } from "./archive-inventory.mjs";
 import { resolveAsset } from "./model.mjs";
 import { startTk3Script } from "./tk3-script-slice.mjs";
 
@@ -15,7 +16,7 @@ const diagnostic = (path, line, message) => ({
 });
 
 export function mapTk3BoardPrograms(board, artifacts) {
-  const root = board?.path?.match(/^(.*\/)Boards\/[^/]+\.brd$/i)?.[1] ?? null;
+  const root = board?.path ? archiveInventory(artifacts).ownerOf(board.path) : null;
   return (board?.nativePrograms ?? []).filter(record => record?.filename)
     .map(record => {
       const raw = record.filename;
@@ -43,7 +44,7 @@ export function mapTk3BoardPrograms(board, artifacts) {
       // it executes the BRD string as inline RPGCode (loadFromString).
       // Keep missing '*.prg' references diagnostic, not invented code.
       if (/^[^\\/:"*?<>|]+\.prg$/i.test(raw)) {
-        const found = resolveAsset([...artifacts.keys()], "Prg", raw, root);
+        const found = resolveAsset(artifacts, "Prg", raw, root);
         if (found.status === "resolved") {
           programPath = found.path;
           const file = artifacts.get(found.path);

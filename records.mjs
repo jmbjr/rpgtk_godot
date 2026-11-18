@@ -9,7 +9,7 @@ export function artifactId(path, mainFile = false) {
 }
 
 function edgeRecord(edge) {
-  const { value, evidence, line, status, to, from, external, tile, tiles, position } = edge;
+  const { value, evidence, line, status, to, from, external, tile, tiles, position, candidates, projectCandidates } = edge;
   return {
     value,
     evidence,
@@ -22,6 +22,8 @@ function edgeRecord(edge) {
         ...(tile === undefined ? {} : { tileIndex: tile }),
       },
     } : {}),
+    ...(candidates ? { candidates } : {}),
+    ...(projectCandidates ? { projectCandidates } : {}),
     ...(position ? { position } : {}),
     ...(tiles === undefined ? {} : { placements: tiles }),
   };
@@ -45,7 +47,7 @@ export function artifactRecord(artifact, graph, { external = false, bindings = [
   const { path, type, decodeStatus, error, refs, bytes, sourceFormat, ...data } = artifact;
   const incoming = external ? [] : (graph.incoming.get(path) ?? []);
   const outgoing = external ? bindings.map(([evidence, binding]) => ({
-    evidence, value: binding.value, status: binding.status, to: binding.path, from: path, external: true,
+    ...binding, evidence, value: binding.value ?? "", to: binding.path, from: path, external: true,
   })) : (graph.outgoing.get(path) ?? []).filter(edge => !edge.external);
 
   let decoded = data;
@@ -70,12 +72,15 @@ export function artifactRecord(artifact, graph, { external = false, bindings = [
       runs: runs.map(({ index, ...run }) => ({ ...run, lookupIndex: index })),
     };
   }
+  const projectRoot = type === "gam" && graph.inventory ?
+    graph.inventory.projectForMain(artifact).root : graph.inventory?.ownerOf(path);
   return {
     schemaVersion: 1,
     ...((sourceFormat || (type === "gam" && data.major !== undefined)) ? { sourceFormat: sourceFormat ?? mainSourceFormat(data) } : {}),
     $id: artifactId(path, external),
     path,
     format: type || "unknown",
+    ...(projectRoot !== undefined && !external ? { projectRoot } : {}),
     decode: {
       status: decodeStatus === "decoded" && partialFormats.has(type) ? "partial" : decodeStatus,
       ...(error ? { message: error } : {}),

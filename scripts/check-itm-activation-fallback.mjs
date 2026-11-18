@@ -102,9 +102,12 @@ duplicateZip.file(itemProgramPath, "mwin(\"first\")\nwait()\n");
 duplicateZip.file("Unrelated/Prg/pickup.prg", "mwin(\"other\")\nwait()\n");
 const duplicate = await load(duplicateZip);
 assert.equal(object(duplicate.scene).programSource, "item");
-assert.equal(object(duplicate.scene).programStatus, "missing",
-  "The current graph resolver must not guess between two pickup.prg assets.");
-assert.equal(object(duplicate.scene).programPath, null);
+assert.equal(object(duplicate.scene).programStatus, "resolved");
+assert.equal(object(duplicate.scene).programPath, itemProgramPath);
+duplicateZip.file(itemProgramPath.replace("pickup.prg", "PICKUP.PRG"), "wait()");
+const ambiguous = await load(duplicateZip);
+assert.equal(object(ambiguous.scene).programStatus, "missing");
+assert.equal(object(ambiguous.scene).programPath, null);
 console.log("Production synthetic Grove ZIP passed: BRD program overrides ITM pickup; empty board program inherits ITM; missing/ambiguous links never invent executable programs.");
 
 // Optional read-only local original archive acceptance, never run in CI.

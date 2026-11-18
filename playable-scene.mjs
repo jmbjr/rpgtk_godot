@@ -1,4 +1,4 @@
-import { mainFileBindings, resolveAsset } from "./model.mjs";
+import { mainFileBindings } from "./model.mjs";
 import { buildReferences } from "./artifacts.mjs";
 import { mapBoardPlacements } from "./placed-sprites.mjs";
 import { mapTk3BoardPrograms } from "./tk3-board-programs.mjs";
@@ -14,61 +14,29 @@ export const ZERO_DELAY_ANIMATION_SECONDS = 1 / 60;
 const decoded = (asset, type) =>
   asset?.type === type && asset.decodeStatus === "decoded" && !asset.error;
 
-// A root-level GAM may accompany one nested project. In that layout both
-// opening bindings must identify the same unique root. A nested GAM owns
-// its directory and cannot borrow opening files from sibling projects.
-export function createTk3PlayContext(indexed, main) {
-  if (!main) {
-    return { scene: { ok: false, issues: [{ code: "unsupported-main",
-      detail: "A unique, decoded native GAM 2.9 Main File is required." }] } };
-  }
-  const paths = [...indexed.keys()];
-  const mainPath = main.path;
-  const mainFolder = mainPath.slice(0, mainPath.lastIndexOf("/") + 1);
-  // Toolkit stores the GAM under Main/ beside the other asset folders.
-  // Packaged exports also put that GAM directly at the project root.
-  let projectRoot = /(?:^|\/)Main\/$/i.test(mainFolder) ?
-    mainFolder.slice(0, -"Main/".length) : mainFolder;
-  const candidates = paths.flatMap(path =>
-    path.match(/^(.*\/)?Boards\/[^/]+\.brd$/i)?.slice(1).map(root => root ?? "") ?? []);
-  if (!projectRoot &&
-      resolveAsset(paths, "Boards", main.board, "").status === "missing" &&
-      resolveAsset(paths, "Chrs", main.character, "").status === "missing") {
-    const roots = [...new Set(candidates)].filter(root =>
-      resolveAsset(paths, "Boards", main.board, root).status === "resolved" &&
-      resolveAsset(paths, "Chrs", main.character, root).status === "resolved");
-    if (roots.length === 1) [projectRoot] = roots;
-    if (roots.length > 1) {
-      return { scene: { ok: false, issues: [{ code: "ambiguous-root",
-        detail: "The embedded GAM matches more than one archive project root." }] } };
-    }
-  }
-  const projectKey = projectRoot.toLowerCase();
-  const nestedRoots = new Set(paths.flatMap(path => {
-    const match = path.match(/^(.*\/)?(?:Boards|Chrs|Prg|Item|Misc|Tiles|Bitmap|Enemy|Bkrounds|Media)\//i);
-    const root = match?.[1]?.toLowerCase();
-    return root && root !== projectKey && root.startsWith(projectKey) ? [root] : [];
-  }));
-  const excluded = [...nestedRoots];
-  const artifacts = new Map([...indexed].filter(([path]) =>
-    path === mainPath || (path.toLowerCase().startsWith(projectKey) &&
-      !excluded.some(root => path.toLowerCase().startsWith(root.toLowerCase())))));
-  const graph = buildReferences(artifacts);
-  const scene = buildPlayableScene(artifacts, graph, main, { projectRoot });
-  return { main, artifacts, graph, scene };
+// The inspector and player share the inventory and scoped graph. The
+// browser passes only the embedded GAM here, even when inspecting another.
+export function createTk3PlayContext(artifacts, main, graph = buildReferences(artifacts)) {
+  return { main, artifacts, graph, scene: buildPlayableScene(artifacts, graph, main) };
 }
 
-export function buildPlayableScene(artifacts, graph, selectedMain = null, options = {}) {
+export function buildPlayableScene(artifacts, graph, selectedMain, options = {}) {
   const issues = [];
   const fail = (code, detail) => issues.push({ code, detail });
   const mains = [...artifacts.values()].filter(a => decoded(a, "gam"));
-  const main = selectedMain ?? (mains.length === 1 ? mains[0] : null);
+  const main = selectedMain === undefined ? (mains.length === 1 ? mains[0] : null) : selectedMain;
   if (!decoded(main, "gam") || main.minor !== 9) {
     fail("unsupported-main", "A unique, decoded native GAM 2.9 Main File is required.");
     return { ok: false, issues };
   }
 
-  const bindings = new Map(mainFileBindings(main, [...artifacts.keys()], options.projectRoot));
+  const project = graph.inventory.projectForMain(main);
+  if (project.status === "ambiguous") {
+    fail("ambiguous-root", "The embedded GAM matches multiple project roots: " + project.candidates.join(", "));
+    return { ok: false, issues };
+  }
+  const projectRoot = options.projectRoot ?? project.root;
+  const bindings = new Map(mainFileBindings(main, artifacts, projectRoot));
   const linked = (label, type) => {
     const binding = bindings.get(label);
     const asset = artifacts.get(binding?.path);
@@ -194,7 +162,7 @@ export function buildPlayableScene(artifacts, graph, selectedMain = null, option
 
   return {
     ok: true, issues: [],
-    mainPath: main.path, projectRoot: options.projectRoot, boardPath: board.path, characterPath: character.path,
+    mainPath: main.path, projectRoot, boardPath: board.path, characterPath: character.path,
     characterName: character.name, coordinateType: board.coordinateType,
     start: { x: start.x, y: start.y, layer: start.layer },
     board: {

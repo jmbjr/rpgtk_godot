@@ -25,7 +25,7 @@ export function executeGamStartup(artifacts, scene) {
       "The source GAM is missing or unsupported.") };
   }
 
-  const binding = new Map(mainFileBindings(main, [...artifacts.keys()], scene.projectRoot))
+  const binding = new Map(mainFileBindings(main, artifacts, scene.projectRoot))
     .get("Configured startup");
   // Native setUpGame simply skips the startup stage when the GAM field is
   // empty, then opens its configured initial board normally.

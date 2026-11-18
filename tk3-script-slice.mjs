@@ -1,3 +1,4 @@
+import { archiveInventory } from "./archive-inventory.mjs";
 import { resolveAsset } from "./model.mjs";
 
 // Bounded Toolkit 3 RPGCode subset: one statement per line, braces on
@@ -36,7 +37,7 @@ export function compileTk3Interaction(source, path, { artifacts, projectRoot } =
   const methods = new Map();
   const activeFiles = new Set();
   const loadedFiles = new Set();
-  const root = projectRoot ?? path.match(/^(.*\/)?Prg\/[^/]+$/i)?.[1] ?? "";
+  const root = projectRoot ?? (artifacts ? archiveInventory(artifacts).ownerOf(path) : "");
 
   function parseFile(source, path, included = false) {
     const lines = source.split(/\r\n?|\n/);
@@ -69,7 +70,7 @@ export function compileTk3Interaction(source, path, { artifacts, projectRoot } =
           const file = include[1];
           if (!/^[A-Za-z0-9_. -]+\.prg$/i.test(file) || file.includes(".."))
             fail(row, "An include must name one project PRG file.");
-          const found = resolveAsset([...artifacts.keys()], "Prg", file, root);
+          const found = resolveAsset(artifacts, "Prg", file, root);
           if (found.status !== "resolved") fail(row, "Included PRG " + file + " is " + found.status + ".");
           if (activeFiles.has(found.path)) fail(row, "Cyclic include: " + found.path + ".");
           if (!loadedFiles.has(found.path)) {

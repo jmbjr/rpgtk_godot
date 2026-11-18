@@ -148,7 +148,7 @@ assert.equal(outside.root.origin, "external");
 assert.deepEqual(outside.artifacts["rpgtk-main:/uploaded.gam"].references.outgoing.map(edge => edge.status),
   ["missing", "missing", "unset"]);
 const ambiguous = mainFileBindings(readMainFile(prefix), [
-  ...paths, "duplicate/Prg/menuTITLE.prg",
+  ...paths, "BSTW/Prg/menuTITLE.prg", "duplicate/Prg/menuTITLE.prg",
 ]);
 assert.equal(ambiguous[0][1].status, "ambiguous");
 

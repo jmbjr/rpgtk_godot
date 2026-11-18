@@ -4,6 +4,7 @@
   "title": "RPG Toolkit decoded artifact record, version 1",
   "type": "object",
   "properties": {
+    "projectRoot": {"type": "string"},
     "sourceFormat": {
       "type": "object",
       "properties": {
@@ -234,6 +235,8 @@
       "type": "object",
       "properties": {
         "value": {"type": "string"},
+        "candidates": {"type": "array", "items": {"type": "string"}},
+        "projectCandidates": {"type": "array", "items": {"type": "string"}},
         "evidence": {"type": "string"},
         "status": {
           "enum": ["resolved", "missing", "ambiguous", "unset", "dynamic", "external", "tileset-unavailable", "tile-index-out-of-range"]

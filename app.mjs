@@ -7,7 +7,7 @@ import { assessPlayability } from "./playability-audit.mjs";
 import { createTk3PlayContext } from "./playable-scene.mjs";
 import { mountAuthoredBoard } from "./experiments/movement-sandbox/authored-play.mjs";
 import { executeGamStartup } from "./tk3-gam-startup.mjs";
-import { mainFileBindings, readMainFile, resolveAsset } from "./model.mjs";
+import { mainFileBindings, readMainFile } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
 import { defaultMidiTone, playMidi } from "./midi.mjs";
 import { renderMidiPianoRoll } from "./piano-roll.mjs";
@@ -204,7 +204,7 @@ function renderNativeMainConfig(main, bindings) {
 
 function selectDefault(newArchive = false) {
   mainFile = uploadedMainFile ?? archiveMainFile;
-  const bindings = mainFile ? mainFileBindings(mainFile, paths) : [];
+  const bindings = mainFile ? mainFileBindings(mainFile, artifacts) : [];
   selected = bindings[0]?.[1].path ?? null;
   selectedFolder = selected ? directory(selected) : (programs[0] ? directory(programs[0]) : folders[0]);
   tileSelection = undefined;
@@ -311,8 +311,9 @@ function renderBindings(bindings) {
 function bindingValue(name, result) {
   if (result.path) return result.path;
   if (result.status === "unset") return "Unspecified";
-  const label = !archive ? "awaiting ZIP" : result.status === "ambiguous" ? "ambiguous in ZIP" : "missing from ZIP";
-  return `${name} · ${label}`;
+  const label = !archive ? "awaiting ZIP" : result.status === "ambiguous" ? "ambiguous in ZIP" : result.status === "external" ? "external" : "missing from ZIP";
+  const candidates = result.projectCandidates ?? result.candidates;
+  return `${name} · ${label}${candidates?.length ? " · " + candidates.join(", ") : ""}`;
 }
 
 function renderBrowser() {
@@ -380,7 +381,7 @@ window.addEventListener("popstate", event => {
 
 function selectionLabel(path) {
   if (!path) return "";
-  if (mainFile && resolveAsset(programs, "Prg", mainFile.startup).path === path) return "Configured startup";
+  if (mainFile && mainFileBindings(mainFile, artifacts)[0][1].path === path) return "Configured startup";
   return "Selected file";
 }
 
@@ -2331,6 +2332,15 @@ function renderEdges(container, title, edges, reverse) {
       const item = el("li");
       item.append(destination ? button(label, () => openConnection(destination)) :
         el("span", edge.to ? label : `${label} · ${edge.status}`));
+      if (edge.candidates?.length) {
+        const candidates = el("ul", "", "technical");
+        for (const path of edge.candidates) {
+          const candidate = el("li");
+          candidate.append(button(path, () => selectArtifact(path)));
+          candidates.append(candidate);
+        }
+        item.append(candidates);
+      }
       list.append(item);
     }
     details.append(list);
@@ -2544,7 +2554,7 @@ async function loadArchive(name, readBytes) {
     selectDefault(true);
     // The runtime always follows the GAM embedded in the selected game ZIP,
     // never an unrelated separately uploaded GAM.
-    playContext = createTk3PlayContext(artifacts, archiveMainFile);
+    playContext = createTk3PlayContext(artifacts, archiveMainFile, references);
     playableScene = playContext.scene;
     byId("play-launch").hidden = false;
     byId("play-direct").disabled = !playableScene.ok;
@@ -2572,7 +2582,7 @@ function mainFileLabel(file) {
 byId("export-game-json").addEventListener("click", () => {
   if (!archive) return;
   try {
-    const graph = connectedGameRecord(artifacts, catalog, { archiveName, externalMain: uploadedMainFile });
+    const graph = connectedGameRecord(artifacts, catalog, { archiveName, externalMain: uploadedMainFile, graph: references });
     const json = new Blob([JSON.stringify(graph, null, 2) + "\n"], { type: "application/json" });
     const url = URL.createObjectURL(json);
     const link = el("a");

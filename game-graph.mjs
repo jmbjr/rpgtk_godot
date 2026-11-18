@@ -38,15 +38,13 @@ function referenceType(record, edge) {
   return "asset-reference";
 }
 
-export function connectedGameRecord(artifacts, catalog, { archiveName, externalMain } = {}) {
+export function connectedGameRecord(artifacts, catalog, { archiveName, externalMain, graph: existingGraph } = {}) {
   const paths = [...artifacts.keys()].sort();
   const mains = paths.filter(path => artifacts.get(path).type === "gam" && artifacts.get(path).decodeStatus === "decoded");
-  const bindings = externalMain && mainFileBindings(externalMain, paths);
-  const mainBindings = mains.map(path => ({
-    name: path, bindings: mainFileBindings(artifacts.get(path), paths), external: false,
-  }));
-  if (externalMain) mainBindings.push({ name: externalMain.filename, bindings, external: true });
-  const graph = buildReferences(artifacts, mainBindings);
+  const bindings = externalMain && mainFileBindings(externalMain, artifacts);
+  const graph = existingGraph ?? buildReferences(artifacts, externalMain && {
+    name: externalMain.filename, bindings, external: true,
+  });
   const records = paths.map(path => artifactRecord(artifacts.get(path), graph));
   if (externalMain) {
     const { filename, ...data } = externalMain;

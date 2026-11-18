@@ -93,7 +93,7 @@ for (const path of [
   "BSTW/Chrs/hero.tem", "BSTW/Chrs/ally.tem", "BSTW/Chrs/retired.tem",
   "BSTW/Item/hat.itm", "BSTW/Item/bugs.itm", "BSTW/Item/door.itm",
   "BSTW/Bitmap/mwin.png", "BSTW/Bitmap/menu.png", "BSTW/Bitmap/fight.png",
-  "BSTW.gam", "BSTW/Boards/start.brd",
+  "BSTW/Main/BSTW.gam", "BSTW/Boards/start.brd",
 ]) zip.file(path, "SYNTHETIC PLACEHOLDER");
 zip.file("BSTW/Prg/openDoor.prg", "#Done()\n");
 const catalog = JSON.parse(await readFile(new URL("../catalog.json", import.meta.url), "utf8"));
@@ -114,7 +114,7 @@ const expectedRefs = [
   ["Saved inventory · slot 0", "BSTW/Item/bugs.itm"],
   ["Saved equipment · player 0 slot 4", "BSTW/Item/hat.itm"],
   ["Saved message-window background", "BSTW/Bitmap/mwin.png"],
-  ["Saved Main File", "BSTW.gam"],
+  ["Saved Main File", "BSTW/Main/BSTW.gam"],
   ["Saved current board", "BSTW/Boards/start.brd"],
   ["Former player · slot 0", "BSTW/Chrs/retired.tem"],
   ["Saved menu graphic", "BSTW/Bitmap/menu.png"],

@@ -285,6 +285,7 @@
         "path": {"type": ["string", "null"]},
         "value": {"type": "string"},
         "status": {"type": "string"},
+        "candidates": {"type": "array", "items": {"type": "string"}},
         "sourceLine": {"type": ["integer", "null"], "minimum": 1},
         "trace": {"$ref": "#/$defs/scriptWalk"}
       }
@@ -321,6 +322,7 @@
         "line": {"type": ["integer", "null"], "minimum": 1},
         "to": {"type": ["string", "null"]},
         "status": {"type": "string"},
+        "candidates": {"type": "array", "items": {"type": "string"}},
         "depth": {"type": "integer", "minimum": 0}
       }
     },
@@ -340,6 +342,8 @@
         "target": {"$ref": "artifact-record.schema.json#/$defs/edge/properties/target"},
         "status": {"$ref": "artifact-record.schema.json#/$defs/edge/properties/status"},
         "evidence": {"type": "string"},
+        "candidates": {"type": "array", "items": {"type": "string"}},
+        "projectCandidates": {"type": "array", "items": {"type": "string"}},
         "value": {"type": "string"},
         "line": {"type": "integer", "minimum": 1},
         "placements": {"type": "integer", "minimum": 1},
