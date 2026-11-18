@@ -23,7 +23,7 @@ export function listTk3RuntimeKeys(scene, artifacts) {
   if (main?.type !== "gam" || main.decodeStatus !== "decoded" ||
       !main.configuration?.runtimeKeys) return [];
   const config = main.configuration;
-  const refs = new Map(mainFileBindings(main, [...artifacts.keys()], scene.projectRoot));
+  const refs = new Map(mainFileBindings(main, artifacts, scene.projectRoot));
   const rows = [
     { slot: -1, key: config.runtimeKeys.runKey,
       program: config.runtimeProgram, evidence: "Runtime program" },

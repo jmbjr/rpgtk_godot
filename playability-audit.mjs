@@ -21,7 +21,7 @@ export function assessPlayability(artifacts, graph, mainFile = null, { interacti
   const mains = [...artifacts.values()].filter(item =>
     item.type === "gam" && item.decodeStatus === "decoded");
   const main = mainFile ?? (mains.length === 1 ? mains[0] : null);
-  const bindings = new Map(main ? mainFileBindings(main, [...artifacts.keys()]) : []);
+  const bindings = new Map(main ? mainFileBindings(main, artifacts) : []);
   const get = label => {
     const binding = bindings.get(label);
     return binding ? { ...edgeValue(binding), evidence: label } :

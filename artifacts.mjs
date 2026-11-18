@@ -1,9 +1,10 @@
+import { archiveInventory } from "./archive-inventory.mjs";
 import { detectSourceFormat, toolkitAsset } from "./asset-format.mjs";
 import { readNativeBoardTail } from "./native-board-tail.mjs";
 import { inspectPortableExecutable } from "./pe-inspect.mjs";
 import { readSaveState } from "./save-state.mjs";
 import { dosPalette, tilesetRgb } from "./tile-palette.mjs";
-import { decodeProgram, indexProgram, readMainFile } from "./model.mjs";
+import { decodeProgram, indexProgram, mainFileBindings, readMainFile } from "./model.mjs";
 import { readCompoundDocument, readGif, readJpeg, readMidi, readWave } from "./media.mjs";
 
 const text = new TextDecoder("windows-1252");
@@ -1195,28 +1196,21 @@ export async function readArtifacts(zip, catalog) {
 }
 
 export function buildReferences(artifacts, mainFiles = []) {
-  const names = new Map();
-  for (const { path } of artifacts.values()) {
-    const name = basename(path).toLowerCase();
-    if (!names.has(name)) names.set(name, []);
-    names.get(name).push(path);
-  }
+  const inventory = archiveInventory(artifacts);
   const incoming = new Map();
   const outgoing = new Map();
   function add(from, ref) {
-    const normalized = ref.value.replaceAll("\\", "/").toLowerCase();
-    const indexed = normalized.match(/^(.*\.tst)(\d+)$/);
-    const name = indexed ? indexed[1] : normalized;
-    const tile = indexed ? Number(indexed[2]) : undefined;
-    const candidates = (names.get(basename(name)) ?? [])
-      .filter(path => !name.includes("/") || path.toLowerCase() === name || path.toLowerCase().endsWith(`/${name}`));
-    const status = ref.status ?? (/^(?:[a-z]:[\\/]|\\\\|https?:\/\/)/i.test(ref.value) ? "External" : undefined);
-    const to = ref.path ?? (!status && candidates.length === 1 ? candidates[0] : undefined);
+    const { folder, types, ...evidence } = ref;
+    const projectRoot = inventory.ownerOf(from);
+    const match = ref.status ? ref : inventory.resolve(ref.value, { projectRoot, folder, types });
+    const { tile, candidates, projectCandidates } = match;
+    const to = match.path;
     const target = artifacts.get(to);
     const invalidTile = tile !== undefined && target && (target.count === undefined || tile < 1 || tile > target.count);
-    const edge = { ...ref, from, to: invalidTile ? undefined : to, tile,
-      status: invalidTile ? (target.count === undefined ? "Tileset unavailable" : "Tile index out of range") :
-        to ? "Resolved" : status ?? (candidates.length > 1 ? "Ambiguous" : "Missing") };
+    const status = invalidTile ? (target.count === undefined ? "Tileset unavailable" : "Tile index out of range") :
+      to ? "Resolved" : match.status[0].toUpperCase() + match.status.slice(1);
+    const edge = { ...evidence, from, to: invalidTile ? undefined : to, tile, status,
+      ...(candidates ? { candidates } : {}), ...(projectCandidates ? { projectCandidates } : {}) };
     if (!outgoing.has(from)) outgoing.set(from, []);
     outgoing.get(from).push(edge);
     if (!edge.to) return;
@@ -1226,11 +1220,15 @@ export function buildReferences(artifacts, mainFiles = []) {
   for (const artifact of artifacts.values()) {
     for (const ref of artifact.refs ?? []) add(artifact.path, ref);
   }
-  for (const mainFile of [mainFiles].flat().filter(Boolean)) {
-    for (const [evidence, binding] of mainFile.bindings) {
-      add(mainFile.name, { value: binding.value, evidence, path: binding.path, status: binding.status,
-        external: mainFile.external ?? true });
-    }
+  const external = [mainFiles].flat().filter(item => item && item.external !== false);
+  for (const item of artifacts.values()) {
+    if (item.type !== "gam" || item.decodeStatus !== "decoded") continue;
+    for (const [evidence, binding] of mainFileBindings(item, artifacts))
+      add(item.path, { ...binding, value: binding.value ?? "", evidence });
   }
-  return { incoming, outgoing };
+  for (const mainFile of external) {
+    for (const [evidence, binding] of mainFile.bindings)
+      add(mainFile.name, { ...binding, value: binding.value ?? "", evidence, external: true });
+  }
+  return { incoming, outgoing, inventory };
 }

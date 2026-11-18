@@ -66,9 +66,10 @@ try {
   // Selecting a conflicting inspector GAM before opening the ZIP cannot
   // change which GAM owns startup, keys, board, character or game over.
   const mainFile = { name: "inspection.gam", mimeType: "application/octet-stream", buffer: nativeMainFixture };
+  await archive("harbor-browser.zip", await buildBrowserGame("harbor"));
+  await expectText("bindings", /HarborLab\/Prg\/harbor_start.prg/);
   await control("main-file").setInputFiles(mainFile);
   await expectText("main-status", /inspection.gam/);
-  await archive("harbor-browser.zip", await buildBrowserGame("harbor"));
   await gamPlay();
   await board(/HarborLab\/Boards\/wharf.brd/);
   await expectText("play-launch-mode", /Game startup/);

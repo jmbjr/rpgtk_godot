@@ -25,7 +25,7 @@ export function resolveTk3BoardTransfer(response, currentScene, artifacts, graph
   // The project root follows the current source board, so a duplicate
   // basename from a different included game cannot hijack a Send().
   const root = currentScene.projectRoot ?? rootMatch[1] ?? "";
-  const resolved = resolveAsset([...artifacts.keys()], "Boards", file, root);
+  const resolved = resolveAsset(artifacts, "Boards", file, root);
   if (resolved.status !== "resolved")
     return fail("Destination " + JSON.stringify(file) + " is " + resolved.status + ".");
   const board = artifacts.get(resolved.path);

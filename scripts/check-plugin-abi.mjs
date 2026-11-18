@@ -45,7 +45,7 @@ for (const [label, bytes] of [
   assert.equal(inspectPortableExecutable(bytes).status, "malformed-pe", label);
 }
 const zip = new JSZip();
-zip.file("BSTW.gam", nativeMainFixture);
+zip.file("BSTW/Main/BSTW.gam", nativeMainFixture);
 const declarations = nativeMainExpected.pluginSlots.filter(Boolean);
 const names = [...new Set([...declarations, "menu-system.dll", "fight-system.dll", "not-declared.dll"])];
 for (const filename of names) {
@@ -54,14 +54,14 @@ for (const filename of names) {
 }
 zip.file("BSTW/Plugin/broken.dll", Buffer.from("SYNTHETIC PLACEHOLDER"));
 const { artifacts } = await readArtifacts(zip, {});
-const main = artifacts.get("BSTW.gam");
+const main = artifacts.get("BSTW/Main/BSTW.gam");
 assert.equal(main.decodeStatus, "decoded", main.error);
 const graph = buildReferences(artifacts, [{
-  name: "BSTW.gam", bindings: (await import("../model.mjs")).mainFileBindings(main, [...artifacts.keys()]),
+  name: "BSTW/Main/BSTW.gam", bindings: (await import("../model.mjs")).mainFileBindings(main, [...artifacts.keys()]),
   external: false,
 }]);
 const audit = auditProjectPlugins(artifacts, main);
-assert.equal(audit.mainFile, "BSTW.gam");
+assert.equal(audit.mainFile, "BSTW/Main/BSTW.gam");
 assert.equal(audit.declarationScope, "configured");
 assert.equal(audit.storedSlots, 5);
 assert.deepEqual(audit.summary, {

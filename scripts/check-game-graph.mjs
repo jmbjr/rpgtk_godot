@@ -7,6 +7,11 @@ import { connectedGameRecord } from "../game-graph.mjs";
 import { readMainFile } from "../model.mjs";
 import { artifactId } from "../records.mjs";
 import { fixtures } from "../docs/specs/fixtures/format-fixtures.mjs";
+import { buildBrowserGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
+import { buildReferences } from "../artifacts.mjs";
+import { createTk3PlayContext } from "../playable-scene.mjs";
+import { traceProgramDependencies } from "../script-trace.mjs";
+import { executeGamStartup } from "../tk3-gam-startup.mjs";
 import JSZip from "../vendor/jszip.min.js";
 
 const specs = new URL("../docs/specs/", import.meta.url);
@@ -79,6 +84,7 @@ zip.file("Prg/start.prg", [
   '#Load(savefile$)', '#Load("slot.sav")', '#Put(1, 1, "two-tiles.tst3")', '#Run "legacy.prg"',
 ].join("\n"));
 zip.file("Prg/ambiguous.prg", "");
+zip.file("Prg/AMBIGUOUS.PRG", "");
 zip.file("Other/Prg/ambiguous.prg", "");
 zip.file("slot.sav", "A host save reference must stay external even if a file matches.");
 zip.file("misc/# disconnected.txt", "inventory only");
@@ -107,6 +113,8 @@ assert.equal(edge("script-file", programId, candidate => candidate.line === 1).t
 for (const [line, status] of ["dynamic", "missing", "ambiguous", "dynamic", "external", "tile-index-out-of-range", "missing"].entries()) {
   assert.equal(edge("script-file", programId, candidate => candidate.line === line + 2).status, status);
 }
+assert.deepEqual(edge("script-file", programId, candidate => candidate.line === 4).candidates,
+  ["Prg/AMBIGUOUS.PRG", "Prg/ambiguous.prg"]);
 assert.equal(graph.artifacts["rpgtk:/misc/%23%20disconnected.txt"].decode.status, "unidentified");
 assert.equal(graph.actors["rpgtk-actor:/Chrs%2Fhero.tem"].kind, "character");
 assert.equal(graph.actors["rpgtk-actor:/Enemy%2Ffoe.ene"].kind, "enemy");
@@ -126,6 +134,44 @@ assert.equal(ambiguousGraph.artifacts["rpgtk:/second.gam"].references.outgoing[1
 const missing = new Map(artifacts);
 missing.delete("main.gam");
 assert.equal(check(missing, options).root.status, "missing");
+
+const nativeZip = await JSZip.loadAsync(await buildBrowserGame("harbor"));
+const { artifacts: native } = await readArtifacts(nativeZip, catalog);
+const shared = buildReferences(native);
+const nativeMain = native.get("HarborLab/Main/HarborLab.gam");
+const play = createTk3PlayContext(native, nativeMain, shared);
+assert.equal(play.graph, shared);
+assert.equal(play.artifacts, native);
+assert.equal(play.scene.ok, true, JSON.stringify(play.scene.issues));
+assert.equal(play.scene.projectRoot, "HarborLab/");
+assert.equal(executeGamStartup(native, play.scene).scriptSession.variables.launched, 7);
+const connected = check(native, { archiveName: "native.zip", graph: shared });
+const mainId = artifactId(nativeMain.path);
+const bootPath = "HarborLab/Prg/harbor_start.prg";
+assert.equal(shared.outgoing.get(nativeMain.path)[0].to, bootPath);
+assert.equal(connected.artifacts[mainId].references.outgoing[0].target.$ref, artifactId(bootPath));
+assert.equal(connected.scriptTrace.entries[0].path, bootPath);
+const probe = "HarborLab/Prg/trace_probe.prg";
+assert.equal(traceProgramDependencies(native, shared, probe).gaps[0].status, "Missing");
+assert.equal(connected.artifacts[artifactId(probe)].references.outgoing[0].status, "missing");
+assert.ok(connected.artifacts[artifactId("Foreign/Prg/sibling_only.prg")]);
+const same = shared.inventory.resolve("broken_helper.prg", { projectRoot: "HarborLab/", folder: "Prg" });
+assert.equal(same.path, "HarborLab/Prg/broken_helper.prg");
+assert.equal(shared.inventory.resolve("missing.brd", { projectRoot: "HarborLab/", folder: "Prg" }).status, "missing");
+
+const mixed = new Map(native);
+for (const [path, file] of native) {
+  if (/^HarborLab\/(?:Boards|Chrs)\//.test(path)) {
+    const sibling = path.replace("HarborLab/", "Sibling/");
+    mixed.set(sibling, { ...file, path: sibling });
+  }
+}
+const rootMain = { ...nativeMain, path: "game.gam" };
+mixed.delete(nativeMain.path);
+mixed.set(rootMain.path, rootMain);
+const mixedGraph = buildReferences(mixed);
+assert.deepEqual(mixedGraph.outgoing.get(rootMain.path)[1].projectCandidates, ["HarborLab/", "Sibling/"]);
+assert.equal(createTk3PlayContext(mixed, rootMain, mixedGraph).scene.issues[0].code, "ambiguous-root");
 
 const [archivePath, mainPath] = process.argv.slice(2);
 if (archivePath) {

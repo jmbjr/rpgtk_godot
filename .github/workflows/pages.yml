@@ -22,6 +22,7 @@ jobs:
         run: |
           node --check app.mjs
           node --check archive.mjs
+          node --check archive-inventory.mjs
           node --check model.mjs
           node --check asset-format.mjs
           node --check artifacts.mjs
@@ -108,7 +109,7 @@ jobs:
       - name: Stage public viewer files
         run: |
           mkdir -p site/vendor
-          cp .nojekyll index.html style.css app.mjs archive.mjs model.mjs artifacts.mjs asset-format.mjs tile-palette.mjs records.mjs game-graph.mjs inspector-history.mjs connection-map.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs tile-matches.mjs tile-pdf.mjs catalog.json site/
+          cp .nojekyll index.html style.css app.mjs archive.mjs archive-inventory.mjs model.mjs artifacts.mjs asset-format.mjs tile-palette.mjs records.mjs game-graph.mjs inspector-history.mjs connection-map.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs tile-matches.mjs tile-pdf.mjs catalog.json site/
           cp native-board-tail.mjs script-trace.mjs save-state.mjs pe-inspect.mjs plugin-audit.mjs playability-audit.mjs playable-scene.mjs placed-sprites.mjs vector-collision.mjs tk3-script-slice.mjs tk3-board-transfer.mjs tk3-board-programs.mjs tk3-gam-startup.mjs tk3-runtime-keys.mjs tk3-fight-bridge.mjs site/
           mkdir -p site/experiments/movement-sandbox
           cp experiments/movement-sandbox/{engine,playtest-guidance,authored-play}.mjs experiments/movement-sandbox/sandbox.css site/experiments/movement-sandbox/

@@ -82,6 +82,9 @@ export async function buildBrowserGame(id, options = {}) {
     zip.file(originalRoot + "Prg/beacon_ending.prg", fight);
     addFight(zip, originalRoot, false);
     // A duplicate helper outside the GAM project must never be imported.
+    zip.file("Foreign/Prg/" + spec.startup, "wrong = 1");
+    zip.file("Foreign/Prg/sibling_only.prg", "wrong = 1");
+    zip.file(originalRoot + "Prg/trace_probe.prg", '#Run("sibling_only.prg")');
     zip.file("Foreign/Prg/weather_clock.prg", "method ReportTide()\n{\nwrong = 1\n}");
     zip.file(originalRoot + "Foreign/Prg/mwininn.prg", 'mwin("Foreign decoy.")\nwait()');
     zip.file(originalRoot + "Main/" + spec.main, gam);

@@ -3,8 +3,7 @@ import { mainFileBindings } from "./model.mjs";
 // Cross-reference configured GAM filenames against packaged DLL entries.
 // This is an archive inventory, not a plugin loader or a capability oracle.
 export function auditProjectPlugins(artifacts, mainFile = null) {
-  const paths = [...artifacts.keys()];
-  const bindings = mainFile ? mainFileBindings(mainFile, paths) : [];
+  const bindings = mainFile ? mainFileBindings(mainFile, artifacts) : [];
   const descriptions = new Map(bindings);
   const declarations = [];
   const config = mainFile?.configuration;
@@ -23,7 +22,7 @@ export function auditProjectPlugins(artifacts, mainFile = null) {
     for (const slot of config.pluginSlots)
       add("slot", slot.slot, slot.filename, "Declared plugin · slot " + slot.slot);
   }
-  const bundled = paths.filter(path => /\.dll$/i.test(path)).sort()
+  const bundled = [...artifacts.keys()].filter(path => /\.dll$/i.test(path)).sort()
     .map(path => {
       const declaredAs = declarations.filter(item => item.path === path)
         .map(item => item.evidence);

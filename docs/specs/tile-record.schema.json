@@ -3,6 +3,7 @@
   "title": "RPG Toolkit decoded GPH or TST record, version 1",
   "type": "object",
   "properties": {
+    "projectRoot": {"type": "string"},
     "sourceFormat": {
       "type": "object",
       "properties": {

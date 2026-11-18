@@ -25,7 +25,7 @@ export function traceProgramDependencies(artifacts, graph, entry, maxPrograms = 
       const linked = {
         from: step.path, value: edge.value, directive: edge.evidence,
         line: edge.line ?? null, to: isProgram(artifacts, edge.to) ? edge.to : null,
-        status: edge.status, depth: step.depth + 1,
+        status: edge.status, ...(edge.candidates ? { candidates: edge.candidates } : {}), depth: step.depth + 1,
       };
       links.push(linked);
       if (!linked.to || edge.status !== "Resolved") {
@@ -47,7 +47,6 @@ export function traceProgramDependencies(artifacts, graph, entry, maxPrograms = 
 
 export function traceProjectDependencies(artifacts, graph, mainFile) {
   const entrypoints = [];
-  const paths = [...artifacts.keys()];
   const chosen = mainFile ?? (() => {
     const files = [...artifacts.values()].filter(
       item => item.type === "gam" && item.decodeStatus === "decoded");
@@ -64,13 +63,13 @@ export function traceProjectDependencies(artifacts, graph, mainFile) {
     const trace = traceProgramDependencies(artifacts, graph, path);
     entrypoints.push({
       label, from: from ?? null, path, value: edge?.value ?? "",
-      status, sourceLine: sourceLine ?? edge?.line ?? null,
+      status, ...(edge?.candidates ? { candidates: edge.candidates } : {}), sourceLine: sourceLine ?? edge?.line ?? null,
       trace,
     });
   };
   let boardPath = null;
   if (chosen) {
-    const bindings = mainFileBindings(chosen, paths);
+    const bindings = mainFileBindings(chosen, artifacts);
     for (const [label, binding] of bindings) {
       if (label === "Opening board") boardPath = binding.path ?? null;
       if (label === "Configured startup" || label === "Runtime program" ||

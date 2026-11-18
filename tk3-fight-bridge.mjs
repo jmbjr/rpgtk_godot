@@ -28,17 +28,16 @@ export function resolveTk3FightRequest(response, artifacts, projectRoot) {
   const requested = response.encounter;
   const root = projectRoot ?? requested.path.match(/^(.*\/)?Prg\/[^/]+\.prg$/i)?.[1] ??
     (/^Prg\//i.test(requested.path) ? "" : null);
-  const names = [...artifacts.keys()];
   if (root === null) return failed(response, "Fight source has no identifiable archive root.");
   for (const [key, value] of [["enemy", requested.enemy],
     ["background", requested.background]]) {
     if (typeof value !== "string" || !/^[^\\/:"*?<>|]+\.[A-Za-z0-9]+$/i.test(value))
       return failed(response, "Invalid fight " + key + " filename.");
   }
-  const enemyRef = resolveAsset(names, "Enemy", requested.enemy, root);
+  const enemyRef = resolveAsset(artifacts, "Enemy", requested.enemy, root);
   if (enemyRef.status !== "resolved")
     return failed(response, "Enemy " + requested.enemy + " is " + enemyRef.status + ".");
-  const bkgRef = resolveAsset(names, "Bkrounds", requested.background, root);
+  const bkgRef = resolveAsset(artifacts, "Bkrounds", requested.background, root);
   if (bkgRef.status !== "resolved")
     return failed(response, "Battle background " + requested.background +
       " is " + bkgRef.status + ".");
@@ -51,7 +50,7 @@ export function resolveTk3FightRequest(response, artifacts, projectRoot) {
   let victory = null;
   const victoryName = enemy.programs?.["Victory program"];
   if (victoryName) {
-    const ref = resolveAsset(names, "Prg", victoryName, root);
+    const ref = resolveAsset(artifacts, "Prg", victoryName, root);
     if (ref.status !== "resolved")
       return failed(response, "Enemy victory program " + victoryName +
         " is " + ref.status + ".");
@@ -114,7 +113,7 @@ export function simulateTk3FightDefeat(state, encounter, artifacts, mainPath, pr
       policy: "native-default-reset" };
   }
   const root = projectRoot ?? encounter.path.match(/^(.*\/)?Prg\/[^/]+\.prg$/i)?.[1] ?? null;
-  const found = resolveAsset([...artifacts.keys()], "Prg", configured, root);
+  const found = resolveAsset(artifacts, "Prg", configured, root);
   if (found.status !== "resolved") {
     const diagnostic = issue(mainPath, 1, "GAM game-over program " +
       configured + " is " + found.status + ".");
