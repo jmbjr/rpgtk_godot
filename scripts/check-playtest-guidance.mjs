@@ -100,7 +100,7 @@ for (const id of ["play-target-hint", "play-map-frame", "play-map-markers",
 }
 assert.match(html, /id="play-markers-enabled" checked/);
 assert.match(html, /<details class="play-diagnostics">/);
-assert.match(js, /describePlayableTargets\(scene, actorAtLayer\(\), adapter\?\.label\)/);
+assert.match(js, /describePlayableTargets\(scene, actorAtLayer\(\)\)/);
 assert.match(js, /markerLayer\.replaceChildren\(\)/);
 assert.match(js, /updatePlaytestMarkers\(\)/);
 assert.match(js, /markerLayer\.hidden = !markerToggle\.checked/);

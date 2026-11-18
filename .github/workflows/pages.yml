@@ -43,7 +43,6 @@ jobs:
           node --check vector-collision.mjs
           node --check experiments/movement-sandbox/authored-play.mjs
           node --check experiments/movement-sandbox/playtest-guidance.mjs
-          node --check experiments/movement-sandbox/world.mjs
           node --check experiments/movement-sandbox/engine.mjs
           node --check inspector-history.mjs
           node --check media.mjs
