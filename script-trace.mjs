@@ -2,28 +2,28 @@ import { mainFileBindings } from "./model.mjs";
 
 // Source references, not execution semantics: #Include and #Run are distinct
 // observed directives. Do not interpret conditional branches or variable values.
-const importDirective = /^#(include|run)$/i;
+const importDirective = /^#?(include|run)$/i;
 const isProgram = (artifacts, path) => path && artifacts.get(path)?.type === "prg";
 
-export function traceProgramDependencies(artifacts, graph, entry, maxPrograms = 500) {
+export function traceProgramDependencies(artifacts, graph, entry, maxPrograms = 500, inlineSlot) {
   const steps = [];
   const links = [];
   const gaps = [];
-  if (!isProgram(artifacts, entry)) {
+  if (!isProgram(artifacts, entry) && inlineSlot === undefined) {
     return { entry: entry ?? null, steps, links, gaps, truncated: false };
   }
-  const queue = [{ path: entry, from: null, line: null, directive: "Entry", depth: 0 }];
+  const queue = [{ path: entry, from: null, line: null, directive: "Entry", depth: 0, ...(inlineSlot === undefined ? {} : { inlineSlot }) }];
   const visited = new Set([entry]);
   let truncated = false;
   for (let i = 0; i < queue.length; i++) {
     const step = queue[i];
     steps.push(step);
     for (const edge of graph.outgoing.get(step.path) ?? []) {
-      if (!importDirective.test(edge.evidence)) continue;
+      if (edge.inlineSlot !== step.inlineSlot || !importDirective.test(edge.evidence)) continue;
       // A reference remains evidence even when its name is dynamic,
       // ambiguous, missing, external, or points to a non-PRG artifact.
       const linked = {
-        from: step.path, value: edge.value, directive: edge.evidence,
+        from: step.path, ...(step.inlineSlot === undefined ? {} : { inlineSlot: step.inlineSlot }), value: edge.value, directive: edge.evidence,
         line: edge.line ?? null, to: isProgram(artifacts, edge.to) ? edge.to : null,
         status: edge.status, ...(edge.candidates ? { candidates: edge.candidates } : {}), depth: step.depth + 1,
       };
@@ -82,6 +82,15 @@ export function traceProjectDependencies(artifacts, graph, mainFile) {
   const board = artifacts.get(boardPath);
   if (board?.type === "brd") {
     const edges = graph.outgoing.get(boardPath) ?? [];
+    for (const program of board.nativePrograms ?? []) {
+      if (!program.inlineSource) continue;
+      entrypoints.push({
+        label: "Native board program · slot " + program.slot,
+        from: boardPath, path: boardPath, inlineSlot: program.slot, value: program.inlineSource,
+        status: "Inline", sourceLine: 1,
+        trace: traceProgramDependencies(artifacts, graph, boardPath, 500, program.slot),
+      });
+    }
     for (const edge of edges) {
       if (/^(?:Native board program · slot |Native sprite activation program · slot |Native sprite multitask program · slot |Board entry program$|Board program \()/i.test(edge.evidence)) {
         add(edge.evidence, boardPath, edge);
@@ -100,9 +109,9 @@ export function traceProjectDependencies(artifacts, graph, mainFile) {
   const all = new Set();
   let links = 0, unresolved = 0, dynamic = 0;
   for (const { trace, status } of entrypoints) {
-    for (const step of trace.steps) all.add(step.path);
+    for (const step of trace.steps) all.add(JSON.stringify([step.path, step.inlineSlot]));
     links += trace.links.length;
-    unresolved += trace.gaps.length + Number(status !== "Resolved");
+    unresolved += trace.gaps.length + Number(status !== "Resolved" && status !== "Inline");
     dynamic += trace.gaps.filter(gap => gap.status === "Dynamic").length;
   }
   return {
@@ -115,7 +124,7 @@ export function traceProjectDependencies(artifacts, graph, mainFile) {
     },
     limitations: [
       "These are configured script entrypoints, not proven runtime reachability.",
-      "Only literal #Include/#Run references are traversed; dynamic targets are preserved as gaps.",
+      "Only literal Include and Run references are traversed; dynamic targets are preserved as gaps.",
       "Conditional branches, runtime state, plugin calls and side effects are not executed.",
     ],
   };

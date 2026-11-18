@@ -75,7 +75,7 @@ export function mapBoardPlacements(board, artifacts, graph) {
       const item = artifacts.get(itemEdge?.to);
       const itemResolved = itemEdge?.status === "Resolved" && valid(item, "itm");
       const itemStatus = itemResolved ? "resolved" :
-        item?.type === "itm" && item.decodeStatus === "error" ? "unsupported" : "missing";
+        itemEdge?.to ? "unsupported" : itemEdge?.status.toLowerCase() ?? "missing";
       let art = { status: "missing", reason: "ITM source unavailable" };
       if (itemResolved) {
         try {
@@ -108,12 +108,15 @@ export function mapBoardPlacements(board, artifacts, graph) {
       return {
         slot: sprite.slot, filename: sprite.filename, name: itemResolved ? item.name : sprite.filename,
         itemPath: itemResolved ? item.path : itemEdge?.to ?? null, itemStatus,
+        ...(itemEdge?.candidates ? { itemCandidates: itemEdge.candidates } : {}),
         position: sprite.position, positionStatus: positionValid ? "valid" : "invalid",
         activationProgram: effectiveProgram, boardActivationProgram: boardProgram,
         programSource,
         programPath: programResolved ? program.path : scriptEdge?.to ?? null,
         programStatus: programResolved ? "resolved" :
-          effectiveProgram ? "missing" : "unset",
+          scriptEdge?.to ? "unsupported" : scriptEdge?.status.toLowerCase() ??
+            (effectiveProgram ? "missing" : "unset"),
+        ...(scriptEdge?.candidates ? { programCandidates: scriptEdge.candidates } : {}),
         activation: { type: sprite.activationType, condition: sprite.activate,
           initialVariable: sprite.initialVariable, initialValue: sprite.initialValue,
           finalVariable: sprite.finalVariable, finalValue: sprite.finalValue,

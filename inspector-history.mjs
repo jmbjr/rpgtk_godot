@@ -21,7 +21,7 @@ export function createInspectorHistory(history) {
       write("replaceState", selection);
     },
     visit(selection) {
-      if (!archive || ["path", "folder", "tile", "line"].every(key => selection[key] === current[key])) return;
+      if (!archive || ["path", "folder", "tile", "line", "inlineSlot"].every(key => selection[key] === current[key])) return;
       // An older ZIP's stop may be underneath the current inspector after Back.
       // Seed this position before branching so Back can still undo the next click.
       if (!selectionFor(history.state)) write("replaceState", current);

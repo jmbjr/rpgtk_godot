@@ -1,3 +1,4 @@
+import { indexRpgcodeReferences } from "./rpgcode-references.mjs";
 import { archiveInventory } from "./archive-inventory.mjs";
 import { detectSourceFormat, toolkitAsset } from "./asset-format.mjs";
 import { readNativeBoardTail } from "./native-board-tail.mjs";
@@ -671,36 +672,9 @@ function readCharacter(bytes) {
   return { name, stats, profile, walking, artwork, refs: refs.filter(ref => ref.value) };
 }
 
-// Use documented file-taking commands, so prose in #MWin cannot create an edge.
-const FILE_COMMANDS = new Set(("addplayer newplyr send viewbrd run include prg put layerput bitmap wingraphic setbutton setimage " +
-  "setimagetransparent setimagetranslucent setimageadditive giveitem takeitem equip createitem fightenemy " +
-  "animation sizedanimation mediaplay midiplay mp3 wav applystatus").split(" "));
-const externalFileCommands = new Set(["load", "save", "start"]);
-const firstFileArgument = new Set(["run", "include", "send", "viewbrd", ...externalFileCommands]);
 function readProgram(bytes, catalog) {
-  const program = indexProgram(decodeProgram(bytes), catalog);
-  const refs = [];
-  for (const row of program.rows) {
-    for (const [index, token] of row.tokens.entries()) {
-      if (token.kind !== "builtin") continue;
-      const args = row.line.slice(token.start + token.value.length, row.tokens[index + 1]?.start);
-      if (firstFileArgument.has(token.name) && /^\s*\(/.test(args)) {
-        const literal = args.match(/^\s*\(\s*"([^"]*)"\s*(?:,|\))/);
-        if (literal?.[1]) {
-          refs.push({ ...reference(literal[1], token.value, token.line),
-            ...(externalFileCommands.has(token.name) ? { status: "External" } : {}) });
-        } else if (!literal && /^\s*\(\s*[^)\s]/.test(args)) {
-          refs.push({ ...reference(args.trim(), token.value, token.line), status: "Dynamic" });
-        }
-        continue;
-      }
-      if (!FILE_COMMANDS.has(token.name)) continue;
-      for (const match of args.matchAll(/"([^"]+)"/g)) {
-        if (/\.[a-z][a-z0-9]{1,5}$/i.test(match[1])) refs.push(reference(match[1], token.value, token.line));
-      }
-    }
-  }
-  return { program, refs };
+  const source = decodeProgram(bytes);
+  return { program: indexProgram(source, catalog), refs: indexRpgcodeReferences(source) };
 }
 
 function textReader(bytes, signature, minors = [0]) {
@@ -750,7 +724,8 @@ function readBinaryBackground(bytes) {
     "Choose sound": choose, "Ready sound": ready,
     "Invalid action sound": invalid };
   const refs = [];
-  if (image) refs.push(reference(image, "Battle background image"));
+  if (image) refs.push({ ...reference(image, "Battle background image"),
+    types: ["bmp", "gif", "jpg", "jpeg", "png"] });
   for (const [label, value] of Object.entries(audio)) {
     if (value) refs.push(reference(value, label));
   }
@@ -818,9 +793,9 @@ function readBinaryEnemy(bytes) {
   for (const [index, value] of specialMoves.entries())
     if (value) refs.push(reference(value, "Special move · slot " + (index + 1)));
   for (const [index, value] of animations.entries())
-    if (value) refs.push(reference(value, "Enemy animation · slot " + index));
+    if (value) refs.push({ ...reference(value, "Enemy animation · slot " + index), types: ["anm"] });
   for (const { name, value } of customAnimations)
-    if (value) refs.push(reference(value, "Custom animation · " + name));
+    if (value) refs.push({ ...reference(value, "Custom animation · " + name), types: ["anm"] });
   return { version: "2." + minor, name, stats, canFlee,
     sneakChance, sneakUp, width: null, height: null,
     tileStride: 7, tiles: [], specialMoves, weaknesses, strengths,

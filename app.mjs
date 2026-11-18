@@ -60,6 +60,7 @@ let selectedFolder = null;
 let references = { incoming: new Map(), outgoing: new Map() };
 let tileSelection;
 let selectedLine;
+let selectedInlineSlot;
 let connectionMapOpen = false;
 let connectionFilters = {};
 const inspectorHistory = createInspectorHistory(window.history);
@@ -209,6 +210,7 @@ function selectDefault(newArchive = false) {
   selectedFolder = selected ? directory(selected) : (programs[0] ? directory(programs[0]) : folders[0]);
   tileSelection = undefined;
   selectedLine = undefined;
+  selectedInlineSlot = undefined;
   renderBindings(bindings);
   references = buildReferences(artifacts, mainFile && {
     name: mainFile.filename, bindings, external: mainFile === uploadedMainFile,
@@ -217,7 +219,16 @@ function selectDefault(newArchive = false) {
   mainData.replaceChildren();
   if (mainFile) mainData.append(assetFormatHeader({ type: "gam", sourceFormat: mainSourceFormat(mainFile) }));
   if (mainFile?.configuration) mainData.append(renderNativeMainConfig(mainFile, bindings));
-  if (archive) mainData.append(renderProjectScriptTrace());
+  if (archive) {
+    const unresolved = [...references.outgoing.values()].flat()
+      .filter(edge => !edge.to && edge.status !== "Unset").length;
+    const counts = new Map();
+    for (const file of artifacts.values())
+      counts.set(file.decodeStatus, (counts.get(file.decodeStatus) ?? 0) + 1);
+    mainData.append(el("p", `Archive coverage · ${artifacts.size} files · ${[...counts].map(
+      ([status, count]) => `${count} ${status}`).join(" · ")} · ${unresolved} unresolved references`, "technical"));
+    mainData.append(renderProjectScriptTrace());
+  }
   if (archive) mainData.append(renderPlayabilityEvidence());
   if (mainFile === archiveMainFile && archiveMainFile) {
     mainData.append(jsonPanel(() => artifactRecord(artifacts.get(archiveMainFile.filename), references)));
@@ -238,7 +249,7 @@ function selectDefault(newArchive = false) {
 
 function renderScriptWalk(walk) {
   const details = el("details", "", "reference");
-  const title = `${walk.steps.length} unique scripts · ${walk.links.length} observed #Include/#Run links`
+  const title = `${walk.steps.length} unique scripts · ${walk.links.length} observed Include/Run links`
     + (walk.gaps.length ? ` · ${walk.gaps.length} unresolved/dynamic` : "");
   details.append(el("summary", title));
   if (!walk.steps.length) {
@@ -248,7 +259,7 @@ function renderScriptWalk(walk) {
   for (const step of walk.steps) {
     const row = el("div", "", "reference");
     row.style.paddingInlineStart = Math.min(step.depth, 5) * 15 + "px";
-    row.append(button(basename(step.path), () => selectArtifact(step.path)),
+    row.append(button(basename(step.path), () => selectArtifact(step.path, undefined, step.inlineSlot === undefined ? undefined : 1, undefined, step.inlineSlot)),
       el("span", step.from ? ` · via ${step.directive} in ${basename(step.from)}:${step.line}` :
         " · entrypoint", "technical"));
     details.append(row);
@@ -259,7 +270,7 @@ function renderScriptWalk(walk) {
     for (const gap of walk.gaps) {
       const row = el("div", "", "reference");
       row.append(button(`${basename(gap.from)}:${gap.line} ${gap.directive}`,
-        () => selectArtifact(gap.from, undefined, gap.line ?? undefined)),
+        () => selectArtifact(gap.from, undefined, gap.line ?? undefined, undefined, gap.inlineSlot)),
         el("span", ` · ${gap.value} · ${gap.status}`, "technical"));
       gaps.append(row);
     }
@@ -281,10 +292,10 @@ function renderProjectScriptTrace() {
     const heading = entry.path ? `${entry.label} · ${basename(entry.path)}` :
       `${entry.label} · ${entry.value || "unassigned"} (${entry.status})`;
     outer.append(el("summary", heading));
-    if (entry.path) outer.append(button("Open script", () => selectArtifact(entry.path)));
+    if (entry.path) outer.append(button("Open script", () => selectArtifact(entry.path, undefined, entry.sourceLine ?? undefined, undefined, entry.inlineSlot)));
     if (entry.from && artifacts.has(entry.from)) {
       outer.append(" · ", button("View origin", () =>
-        selectArtifact(entry.from, undefined, entry.sourceLine ?? undefined)));
+        selectArtifact(entry.from, undefined, entry.sourceLine ?? undefined, undefined, entry.inlineSlot)));
     }
     outer.append(renderScriptWalk(entry.trace));
     panel.append(outer);
@@ -345,21 +356,22 @@ function renderBrowser() {
   if (!files.length) byId("file-list").append(el("p", "No files in this folder."));
 }
 
-function selectArtifact(path, tile, line, folder = path ? directory(path) : selectedFolder) {
+function selectArtifact(path, tile, line, folder = path ? directory(path) : selectedFolder, inlineSlot) {
   if (path && !artifacts.has(path)) return;
-  const selection = { path, folder, tile, line };
+  const selection = { path, folder, tile, line, inlineSlot };
   inspectorHistory.visit(selection);
   restoreSelection(selection);
 }
 
-function restoreSelection({ path, folder, tile, line }) {
+function restoreSelection({ path, folder, tile, line, inlineSlot }) {
   const fileChanged = path !== selected || folder !== selectedFolder;
   const tileChanged = tile !== tileSelection;
-  const lineChanged = line !== selectedLine;
+  const lineChanged = line !== selectedLine || inlineSlot !== selectedInlineSlot;
   selected = path;
   selectedFolder = folder;
   tileSelection = tile;
   selectedLine = line;
+  selectedInlineSlot = inlineSlot;
   if (fileChanged) {
     renderBrowser();
     showArtifact();
@@ -371,7 +383,7 @@ function restoreSelection({ path, folder, tile, line }) {
     }
     renderConnections(path);
   }
-  if (line || fileChanged || lineChanged) jumpToLine(line);
+  if (line || fileChanged || lineChanged) jumpToLine(line, inlineSlot);
 }
 
 window.addEventListener("popstate", event => {
@@ -803,6 +815,15 @@ function renderAsset(artifact) {
   }
   if (artifact.type === "ene") {
     panel.append(el("h3", artifact.name), el("p", "Enemy graphic · BAT-03 Enemy definition"));
+    if (Array.isArray(artifact.animations)) {
+      const animations = edges.filter(edge => /^(?:Enemy animation|Custom animation) · /.test(edge.evidence));
+      panel.append(assetFields(animations.map(edge => [edge.evidence, linkedAsset(edge.value, edge)])));
+      const first = animations.map(edge => artifacts.get(edge.to)).find(asset =>
+        asset?.type === "anm" && asset.decodeStatus === "decoded" && asset.frames?.some(frame => frame.image));
+      if (first) renderAnimation(panel, first, references.outgoing.get(first.path) ?? []);
+      else panel.append(el("p", "No resolved enemy animation is available."));
+      return;
+    }
     const sprite = enemySprite(artifact, artifacts, references);
     if (!sprite?.parts.length) {
       panel.append(el("p", "No enemy graphic is available."));
@@ -966,6 +987,17 @@ function linkedAsset(value, edge) {
 }
 
 function renderBattleBackground(panel, artifact, edges) {
+  if (artifact.order === "native-image") {
+    const image = edges.find(edge => edge.evidence === "Battle background image");
+    const source = byId("source");
+    source.replaceChildren();
+    if (image?.to) void showMedia(source, image.to, "Battle backdrop " + image.value);
+    else source.append(el("p", "No resolved background image."));
+    panel.append(assetFields([["Battle background image", linkedAsset(artifact.image, image)]]),
+      el("h3", "Battle media"), assetFields(Object.entries(artifact.audio).map(([name, value]) =>
+        [name, linkedAsset(value, edges.find(edge => edge.evidence === name))])));
+    return;
+  }
   const background = battleBackground(artifact, artifacts, references);
   const canvas = spriteCanvas(`Battle backdrop for ${basename(artifact.path)}`);
   drawSprite(canvas, background);
@@ -1454,7 +1486,7 @@ function renderItemSprites(panel, artifact) {
   display();
 }
 
-function renderBoardMetadata(panel, board) {
+function renderBoardMetadata(panel, board, edges) {
   if (board.vectors) {
     const pointCount = board.vectors.reduce((sum, shape) => sum + shape.points.length, 0);
     panel.append(el("p", `Native BRD 2.4 · coordinate code ${board.coordinateType} · ${board.vectors.length} vectors with ${pointCount} raw points · ${board.lights.length} light records · ${board.shadingLayers.length} shading layers`));
@@ -1502,7 +1534,23 @@ function renderBoardMetadata(panel, board) {
     for (const entry of board.nativePrograms) {
       const row = el("div", "", "reference");
       row.append(el("h4", "Slot " + entry.slot + " · " + (entry.filename || "(blank)")));
-      if (entry.filename) row.append(linked(entry.filename, "Native board program · slot " + entry.slot));
+      if (entry.inlineSource) {
+        const source = el("pre", "", "inline-program");
+        entry.inlineSource.split(/\r\n?|\n/).forEach((line, index) => {
+          const code = el("code", `${index + 1}  ${line}`, "source-row");
+          code.id = `inline-program-${entry.slot}-line-${index + 1}`;
+          code.tabIndex = -1;
+          source.append(code);
+        });
+        row.append(el("p", "Inline RPGCode"), source);
+        for (const edge of edges.filter(edge => edge.inlineSlot === entry.slot)) {
+          const label = `Line ${edge.line} · ${edge.evidence} · ${edge.value}`;
+          row.append(edge.to ? button(label, () => {
+            selectArtifact(board.path, undefined, edge.line, undefined, entry.slot);
+            selectArtifact(edge.to, edge.tile);
+          }) : el("p", label + " · " + edge.status));
+        }
+      } else if (entry.filename) row.append(linked(entry.filename, "Native board program · slot " + entry.slot));
       if (entry.graphic) row.append(linked(entry.graphic, "Native program graphic · slot " + entry.slot));
       row.append(el("p", "Layer " + entry.layer + " · Activation " + entry.activate +
         " / type " + entry.activationType + " · Repeat distance " + entry.distanceRepeat +
@@ -1565,7 +1613,7 @@ function renderBoardMetadata(panel, board) {
 
 function renderBoard(panel, board, edges) {
   panel.append(el("p", `${board.width} × ${board.height} tiles · ${board.layers} layers · MAP-01 Boards`));
-  renderBoardMetadata(panel, board);
+  renderBoardMetadata(panel, board, edges);
   const sets = boardTilesets(edges, references, artifacts);
   panel.append(el("h3", "Tilesets used"));
   if (!sets.size) panel.append(el("p", "No resolved tilesets in the decoded board references."));
@@ -2120,8 +2168,8 @@ function evidenceLabel(edge) {
   return `${edge.evidence}${edge.line ? ` · line ${edge.line}` : ""} · ${edge.value}`;
 }
 
-function openConnection({ path, tile, line }) {
-  selectArtifact(path, tile, line);
+function openConnection({ path, tile, line, inlineSlot }) {
+  selectArtifact(path, tile, line, undefined, inlineSlot);
 }
 
 function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
@@ -2349,9 +2397,11 @@ function renderEdges(container, title, edges, reverse) {
   container.append(section);
 }
 
-function jumpToLine(line) {
-  byId("source").querySelector(".active-line")?.classList.remove("active-line");
-  const target = line && byId(`line-${line}`);
+function jumpToLine(line, inlineSlot) {
+  document.querySelector("#source .active-line, #graph .active-line")?.classList.remove("active-line");
+  const target = line && byId(inlineSlot === undefined ?
+    `line-${line}` : `inline-program-${inlineSlot}-line-${line}`);
+  if (target?.closest("details")) target.closest("details").open = true;
   if (!target) return;
   target.classList.add("active-line");
   target.focus({ preventScroll: true });

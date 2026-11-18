@@ -1,3 +1,4 @@
+import { boardProgramFilename } from "./rpgcode-references.mjs";
 import { archiveInventory } from "./archive-inventory.mjs";
 import { resolveAsset } from "./model.mjs";
 import { startTk3Script } from "./tk3-script-slice.mjs";
@@ -17,7 +18,7 @@ const diagnostic = (path, line, message) => ({
 
 export function mapTk3BoardPrograms(board, artifacts) {
   const root = board?.path ? archiveInventory(artifacts).ownerOf(board.path) : null;
-  return (board?.nativePrograms ?? []).filter(record => record?.filename)
+  return (board?.nativePrograms ?? []).filter(record => record?.filename && !/^none$/i.test(record.filename))
     .map(record => {
       const raw = record.filename;
       const points = record.vectorBase?.points ?? [];
@@ -43,7 +44,7 @@ export function mapTk3BoardPrograms(board, artifacts) {
       // Toolkit first checks for an existing PRG file; if none exists,
       // it executes the BRD string as inline RPGCode (loadFromString).
       // Keep missing '*.prg' references diagnostic, not invented code.
-      if (/^[^\\/:"*?<>|]+\.prg$/i.test(raw)) {
+      if (boardProgramFilename(raw)) {
         const found = resolveAsset(artifacts, "Prg", raw, root);
         if (found.status === "resolved") {
           programPath = found.path;

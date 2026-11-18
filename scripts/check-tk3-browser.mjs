@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
+import JSZip from "../vendor/jszip.min.js";
 import { chromium } from "playwright";
 import { buildBrowserGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { nativeMainFixture } from "../docs/specs/fixtures/native-main-29-fixtures.mjs";
@@ -62,6 +63,19 @@ try {
     await page.getByRole("button", { name: "Simulate defeat (test only)", exact: true }).waitFor();
   };
 
+  await page.addInitScript(() => {
+    window.frameAudioStarts = 0;
+    const createUrl = URL.createObjectURL;
+    URL.createObjectURL = function (blob) {
+      if (blob.type === "application/json") window.exportedGame = blob.text();
+      return createUrl.call(this, blob);
+    };
+    const start = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (...args) {
+      if (this.buffer) window.frameAudioStarts++;
+      return start.apply(this, args);
+    };
+  });
   await page.goto(base);
   // Selecting a conflicting inspector GAM before opening the ZIP cannot
   // change which GAM owns startup, keys, board, character or game over.
@@ -192,6 +206,133 @@ try {
   assert.equal(await page.locator("#play-compatibility, #play-script-recovery, #play-hud").count(), 0);
   assert.deepEqual(adapterRequests, []);
   await variables(/none yet/);
+  await click("play-close");
+  // Reload the document to clear the unrelated inspection GAM. Exports
+  // below must include exactly the archive's files, including unused ones.
+  await page.goto(base);
+  const pathIs = path => expectText("source-path", path);
+  const file = async path => {
+    const folder = path.slice(0, path.lastIndexOf("/") + 1);
+    await page.locator(`#folder-list button[data-folder="${folder}"]`).click();
+    await page.locator(`#file-list button[title="${path}"]`).click();
+    await pathIs(path);
+  };
+  const follow = async label => {
+    const link = page.locator("#connections .edge-list button").filter({ hasText: label }).first();
+    await link.evaluate(button => { button.closest("details").open = true; });
+    await link.click();
+  };
+  const accountForArchive = async bytes => {
+    const zip = await JSZip.loadAsync(bytes);
+    const paths = Object.values(zip.files).filter(item => !item.dir).map(item => item.name).sort();
+    await expectText("main-data", "Archive coverage · " + paths.length + " files");
+    const received = page.waitForEvent("download");
+    await click("export-game-json");
+    assert.match((await received).suggestedFilename(), /-game\.json$/);
+    const exported = JSON.parse(await page.evaluate(() => window.exportedGame));
+    assert.deepEqual(Object.values(exported.artifacts).map(item => item.path).sort(), paths);
+    assert.equal(exported.archive.fileCount, paths.length);
+    assert.equal(Object.values(exported.coverage.decodeCounts).reduce((sum, count) => sum + count, 0), paths.length);
+    return exported;
+  };
+  const playWave = async ({ pause = false } = {}) => {
+    await page.locator("#graph audio").evaluate(audio => {
+      audio.addEventListener("playing", () => { audio.dataset.played = "true"; }, { once: true });
+    });
+    await page.getByRole("button", { name: "Play WAV", exact: true }).click();
+    await page.locator('#graph audio[data-played="true"]').waitFor({ state: "attached" });
+    if (pause) {
+      await page.getByRole("button", { name: "Pause WAV", exact: true }).click();
+      assert.equal(await page.locator("#graph audio").evaluate(audio => audio.paused), true);
+    }
+    await page.getByRole("button", { name: "Reset WAV to beginning", exact: true }).click();
+    assert.equal(await page.locator("#graph audio").evaluate(audio => audio.currentTime), 0);
+  };
+  const playMidi = async () => {
+    await page.getByLabel("Playback synth").selectOption("builtin");
+    await page.getByRole("button", { name: "Play MIDI", exact: true }).click();
+    await page.getByRole("button", { name: "Pause MIDI", exact: true }).click();
+    await expectText("graph", "MIDI paused.");
+    await page.getByRole("button", { name: "Reset MIDI to beginning", exact: true }).click();
+    await expectText("graph", "MIDI reset to beginning.");
+  };
+
+  const legacyBytes = await readFile(resolve(site, "tk2-legacy-game.zip"));
+  await archive("tk2-legacy-game.zip", legacyBytes);
+  const legacy = await accountForArchive(legacyBytes);
+  const tk2 = "Game/TK2LegacyLab/";
+  assert.equal(legacy.artifacts["rpgtk:/Main/TK2LegacyLab.gam"].projectRoot, tk2);
+  await file("Main/TK2LegacyLab.gam");
+  await follow(/Opening board.*room.brd/);
+  await pathIs(tk2 + "Boards/room.brd");
+  await follow(/Board tile lookup.*\.tst/);
+  await page.locator('#graph .tile-grid button[aria-pressed="true"]').waitFor();
+  await page.goBack();
+  await pathIs(tk2 + "Boards/room.brd");
+  await page.goForward();
+  await page.locator('#graph .tile-grid button[aria-pressed="true"]').waitFor();
+  await file(tk2 + "Bkrounds/bkg-text-20-diagnostic.bkg");
+  await follow(/Music.*note.mid/);
+  await playMidi();
+  await page.goBack();
+  await pathIs(tk2 + "Bkrounds/bkg-text-20-diagnostic.bkg");
+  await follow(/Select sound.*tone.wav/);
+  await playWave();
+
+  const nativeBytes = await buildBrowserGame("harbor", { nativeEncounters: true });
+  await archive("native-explorer.zip", nativeBytes);
+  const native = await accountForArchive(nativeBytes);
+  const tk3 = "HarborLab/";
+  const boardId = "rpgtk:/" + tk3 + "Boards/wharf.brd";
+  const send = native.artifacts[boardId].references.outgoing.find(ref => ref.inlineSlot === 0);
+  assert.equal(send.target.$ref, "rpgtk:/" + tk3 + "Boards/channel.brd");
+  assert.equal(send.line, 1);
+  assert.equal(native.scriptTrace.entries.find(entry => entry.inlineSlot === 0).status, "Inline");
+  const probe = tk3 + "Prg/media_probe.prg";
+  const mediaEdges = native.artifacts["rpgtk:/" + probe].references.outgoing;
+  assert.deepEqual(mediaEdges.map(edge => edge.status),
+    ["resolved", "resolved", "dynamic", "missing", "unindexed"]);
+  await file(tk3 + "Boards/channel.brd");
+  await follow(/send.*line 1.*channel.brd/i);
+  await pathIs(tk3 + "Boards/wharf.brd");
+  await page.locator("#inline-program-0-line-1.active-line").waitFor();
+  await page.goBack();
+  await pathIs(tk3 + "Boards/channel.brd");
+  await page.goForward();
+  await page.locator("#inline-program-0-line-1.active-line").waitFor();
+
+  await file(tk3 + "Chrs/mira.tem");
+  await follow(/Walk South animation.*test_south.anm/);
+  await pathIs(tk3 + "Misc/test_south.anm");
+  const animation = page.getByRole("button", { name: "Play animation", exact: true });
+  const beforeAudio = await page.evaluate(() => window.frameAudioStarts);
+  await animation.click();
+  await page.waitForFunction(count => window.frameAudioStarts > count, beforeAudio);
+  assert.match(await control("graph").innerText(), /Frame 2 of 2/);
+  await follow(/Frame 2 image.*test-characters.tst15/);
+  await page.locator('#graph [data-tile="15"][aria-pressed="true"]').waitFor();
+  await page.goBack();
+  await pathIs(tk3 + "Misc/test_south.anm");
+  await follow(/Frame 2 sound.*tick.wav/);
+  await playWave({ pause: true });
+  await follow(/wav.*line 2.*tick.wav/i);
+  await pathIs(probe);
+  await page.locator("#source #line-2.active-line").waitFor();
+  await page.goBack();
+  await pathIs(tk3 + "Media/tick.wav");
+  await page.goForward();
+  await page.locator("#source #line-2.active-line").waitFor();
+
+  await file(tk3 + "Enemy/sentinel.ene");
+  await expectText("graph", "ENE · Binary 2.1");
+  await page.locator('#graph a[href$="/ene.md#binary-21"]').waitFor();
+  await page.locator('#graph canvas[aria-label="Frame preview for test_south.anm"]').waitFor();
+  await file(tk3 + "Bkrounds/field.bkg");
+  await expectText("graph", "BKG · Binary 2.3");
+  await page.waitForFunction(() => document.querySelector("#source img")?.naturalWidth === 16);
+  await follow(/Battle background image.*field.png/);
+  await pathIs(tk3 + "Bitmap/field.png");
+  console.log("Explorer Chromium passed: wrapped TK2 and native TK3 inventory, project edges, exact jumps/history, MIDI, WAV, ANM frame audio and native ENE/BKG previews.");
   assert.deepEqual(errors, []);
   console.log("Staged browser passed: two independent TK3 ZIPs, inspector isolation, rooted GAM helper, keyboard and touch controls, Send continuation, both fight outcomes, launch-mode reset and archive replacement.");
 } finally {

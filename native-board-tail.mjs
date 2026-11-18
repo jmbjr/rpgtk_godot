@@ -1,3 +1,5 @@
+import { boardProgramFilename, indexRpgcodeReferences } from "./rpgcode-references.mjs";
+
 // Native Toolkit 3 binary BRD 2.4 records following the light/vector blocks.
 // Field order: pinned 3.1 CommonBoard.bas (the >2.3 vector-board branch).
 // This reads data only; it does not execute programs or simulate activation.
@@ -37,10 +39,14 @@ export function readNativeBoardTail(reader, layers) {
       const closed = reader.short();
       const handle = reader.string();
       const position = basePoints[0] ? { ...basePoints[0], layer } : undefined;
-      add(filename, "Native board program · slot " + slot, position);
+      const inline = filename && !/^none$/i.test(filename) && !boardProgramFilename(filename);
+      if (inline) {
+        for (const evidence of indexRpgcodeReferences(filename))
+          refs.push({ ...evidence, inlineSlot: slot, ...(position ? { position } : {}) });
+      } else add(filename, "Native board program · slot " + slot, position);
       add(graphic, "Native program graphic · slot " + slot, position);
       return {
-        slot, filename, graphic, initialVariable, initialValue,
+        slot, filename, ...(inline ? { inlineSource: filename } : {}), graphic, initialVariable, initialValue,
         finalVariable, finalValue, activate, activationType,
         distanceRepeat, layer, vectorBase: { points: basePoints, closed, handle },
       };

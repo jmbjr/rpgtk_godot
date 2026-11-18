@@ -24,6 +24,18 @@ Evidence includes the original demo enemies and the pinned
 
 Line-oriented `RPGTLKIT ENEMY`, major 2, minor 0. Both documented observed tail lengths use this header revision; the revision alone does not distinguish them. Use the tile-grid and optional-animation-tail rules above.
 
+## Binary 2.1
+
+After the NUL-terminated header and two little-endian signed shorts, read
+the name, four i32 battle stats, flee byte, and two i16 sneak fields.
+The special move, weakness, and strength arrays have signed i16 inclusive
+maxima followed by NUL-terminated strings. Then read the AI and uses-script
+bytes, script string, i32 XP and gold, and victory and escape PRG strings.
+Two more inclusive arrays store ANM filenames and custom name/filename pairs.
+The reader accepts an optional trailing zero short. The legacy tile grid does
+not apply to this layout. The inspector previews the first resolved ANM and
+links to the other stored animations. [Pinned Toolkit 3.1 enemy reader](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/common/enemy.cpp)
+
 ## Unsupported versions
 
 The revision-specific sections on this page describe only the listed, verified

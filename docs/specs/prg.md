@@ -17,12 +17,16 @@ index are zero-based JavaScript string offsets.
    assignments first, then declarations, local method calls, catalog
    built-ins, and unknowns. Record every occurrence, including repeated
    calls on the same line.
-4. For cataloged file-taking commands, index quoted literal filenames
-   with an extension. A reference keeps the source line and command.
-   For Run, Include, Send, ViewBrd, Load, Save, and Start, inspect the
-   first argument. Preserve expressions as dynamic evidence, and mark
-   literal save, load, and host-launch resources as external. Expression
-   results, computed paths, and reachability remain unknown.
+4. A separate static filename pass recognizes verified command arguments
+   in both legacy hash-prefixed and native call syntax. It records the raw
+   filename or argument expression, the command spelling, source line, and
+   one-based argument number. It skips quoted prose, declarations, object
+   method calls, and comments. Literal save, load, and host-launch arguments
+   are external. Expressions are dynamic, and calls whose argument boundary
+   cannot be established are unindexed.
+5. Inline native BRD program bodies retain their owner board and slot.
+   Their filename references use the same pass and scoped resolver. An
+   incoming relationship can jump to a literal source line in that slot.
 
 ## Decoded record
 

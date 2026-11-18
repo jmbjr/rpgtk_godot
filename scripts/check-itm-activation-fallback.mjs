@@ -106,7 +106,9 @@ assert.equal(object(duplicate.scene).programStatus, "resolved");
 assert.equal(object(duplicate.scene).programPath, itemProgramPath);
 duplicateZip.file(itemProgramPath.replace("pickup.prg", "PICKUP.PRG"), "wait()");
 const ambiguous = await load(duplicateZip);
-assert.equal(object(ambiguous.scene).programStatus, "missing");
+assert.equal(object(ambiguous.scene).programStatus, "ambiguous");
+assert.deepEqual(object(ambiguous.scene).programCandidates,
+  [itemProgramPath.replace("pickup.prg", "PICKUP.PRG"), itemProgramPath]);
 assert.equal(object(ambiguous.scene).programPath, null);
 console.log("Production synthetic Grove ZIP passed: BRD program overrides ITM pickup; empty board program inherits ITM; missing/ambiguous links never invent executable programs.");
 
