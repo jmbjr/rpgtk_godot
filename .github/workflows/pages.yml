@@ -182,6 +182,7 @@ jobs:
     needs: check
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pages: write
       id-token: write
     concurrency:
@@ -191,5 +192,19 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # Builds can finish out of order. Check main inside the deployment
+      # lock so a slow older build cannot replace a newer publication.
+      - name: Check that this build is current
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          main_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          if [[ "$main_sha" == "$GITHUB_SHA" ]]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Skipping $GITHUB_SHA because main is now $main_sha."
+          fi
       - uses: actions/deploy-pages@v4
         id: deployment
+        if: steps.current.outputs.deploy == 'true'
