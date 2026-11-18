@@ -6,7 +6,6 @@ import { readArtifacts, buildReferences } from "../artifacts.mjs";
 import { buildPlayableScene } from "../playable-scene.mjs";
 import { resolveTk3BoardTransfer } from "../tk3-board-transfer.mjs";
 import { initialMovementState, stepMovement } from "../experiments/movement-sandbox/engine.mjs";
-import { initialInnState } from "../experiments/movement-sandbox/inn-dialogue.mjs";
 import { TK3_INTERACTION_RADIUS, compileTk3Interaction, initialTk3ScriptState,
   startTk3Script, advanceTk3Script, selectTk3ScriptTarget, startPlacedTk3Script }
   from "../tk3-script-slice.mjs";
@@ -88,12 +87,6 @@ for (const spec of scriptFixtureSpecs) {
   assert.equal(compileTk3Interaction(source, target.programPath).ok, true);
   const actor = { x: target.position.x, y: target.position.y, layer: target.position.layer };
   assert.equal(selectTk3ScriptTarget(scene, actor)?.slot, target.slot);
-  // The pure generic selector must not depend on BSTW's inn classification;
-  // only the browser interaction dispatcher gives that legacy adapter priority.
-  const specialTag = { ...scene, placements: scene.placements.map(p =>
-    p.slot === target.slot ? { ...p, isInnDoor: true } : p) };
-  assert.equal(selectTk3ScriptTarget(specialTag, actor)?.slot, target.slot,
-    "Source-linked generic interactions are independent of game-specific labels");
   assert.equal(selectTk3ScriptTarget(scene, { ...actor, layer: 2 }), null);
   assert.equal(selectTk3ScriptTarget(scene, { ...actor, x: actor.x - 46 })?.slot, target.slot);
   assert.equal(selectTk3ScriptTarget(scene, { ...actor, x: actor.x - 46.1 }), null);
@@ -113,7 +106,6 @@ for (const spec of scriptFixtureSpecs) {
   assert.equal(selectTk3ScriptTarget(scene,
     { ...walked, layer: scene.start.layer })?.slot, target.slot,
     "The existing browser stepper can walk to within Talk range");
-  assert.equal(initialInnState().clues, 0);
 
   let state = initialTk3ScriptState();
   const first = startPlacedTk3Script(state, scene, actor, artifacts);
@@ -342,5 +334,5 @@ for (const symbol of ["startPlacedTk3Script", "advanceTk3Script",
 assert.match(browser, /scriptSession\.execution\?\.waiting/);
 assert.match(workflow, /node scripts\/check-tk3-script-slice\.mjs/);
 assert.match(workflow, /node scripts\/build-tk3-script-fixtures\.mjs site/);
-assert.match(workflow, /tk3-script-slice\.mjs tk3-board-transfer\.mjs tk3-board-programs\.mjs tk3-gam-startup\.mjs tk3-runtime-keys\.mjs tk3-source-dialogue\.mjs tk3-source-menu\.mjs tk3-fight-bridge\.mjs site\//);
+assert.match(workflow, /tk3-script-slice\.mjs tk3-board-transfer\.mjs tk3-board-programs\.mjs tk3-gam-startup\.mjs tk3-runtime-keys\.mjs tk3-fight-bridge\.mjs site\//);
 console.log("Toolkit 3 source-backed message subset and both full production archive fixtures passed.");

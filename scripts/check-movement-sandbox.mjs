@@ -2,29 +2,40 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
   ACTOR_RADIUS, WALK_SPEED, MAX_FRAME_SECONDS,
-  circleBlocked, initialMovementState, stepMovement, distanceToLandmark,
+  circleBlocked, initialMovementState, stepMovement as move, tileAt,
 } from "../experiments/movement-sandbox/engine.mjs";
-import { SANDBOX_WORLD, TILE_SIZE, tileAt, solidAt }
-  from "../experiments/movement-sandbox/world.mjs";
+const TILE_SIZE = 32;
+const TERRAIN = Object.freeze([
+  "################",
+  "#..............#",
+  "#.....###......#",
+  "#.....#........#",
+  "#.....#........#",
+  "#.....#....##..#",
+  "#..........##..#",
+  "#..............#",
+  "#...##.........#",
+  "#..............#",
+  "################",
+]);
 
-const world = SANDBOX_WORLD;
+const world = { tileSize: TILE_SIZE, width: 16, height: TERRAIN.length, rows: TERRAIN,
+  spawn: { x: 80, y: 304 } };
+const stepMovement = (state, input, dt) => move(state, input, dt, world);
+
 assert.equal(TILE_SIZE, 32);
 assert.deepEqual([world.width, world.height], [16, 11]);
 assert.equal(world.rows.length, 11);
 assert.ok(world.rows.every(row => row.length === 16));
-assert.deepEqual([world.landmark.x, world.landmark.y], [432, 48]);
 assert.deepEqual(world.spawn, { x: 80, y: 304 });
 assert.equal(tileAt(world, -1, 5), "#");
 assert.equal(tileAt(world, 16, 5), "#");
-assert.equal(tileAt(world, 13, 1), "I");
-assert.equal(solidAt(world, 13, 1), false);
-assert.equal(solidAt(world, 0, 0), true);
 assert.equal(circleBlocked(world, 80, 304), false);
 assert.equal(circleBlocked(world, -10, 60), true);
 assert.equal(circleBlocked(world, NaN, 60), true);
 assert.equal(circleBlocked(world, 128, 272, ACTOR_RADIUS), true);
 
-const start = initialMovementState();
+const start = initialMovementState(world);
 assert.deepEqual(start, {
   x: 80, y: 304, facing: "south", moving: false,
   distance: 0, frame: 0, blocked: false,
@@ -93,9 +104,7 @@ for (let i = 0; i < 60; i++) south = stepMovement(south, { x: 0, y: 1 }, 1 / 60)
 assert.ok(south.y <= TILE_SIZE * 10 - ACTOR_RADIUS);
 assert.equal(south.blocked, true);
 assert.equal(circleBlocked(world, south.x, south.y), false);
-assert.ok(distanceToLandmark(start) > 350);
-assert.ok(distanceToLandmark({ ...start, ...world.landmark }) < 1e-8);
-assert.deepEqual(initialMovementState(), start, "Reset always returns the source-owned spawn");
+assert.deepEqual(initialMovementState(world), start, "Reset always returns the source-owned spawn");
 
 // Ensure a hypothetical malformed world cannot hide a solid spawn under a
 // visually empty map or accidentally accept out-of-bounds movement.
@@ -103,24 +112,14 @@ assert.throws(() => initialMovementState({
   ...world, spawn: { x: 0, y: 0 },
 }), /spawn/i);
 
-// Static UI acceptance: discoverability, touch target semantics,
-// collision overlay and explicit non-imported-game warning. Browser
-// input/render behavior still requires manual/mobile acceptance.
-const page = await readFile(new URL("../sandbox.html", import.meta.url), "utf8");
-const home = await readFile(new URL("../index.html", import.meta.url), "utf8");
-const script = await readFile(new URL(
-  "../experiments/movement-sandbox/sandbox.mjs", import.meta.url), "utf8");
+const page = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const script = await readFile(new URL("../experiments/movement-sandbox/authored-play.mjs", import.meta.url), "utf8");
 for (const direction of ["north", "south", "east", "west"]) {
   assert.match(page, new RegExp('data-move="' + direction + '"'));
 }
-assert.match(home, /href="\.\/sandbox\.html"/);
-assert.match(page, /id="sandbox-canvas"/);
-assert.match(page, /id="sandbox-reset"/);
-assert.match(page, /id="sandbox-collision"/);
-assert.match(page, /synthetic/i);
 assert.match(script, /pointercancel/);
 assert.match(script, /lostpointercapture/);
 assert.match(script, /visibilitychange/);
 assert.match(script, /KeyboardEvent|keydown/);
-console.log("Movement sandbox passed: 16×11 source-owned map, four cardinal inputs, normalized diagonals, " +
+console.log("Movement engine passed: 16×11 source-owned map, four cardinal inputs, normalized diagonals, " +
   "swept solid collision, wall sliding, delta clamp, reset, and HTML/mobile control contract.");

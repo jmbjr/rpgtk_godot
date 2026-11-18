@@ -9,46 +9,6 @@ npm ci
 python3 -m http.server 8000
 ```
 
-## First playable movement sandbox
-
-Open **[Movement Sandbox](sandbox.html)** from the Game Explorer home
-page, or visit `sandbox.html` directly on GitHub Pages. **No ZIP
-or Toolkit engine required.** Move the original, synthetic pixel-art
-character around a small tile board using **WASD**, arrow keys,
-or a touch D-pad on phones. Movement is four-way with normalized
-diagonal input, walking frames, a reset, a solid-wall overlay,
-and an inn landmark. **Approach the inn and press Talk**, or use
-**E/Space** on the keyboard, to open a first-visit conversation between
-Bruce and Loyalis. Advance one line at a time. Finishing the first
-conversation awards one clue; later visits show different dialogue
-without awarding another clue. The script-derived cooldown is a strict
-**more than 500 ms** after the previous conversation finishes.
-**Reset position** also resets the clue/visit counters.
-
-The deterministic model in
-[`experiments/movement-sandbox/engine.mjs`](experiments/movement-sandbox/engine.mjs)
-defines a 9-pixel-radius circle against orthogonal **solid tile
-rectangles**, with independent-axis wall sliding, maximum 4-pixel
-substeps, and frame elapsed-time clamping. These are
-**explicitly chosen experiment policies**, *not* assertions about
-Toolkit 3 vector collision, actual BSTW geometry, sprite timings,
-or RPGCode execution*. The stand-alone demo uses
-original synthetic board/artwork from this repo, never the BSTW
-game assets. Follow-up work under [Issue #92](https://github.com/jmbjr/rpgtk_godot/issues/92)
-now includes an [inn interaction adapter](docs/specs/inn-dialogue-adapter.md)
-and a [portable event/state contract](experiments/movement-sandbox/inn-contract.json)
-for future Godot/DODGE mapping. Dialogue is newly authored, and the
-adapter never executes original RPGCode, DLLs, or BSTW assets.
-
-CI runs `node scripts/check-movement-sandbox.mjs` for four headings,
-diagonal speed, solid collisions, sliding, large frame deltas,
-reset, source-owned map integrity and UI contract. The
-inn interaction is also tested in the dedicated deterministic dialogue
-regression, including exact 500-ms gating and one-time clues.
-The Pages staging check now validates both Game Explorer and Movement Sandbox module
-graphs. Mobile touch acceptance still requires an actual device test
-after deployment.
-
 Choose the game ZIP and optionally its separate Main File. The viewer reads
 both files in browser memory. It indexes RPGCode source and resolves the
 startup fields of binary Main File format 2.2. Browse the archive by folder.
@@ -131,14 +91,6 @@ session and bypasses startup. The player shows the active launch mode.
 Reset and fallback Game Over restart use that mode. The two fight outcome
 buttons are browser test actions.
 
-For the BSTW Expo Demo, open **Compatibility**, select **Bruce Saves
-the World! compatibility**, then choose **New**. The optional
-profile owns the source-backed title, placed dialogue, clue menu and
-[Expo Demo ending](docs/specs/bstw-browser-ending.md). Generic play
-reports unsupported source at its file and line. **Choose compatibility
-mode** beside that error returns to the launch options with Compatibility
-open. See the [browser compatibility boundary](docs/specs/tk3-browser-compatibility-boundary.md).
-
 ## Smoke test
 
 With Node.js 22 or later, run the fixture checks directly.
@@ -149,8 +101,7 @@ node scripts/smoke.mjs /path/to/Demo.zip /path/to/Demo.gam
 
 Then check the browser workflow.
 
-1. Open the supplied `Demo.zip`. Confirm 51 programs and the **Demo default**
-   at `Demo/Prg/start.prg`.
+1. Open the supplied `Demo.zip`. Confirm 51 programs and select `Demo/Prg/start.prg` in the file browser.
 2. Confirm 65 calls across 28 built-ins. Select `#SetButton` and jump to lines
    83, 84 and 85. Verify the local call at 33, the inline `#Dos` at 66 and the
    commented-out MIDI example at 26.
