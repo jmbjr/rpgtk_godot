@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import JSZip from "../vendor/jszip.min.js";
 import { chromium } from "playwright";
-import { buildBrowserGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
+import { buildBrowserGame, buildStartupExecutionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { nativeMainFixture } from "../docs/specs/fixtures/native-main-29-fixtures.mjs";
 
 const site = resolve(process.argv[2] ?? "site");
@@ -207,6 +207,150 @@ try {
   assert.deepEqual(adapterRequests, []);
   await variables(/none yet/);
   await click("play-close");
+  for (const id of ["harbor", "grove"]) {
+    const harbor = id === "harbor";
+    const zip = await buildStartupExecutionGame(id);
+    const root = harbor ? "HarborLab/" : "";
+    const startup = root + "Prg/" + (harbor ? "harbor_start.prg" : "morning.prg");
+    const opening = harbor ? /wharf.brd/ : /meadow.brd/;
+    const destination = harbor ? "channel.brd" : "ridge.brd";
+    const helperMessage = harbor ? /tide is rising/ : /orchard opens at dawn/;
+    const helperLocation = harbor ? /weather_clock.prg:5/ : /orchard.prg:4/;
+    const input = harbor ? () => page.keyboard.press("e") : talk;
+    const load = async () => archive("startup-" + id + ".zip", await zip.generateAsync({ type: "nodebuffer" }));
+    await archive("tk3-startup-" + id + ".zip",
+      await readFile(resolve(site, "tk3-startup-" + id + ".zip")));
+    await gamPlay();
+    await board(opening);
+    await expectText("gam-startup-status", /GAM startup started/);
+    await expectText("play-dialogue-text", helperMessage);
+    await expectText("play-dialogue-progress", helperLocation);
+    await variables(/startup_runs = 1/);
+    assert.doesNotMatch(await control("play-script-variables").textContent(), /startup_ready|startup_returned|wrong/);
+    const standing = await control("play-status").textContent();
+    await page.getByRole("button", { name: "Move south" }).tap();
+    assert.equal(await control("play-status").textContent(), standing);
+    await click("play-reset");
+    await expectText("play-dialogue-text", helperMessage);
+    await variables(/startup_runs = 1/);
+    await input();
+    await variables(/startup_ready = 1.*startup_returned = 1/);
+    await board(opening);
+    await talk();
+    await expectText("play-dialogue-text", /Startup prepared this object/);
+    await input();
+    await variables(/talked = 1/);
+    if (harbor) {
+      await page.getByRole("button", { name: "E · station_report.prg" }).tap();
+      await expectText("play-dialogue-progress", helperLocation);
+      await input();
+      await variables(/caller_resumed = 2/);
+    }
+    await click("play-close");
+    await directPlay();
+    await variables(/none yet/);
+    await talk();
+    await expectText("play-dialogue-text", /Startup was skipped/);
+    await input();
+    await click("play-reset");
+    await variables(/none yet/);
+    await click("play-close");
+
+    const source = await zip.file(startup).async("string");
+    zip.file(startup, 'Send("' + destination + '", 19, 27, 1)\n' + source);
+    await load();
+    await gamPlay();
+    await board(new RegExp(destination.replace(".", "\\.")));
+    await expectText("play-dialogue-text", helperMessage);
+    await input();
+    await board(opening);
+    await variables(/startup_ready = 1.*startup_returned = 1/);
+    await click("play-close");
+
+    zip.file(startup, 'startup_started = 1\nSend("missing.brd",19,27,1)\n' + source);
+    await load();
+    await gamPlay();
+    await expectText("play-script-diagnostic", /missing.brd.*missing/);
+    await board(opening);
+    await variables(/startup_started = 1/);
+    const at = await control("play-status").textContent();
+    await page.getByRole("button", { name: "Move south" }).tap();
+    assert.notEqual(await control("play-status").textContent(), at);
+    await click("play-close");
+
+    zip.file(startup, 'mwin("Ready to travel.")\nwait()\nSend("' + destination + '",19,27,1)\n' + source);
+    await load();
+    await gamPlay();
+    await expectText("play-dialogue-text", /Ready to travel/);
+    await page.evaluate(() => {
+      const original = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (...args) {
+        HTMLCanvasElement.prototype.getContext = original;
+        return null;
+      };
+    });
+    await input();
+    await expectText("play-script-diagnostic", /Unable to render destination/);
+    await board(opening);
+    const afterFailure = await control("play-status").textContent();
+    await page.getByRole("button", { name: "Move south" }).tap();
+    assert.notEqual(await control("play-status").textContent(), afterFailure);
+    await click("play-close");
+
+    zip.file(root + "Prg/win.prg", "startup_won = 1");
+    zip.file(startup, 'fightEnemy("sentinel.ene","field.bkg")\n' + source);
+    await load();
+    await gamPlay();
+    await observeFight();
+    await click("play-fight-simulate");
+    await expectText("play-dialogue-text", helperMessage);
+    await input();
+    await variables(/startup_won = 1.*startup_returned = 1/);
+    await click("play-reset");
+    await observeFight();
+    if (harbor) {
+      await click("play-fight-defeat");
+      await control("play-gameover-test").waitFor();
+      await click("play-gameover-restart");
+      await observeFight();
+      assert.doesNotMatch(await control("play-script-variables").textContent(), /startup_won|startup_returned/);
+    } else {
+      await click("play-fight-defeat");
+      await expectText("play-dialogue-text", /Recover on the meadow/);
+      await input();
+      await board(opening);
+      await variables(/recovered = 1/);
+      assert.doesNotMatch(await control("play-script-variables").textContent(), /startup_won|startup_returned/);
+      await click("play-reset");
+      await observeFight();
+    }
+    await click("play-fight-abort");
+    const afterCancel = await control("play-status").textContent();
+    await page.getByRole("button", { name: "Move south" }).tap();
+    assert.notEqual(await control("play-status").textContent(), afterCancel);
+    await click("play-close");
+
+    for (const failing of ['fightEnemy("missing.ene","field.bkg")', 'eraseItem("source")']) {
+      zip.file(startup, failing);
+      await load();
+      await gamPlay();
+      await control("play-script-diagnostic").waitFor();
+      const beforeMove = await control("play-status").textContent();
+      await page.getByRole("button", { name: "Move south" }).tap();
+      assert.notEqual(await control("play-status").textContent(), beforeMove);
+      await click("play-close");
+    }
+
+    zip.file(startup, source);
+    const helper = root + "Prg/" + (harbor ? "weather_clock.prg" : "orchard.prg");
+    const method = harbor ? "ReportTide" : "GreetDay";
+    zip.file(helper, "method " + method + "()\n{\nfontSize(18)\n}");
+    await load();
+    await gamPlay();
+    await expectText("gam-startup-status", /Startup blocked: .*\.prg:3:.*fontSize/);
+    assert.equal(await control("play-stage").isVisible(), false);
+  }
+  console.log("Shared startup Chromium passed: nested and flat GAM helpers, keyboard/touch wait and caller continuation, Talk state, transfer/return, recoverable failures, encounters, reset and direct mode.");
   // Reload the document to clear the unrelated inspection GAM. Exports
   // below must include exactly the archive's files, including unused ones.
   await page.goto(base);

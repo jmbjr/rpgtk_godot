@@ -1,6 +1,7 @@
 // Independent generated archives for the staged Explorer entry point.
 import assert from "node:assert/strict";
 import { buildScriptFixtureZip, scriptFixtureSpecs } from "./tk3-script-interaction-fixtures.mjs";
+import JSZip from "../../../vendor/jszip.min.js";
 import { diagnosticPng } from "./companion-media-fixtures.mjs";
 import { fixtures } from "./format-fixtures.mjs";
 
@@ -112,7 +113,7 @@ export async function buildBrowserGame(id, options = {}) {
     zip.file(originalRoot + "Main/" + spec.main, gam);
     zip.remove(spec.main);
   } else {
-    gam = replace(gam, z(spec.startup), z(""));
+    gam = replace(gam, z(spec.startup), z(options.startupProgram ?? ""));
     gam = replace(gam, pack(short(8), short(96), short(32)), pack(short(116), short(96), short(32)));
     const path = originalRoot + "Boards/" + spec.board;
     const board = await zip.file(path).async("nodebuffer");
@@ -134,4 +135,64 @@ export async function buildBrowserGame(id, options = {}) {
     zip.file(spec.main, gam);
   }
   return zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
+}
+
+
+// Two startup programs exercise the normal importer with different project
+// layouts, include graphs, call nesting, conditions and source filenames.
+export async function buildStartupExecutionGame(id) {
+  const harbor = id === "harbor";
+  const root = harbor ? "HarborLab/" : "";
+  const startup = harbor ? "harbor_start.prg" : "morning.prg";
+  const zip = await JSZip.loadAsync(await buildBrowserGame(id, { startupProgram: startup }));
+  zip.file(root + "Prg/" + startup, harbor ? [
+    '#include("arrival.prg")',
+    "startup_runs = startup_runs + 1",
+    "BeginArrival()",
+    "startup_returned = 1",
+  ].join("\n") : [
+    "startup_runs = startup_runs + 1",
+    '#include("orchard.prg")',
+    "if (startup_runs == 1)",
+    "{",
+    "  GreetDay()",
+    "}",
+    "startup_returned = 1",
+  ].join("\n"));
+  if (harbor) {
+    zip.file(root + "Prg/arrival.prg", [
+      '#include("weather_clock.prg")',
+      "method BeginArrival()",
+      "{",
+      "  ReportTide()",
+      "  startup_ready = 1",
+      "}",
+    ].join("\n"));
+    // The ordinary E key calls this exact helper again after startup.
+  } else {
+    zip.file("Prg/orchard.prg", [
+      "method GreetDay()",
+      "{",
+      "  mwin(\"The orchard opens at dawn.\")",
+      "  wait()",
+      "  mwinCls()",
+      "  startup_ready = 1",
+      "}",
+    ].join("\n"));
+  }
+  zip.file(root + "Prg/" + (harbor ? "mwininn.prg" : "pickup.prg"), [
+    "if (startup_ready == 1)",
+    "{",
+    '  mwin("Startup prepared this object.")',
+    "}",
+    "else",
+    "{",
+    '  mwin("Startup was skipped.")',
+    "}",
+    "wait()",
+    "talked = talked + 1",
+  ].join("\n"));
+  zip.file("Sibling/Prg/" + (harbor ? "arrival.prg" : "orchard.prg"),
+    "method " + (harbor ? "BeginArrival" : "GreetDay") + "()\n{\nwrong = 1\n}");
+  return zip;
 }

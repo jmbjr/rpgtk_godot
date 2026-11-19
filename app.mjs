@@ -2503,6 +2503,7 @@ function mountPlayable(scene, options, mode = launchMode) {
   }[mode];
   const replacement = mountAuthoredBoard(panel, scene, playContext.artifacts,
     playContext.graph, { ...options, onTransfer: remountTransferredBoard,
+      onStartupComplete: finishGamStartup,
       onRestart: () => launchPlayableWithSession(launchMode) });
   panel.querySelector("#play-close").addEventListener("click", () => {
     closePlayable();
@@ -2524,9 +2525,19 @@ function remountTransferredBoard({ scene, ...options }) {
     return "Unable to render destination: " + error.message;
   }
   queueMicrotask(() => {
-    if (activePlayable === replacement) replacement.continueTransfer();
+    if (activePlayable === replacement) replacement.continueScript();
   });
   return null;
+}
+
+function finishGamStartup(scriptSession) {
+  try {
+    mountPlayable(playableScene, { scriptSession,
+      arrivalFeedback: "GAM startup completed; opening the configured board." });
+    return null;
+  } catch (error) {
+    return "Unable to render the configured opening board: " + error.message;
+  }
 }
 
 function launchPlayableScene() {
@@ -2543,15 +2554,20 @@ function launchPlayableWithSession(mode) {
     return false;
   }
   const arrivalFeedback = outcome ? (outcome.startupPath ?
-    "GAM startup completed: " + outcome.startupPath :
+    "GAM startup " + (outcome.status === "completed" ? "completed: " : "started: ") + outcome.startupPath :
     "No GAM startup PRG configured; opening the initial board.") :
       "Direct board launch: GAM startup was bypassed.";
   try {
-    const { panel } = mountPlayable(playableScene, { scriptSession: outcome?.scriptSession, arrivalFeedback }, mode);
+    const { panel, replacement } = mountPlayable(playableScene,
+      { scriptSession: outcome?.scriptSession, arrivalFeedback,
+        startupActive: Boolean(outcome?.step && outcome.status !== "completed") }, mode);
     launchMode = mode;
     boardDiagnostics.open = false;
     panel.scrollIntoView({ behavior: "instant", block: "start" });
     status("gam-startup-status", arrivalFeedback);
+    if (outcome?.step && outcome.status !== "completed") queueMicrotask(() => {
+      if (activePlayable === replacement) replacement.continueScript(outcome.step);
+    });
     return true;
   } catch (error) {
     status("play-eligibility", "Unable to render board: " + error.message, true);
