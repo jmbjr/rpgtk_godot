@@ -62,7 +62,7 @@ executed for this change.
 **Play game** resolves the startup PRG from the ZIP's embedded GAM with
 the same typed project resolver used by Talk, BRD programs and GAM keys.
 It invokes `startTk3Script` with the archive context. Supported includes
-and parameterless helpers therefore compile and execute in startup as
+and parameterized helpers therefore compile and execute in startup as
 they do in those later entrypoints. Parser diagnostics retain their helper
 filename and line. A failed compilation leaves the current player usable
 and publishes no new startup session.
@@ -73,8 +73,8 @@ handler. Helper continuation and global variables survive the yields.
 Movement and new script triggers wait for the running startup. An empty
 startup field creates a fresh ordinary board session.
 
-The browser renders the configured board as the backdrop for startup
-dialogue. A startup `Send()` mounts its destination while that script is
+The browser renders a source-drawn RPGCode screen when `clear`/`text` requests
+one; otherwise the configured board is the backdrop for startup dialogue. A startup `Send()` mounts its destination while that script is
 running. After normal startup return, the browser mounts the GAM opening
 board with the same variables, following the pinned post-startup setup
 order above. Reset and fallback Game Over restart create a fresh session
@@ -82,8 +82,10 @@ and invoke startup again. Direct diagnostics skip startup.
 
 Failed transfers preserve the current board and show a source diagnostic.
 A cancelled encounter ends the active startup script and releases input.
-Unsupported commands, player creation, class initialization, save/load,
-and board-entry programs still receive source diagnostics as applicable.
+Unsupported commands, player creation, class initialization and save/load
+produce source diagnostics. Automatic board-entry execution remains unsupported.
+The [shared language and title services](tk3-script-interaction.md) document
+the current grammar, native evidence, browser policies and limits.
 
 ## Verification
 
@@ -103,7 +105,10 @@ The existing Explorer/media and generic gameplay regressions also run.
 The implementer checked the unmodified local
 `demo_tk310_start_board_playable(1).zip`, SHA-256
 `367302f4819b3bfde8e434d22561d61e03cd83f92a38cb18a3dd7aa27a55dc3f`.
-Its GAM selects `demo/Prg/start.prg`. Play reaches the source diagnostic
-at line 6, `fontSize(18)`. The title/menu commands and expanded language
-constructs are subsequent milestones. Original Toolkit runtime acceptance
-and deployed browser acceptance remain separate from these checks.
+Its GAM selects `demo/Prg/start.prg`. In staged Chromium, Play now reaches the
+original source-drawn title with MIDI. New Game runs the authored intro,
+waits for input, and opens the configured board. Old-man Talk, authored Send,
+explicit simulated pirate victory/removal, defeat and fresh startup restart
+passed. Load remains an explicit unsupported-save diagnostic. No private
+archive content was added to Git, CI or Pages. Native Toolkit runtime
+acceptance and deployed browser acceptance remain separate from these checks.

@@ -57,8 +57,7 @@ async function parsed(zip) {
 }
 
 // Original TK3 syntax permits trailing semicolons on source statements.
-// Preserve physical source line numbers and strict one-statement-per-line
-// grammar; do not permit arbitrary compound statements.
+// Preserve physical source line numbers, including multiple statements per line.
 let dialogue=startTk3Script(initialTk3ScriptState(),
   ['// Native semicolon source', 'mwin("Old guide; welcome!");',
     'mwin("A second message");', 'wait();',
@@ -73,8 +72,9 @@ assert.equal(dialogue.state.message,"");
 assert.equal(dialogue.state.variables.visited,1);
 const compound=startTk3Script(initialTk3ScriptState(),
   'mwin("A"); wait();', "Independent/Prg/compound.prg");
-assert.equal(compound.status,"error");
-assert.equal(compound.state.diagnostic.line,1);
+assert.equal(compound.status,"waiting");
+assert.equal(compound.line,1);
+assert.equal(compound.state.message,"A");
 
 // Two *different* native synthetic games exercise the same archive to board
 // program to scene transfer path, without game-specific runtime checks.

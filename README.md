@@ -86,8 +86,9 @@ outside the corresponding binary decoders.
 
 **Play game** follows the ZIP's embedded Toolkit 3.1 GAM and runs its
 supported startup using the same runtime as Talk and game keys. Startup
-can call included helpers, show dialogue and wait for input. The board is
-shown as a backdrop during those waits. After normal startup return, the
+can call parameterized included helpers, evaluate expressions and loops,
+draw a text title with cursor choices, play MIDI/WAV and wait for input.
+Source-drawn screens replace the board backdrop while active. After normal startup return, the
 configured opening board receives the shared session. **Board diagnostics
 → Play opening board (direct diagnostic)** opens that board with a fresh
 session and bypasses startup. The player shows the active launch mode.
@@ -100,6 +101,15 @@ then Talk to the nearby object. Its reply confirms startup prepared it.
 Reset reruns the opening message. Direct diagnostics lets you inspect the
 object's source-authored response when startup is skipped.
 [Startup lifecycle and test evidence](docs/specs/tk3-startup-lifecycle.md)
+
+For a full title-to-board check, download **TK3 Title · Harbor** or
+**TK3 Title · Grove**, upload it, choose **Play game**, and select **Depart**
+or **Wake**. Advance the helper message, then Talk and move on the board.
+Reset returns to the source title. The unchanged owner TK3.10 diagnostic ZIP
+also passes Play → title → New Game → intro → initial board locally.
+Save/load and native battle/menu plugins remain unsupported.
+[Shared language, source evidence and limits](docs/specs/tk3-script-interaction.md)
+
 
 ## Smoke test
 

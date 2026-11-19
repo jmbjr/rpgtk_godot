@@ -344,13 +344,77 @@ try {
     zip.file(startup, source);
     const helper = root + "Prg/" + (harbor ? "weather_clock.prg" : "orchard.prg");
     const method = harbor ? "ReportTide" : "GreetDay";
-    zip.file(helper, "method " + method + "()\n{\nfontSize(18)\n}");
+    zip.file(helper, "method " + method + "()\n{\nunsupportedCommand(18)\n}");
     await load();
     await gamPlay();
-    await expectText("gam-startup-status", /Startup blocked: .*\.prg:3:.*fontSize/);
+    await expectText("gam-startup-status", /Startup blocked: .*\.prg:3:.*unsupportedcommand/);
     assert.equal(await control("play-stage").isVisible(), false);
   }
   console.log("Shared startup Chromium passed: nested and flat GAM helpers, keyboard/touch wait and caller continuation, Talk state, transfer/return, recoverable failures, encounters, reset and direct mode.");
+
+  for (const id of ["harbor", "grove"]) {
+    const harbor = id === "harbor";
+    const title = harbor ? "Harbor departure" : "Orchard morning";
+    const begin = harbor ? "Depart" : "Wake";
+    const leave = harbor ? "Leave" : "Exit orchard";
+    const zipBytes = await readFile(resolve(site, "tk3-title-" + id + ".zip"));
+    await archive("renamed-title-" + id + ".zip", zipBytes);
+    await gamPlay();
+    const menu = control("play-script-choices");
+    await menu.getByRole("button", {name:begin,exact:true}).waitFor();
+    await expectText("play-screen-text", title);
+    await expectText("play-audio-status", harbor ? /Playing MIDI:/ : /Playing WAV:/);
+    assert.equal(await control("play-map-frame").isVisible(), false);
+    await variables(/startup_runs = 1/);
+    const position = await control("play-status").innerText();
+    await page.keyboard.press("ArrowDown");
+    if (harbor) {
+      await page.keyboard.press("Enter");
+      await expectText("play-script-diagnostic", /save\/load is not implemented/);
+      await click("play-reset");
+      await menu.getByRole("button", {name:begin,exact:true}).waitFor();
+    } else {
+      await page.keyboard.press("ArrowUp");
+    }
+    assert.equal(await control("play-status").innerText(), position, "Title navigation cannot move the board actor");
+    if (harbor) await page.keyboard.press("Enter");
+    else await menu.getByRole("button", {name:begin,exact:true}).tap();
+    await expectText("play-dialogue-text", harbor ? "Harbor ready" : "Orchard ready");
+    await expectText("play-dialogue-progress", harbor ? /departure.prg:355/ : /greeting.prg:355/);
+    await variables(/startup_checksum = 350/);
+    const waitingStatus = await control("play-status").innerText();
+    await click("play-reset");
+    await menu.getByRole("button", {name:begin,exact:true}).waitFor();
+    await variables(/startup_runs = 1/);
+    assert.doesNotMatch(await control("play-script-variables").innerText(), /startup_checksum/);
+    await menu.getByRole("button", {name:begin,exact:true}).tap();
+    await expectText("play-dialogue-text", /ready/);
+    await page.keyboard.press("Enter");
+    await expectText("play-feedback", /GAM startup completed/);
+    assert.equal(await control("play-script-screen").isVisible(), false);
+    await variables(new RegExp("result = " + (harbor ? 6 : 10)));
+    await variables(/startup_ready = 1/);
+    assert.doesNotMatch(await control("play-script-variables").innerText(), /wrong/);
+    await talk();
+    await expectText("play-dialogue-text", "Startup prepared this object.");
+    await talk();
+    await page.locator('[data-move="east"]').tap();
+    assert.notEqual(await control("play-status").innerText(), waitingStatus, "Movement resumes after the title and library return");
+    await click("play-reset");
+    await menu.getByRole("button", {name:leave,exact:true}).tap();
+    await expectText("play-feedback", /windows\(\) exited/);
+    assert.ok(await control("play-talk").isDisabled());
+    await click("play-reset");
+    await menu.getByRole("button", {name:begin,exact:true}).waitFor();
+    await click("play-close");
+    await control("play-launch").waitFor();
+    await directPlay();
+    assert.equal(await control("play-script-screen").isVisible(), false);
+    await talk();
+    await expectText("play-dialogue-text", "Startup was skipped.");
+    await click("play-close");
+  }
+  console.log("Generic title Chromium passed: two independent archives, original text and cursor choices, MIDI/WAV, keyboard/touch New Game, 350-line helper execution, caller return, Talk state, reset, exit, explicit save diagnostic and direct diagnostics.");
   // Reload the document to clear the unrelated inspection GAM. Exports
   // below must include exactly the archive's files, including unused ones.
   await page.goto(base);
