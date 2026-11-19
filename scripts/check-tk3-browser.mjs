@@ -382,7 +382,6 @@ try {
     await expectText("play-dialogue-text", harbor ? "Harbor ready" : "Orchard ready");
     await expectText("play-dialogue-progress", harbor ? /departure.prg:355/ : /greeting.prg:355/);
     await variables(/startup_checksum = 350/);
-    const waitingStatus = await control("play-status").innerText();
     await click("play-reset");
     await menu.getByRole("button", {name:begin,exact:true}).waitFor();
     await variables(/startup_runs = 1/);
@@ -398,8 +397,31 @@ try {
     await talk();
     await expectText("play-dialogue-text", "Startup prepared this object.");
     await talk();
-    await page.locator('[data-move="east"]').tap();
-    assert.notEqual(await control("play-status").innerText(), waitingStatus, "Movement resumes after the title and library return");
+    await control("play-dialogue").waitFor({state:"hidden"});
+    const beforeMove = (await control("play-status").innerText()).match(/\((\d+), (\d+), layer/);
+    const moved = () => page.waitForFunction(y => {
+      const point = document.querySelector("#play-status").textContent.match(/\((\d+), (\d+), layer/);
+      return Number(point[2]) > y + 1;
+    }, Number(beforeMove[2]));
+    if (harbor) {
+      await move("ArrowDown", moved);
+    } else {
+      // Hold real touch input until a frame observes movement; a completed
+      // tap alone is not a reliable animation checkpoint on fast runners.
+      const padButton = page.getByRole("button", {name:"Move south",exact:true});
+      await padButton.scrollIntoViewIfNeeded();
+      const bounds = await padButton.boundingBox();
+      const touch = await page.context().newCDPSession(page);
+      try {
+        await touch.send("Input.dispatchTouchEvent", {type:"touchStart", touchPoints:[{
+          x:bounds.x+bounds.width/2, y:bounds.y+bounds.height/2,
+        }]});
+        await moved();
+      } finally {
+        await touch.send("Input.dispatchTouchEvent", {type:"touchEnd", touchPoints:[]});
+        await touch.detach();
+      }
+    }
     await click("play-reset");
     await menu.getByRole("button", {name:leave,exact:true}).tap();
     await expectText("play-feedback", /windows\(\) exited/);
