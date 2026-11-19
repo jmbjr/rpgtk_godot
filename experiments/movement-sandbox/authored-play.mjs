@@ -183,6 +183,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   }
   let actor = initialMovementState(scene.world);
   let scriptSession = options.scriptSession ?? initialTk3ScriptState();
+  let startupActive = options.startupActive ?? false;
   let activeFight = null;
   let gameOver = false;
   let defeatProgramActive = options.defeatProgramActive ?? false;
@@ -235,7 +236,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     element.classList.toggle("label-above", item.labelAbove);
   };
   const listeners = new AbortController();
-  const busy = () => Boolean(activeFight || gameOver || scriptSession.execution?.waiting);
+  const busy = () => Boolean(startupActive || activeFight || gameOver || scriptSession.execution);
   const initialGuidance = describePlayableTargets(scene, actorAtLayer());
   markerLayer.replaceChildren();
   const playerMarker = makeMarker("player", initialGuidance.player.label);
@@ -434,6 +435,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       const resolved = resolveTk3FightRequest(stepped, artifacts, scene.projectRoot);
       scriptSession = resolved.state;
       activeFight = resolved.status === "ready" ? resolved.encounter : null;
+      if (!activeFight) startupActive = false;
       interactionFeedback = activeFight ?
         "Source fightEnemy() reached. This test requires a manual simulated outcome; no battle plugin is running." :
         resolved.state?.diagnostic?.text || "Fight source could not be resolved.";
@@ -453,6 +455,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
             ": eraseItem() source item is not present on this board." };
         scriptSession = { ...scriptSession, execution: null, scriptStack: [],
           diagnostic };
+        startupActive = false;
         interactionFeedback = diagnostic.text;
         clearHeld();
         return false;
@@ -469,7 +472,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (response.transferred) {
       clearHeld();
       const failure = options.onTransfer?.({ scene: response.scene,
-        scriptSession: response.state, defeatProgramActive,
+        scriptSession: response.state, defeatProgramActive, startupActive,
         arrivalFeedback: "Send() arrived at " + response.toBoardPath +
           " · (" + response.spawn.x + ", " + response.spawn.y +
           ", layer " + response.spawn.layer + ")." });
@@ -478,6 +481,16 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
         "Send(): " + (failure ?? "browser scene-transfer callback is unavailable."));
     }
     scriptSession = response.state;
+    if (startupActive && ["completed", "error"].includes(response.status)) {
+      startupActive = false;
+      if (response.status === "completed") {
+        const failure = options.onStartupComplete?.(scriptSession);
+        if (failure === null) return true;
+        const diagnostic = { path: scene.mainPath, line: 1,
+          text: scene.mainPath + ":1: " + (failure ?? "Opening-board callback is unavailable.") };
+        scriptSession = { ...scriptSession, diagnostic };
+      }
+    }
     // Native FIGHT_LOST calls the GAM's game-over PRG and returns when
     // that PRG finishes. Only the *absent-PRG* branch invokes reset().
     const finishedDefeatPrg = defeatProgramActive &&
@@ -645,6 +658,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       interactionFeedback = "Simulated defeat (test only): no combat or rewards were executed.";
     } else if (response.status === "error") {
       scriptSession = response.state;
+      startupActive = false;
       interactionFeedback = response.state.diagnostic?.text ||
         "The GAM-configured game-over PRG cannot be executed.";
     } else {
@@ -660,6 +674,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     const response = cancelTk3FightTest(scriptSession);
     scriptSession = response.state;
     activeFight = null;
+    startupActive = false;
     interactionFeedback = "Battle test cancelled; no victory, rewards, or source win script.";
     clearHeld();
     updateStatus();
@@ -695,8 +710,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     throw error;
   }
   return {
-    continueTransfer() {
-      if (!applyScriptStep(resumeTk3Transfer(scriptSession))) {
+    continueScript(step = resumeTk3Transfer(scriptSession)) {
+      if (!applyScriptStep(step)) {
         draw();
         updateStatus();
       }

@@ -6,6 +6,8 @@ import { readArtifacts, buildReferences } from "../artifacts.mjs";
 import { mainFileBindings } from "../model.mjs";
 import { buildPlayableScene } from "../playable-scene.mjs";
 import { executeGamStartup } from "../tk3-gam-startup.mjs";
+import { buildStartupExecutionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
+import { resolveTk3BoardTransfer } from "../tk3-board-transfer.mjs";
 import { initialTk3ScriptState, startPlacedTk3Script, advanceTk3Script }
   from "../tk3-script-slice.mjs";
 import { startupLabSpec, buildStartupLabZip, sourceForStartupPrg, sourceForStartupLab }
@@ -72,8 +74,7 @@ assert.equal(freshBoot.scriptSession.variables[spec.bootVariable], 1);
 assert.notEqual(freshBoot.scriptSession, finished.state);
 
 for (const unsupported of [
-  'Run("a.prg")', 'Send("other.brd", 19, 27, 1)',
-  'Load("savegame")', "wait()", 'mwin("Startup message")',
+  'Run("a.prg")', 'Load("savegame")',
   'plugins->Run("Anything")',
 ]) {
   const zip = await buildStartupLabZip();
@@ -114,4 +115,62 @@ assert.equal(skipped.ok, true);
 assert.equal(skipped.status, "skipped");
 assert.deepEqual(skipped.scriptSession.variables, {});
 
-console.log("GAM startup passed: production synthetic ZIP -> configured PRG -> scalar -> placed-object dialogue; direct launch, fresh session, missing/ambiguous paths, and atomic unsupported-command diagnostics.");
+for (const id of ["harbor", "grove"]) {
+  const zip = await buildStartupExecutionGame(id);
+  const { a, g, scene } = await decode(zip);
+  const boot = executeGamStartup(a, scene);
+  assert.equal(boot.ok, true, boot.diagnostic?.text);
+  assert.equal(boot.status, "waiting");
+  assert.equal(boot.step.state, boot.scriptSession);
+  assert.equal(boot.scriptSession.variables.startup_runs, 1);
+  assert.equal(boot.scriptSession.variables.startup_ready, undefined);
+  const helper = boot.scriptSession.execution.instructions[boot.scriptSession.execution.pc - 1];
+  assert.equal(helper.path, scene.projectRoot + "Prg/" + (id === "harbor" ? "weather_clock.prg" : "orchard.prg"));
+  const finished = advanceTk3Script(boot.scriptSession);
+  assert.equal(finished.status, "completed");
+  assert.equal(finished.state.variables.startup_ready, 1);
+  assert.equal(finished.state.variables.startup_returned, 1);
+  assert.equal(finished.state.variables.wrong, undefined);
+  const target = scene.placements.find(item => item.programStatus === "resolved");
+  const talk = startPlacedTk3Script(finished.state, scene, target.position, a);
+  assert.equal(talk.state.message, "Startup prepared this object.");
+  assert.equal(advanceTk3Script(talk.state).state.variables.talked, 1);
+
+  const startup = zip.file(boot.startupPath);
+  const source = await startup.async("string");
+  const destination = id === "harbor" ? "channel.brd" : "ridge.brd";
+  zip.file(boot.startupPath, 'Send("' + destination + '", 19, 27, 1)\n' + source);
+  const transferred = await decode(zip);
+  const initial = executeGamStartup(transferred.a, transferred.scene);
+  assert.equal(initial.status, "transfer");
+  const arrival = resolveTk3BoardTransfer(initial.step, transferred.scene, transferred.a, transferred.g);
+  assert.equal(arrival.transferred, true);
+  assert.equal(arrival.status, "waiting");
+  assert.equal(advanceTk3Script(arrival.state).state.variables.startup_returned, 1);
+
+  zip.file(boot.startupPath, source);
+  const helperPath = scene.projectRoot + "Prg/" + (id === "harbor" ? "weather_clock.prg" : "orchard.prg");
+  zip.file(helperPath, "method " + (id === "harbor" ? "ReportTide" : "GreetDay") +
+    "()\n{\nfontSize(18)\n}");
+  const rejected = await decode(zip);
+  const blocked = executeGamStartup(rejected.a, rejected.scene);
+  assert.equal(blocked.ok, false);
+  assert.equal(blocked.diagnostic.path, helperPath);
+  assert.equal(blocked.diagnostic.line, 3);
+  assert.equal(blocked.scriptSession, undefined);
+}
+
+if (process.argv[2]) {
+  const { createHash } = await import("node:crypto");
+  const bytes = await readFile(process.argv[2]);
+  assert.equal(createHash("sha256").update(bytes).digest("hex"),
+    "367302f4819b3bfde8e434d22561d61e03cd83f92a38cb18a3dd7aa27a55dc3f");
+  const original = await decode(await JSZip.loadAsync(bytes));
+  const attempted = executeGamStartup(original.a, original.scene);
+  assert.equal(attempted.ok, false);
+  assert.equal(attempted.diagnostic.path, "demo/Prg/start.prg");
+  assert.equal(attempted.diagnostic.line, 6);
+  assert.match(attempted.diagnostic.text, /fontSize\(18\)/);
+  console.log("Original TK3.10 diagnostic ZIP: GAM startup resolves to start.prg; current unsupported command is fontSize(18) at line 6.");
+}
+console.log("GAM startup passed: shared rooted helper execution, wait/caller continuation, Talk state, transfer, helper diagnostics, fresh sessions and binding errors.");

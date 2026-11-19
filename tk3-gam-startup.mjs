@@ -1,14 +1,10 @@
 import { mainFileBindings } from "./model.mjs";
-import { compileTk3Interaction, initialTk3ScriptState, startTk3Script }
+import { initialTk3ScriptState, startTk3Script }
   from "./tk3-script-slice.mjs";
 
-// A deliberately bounded, UI-independent approximation of the normal
-// Toolkit 3.1 launch order: GAM startup runs before first-board gameplay.
+// Resolve the configured entry and use the same runtime as later triggers.
 // Pinned source: trans3/app/winmain.cpp setUpGame() lines 293-339.
-// Only synchronous scalar assignment and basic if/else are accepted here.
-// Runtime Wait, Send, Load, Run, object methods and plugins remain separate
-// slices. Refuse them before *any* startup side effects take place.
-const allowed = new Set(["assign", "if", "jump"]);
+// The browser host handles yielded effects after committing its scene.
 const diagnostic = (path, line, reason) => ({
   path, line, message: reason,
   text: path + ":" + line + ": " + reason,
@@ -55,19 +51,9 @@ export function executeGamStartup(artifacts, scene) {
       "GAM startup program does not have decoded RPGCode source.") };
   }
   const source = program.program.rows.map(row => row.line).join("\n");
-  const compiled = compileTk3Interaction(source, path);
-  if (!compiled.ok) return { ok: false, diagnostic: compiled.diagnostic };
-
-  const forbidden = compiled.instructions.find(node => !allowed.has(node.op));
-  if (forbidden) return { ok: false, diagnostic: diagnostic(path, forbidden.line,
-    "Startup statement " + forbidden.op + " requires lifecycle support not yet implemented; " +
-    "only synchronous variable assignments and if/else are supported.") };
-
-  const completed = startTk3Script(initialTk3ScriptState(), source, path);
-  if (completed.status !== "completed") {
-    return { ok: false, diagnostic: completed.state.diagnostic ??
-      diagnostic(path, 1, "Startup did not complete synchronously.") };
-  }
-  return { ok: true, status: "completed", startupPath: path,
-    scriptSession: completed.state };
+  const step = startTk3Script(initialTk3ScriptState(), source, path,
+    { artifacts, projectRoot: scene.projectRoot });
+  if (step.status === "error") return { ok: false, diagnostic: step.state.diagnostic };
+  return { ok: true, status: step.status, startupPath: path,
+    scriptSession: step.state, step };
 }

@@ -85,11 +85,21 @@ outside the corresponding binary decoders.
 ## Play an imported Toolkit 3 game
 
 **Play game** follows the ZIP's embedded Toolkit 3.1 GAM and runs its
-supported startup before opening the configured board. **Board diagnostics
+supported startup using the same runtime as Talk and game keys. Startup
+can call included helpers, show dialogue and wait for input. The board is
+shown as a backdrop during those waits. After normal startup return, the
+configured opening board receives the shared session. **Board diagnostics
 → Play opening board (direct diagnostic)** opens that board with a fresh
 session and bypasses startup. The player shows the active launch mode.
 Reset and fallback Game Over restart use that mode. The two fight outcome
 buttons are browser test actions.
+
+Download **TK3 Startup · Harbor helpers** or **TK3 Startup · Grove helpers**
+from the importer. Choose **Play game**, advance the opening helper message,
+then Talk to the nearby object. Its reply confirms startup prepared it.
+Reset reruns the opening message. Direct diagnostics lets you inspect the
+object's source-authored response when startup is skipped.
+[Startup lifecycle and test evidence](docs/specs/tk3-startup-lifecycle.md)
 
 ## Smoke test
 

@@ -293,17 +293,12 @@ anchoring, layer/item eligibility and range hints. CI also
 verifies Pages ESM staging, but does **not** replace manual
 visual acceptance on desktop/Android.
 
-## Next bounded slice: GAM startup scalar session
+## Shared GAM startup session
 
-See [pinned-source startup lifecycle](tk3-startup-lifecycle.md) for the
-Toolkit 3.1 setup order, global variable lifetime, Send/Load distinction,
-browser limitations and source-owned Lantern startup ZIP test path.
-
-The optional **Run GAM startup + play** path evaluates a resolved GAM
-startup PRG with synchronous scalar assignments and basic conditionals
-before mounting the authored initial board. A placed object's script
-can read the resulting variables. **Play opening board (direct)**,
-the BSTW title adapter, and the existing Harbor and Grove tests are
-unchanged. Startup pauses, Send/Run/Load, includes, plugins and native
-board-entry programs remain unsupported and produce a source-line
-diagnostic rather than a partial session.
+[Startup lifecycle](tk3-startup-lifecycle.md) records the pinned setup order,
+global variable lifetime, and browser behavior. Play game invokes the same
+project-rooted runtime as Talk, board programs and GAM keys. Included
+helpers can show messages, wait, and resume the caller. Board transfers
+and labeled encounter tests use the common effect handler. After startup
+returns, the GAM opening board receives that session. Reset invokes a
+fresh startup, and direct diagnostics skip that invocation.

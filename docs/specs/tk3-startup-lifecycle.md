@@ -57,80 +57,53 @@ executed for this change.
    [winmain.cpp lines 407–432](https://github.com/chrisbmatthews/rpgtoolkit/blob/9191b9191c9bda0998c6faae16929b3331ed2ead/vc/trans3/app/winmain.cpp#L407-L432)
    frees global variables and returns to setUpGame.
 
-## Implemented browser subset
+## Shared browser execution
 
-The optional **Run GAM startup + play** action:
+**Play game** resolves the startup PRG from the ZIP's embedded GAM with
+the same typed project resolver used by Talk, BRD programs and GAM keys.
+It invokes `startTk3Script` with the archive context. Supported includes
+and parameterless helpers therefore compile and execute in startup as
+they do in those later entrypoints. Parser diagnostics retain their helper
+filename and line. A failed compilation leaves the current player usable
+and publishes no new startup session.
 
-- Uses the existing `mainFileBindings` resolver and the GAM embedded
-  **in the uploaded archive**, not a filename selected in JavaScript.
-- Decodes the uniquely resolved startup PRG through `readArtifacts`,
-  validates **the entire script** with the existing
-  `compileTk3Interaction`, and executes it against a **new**
-  in-memory session. Only synchronous scalar assignment and
-  `if/else` (with existing supported expressions) are allowed.
-- After successful normal completion, opens the same source
-  `buildPlayableScene` as the direct path, injecting the returned
-  session into the existing generic placed-item dialogue runtime.
-  No game-specific variable or script checks are in runtime code.
-- A **missing, ambiguous, invalid, or unsupported startup**
-  receives a visible `path/to/startup.prg:line: explanation`
-  without launching an incompletely initialized game. The parser
-  and lifecycle scan run **before any assignments**, so an
-  unsupported statement after an assignment cannot partially
-  initialize a new session. The direct board action remains
-  accessible for source diagnostics.
-- If the GAM startup field is empty, the action opens the board
-  with a clean empty session, matching the native no-script stage.
+Startup can yield dialogue, input waits, board transfers, and the existing
+labeled encounter effects. The player resumes each using its common effect
+handler. Helper continuation and global variables survive the yields.
+Movement and new script triggers wait for the running startup. An empty
+startup field creates a fresh ordinary board session.
 
-**Not yet supported:** startup message windows, `wait()`, `Send()`,
-`Run()`, `Load()` / saves, plugin functions, includes, player
-creation, class/object initialization, virtual-variable parity,
-board-entry PRG execution, other RPGCode commands or the full
-engine startup system. The browser statically decodes board assets
-before running this subset, but mounts the playable board only
-after it returns. On this branch, **the existing Reset button**
-still resets the currently shown board and clears script variables;
-to rerun GAM startup, return to the file viewer and select
-**Run GAM startup + play** again. This is a documented difference
-from native Reset. The established BSTW title/New and direct-board
-paths remain intentionally unchanged and do not execute
-BSTW's unsupported startup code.
+The browser renders the configured board as the backdrop for startup
+dialogue. A startup `Send()` mounts its destination while that script is
+running. After normal startup return, the browser mounts the GAM opening
+board with the same variables, following the pinned post-startup setup
+order above. Reset and fallback Game Over restart create a fresh session
+and invoke startup again. Direct diagnostics skip startup.
 
-## Synthetic Lantern Script Lab acceptance
+Failed transfers preserve the current board and show a source diagnostic.
+A cancelled encounter ends the active startup script and releases input.
+Unsupported commands, player creation, class initialization, save/load,
+and board-entry programs still receive source diagnostics as applicable.
 
-The newly generated `tk3-script-startup.zip` uses:
-- `LanternLab.gam` → `LanternLab/Prg/lantern_boot.prg`
-- `lantern_boot.prg`: `lantern_ready = 1`
-- `LanternLab/Boards/twilight.brd` with Nia and a placed
-  Lantern whose activation resolves to
-  `LanternLab/Prg/lantern_answer.prg`
-- `lantern_answer.prg`: `if (lantern_ready == 1)`
-  shows the startup-lit message; otherwise it shows a
-  distinct direct-launch message. Both branches use source-owned
-  `mwin()`, `wait()`, and `mwinCls()` commands.
+## Verification
 
-**Browser test A (normal startup):** download the Lantern ZIP on
-Game Explorer → upload it → **Run GAM startup + play** →
-verify `lantern_ready = 1` appears in the variable display →
-approach **Lantern · TALK**, complete the message →
-verify the text says startup lit the lantern.
+The generated `tk3-startup-harbor.zip` uses a nested project with a GAM
+in `Main/`, two include levels, and nested helper calls. Its startup calls
+the same weather helper as the E runtime key. The flat
+`tk3-startup-grove.zip` uses a conditional call to a separate helper.
+In both archives, Play displays the included helper's message, waits for
+input, then returns to the caller. Talk reads the variable set by startup.
+Direct diagnostics shows the alternate source-authored response.
 
-**Browser test B (diagnostic direct launch):** Back to viewer →
-**Play opening board (direct)** → the variable panel is empty →
-Talk to the same lantern → the message instead says startup
-was skipped. Reopen with startup to confirm a fresh session.
+Staged Chromium covers keyboard and touch continuation, reset during a
+wait, transfer and return to the opening board, missing and unrenderable
+destinations, helper diagnostics, startup fight outcomes and fresh restart.
+The existing Explorer/media and generic gameplay regressions also run.
 
-**Error-path regression:** a variant containing a supported
-assignment followed by unsupported `Run()` or `Load()` must
-report its exact startup PRG and offending line, and must
-not expose partially initialized variables. Negative variants
-also cover missing/ambiguous startup files. No original TK3
-game archive or original BSTW bytes are in Git or CI.
-
-[Production synthetic ZIP regression](../../scripts/check-tk3-startup.mjs)
-executes archive → GAM → startup resolver → PRG → interpreter →
-placed object with original paths and values from the ZIP.
-Existing Harbor ending, Grove first/repeat, BSTW title/inn,
-Toolkit regressions and Pages import-closure are independent
-tests. Native-editor execution and real-game compatibility
-are **not** established by this synthetic regression.
+The implementer checked the unmodified local
+`demo_tk310_start_board_playable(1).zip`, SHA-256
+`367302f4819b3bfde8e434d22561d61e03cd83f92a38cb18a3dd7aa27a55dc3f`.
+Its GAM selects `demo/Prg/start.prg`. Play reaches the source diagnostic
+at line 6, `fontSize(18)`. The title/menu commands and expanded language
+constructs are subsequent milestones. Original Toolkit runtime acceptance
+and deployed browser acceptance remain separate from these checks.

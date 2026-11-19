@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { buildScriptFixtureZip, scriptFixtureSpecs }
   from "../docs/specs/fixtures/tk3-script-interaction-fixtures.mjs";
+import { buildStartupExecutionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { buildStartupLabZip }
   from "../docs/specs/fixtures/tk3-startup-fixture.mjs";
 
@@ -20,3 +21,12 @@ const startupBytes = await startup.generateAsync({ type: "uint8array", compressi
 await writeFile(resolve(folder, "tk3-script-startup.zip"), startupBytes);
 console.log("tk3-script-startup.zip: " + startupBytes.length +
   " bytes, synthetic GAM startup + conditional lantern game.");
+
+
+for (const id of ["harbor", "grove"]) {
+  const zip = await buildStartupExecutionGame(id);
+  const filename = "tk3-startup-" + id + ".zip";
+  await writeFile(resolve(folder, filename),
+    await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" }));
+  console.log(filename + ": generic GAM startup, included helper and Talk session.");
+}
