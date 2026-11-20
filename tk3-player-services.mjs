@@ -1,5 +1,5 @@
 import { resolveAsset } from "./model.mjs";
-import { defaultMidiTone, playMidi } from "./midi.mjs";
+import { defaultMidiTone, generalUserGs, playMidi } from "./midi.mjs";
 import {
   createTk3CanvasServices,
   canvasLimits,
@@ -9,7 +9,7 @@ import {
 export function createTk3PlayerServices(
   artifacts,
   projectRoot,
-  { readBytes } = {},
+  { readBytes, midiPlayer = playMidi } = {},
 ) {
   let playback = null,
     audio = null,
@@ -130,23 +130,27 @@ export function createTk3PlayerServices(
         return;
       }
       if (name !== "mediaplay") return graphics.apply(effect);
+      // Claim the request before the lazy archive read. Stop, replacement and
+      // disposal must invalidate reads as well as synth/bank initialization.
+      stopMusic();
+      const current = generation;
       const source = await asset("Media", String(args[0]));
+      if (current !== generation) return;
       if (!/\.(?:mid|midi|wav)$/i.test(source.path))
         throw Error("MediaPlay supports MIDI and WAV: " + source.path);
-      stopMusic();
       audioPath = source.path;
       audioStatus = "Starting: " + source.path;
-      const current = generation;
       if (/\.(?:mid|midi)$/i.test(source.path)) {
+        audioStatus = "Loading MIDI with " + generalUserGs.name + ": " + source.path;
         const start = () => {
           if (current !== generation) return;
-          playback = playMidi(
+          playback = midiPlayer(
             Promise.resolve(source.bytes),
             defaultMidiTone,
-            null,
+            generalUserGs,
             () => {
               if (current === generation)
-                audioStatus = "Playing MIDI: " + source.path;
+                audioStatus = "Playing MIDI: " + source.path + " · " + generalUserGs.name;
             },
             (message) => {
               if (current !== generation) return;

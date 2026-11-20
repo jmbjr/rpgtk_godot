@@ -9,7 +9,7 @@ import { mountAuthoredBoard } from "./experiments/movement-sandbox/authored-play
 import { executeGamStartup } from "./tk3-gam-startup.mjs";
 import { mainFileBindings, readMainFile } from "./model.mjs";
 import { basename, boardTilesets, buildReferences, directory, readArtifacts, tilePixels } from "./artifacts.mjs";
-import { defaultMidiTone, playMidi } from "./midi.mjs";
+import { defaultMidiTone, generalUserGs, playMidi } from "./midi.mjs";
 import { renderMidiPianoRoll } from "./piano-roll.mjs";
 import { artifactRecord } from "./records.mjs";
 import { connectedGameRecord, rpgcodeRoles } from "./game-graph.mjs";
@@ -72,23 +72,6 @@ let midiPlayback;
 let midiTone = { ...defaultMidiTone };
 let midiSoundBank;
 let midiSoundSource = "generaluser";
-let generalUserGsDownload;
-const generalUserGs = {
-  name: "GeneralUser GS 2.0.3",
-  async arrayBuffer() {
-    generalUserGsDownload ??= fetch(new URL("./vendor/generaluser-gs/GeneralUser-GS.sf2", import.meta.url))
-      .then(response => {
-        if (!response.ok) throw new Error(`Could not download GeneralUser GS (HTTP ${response.status}).`);
-        return response.blob();
-      })
-      .catch(error => {
-        generalUserGsDownload = undefined;
-        throw error;
-      });
-    // The audio worklet takes ownership of each playback's ArrayBuffer.
-    return (await generalUserGsDownload).arrayBuffer();
-  },
-};
 let inspectorRevision = 0;
 const sourceNames = {
   R13: "RPGCODE.REF · Toolkit 2.13",

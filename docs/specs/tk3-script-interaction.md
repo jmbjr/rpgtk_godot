@@ -69,7 +69,9 @@ The common player effect handler supports `mwin`, `wait`, `mwinCls`, `Send`,
   `spriteTranslucency` retains its setting/getter; native sprite-overlap
   rendering and native menu/fight plugins remain outside this slice.
 - `mediaPlay` loops project-resolved MIDI or WAV using the existing MIDI
-  synthesizer or browser audio; `mediaStop` stops it. Read failures and browser
+  synthesizer with GeneralUser GS 2.0.3 or browser audio; `mediaStop` stops it.
+  The bank loader is shared with the inspector. Loading and failures are visible;
+  there is no silent fallback to the built-in synth. Read failures and browser
   playback errors remain visible. Assets are read lazily from the active ZIP.
   Resources survive board remounts and are disposed on reset, exit or close.
 - `end`/`done` end the current program, including its method frames.
