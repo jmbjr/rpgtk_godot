@@ -398,12 +398,16 @@ try {
   for (const action of ["stop", "replace", "close", "reset"]) {
     await page.reload();
     let releaseBank;
-    let requests = 0;
+    let requests = 0, bankRequested;
+    const requested = new Promise(resolve => { bankRequested = resolve; });
     const gate = new Promise(resolve => { releaseBank = resolve; });
-    await page.route(bankRoute, async route => { requests++; await gate; await route.continue(); });
-    await loadMidi(["stop", "replace"].includes(action) ? originalStartup.replace('mediaPlay("note.mid");',
-      action === "stop" ? 'mediaPlay("note.mid"); mediaStop();' : 'mediaPlay("note.mid"); mediaPlay("tone.wav");') : originalStartup);
-    if (!["stop", "replace"].includes(action)) await expectText("play-audio-status", /Loading MIDI with GeneralUser GS/);
+    await page.route(bankRoute, async route => { requests++; bankRequested(); await gate; await route.continue(); });
+    await loadMidi(["stop", "replace"].includes(action) ? originalStartup.replace('case(0) { result=Prepare',
+      'case(0) { ' + (action === "stop" ? 'mediaStop(); ' : 'mediaPlay("tone.wav"); ') + 'result=Prepare') : originalStartup);
+    await expectText("play-audio-status", /Loading MIDI with GeneralUser GS/);
+    await requested; // Stop/replacement must happen during an actual pending fetch.
+    if (["stop", "replace"].includes(action))
+      await control("play-script-choices").getByRole("button", {name:"Depart",exact:true}).click();
     await page.waitForFunction(() => window.midiContexts.length === 1);
     if (action === "close") await click("play-close");
     if (action === "reset") {
