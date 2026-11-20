@@ -24,6 +24,12 @@ const server = createServer(async (request, response) => {
 });
 await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
 let browser;
+let checkpoint = "generic player and startup";
+const watchdog = setTimeout(() => {
+  console.error("Staged browser suite timed out at: " + checkpoint);
+  process.exit(1);
+}, 120000);
+watchdog.unref();
 try {
   browser = await chromium.launch({ executablePath: process.env.TK3_CHROMIUM || undefined });
   const page = await browser.newPage({ hasTouch: true });
@@ -396,6 +402,8 @@ try {
   }), null, {timeout:20000});
 
   for (const action of ["stop", "replace", "close", "reset"]) {
+    checkpoint = "GS pending bank: " + action;
+    console.log(checkpoint);
     await page.reload();
     let releaseBank;
     let requests = 0, bankRequested;
@@ -433,6 +441,7 @@ try {
     await page.unroute(bankRoute);
   }
 
+  checkpoint = "GS bank failure and retry"; console.log(checkpoint);
   await page.reload();
   let bankRequests = 0;
   await page.route(bankRoute, async route => {
@@ -446,6 +455,7 @@ try {
   assert.equal(await page.evaluate(() => window.midiWorklets.length), 0);
   await click("play-reset"); await gsPlaying(); await sampledAudio();
   assert.equal(bankRequests, 2, "A new play retries the failed bank download");
+  checkpoint = "GS board remount continuity"; console.log(checkpoint);
   const contextCount = await page.evaluate(() => window.midiContexts.length);
   // Send and normal startup completion both remount the board with these services.
   await click("play-close"); await closedContexts();
@@ -461,6 +471,7 @@ try {
     "Board transfers and startup completion retain their audio context");
   assert.equal(bankRequests, 2, "Cached bank bytes are reused across sessions");
   // The short synthetic MIDI must finish and restart through the GS transport.
+  checkpoint = "GS authored loop"; console.log(checkpoint);
   const loops = await page.evaluate(() => window.midiWorklets.length);
   await page.waitForFunction(count => window.midiWorklets.length > count, loops, {timeout:20000});
   await gsPlaying();
@@ -474,6 +485,7 @@ try {
   await click("play-close");
   await page.unroute(bankRoute);
   await page.reload();
+  checkpoint = "GS worklet failure"; console.log(checkpoint);
   const processorRoute = "**/vendor/soundfont/spessasynth_processor.min.js";
   await page.route(processorRoute, route => route.fulfill({status:503,body:"Unavailable"}));
   await loadMidi();
@@ -483,6 +495,7 @@ try {
   await click("play-close");
   await page.unroute(processorRoute);
   await page.reload();
+  checkpoint = "existing title, canvas and Explorer regressions";
   console.log("GS gameplay Chromium passed: real SF2/worklet sampled output, loading/failure/retry, loop, board continuity, cached bank, mediaStop and reset/close/exit cancellation.");
 
   for (const id of ["harbor", "grove"]) {
@@ -811,7 +824,10 @@ try {
   console.log("Explorer Chromium passed: wrapped TK2 and native TK3 inventory, project edges, exact jumps/history, MIDI, WAV, ANM frame audio and native ENE/BKG previews.");
   assert.deepEqual(errors, []);
   console.log("Staged browser passed: two independent TK3 ZIPs, inspector isolation, rooted GAM helper, keyboard and touch controls, Send continuation, both fight outcomes, launch-mode reset and archive replacement.");
+} catch (error) {
+  console.error("Staged browser failure at " + checkpoint, error);
+  throw error;
 } finally {
   await browser?.close();
-  server.close();
+  server.close(() => clearTimeout(watchdog));
 }
