@@ -486,14 +486,22 @@ try {
   await page.unroute(bankRoute);
   await page.reload();
   checkpoint = "GS worklet failure"; console.log(checkpoint);
-  const processorRoute = "**/vendor/soundfont/spessasynth_processor.min.js";
-  await page.route(processorRoute, route => route.fulfill({status:503,body:"Unavailable"}));
+  // AudioWorklet module requests are not reliably intercepted by page.route.
+  // Inject failure at the native boundary; normal cases above use real modules.
+  await page.evaluate(() => {
+    const Context = window.AudioContext;
+    window.AudioContext = class extends Context {
+      constructor(...args) {
+        super(...args);
+        this.audioWorklet.addModule = async () => { throw Error("Injected worklet initialization failure"); };
+      }
+    };
+  });
   await loadMidi();
-  await expectText("play-audio-status", /Unable to play MIDI.*note.mid/);
+  await expectText("play-audio-status", /Unable to play MIDI.*Injected worklet initialization failure.*note.mid/);
   await closedContexts();
   assert.equal(await page.evaluate(() => window.midiWorklets.length), 0);
   await click("play-close");
-  await page.unroute(processorRoute);
   await page.reload();
   checkpoint = "existing title, canvas and Explorer regressions";
   console.log("GS gameplay Chromium passed: real SF2/worklet sampled output, loading/failure/retry, loop, board continuity, cached bank, mediaStop and reset/close/exit cancellation.");

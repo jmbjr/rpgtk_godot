@@ -36,7 +36,7 @@ ends; they cannot start that session's audio.
   retry, concurrent download reuse and fresh transferable buffer ownership.
 - `check-tk3-browser.mjs`: staged production imports, real hosted SF2 and
   AudioWorklet, nonzero sampled output, delayed-bank stop/replacement/reset/close,
-  failed download and retry, failed worklet module, loop, board continuity,
+  failed download and retry, injected worklet initialization failure, loop, board continuity,
   source `mediaStop`, and exit cleanup. Existing independent Harbor/Grove title,
   canvas, generic player and connected Explorer/media checks remain enabled.
 - Local non-browser workflow checks pass. The local Chromium launch is blocked
