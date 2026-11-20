@@ -24,6 +24,7 @@ try {
     ["model.mjs", '// Inclusive maximum indices: in BSTW there are nine slots.', /Game-specific production assumption/],
     ["lazy.mjs", 'export const choose = () => import("./bstw-title.mjs");', /Retired production reference/],
     ["experiments/movement-sandbox/inn-contract.json", '{}', /Retired production payload/],
+    ["vendor/unreferenced.js", 'export const clues = 13;', /Game-specific production assumption/],
     ["unused.css", '.play-hud::after {content:"Clues: 0 / 13"}', /Game-specific production assumption/],
     ["unused.mjs", 'import "./missing.mjs";', /Could not resolve/],
   ]) {
