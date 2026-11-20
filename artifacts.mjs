@@ -42,7 +42,7 @@ function header(reader, signature, minors) {
   const major = reader.short();
   const minor = reader.short();
   if (actual !== signature || major !== 2 || !minors.includes(minor)) {
-    throw new Error("This legacy file format is outside the supported demo layouts.");
+    throw new Error("This legacy file format is outside the supported layouts.");
   }
   return minor;
 }
@@ -1111,14 +1111,14 @@ function readItem(bytes) {
   return { ...common, walking, rest: Object.values(rest.values), refs };
 }
 
-// The demo contains one headerless text artifact with this repeated record shape.
+// An observed headerless text layout has this repeated record shape.
 // Its producer and the meanings of its header integers are unverified.
 function readTemporaryBoardText(bytes) {
   const lines = decodeProgram(bytes).split(/\r\n|\n|\r/);
   if (lines.at(-1) === "") lines.pop();
   const integer = line => /^[+-]?\d+$/.test(line.trim()) && Number.isSafeInteger(Number(line));
   if (lines.length < 9 || (lines.length - 5) % 4 !== 0 || !lines.slice(0, 5).every(integer)) {
-    throw new Error("Temporary text does not match the demo record shape.");
+    throw new Error("Temporary text does not match the observed record layout.");
   }
   const records = [];
   const refs = [];

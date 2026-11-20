@@ -83,8 +83,8 @@ export function readMainFile(bytes) {
     fightProgram: string(), gameOverProgram: string(),
   };
   const skins = { button: string(), window: string() };
-  // Inclusive maximum indices are not populated counts. In BSTW there
-  // are nine plugin slots (0–8) but only five nonempty declarations.
+  // Stored plugin slots use an inclusive maximum index. Preserve empty
+  // slots; the number of nonempty declarations is a separate count.
   const pluginSlots = Array.from({ length: maximum("plugin", 100) + 1 },
     (_, slot) => ({ slot, filename: string() }));
   const dayNight = { enabled: integer(), type: integer(), length: long() };

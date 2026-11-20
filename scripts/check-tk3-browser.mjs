@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import JSZip from "../vendor/jszip.min.js";
 import { chromium } from "playwright";
-import { buildBrowserGame, buildStartupExecutionGame, buildTitleExecutionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
+import { buildBrowserGame, buildStartupExecutionGame, buildTitleExecutionGame, buildNeutralInspectionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { nativeMainFixture } from "../docs/specs/fixtures/native-main-29-fixtures.mjs";
 
 const site = resolve(process.argv[2] ?? "site");
@@ -754,6 +754,71 @@ try {
     await expectText("graph", "MIDI reset to beginning.");
   };
 
+  checkpoint = "generic inspection and familiar-name neutrality";
+  for (const id of ["harbor", "grove"]) {
+    await page.goto(base);
+    const harbor = id === "harbor", root = harbor ? "HarborLab/" : "";
+    const zip = await buildNeutralInspectionGame(id);
+    const bytes = await zip.generateAsync({type:"nodebuffer"});
+    await archive(harbor ? "BSTW_EXPO_DEMO.zip" : "Demo.zip", bytes);
+    const exported = await accountForArchive(bytes);
+    const audit = exported.playabilityAssessment;
+    const startup = root + "Prg/" + (harbor ? "menuTitle.prg" : "start.prg");
+    const interaction = root + "Prg/" + (harbor ? "mwininn.prg" : "menuMain.prg");
+    assert.equal(audit.stages[0].source, startup);
+    assert.equal(audit.stages[3].source, interaction);
+    assert.deepEqual(audit.stages[3].sourceLines.map(r => r.line), [2,5,6,7]);
+    assert.ok(audit.stages.every(stage => stage.runtimeStatus === "not-tested"));
+    assert.ok(exported.edges.some(edge => edge.source.$ref === "rpgtk:/" + root + "Prg/static_probe.prg" && edge.evidence === "mediaPlay" && edge.line === 5));
+    assert.ok(!exported.edges.some(edge => edge.value === "fake.brd"));
+    const evidence = page.locator("#main-data > details").filter({has:page.locator("summary").filter({hasText:/^Playability evidence/})});
+    await evidence.locator(":scope > summary").click();
+    const stage = evidence.locator(":scope > details").filter({has:page.locator("summary").filter({hasText:/^Placed item and interaction script/})});
+    await stage.locator(":scope > summary").click();
+    const uiLines = await stage.getByRole("button", {name:/^Source line /}).allTextContents();
+    assert.deepEqual(uiLines, audit.stages[3].sourceLines.map(row => "Source line " + row.line));
+    assert.doesNotMatch(await stage.innerText(), /checked\[99\]|comment\) are not commands/);
+    await stage.getByRole("button", {name:"Source line 5",exact:true}).click();
+    await pathIs(interaction);
+    await page.locator("#source #line-5.active-line").waitFor();
+    await file(root + "Prg/static_probe.prg");
+    await expectText("source", "arbitraryMethod(17)");
+    await follow(/mediaPlay.*line 5.*note.mid/i);
+    await pathIs(root + "Media/note.mid");
+    await gamPlay();
+    await expectText("play-dialogue-text", harbor ? "Harbor neutral startup" : "Grove neutral startup");
+    await variables(new RegExp("clues = " + (harbor ? 2 : 6)));
+    assert.equal(await page.locator("#play-compatibility, #play-script-recovery, #play-hud").count(),0);
+    await talk();
+    await expectText("play-feedback", /GAM startup completed/);
+    await talk();
+    await expectText("play-dialogue-text", harbor ? "Harbor ordinary interaction" : "Grove ordinary interaction");
+    await variables(new RegExp("clues = " + (harbor ? 5 : 8)));
+    await talk();
+    await click("play-reset");
+    await expectText("play-dialogue-text", /neutral startup/);
+    await variables(new RegExp("clues = " + (harbor ? 2 : 6)));
+    await click("play-close");
+    await directPlay(); await variables(/none yet/);
+    await talk();
+    await expectText("play-dialogue-text", /ordinary interaction/);
+    await variables(new RegExp("clues = " + (harbor ? 3 : 2)));
+    await click("play-close");
+    // Inspection remains available for unsupported libraries, with the same
+    // twelve source locations in the UI and JSON (including locations 11/12).
+    zip.file(interaction, await zip.file(root + "Prg/static_probe.prg").async("string"));
+    const staticBytes = await zip.generateAsync({type:"nodebuffer"});
+    await archive("static-evidence-" + id + ".zip", staticBytes);
+    const staticExport = await accountForArchive(staticBytes);
+    await evidence.locator(":scope > summary").click();
+    await stage.locator(":scope > summary").click();
+    assert.equal(staticExport.playabilityAssessment.stages[3].sourceLines.length, 12);
+    assert.deepEqual(await stage.getByRole("button", {name:/^Source line /}).allTextContents(),
+      staticExport.playabilityAssessment.stages[3].sourceLines.map(row => "Source line " + row.line));
+  }
+  console.log("Generic inspection Chromium passed: nested/flat archives, misleading game/title/character/program names, ordinary quest variables, parsed excerpt/JSON agreement and exact jumps, static unsupported calls/references, Play/Talk/reset/direct entrypoints.");
+  await page.goto(base);
+  checkpoint = "existing Explorer media regressions";
   const legacyBytes = await readFile(resolve(site, "tk2-legacy-game.zip"));
   await archive("tk2-legacy-game.zip", legacyBytes);
   const legacy = await accountForArchive(legacyBytes);

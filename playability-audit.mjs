@@ -1,4 +1,5 @@
 import { mainFileBindings } from "./model.mjs";
+import { indexRpgcodeCommands } from "./rpgcode-references.mjs";
 
 // Static evidence only: no RPGCode execution, collision or plugin invocation.
 const directions = ["South", "North", "East", "West"];
@@ -7,14 +8,19 @@ const edgeValue = edge => ({
   value: edge?.value ?? "", status: edge?.status ?? (edge?.path ? "Resolved" : "Missing"),
 });
 const decoded = (artifact, type) => artifact?.type === type && artifact.decodeStatus === "decoded";
-const sourceLines = (artifact, patterns, limit = 12) => {
-  const found = [];
-  for (const [i, row] of (artifact?.program?.rows ?? []).entries()) {
-    if (!patterns.some(pattern => pattern.test(row.line))) continue;
-    found.push({ path: artifact.path, line: i + 1, text: row.line.trim().slice(0, 200) });
-    if (found.length >= limit) break;
-  }
-  return found;
+const excerptPolicy = "Excerpts show the first 12 distinct parsed-call/reference lines in source order; text is limited to 200 characters per line. This is partial static evidence, not execution.";
+const sourceLines = artifact => {
+  const rows = artifact?.program?.rows ?? [];
+  const source = rows.map(row => row.line).join("\n");
+  const locations = new Set([
+    ...indexRpgcodeCommands(source).map(call => call.line),
+    ...(artifact?.refs ?? []).map(ref => ref.line),
+  ]);
+  return [...locations].filter(line => Number.isInteger(line) && line >= 1 && line <= rows.length)
+    .sort((a, b) => a - b).slice(0, 12).map(line => {
+      const text = rows[line - 1].line.trim();
+      return { path: artifact.path, line, text: text.length > 200 ? text.slice(0, 199) + "…" : text };
+    });
 };
 
 export function assessPlayability(artifacts, graph, mainFile = null, { interactionProgram = null } = {}) {
@@ -42,11 +48,9 @@ export function assessPlayability(artifacts, graph, mainFile = null, { interacti
     facts: decoded(program, "prg") ? [
       "The archive links to a decoded startup program.",
       "Source links do not establish which startup commands the browser supports.",
+      excerptPolicy,
     ] : ["Configured startup is not decoded RPGCode."],
-    sourceLines: sourceLines(program, [
-      /case\s+0\s*:/i, /\binitvar\s*\(/i, /\bsetplayer\s*\(/i,
-      /\binitcmaps\s*\(/i, /^\s*end\s*\(/i,
-    ]), runtimeStatus: "not-tested",
+    sourceLines: sourceLines(program), runtimeStatus: "not-tested",
   });
 
   stages.push({
@@ -143,13 +147,11 @@ export function assessPlayability(artifacts, graph, mainFile = null, { interacti
         chosen.position.x + ", " + chosen.position.y + ", layer " + chosen.position.layer + ").",
       "Configured activation program: " + chosen.activationProgram + ".",
       "Activation provenance: " + (chosen.override ? "board override." : "item pickup program."),
+      excerptPolicy,
     ] : [requested ?
       "No opening-board item activates " + interactionProgram + "." :
       "No opening-board sprite has a configured activation program."])],
-    sourceLines: sourceLines(script, [
-      /#include\s*\(/i, /\bgettickcount\s*\(/i, /\bchecked\s*\[/i,
-      /\bsettxt\s*\(/i, /\bclues\s*\+\+/i, /\bupdateclues\s*\(/i,
-    ]), runtimeStatus: "not-tested",
+    sourceLines: sourceLines(script), runtimeStatus: "not-tested",
   });
 
   const gaps = [
