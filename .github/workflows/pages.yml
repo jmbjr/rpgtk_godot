@@ -125,13 +125,15 @@ jobs:
           cp --parents experiments/dodge-tiles/{project,card-scene}.mjs site/
       - name: Build portable TK3 RPGCode interaction labs
         run: node scripts/build-tk3-script-fixtures.mjs site
-      - name: Verify published viewer modules
-        run: node scripts/check-staged-site.mjs site
       - name: Build and verify Toolkit 2 test games
         run: |
           node scripts/build-tk2-test-game.mjs site/tk2-test-game.zip
           node scripts/build-tk2-test-game.mjs site/tk2-legacy-game.zip --legacy
           node scripts/build-tk2-test-game.mjs site/tk2-text-gam-game.zip --text-gam
+      - name: Verify published viewer modules
+        run: |
+          node scripts/check-production-policy.mjs
+          node scripts/check-staged-site.mjs site
       - name: Check staged Explorer and TK3 play in Chromium
         run: |
           npx playwright install --with-deps chromium

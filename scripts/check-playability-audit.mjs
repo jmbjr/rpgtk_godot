@@ -6,6 +6,8 @@ import JSZip from "../vendor/jszip.min.js";
 import { readArtifacts, buildReferences } from "../artifacts.mjs";
 import { mainFileBindings } from "../model.mjs";
 import { connectedGameRecord } from "../game-graph.mjs";
+import { indexRpgcodeCommands } from "../rpgcode-references.mjs";
+import { buildNeutralInspectionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { assessPlayability } from "../playability-audit.mjs";
 import { openGameArchive } from "../archive.mjs";
 import { nativeMainFixture } from "../docs/specs/fixtures/native-main-29-fixtures.mjs";
@@ -50,7 +52,7 @@ assert.deepEqual(audit.stages.map(s => [s.id, s.status]), [
 assert.deepEqual(audit.summary,
   { sourceLinked: 4, partial: 0, missing: 0, runtimeVerified: false });
 assert.equal(audit.stages[0].source, "BSTW/Prg/menuTitle.prg");
-assert.deepEqual(audit.stages[0].sourceLines.map(x => x.line), [2, 4, 5, 6, 7]);
+assert.deepEqual(audit.stages[0].sourceLines.map(x => x.line), [1, 2, 5, 6, 7]);
 assert.equal(audit.stages[1].source, "BSTW/Boards/start.brd");
 assert.ok(audit.stages[1].facts.some(f => f.includes("3 × 2 × 2")));
 assert.ok(audit.stages[1].facts.some(f => f.includes("19, 27, layer 1")));
@@ -66,7 +68,7 @@ assert.deepEqual(audit.selectedInteraction, {
   programPath: "BSTW/Prg/openDoor.prg",
   position: { x: 68, y: 90, layer: 2 }, status: "Resolved",
 });
-assert.deepEqual(audit.stages[3].sourceLines.map(x => x.line), [1, 2, 3, 4, 5, 6]);
+assert.deepEqual(audit.stages[3].sourceLines.map(x => x.line), [1, 2, 4, 6]);
 assert.equal(audit.gaps.length, 6);
 assert.ok(audit.gaps.every(g => g.acceptance.length && g.need.length));
 assert.ok(audit.stages.every(s => s.runtimeStatus === "not-tested"));
@@ -118,6 +120,47 @@ const emptyRecord = connectedGameRecord(noMain, {}, { archiveName: "Without GAM"
 assert.ok(validate(emptyRecord), JSON.stringify(validate.errors));
 assert.equal(emptyRecord.playabilityAssessment.summary.missing, 4);
 
+// Metamorphic source evidence uses the same readers/graph/export as the browser.
+for (const id of ["harbor", "grove"]) {
+  const zip = await buildNeutralInspectionGame(id);
+  const { artifacts } = await readArtifacts(zip, {});
+  const root = id === "harbor" ? "HarborLab/" : "";
+  const graph = buildReferences(artifacts);
+  const audit = assessPlayability(artifacts, graph);
+  assert.match(audit.stages[0].source, id === "harbor" ? /menuTitle.prg$/ : /start.prg$/);
+  assert.equal(audit.selectedInteraction.programPath, root + "Prg/" + (id === "harbor" ? "mwininn.prg" : "menuMain.prg"));
+  assert.deepEqual(audit.stages[3].sourceLines.map(r => r.line), [2,5,6,7]);
+  const selected = artifacts.get(audit.stages[3].source);
+  const original = assessPlayability(artifacts, graph).stages[3].sourceLines.map(r => r.line);
+  const neutral = structuredClone(selected);
+  neutral.program.rows = selected.program.rows.map(r => ({ ...r,
+    line: r.line.replaceAll("checked", "sampled").replaceAll("clues", "total").replaceAll("updateClues", "AddTotal") }));
+  const renamed = new Map(artifacts); renamed.set(selected.path, neutral);
+  assert.deepEqual(assessPlayability(renamed, buildReferences(renamed)).stages[3].sourceLines.map(r => r.line), original);
+  for (const [filename, expected] of [["quest_only.prg", []], ["static_probe.prg", Array.from({length:12},(_,i)=>i+3)]]) {
+    const probe = new Map(artifacts);
+    probe.set(selected.path, { ...artifacts.get(root + "Prg/" + filename), path:selected.path });
+    const review = assessPlayability(probe, buildReferences(probe));
+    assert.deepEqual(review.stages[3].sourceLines.map(r => r.line), expected);
+  }
+  // Placement identity and geometry remain archive data, not a preferred slot.
+  const shifted = new Map(artifacts);
+  const board = artifacts.get(audit.stages[1].source);
+  shifted.set(board.path, { ...board,
+    sprites: board.sprites.map(sprite => ({...sprite, slot:sprite.slot+9,
+      position:{...sprite.position,x:sprite.position.x+5,y:sprite.position.y+7}})),
+    refs: board.refs.map(ref => ({...ref, evidence:ref.evidence.replace(/slot (\d+)/g, (_,slot)=>"slot "+(Number(slot)+9))})),
+  });
+  const moved = assessPlayability(shifted, buildReferences(shifted));
+  assert.equal(moved.selectedInteraction.slot, audit.selectedInteraction.slot+9);
+  assert.deepEqual(moved.selectedInteraction.position, {...audit.selectedInteraction.position,
+    x:audit.selectedInteraction.position.x+5,y:audit.selectedInteraction.position.y+7});
+  assert.deepEqual(moved.stages[3].sourceLines, audit.stages[3].sourceLines);
+  const connected = connectedGameRecord(artifacts, {}, {archiveName:id});
+  assert.ok(validate(connected), JSON.stringify(validate.errors));
+  assert.deepEqual(connected.playabilityAssessment, audit);
+}
+
 // Read-only owner ZIP acceptance. NEVER copy the private ZIP or media into CI.
 if (process.argv[2]) {
   const bytes = await readFile(process.argv[2]);
@@ -132,8 +175,7 @@ if (process.argv[2]) {
   assert.deepEqual(review.summary,
     { sourceLinked: 4, partial: 0, missing: 0, runtimeVerified: false });
   assert.equal(review.stages[0].source, "BSTW/Prg/menuTitle.prg");
-  assert.ok(review.stages[0].sourceLines.some(x => x.line === 105));
-  assert.ok(review.stages[0].sourceLines.some(x => x.line === 119));
+  assert.ok(review.stages[0].sourceLines.length > 0 && review.stages[0].sourceLines.length <= 12);
   assert.equal(review.stages[1].source, "BSTW/Boards/start.brd");
   assert.ok(review.stages[1].facts.some(x => x.includes("20 × 15 × 2")));
   assert.ok(review.stages[1].facts.some(x => x.includes("107, 78, layer 1")));
@@ -143,11 +185,15 @@ if (process.argv[2]) {
     review.selectedInteraction.filename, review.selectedInteraction.programPath,
     review.selectedInteraction.position],
   [3, "door.itm", "BSTW/Prg/mwininn.prg", { x: 207, y: 349, layer: 1 }]);
-  assert.ok(review.stages[3].sourceLines.some(x => x.line === 42 && x.text.includes("clues++")));
-  assert.ok(review.stages[3].sourceLines.some(x => x.line === 43 && x.text.includes("updateClues")));
+  for (const stage of [review.stages[0], review.stages[3]]) {
+    const source = real.get(stage.source);
+    const lines = new Set(indexRpgcodeCommands(source.program.rows.map(r => r.line).join("\n")).map(c => c.line));
+    for (const ref of source.refs) lines.add(ref.line);
+    assert.deepEqual(stage.sourceLines.map(row => row.line), [...lines].filter(Number.isInteger).sort((a,b) => a-b).slice(0,12));
+  }
   const connected = connectedGameRecord(real, {}, { archiveName: "BSTW" });
   assert.ok(validate(connected), JSON.stringify(validate.errors));
   assert.equal(connected.playabilityAssessment.selectedInteraction.activationProgram, "mwininn.prg");
-  console.log("Real BSTW source evidence confirmed: title/New lines, 20×15×2 board, Bruce's 4 ANMs, inn-door slot 3 and clue-state RPGCode. Runtime never executed.");
+  console.log("Real BSTW source evidence confirmed: configured startup, board, walking ANMs, selected placement and generic call/reference excerpts. Runtime never executed.");
 }
 console.log("Playability gap assessment passed: four source stages, missing/partial inputs, explicit runtime gates, mobile/JSON evidence and source lines.");

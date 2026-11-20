@@ -291,3 +291,65 @@ export async function buildCanvasExecutionGame(id) {
   }
   return zip;
 }
+
+// Familiar names are deliberately misleading data, never adapter eligibility.
+export async function buildNeutralInspectionGame(id) {
+  const harbor = id === 'harbor', root = harbor ? 'HarborLab/' : '';
+  const zip = await buildStartupExecutionGame(id);
+  const mainPath = harbor ? 'HarborLab/Main/HarborLab.gam' : 'GroveLab.gam';
+  const oldStartup = harbor ? 'harbor_start.prg' : 'morning.prg';
+  const startup = harbor ? 'menuTitle.prg' : 'start.prg';
+  zip.file(mainPath, replace(await zip.file(mainPath).async('nodebuffer'), z(oldStartup), z(startup)));
+  zip.remove(root + 'Prg/' + oldStartup);
+  if (harbor) {
+    let gam = await zip.file(mainPath).async('nodebuffer');
+    gam = replace(gam, z('Harbor Message Lab'), z('BSTW'));
+    gam = replace(gam, z('mira.tem'), z('bruce.tem'));
+    zip.file(mainPath, gam);
+    zip.file(root + 'Chrs/bruce.tem', replace(await zip.file(root + 'Chrs/mira.tem').async('nodebuffer'), z('Mira'), z('Bruce')));
+    zip.remove(root + 'Chrs/mira.tem');
+  }
+  const helper = harbor ? 'CMwin.prg' : 'CCmap.prg';
+  const interaction = harbor ? 'mwininn.prg' : 'menuMain.prg';
+  const boardPath = root + 'Boards/' + (harbor ? 'wharf.brd' : 'meadow.brd');
+  zip.file(boardPath, replace(await zip.file(boardPath).async('nodebuffer'), z('openDoor.prg'), z('')));
+  if (!harbor) {
+    const itemPath = 'Item/oakidol.itm';
+    zip.file(itemPath, replace(await zip.file(itemPath).async('nodebuffer'), z('pickup.prg'), z(interaction)));
+  }
+  zip.file(root + 'Prg/' + helper, harbor ?
+    'method Recount(value) { return value+3; }' :
+    'method updateClues(delta) { clues+=delta; }');
+  zip.file(root + 'Prg/' + startup, '#include "' + helper + '"\n' + (harbor ? [
+    'checked[4]=6; clues=2;',
+    'mwin("Harbor neutral startup"); wait(); mwinCls();',
+    'startup_returned=1;',
+  ] : [
+    'for(local(turn)=0; turn<2; ++turn) { clues+=3; }',
+    'checked[11]=8; maxclues=4;',
+    'mwin("Grove neutral startup"); wait(); mwinCls();',
+    'startup_returned=1;',
+  ]).join('\n'));
+  zip.file(root + 'Prg/' + interaction, [
+    '// checked[0], clues++, updateClues("comment") are not commands here.',
+    '#include "' + helper + '"',
+    'literal="checked[99] clues++ updateClues(fake)";',
+    harbor ? 'checked[4]+=1;' : 'checked[11]+=2;',
+    harbor ? 'clues=Recount(clues);' : 'updateClues(2);',
+    'mwin("' + (harbor ? 'Harbor' : 'Grove') + ' ordinary interaction");',
+    'wait(); mwinCls();',
+  ].join('\n'));
+  zip.file(root + 'Prg/quest_only.prg', 'checked[0]=1; clues++;');
+  zip.file(root + 'Prg/static_probe.prg', [
+    '// Send("fake.brd",1,2); updateClues("comment");',
+    'literal="checked[0] clues++ mediaPlay(fake.mid)";',
+    'arbitraryMethod(17);',
+    'unknownLibrary->Render("source evidence");',
+    'mediaPlay("note.mid");',
+    ...Array.from({length:14}, (_,i) => 'AnotherCall(' + i + ');'),
+  ].join('\n'));
+  zip.file(root + 'Media/note.mid', fixtures.find(f => f.path === 'Media/note.mid').bytes);
+  zip.file(root + 'Prg/' + (harbor ? 'menuMain.prg' : 'mwininn.prg'), 'mwin("Unused familiar filename");');
+  zip.file('Demo/Prg/start.prg', 'mwin("Foreign startup must not run");');
+  return zip;
+}

@@ -62,8 +62,11 @@ function callArguments(mask, row, start) {
   }
 }
 
-export function indexRpgcodeReferences(source) {
-  const refs = [];
+// Tolerant static call syntax, shared by references and source excerpts. This
+// does not validate method availability or require the executable VM subset.
+const controlForms = new Set(["if", "elseif", "while", "until", "for", "switch", "case", "method"]);
+export function indexRpgcodeCommands(source) {
+  const calls = [];
   const state = { block: false };
   for (const [index, row] of source.split(/\r\n?|\n/).entries()) {
     if (!state.block && /^\s*\*(?!\/)/.test(row)) continue;
@@ -71,31 +74,42 @@ export function indexRpgcodeReferences(source) {
     for (const match of mask.matchAll(identifiers)) {
       const [evidence] = match;
       const command = evidence.replace(/^#/, "").toLowerCase();
-      if (!roles.has(command)) continue;
       const before = mask.slice(0, match.index);
-      if (/->\s*$|[.\w$!>]$/.test(before) || /\bmethod\s+$/i.test(before)) continue;
+      if (/\bmethod\s+$/i.test(before) || controlForms.has(command)) continue;
       const tail = match.index + evidence.length;
       const opening = mask.slice(tail).match(/^\s*\(/);
       const legacy = evidence.startsWith("#");
       if (!opening && (!legacy || !/^\s*"/.test(row.slice(tail)))) continue;
       const args = opening ? callArguments(mask, row, tail + opening[0].length - 1) :
         [row.slice(tail).trim()];
-      const location = { evidence, line: index + 1 };
-      if (!args) {
-        refs.push({ ...location, value: row.slice(tail).trim(), status: "Unindexed" });
-        continue;
-      }
-      const rules = command === "fightenemy" && args.length >= 2 ?
-        args.map((_, i) => [i, { folder: i === args.length - 1 ? "Bkrounds" : "Enemy" }]) :
-        roles.get(command);
-      for (const [argument, role] of rules) {
-        const raw = args[argument];
-        if (!raw) continue;
-        const literal = raw.match(/^"([^"]*)"$/);
-        if (literal?.[1]) refs.push({ ...location, ...role, argument: argument + 1, value: literal[1],
-          ...(hostCommands.has(command) ? { status: "External" } : {}) });
-        else if (!literal) refs.push({ ...location, ...role, argument: argument + 1, value: raw, status: "Dynamic" });
-      }
+      calls.push({ evidence, command, line: index + 1, column: match.index + 1,
+        member: /->\s*$|[.\w$!>]$/.test(before),
+        args, rawArguments: row.slice(tail).trim() });
+    }
+  }
+  return calls;
+}
+
+export function indexRpgcodeReferences(source) {
+  const refs = [];
+  for (const call of indexRpgcodeCommands(source)) {
+    const { command, args, evidence, line, member, rawArguments } = call;
+    if (member || !roles.has(command)) continue;
+    const location = { evidence, line };
+    if (!args) {
+      refs.push({ ...location, value: rawArguments, status: "Unindexed" });
+      continue;
+    }
+    const rules = command === "fightenemy" && args.length >= 2 ?
+      args.map((_, i) => [i, { folder: i === args.length - 1 ? "Bkrounds" : "Enemy" }]) :
+      roles.get(command);
+    for (const [argument, role] of rules) {
+      const raw = args[argument];
+      if (!raw) continue;
+      const literal = raw.match(/^"([^"]*)"$/);
+      if (literal?.[1]) refs.push({ ...location, ...role, argument: argument + 1, value: literal[1],
+        ...(hostCommands.has(command) ? { status: "External" } : {}) });
+      else if (!literal) refs.push({ ...location, ...role, argument: argument + 1, value: raw, status: "Dynamic" });
     }
   }
   return refs;

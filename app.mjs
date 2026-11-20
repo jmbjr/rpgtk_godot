@@ -99,7 +99,7 @@ function renderPlayabilityEvidence() {
       else p.append(el("span", ref.value + " (" + ref.status + ")"));
       box.append(p);
     }
-    for (const line of stage.sourceLines.slice(0, 10)) {
+    for (const line of stage.sourceLines) {
       const row = el("p", "", "technical");
       row.append(button("Source line " + line.line,
         () => selectArtifact(line.path, undefined, line.line)),
