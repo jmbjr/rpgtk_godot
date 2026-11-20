@@ -446,7 +446,7 @@ try {
   // Send and normal startup completion both remount the board with these services.
   await click("play-close"); await closedContexts();
   await loadMidi(originalStartup.replace('startup_returned=1; end();',
-    'Send("channel.brd",3,3); startup_returned=1; end();'));
+    'Send("channel.brd",19,27); startup_returned=1; end();'));
   await gsPlaying();
   await control("play-script-choices").getByRole("button", {name:"Depart",exact:true}).click();
   await expectText("play-dialogue-text", /Harbor ready/);
