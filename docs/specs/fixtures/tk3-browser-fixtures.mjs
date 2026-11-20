@@ -88,7 +88,7 @@ export async function buildBrowserGame(id, options = {}) {
     zip.file(originalRoot + "Prg/weather_clock.prg",
       'method ReportTide()\n{\ntide = tide + 1\nmwin("The tide is rising.")\nwait()\nmwinCls()\n}');
     zip.file(originalRoot + "Prg/broken.prg", 'untouched = 1\n#include("broken_helper.prg")\nDecline()');
-    zip.file(originalRoot + "Prg/broken_helper.prg", "method Decline()\n{\nfontSize(18)\n}");
+    zip.file(originalRoot + "Prg/broken_helper.prg", "method Decline()\n{\nunsupportedCommand(18)\n}");
     zip.file(originalRoot + "Prg/mwininn.prg",
       'mwin("Foreign archive dialogue.")\nwait()\nSend("missing.brd", 19, 27, 1)');
     const path = originalRoot + "Boards/" + spec.board;
@@ -194,5 +194,56 @@ export async function buildStartupExecutionGame(id) {
   ].join("\n"));
   zip.file("Sibling/Prg/" + (harbor ? "arrival.prg" : "orchard.prg"),
     "method " + (harbor ? "BeginArrival" : "GreetDay") + "()\n{\nwrong = 1\n}");
+  return zip;
+}
+
+// Authored independently of owner archives: different flow, names and layout.
+export async function buildTitleExecutionGame(id) {
+  const harbor = id === "harbor", root = harbor ? "HarborLab/" : "";
+  const startup = harbor ? "harbor_start.prg" : "morning.prg";
+  const zip = await buildStartupExecutionGame(id);
+  const title = harbor ? "Harbor departure" : "Orchard morning";
+  zip.file(root + "Media/note.mid", fixtures.find(f => f.path === "Media/note.mid").bytes);
+  zip.file(root + "Media/tone.wav", fixtures.find(f => f.path === "Media/tone.wav").bytes);
+  zip.file(root + "Bitmap/window.png", diagnosticPng);
+  const helper = harbor ? "departure.prg" : "greeting.prg";
+  zip.file(root + "Prg/" + helper, [
+    'method Prepare(label, rounds) {',
+    '  local(sum) = 0;',
+    '  for(local(i)=0; i<rounds; i++) { local(sum) += i; }',
+    '  startup_sum = sum;',
+    // This library exceeds the retired 300-line ceiling with real work.
+    ...Array(350).fill('  startup_checksum += 1;'),
+    '  mwin(label + " ready"); wait(); mwinCls();',
+    '  startup_ready = 1; return sum;',
+    '}',
+  ].join('\n'));
+  const settings = 'fontSize(' + (harbor ? '18' : '22') + '); bold(true); winGraphic("window.png");\n';
+  const sound = 'mediaPlay("' + (harbor ? 'note.mid' : 'tone.wav') + '");\n';
+  const include = '#include "' + helper + '"\nstartup_runs += 1;\n';
+  zip.file(root + "Prg/" + startup, include + settings + sound + (harbor ? [
+    'while(true) {',
+    '  clear(); text(3,3,"' + title + '");',
+    '  text(10,8,"Depart"); text(10,10,"Inspect save"); text(10,12,"Leave");',
+    '  cursor=createCursorMap(); cursorMapAdd(150,130,cursor); cursorMapAdd(150,170,cursor); cursorMapAdd(150,210,cursor);',
+    '  choice=cursorMapRun(cursor); killCursorMap(cursor);',
+    '  switch(choice) {',
+    '    case(0) { result=Prepare("Harbor",4); startup_returned=1; end(); }',
+    '    case(1) { load("unavailable.sav"); }',
+    '    case(2) { windows(); }',
+    '  }',
+    '}',
+  ] : [
+    'for(attempt=0; !startup_ready; ++attempt) {',
+    '  DrawHeading("' + title + '");',
+    '  text(5,6,"Wake"); text(5,8,"Exit orchard");',
+    '  menu=createCursorMap(); cursorMapAdd(60,110,menu); cursorMapAdd(60,154,menu);',
+    '  action=cursorMapRun(menu); killCursorMap(menu);',
+    '  if(action ~= 0) { windows(); } else { result=Prepare("Orchard",5); }',
+    '}',
+    'startup_returned=1;',
+    'method DrawHeading(caption) { clear(); text(2,2,caption); }',
+  ]).join('\n'));
+  zip.file("Sibling/Prg/" + helper, "method Prepare(a,b) { wrong=1; }");
   return zip;
 }

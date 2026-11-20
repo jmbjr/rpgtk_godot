@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { buildScriptFixtureZip, scriptFixtureSpecs }
   from "../docs/specs/fixtures/tk3-script-interaction-fixtures.mjs";
-import { buildStartupExecutionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
+import { buildStartupExecutionGame, buildTitleExecutionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { buildStartupLabZip }
   from "../docs/specs/fixtures/tk3-startup-fixture.mjs";
 
@@ -29,4 +29,12 @@ for (const id of ["harbor", "grove"]) {
   await writeFile(resolve(folder, filename),
     await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" }));
   console.log(filename + ": generic GAM startup, included helper and Talk session.");
+}
+
+for (const id of ["harbor", "grove"]) {
+  const zip = await buildTitleExecutionGame(id);
+  const filename = "tk3-title-" + id + ".zip";
+  await writeFile(resolve(folder, filename),
+    await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" }));
+  console.log(filename + ": generic RPGCode title, cursor map, included library and New Game.");
 }

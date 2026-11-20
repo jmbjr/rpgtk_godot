@@ -2502,14 +2502,15 @@ function mountPlayable(scene, options, mode = launchMode) {
     direct: "Launch mode: Direct board diagnostic",
   }[mode];
   const replacement = mountAuthoredBoard(panel, scene, playContext.artifacts,
-    playContext.graph, { ...options, onTransfer: remountTransferredBoard,
+    playContext.graph, { ...options, readBytes: path => archive.file(path).async("uint8array"),
+      onTransfer: remountTransferredBoard,
       onStartupComplete: finishGamStartup,
       onRestart: () => launchPlayableWithSession(launchMode) });
   panel.querySelector("#play-close").addEventListener("click", () => {
     closePlayable();
     byId("play-gam-startup").focus({ preventScroll: true });
   });
-  activePlayable?.destroy();
+  activePlayable?.destroy({ preserveServices: activePlayable.services === replacement.services });
   byId("play-stage").replaceWith(panel);
   activePlayable = replacement;
   byId("workspace").hidden = true;
@@ -2530,9 +2531,9 @@ function remountTransferredBoard({ scene, ...options }) {
   return null;
 }
 
-function finishGamStartup(scriptSession) {
+function finishGamStartup(scriptSession, services) {
   try {
-    mountPlayable(playableScene, { scriptSession,
+    mountPlayable(playableScene, { scriptSession, services,
       arrivalFeedback: "GAM startup completed; opening the configured board." });
     return null;
   } catch (error) {
@@ -2545,6 +2546,7 @@ function launchPlayableScene() {
 }
 
 function launchPlayableWithSession(mode) {
+  midiPlayback?.stop();
   if (!playableScene?.ok) return false;
   const outcome = mode === "gam" ?
     executeGamStartup(playContext.artifacts, playableScene) : null;

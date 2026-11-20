@@ -8,7 +8,7 @@ import { buildPlayableScene } from "../playable-scene.mjs";
 import { executeGamStartup } from "../tk3-gam-startup.mjs";
 import { buildStartupExecutionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { resolveTk3BoardTransfer } from "../tk3-board-transfer.mjs";
-import { initialTk3ScriptState, startPlacedTk3Script, advanceTk3Script }
+import { initialTk3ScriptState, startPlacedTk3Script, advanceTk3Script, resumeTk3Effect, chooseTk3Cursor }
   from "../tk3-script-slice.mjs";
 import { startupLabSpec, buildStartupLabZip, sourceForStartupPrg, sourceForStartupLab }
   from "../docs/specs/fixtures/tk3-startup-fixture.mjs";
@@ -151,7 +151,7 @@ for (const id of ["harbor", "grove"]) {
   zip.file(boot.startupPath, source);
   const helperPath = scene.projectRoot + "Prg/" + (id === "harbor" ? "weather_clock.prg" : "orchard.prg");
   zip.file(helperPath, "method " + (id === "harbor" ? "ReportTide" : "GreetDay") +
-    "()\n{\nfontSize(18)\n}");
+    "()\n{\nunsupportedCommand(18)\n}");
   const rejected = await decode(zip);
   const blocked = executeGamStartup(rejected.a, rejected.scene);
   assert.equal(blocked.ok, false);
@@ -167,10 +167,21 @@ if (process.argv[2]) {
     "367302f4819b3bfde8e434d22561d61e03cd83f92a38cb18a3dd7aa27a55dc3f");
   const original = await decode(await JSZip.loadAsync(bytes));
   const attempted = executeGamStartup(original.a, original.scene);
-  assert.equal(attempted.ok, false);
-  assert.equal(attempted.diagnostic.path, "demo/Prg/start.prg");
-  assert.equal(attempted.diagnostic.line, 6);
-  assert.match(attempted.diagnostic.text, /fontSize\(18\)/);
-  console.log("Original TK3.10 diagnostic ZIP: GAM startup resolves to start.prg; current unsupported command is fontSize(18) at line 6.");
+  assert.equal(attempted.ok, true, attempted.diagnostic?.text);
+  assert.equal(attempted.startupPath, "demo/Prg/start.prg");
+  let step = attempted.step;
+  assert.equal(step.effect.name, "wingraphic");
+  step = resumeTk3Effect(step.state);
+  assert.equal(step.effect.name, "mediaplay");
+  step = resumeTk3Effect(step.state);
+  assert.equal(step.status, "choice");
+  assert.equal(step.choice.points.length, 3);
+  step = chooseTk3Cursor(step.state, 0);
+  assert.equal(step.status, "waiting");
+  assert.equal(step.state.execution.callFrames.length, 1);
+  step = advanceTk3Script(step.state);
+  assert.equal(step.status, "completed");
+  assert.equal(step.state.variables.res, 0);
+  console.log("Original TK3.10 diagnostic ZIP: GAM startup compiles, yields window/music services, presents a cursor map, runs New Game intro and ends normally.");
 }
 console.log("GAM startup passed: shared rooted helper execution, wait/caller continuation, Talk state, transfer, helper diagnostics, fresh sessions and binding errors.");

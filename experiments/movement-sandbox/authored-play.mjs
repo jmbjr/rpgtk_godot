@@ -4,7 +4,7 @@ import { spriteDrawOrder, spritePixelOrigin } from "../../placed-sprites.mjs";
 import { keyFrameColor } from "../../sprites.mjs";
 import { initialMovementState, stepMovement } from "./engine.mjs";
 import { initialTk3ScriptState, selectTk3ScriptTarget, startPlacedTk3Script,
-  advanceTk3Script, resumeTk3Effect, resumeTk3Transfer, rejectTk3Transfer } from "../../tk3-script-slice.mjs";
+  advanceTk3Script, chooseTk3Cursor, rejectTk3Effect, resumeTk3Effect, resumeTk3Transfer, rejectTk3Transfer } from "../../tk3-script-slice.mjs";
 import { resolveTk3FightRequest, simulateTk3FightVictory,
   simulateTk3FightDefeat, cancelTk3FightTest } from "../../tk3-fight-bridge.mjs";
 import { resolveTk3BoardTransfer } from "../../tk3-board-transfer.mjs";
@@ -13,6 +13,8 @@ import { PRG_STOPS_MOVEMENT, insideTk3BoardProgram,
   from "../../tk3-board-programs.mjs";
 import { listTk3RuntimeKeys, startTk3RuntimeKey } from "../../tk3-runtime-keys.mjs";
 import { describePlayableTargets } from "./playtest-guidance.mjs";
+
+import { createTk3PlayerServices } from "../../tk3-player-services.mjs";
 
 const keyDirections = new Map([
   ["ArrowUp", "north"], ["KeyW", "north"],
@@ -181,6 +183,32 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       (program.reason ? " (" + program.reason + ")" : "");
     diagnostic.append(row);
   }
+  const services = options.services ?? createTk3PlayerServices(artifacts, scene.projectRoot, { readBytes: options.readBytes });
+  const scriptScreen = document.createElement("div");
+  scriptScreen.id = "play-script-screen";
+  scriptScreen.className = "play-script-screen";
+  scriptScreen.hidden = true;
+  const screenCanvas = document.createElement("canvas");
+  const display = artifacts.get(scene.mainPath)?.configuration?.display;
+  screenCanvas.width = display?.width > 0 ? display.width : 640;
+  screenCanvas.height = display?.height > 0 ? display.height : 480;
+  if (screenCanvas.width > 4096 || screenCanvas.height > 4096)
+    throw Error("The configured RPGCode display exceeds the 4096-pixel browser surface limit.");
+  screenCanvas.style.aspectRatio = screenCanvas.width + " / " + screenCanvas.height;
+  screenCanvas.setAttribute("aria-label", "Archive RPGCode screen");
+  const screenText = document.createElement("div");
+  screenText.id = "play-screen-text";
+  screenText.className = "visually-hidden";
+  const choices = document.createElement("div");
+  choices.id = "play-script-choices";
+  choices.setAttribute("role", "group");
+  choices.setAttribute("aria-label", "Archive cursor map");
+  const serviceStatus = document.createElement("p");
+  serviceStatus.id = "play-audio-status";
+  serviceStatus.className = "technical";
+  scriptScreen.append(screenCanvas, screenText, choices);
+  mapFrame.after(scriptScreen, serviceStatus);
+  let choice = null, choiceIndex = 0, screenVersion = null, exited = false;
   let actor = initialMovementState(scene.world);
   let scriptSession = options.scriptSession ?? initialTk3ScriptState();
   let startupActive = options.startupActive ?? false;
@@ -236,7 +264,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     element.classList.toggle("label-above", item.labelAbove);
   };
   const listeners = new AbortController();
-  const busy = () => Boolean(startupActive || activeFight || gameOver || scriptSession.execution);
+  const busy = () => Boolean(exited || startupActive || activeFight || gameOver || scriptSession.execution);
   const initialGuidance = describePlayableTargets(scene, actorAtLayer());
   markerLayer.replaceChildren();
   const playerMarker = makeMarker("player", initialGuidance.player.label);
@@ -302,7 +330,58 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     for (const button of pad) button.classList.remove("held");
     lastFrame = null;
   };
+  const updateScreen = () => {
+    const screen = scriptSession.screen;
+    scriptScreen.hidden = !screen?.active;
+    mapFrame.hidden = Boolean(screen?.active);
+    serviceStatus.textContent = services.audioStatus;
+    serviceStatus.hidden = !services.audioStatus;
+    dialoguePanel.style.backgroundImage = services.graphicUrl ? 'url("' + services.graphicUrl + '")' : "";
+    if (!screen?.active || screenVersion === screen) return;
+    screenVersion = screen;
+    const context = screenCanvas.getContext("2d");
+    context.fillStyle = "black"; context.fillRect(0, 0, screenCanvas.width, screenCanvas.height);
+    context.textBaseline = "top";
+    screenText.textContent = screen.texts.map(t => t.text).join("\n");
+    for (const item of screen.texts) {
+      context.font = (item.bold ? "bold " : "") + item.fontSize + "px Arial, sans-serif";
+      context.fillStyle = "rgb(" + item.color.join(",") + ")";
+      context.fillText(item.text, item.x, item.y);
+    }
+    if (choice) {
+      const point = choice.points[choiceIndex];
+      context.fillStyle = "#f5c96c";
+      context.beginPath(); context.moveTo(point.x - 15, point.y - 6);
+      context.lineTo(point.x - 5, point.y); context.lineTo(point.x - 15, point.y + 6);
+      context.closePath(); context.fill();
+    }
+  };
+  const showChoice = request => {
+    choice = request; choiceIndex = 0; choices.replaceChildren();
+    for (const [index, point] of request.points.entries()) {
+      const label = [...(scriptSession.screen?.texts ?? [])]
+        .sort((a, b) => Math.hypot(a.x - point.x, a.y - point.y) - Math.hypot(b.x - point.x, b.y - point.y))[0]?.text;
+      const button = document.createElement("button");
+      button.type = "button"; button.textContent = label || "Choice " + (index + 1);
+      button.dataset.choice = String(index);
+      button.addEventListener("click", () => selectChoice(index), { signal: listeners.signal });
+      choices.append(button);
+    }
+    highlightChoice();
+  };
+  const highlightChoice = () => {
+    screenVersion = null;
+    for (const [index, button] of [...choices.children].entries())
+      button.setAttribute("aria-pressed", String(index === choiceIndex));
+  };
+  function selectChoice(index) {
+    if (!choice || !scriptSession.execution?.waiting) return;
+    choice = null; choices.replaceChildren();
+    if (applyScriptStep(chooseTk3Cursor(scriptSession, index))) return;
+    draw(); updateStatus();
+  }
   const draw = () => {
+    updateScreen();
     const bg = scene.board.background;
     ctx.fillStyle = Number.isInteger(bg) && bg >= 0 ?
       "rgb(" + (bg & 255) + ", " + ((bg >>> 8) & 255) + ", " + ((bg >>> 16) & 255) + ")" : "#231f25";
@@ -395,7 +474,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       actor.facing + (actor.moving ? " · walking" : " · standing") +
       (actor.blocked ? " · blocked" : "") + " · " + scene.collisionPolicy;
 
-    const scriptWaiting = Boolean(scriptSession.execution?.waiting);
+    const scriptWaiting = Boolean(scriptSession.execution?.waiting && scriptSession.execution.inputKind === "wait");
     const target = selectTk3ScriptTarget(visibleScene(), actorAtLayer());
     const boardKey = !target && selectTk3BoardKey(scene, actorAtLayer());
     scriptVariables.textContent = "Script variables (session): " +
@@ -412,7 +491,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       dialogueProgress.textContent = (wait?.path ?? running.path) + ":" + (wait?.line ?? 1);
     }
     for (const { button } of runtimeControls) button.disabled = busy();
-    talkButton.disabled = Boolean(activeFight || gameOver) ||
+    talkButton.disabled = Boolean(exited || choice || activeFight || gameOver) ||
       !(scriptWaiting || target || boardKey);
     talkButton.textContent = scriptWaiting ? "Next / Finish" : "Talk";
     const hint = gameOver ?
@@ -431,6 +510,29 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   };
 
   function applyScriptStep(stepped) {
+    if (stepped.status === "effect" && stepped.effect?.kind === "runtime-service") {
+      scriptSession = stepped.state;
+      clearHeld();
+      void services.apply(stepped.effect).then(() => {
+        if (listeners.signal.aborted) return;
+        if (!applyScriptStep(resumeTk3Effect(scriptSession))) { draw(); updateStatus(); }
+      }, error => {
+        if (listeners.signal.aborted) return;
+        applyScriptStep(rejectTk3Effect(scriptSession, stepped.effect, error.message));
+        draw(); updateStatus();
+      });
+      return false;
+    }
+    if (stepped.status === "choice") {
+      scriptSession = stepped.state; showChoice(stepped.choice); clearHeld(); return false;
+    }
+    if (stepped.status === "exited") {
+      scriptSession = stepped.state; exited = true; startupActive = false;
+      services.destroy(); choice = null; choices.replaceChildren(); clearHeld();
+      interactionFeedback = "Source windows() exited the game. Reset starts a fresh session.";
+      return false;
+    }
+    if (["completed", "error"].includes(stepped.status)) { choice = null; choices.replaceChildren(); }
     if (stepped.status === "fight") {
       const resolved = resolveTk3FightRequest(stepped, artifacts, scene.projectRoot);
       scriptSession = resolved.state;
@@ -472,7 +574,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (response.transferred) {
       clearHeld();
       const failure = options.onTransfer?.({ scene: response.scene,
-        scriptSession: response.state, defeatProgramActive, startupActive,
+        scriptSession: response.state, defeatProgramActive, startupActive, services,
         arrivalFeedback: "Send() arrived at " + response.toBoardPath +
           " · (" + response.spawn.x + ", " + response.spawn.y +
           ", layer " + response.spawn.layer + ")." });
@@ -484,7 +586,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (startupActive && ["completed", "error"].includes(response.status)) {
       startupActive = false;
       if (response.status === "completed") {
-        const failure = options.onStartupComplete?.(scriptSession);
+        const failure = options.onStartupComplete?.(scriptSession, services);
         if (failure === null) return true;
         const diagnostic = { path: scene.mainPath, line: 1,
           text: scene.mainPath + ":1: " + (failure ?? "Opening-board callback is unavailable.") };
@@ -513,10 +615,10 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     draw();
   }
 
-  function interact() {
-    if (activeFight || gameOver) return;
+  function interact(waitKey = "") {
+    if (exited || choice || activeFight || gameOver) return;
     if (scriptSession.execution?.waiting) {
-      if (applyScriptStep(advanceTk3Script(scriptSession))) return;
+      if (applyScriptStep(advanceTk3Script(scriptSession, waitKey))) return;
     } else {
       const actor = actorAtLayer();
       const target = selectTk3ScriptTarget(visibleScene(), actor);
@@ -578,9 +680,28 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (event.altKey || event.ctrlKey || event.metaKey ||
         /^(INPUT|TEXTAREA|SELECT)$/.test(event.target?.tagName ?? "") ||
         event.target?.isContentEditable) return;
-    if (activeFight || gameOver) return;
-    const talkShortcut = event.code === "KeyE" || event.code === "Space";
+    if (exited || activeFight || gameOver) return;
+    if (choice) {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter", "Space"].includes(event.code)) {
+        event.preventDefault();
+        if (event.repeat) return;
+        if (["Enter", "Space"].includes(event.code)) selectChoice(choiceIndex);
+        else {
+          choiceIndex = (choiceIndex + (["ArrowUp", "ArrowLeft"].includes(event.code) ? -1 : 1) + choice.points.length) % choice.points.length;
+          highlightChoice();
+        }
+      }
+      return;
+    }
     const buttonFocused = event.target?.closest?.("button, a, [role=button]");
+    if (scriptSession.execution?.waiting && scriptSession.execution.inputKind === "wait" &&
+        !["Shift", "Control", "Alt", "Meta"].includes(event.key) &&
+        !(buttonFocused && ["Enter", "Space"].includes(event.code))) {
+      event.preventDefault();
+      if (!event.repeat) interact(event.key === " " ? "SPACE" : event.key.toUpperCase());
+      return;
+    }
+    const talkShortcut = event.code === "KeyE" || event.code === "Space";
     const modal = busy();
     const keyName = event.key === " " ? "SPACE" : event.key.toUpperCase();
     const runtime = runtimeActions.find(action => action.label?.toUpperCase() === keyName);
@@ -687,7 +808,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   fightAbort.addEventListener("click", abortFightTest,
     { signal: listeners.signal });
   gameOverRestart.addEventListener("click", () => options.onRestart(), { signal: listeners.signal });
-  talkButton.addEventListener("click", interact, { signal: listeners.signal });
+  talkButton.addEventListener("click", () => interact(), { signal: listeners.signal });
   for (const { action, button } of runtimeControls) {
     button.addEventListener("click", () => triggerRuntimeProgram(action),
       { signal: listeners.signal });
@@ -710,13 +831,15 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     throw error;
   }
   return {
+    services,
     continueScript(step = resumeTk3Transfer(scriptSession)) {
       if (!applyScriptStep(step)) {
         draw();
         updateStatus();
       }
     },
-    destroy() {
+    destroy({ preserveServices = false } = {}) {
+      if (!preserveServices) services.destroy();
       clearHeld();
       listeners.abort();
       if (requestId !== null) cancelAnimationFrame(requestId);
