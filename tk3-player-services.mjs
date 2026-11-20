@@ -1,5 +1,9 @@
 import { resolveAsset } from "./model.mjs";
 import { defaultMidiTone, playMidi } from "./midi.mjs";
+import {
+  createTk3CanvasServices,
+  canvasLimits,
+} from "./tk3-canvas-services.mjs";
 
 // Browser resources belong to one play session and survive board remounts.
 export function createTk3PlayerServices(
@@ -42,7 +46,55 @@ export function createTk3PlayerServices(
       throw Error("Media source bytes are unavailable: " + found.path);
     return { ...value, bytes };
   };
+  const graphics = createTk3CanvasServices({
+    readImage: async (file) => {
+      const source = await asset("Bitmap", file);
+      const ext = source.path.split(".").at(-1).toLowerCase();
+      const mime = {
+        png: "image/png",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        gif: "image/gif",
+        bmp: "image/bmp",
+      }[ext];
+      if (!mime) throw Error("Unsupported RPGCode image: " + source.path);
+      let width = source.width,
+        height = source.height;
+      const bytes = source.bytes;
+      if (ext === "png" && bytes.length >= 24) {
+        const view = new DataView(
+          bytes.buffer,
+          bytes.byteOffset,
+          bytes.byteLength,
+        );
+        width = view.getUint32(16);
+        height = view.getUint32(20);
+      } else if (ext === "bmp" && bytes.length >= 26) {
+        const view = new DataView(
+          bytes.buffer,
+          bytes.byteOffset,
+          bytes.byteLength,
+        );
+        width = Math.abs(view.getInt32(18, true));
+        height = Math.abs(view.getInt32(22, true));
+      }
+      if (
+        !(
+          width > 0 &&
+          height > 0 &&
+          width <= canvasLimits.dimension &&
+          height <= canvasLimits.dimension
+        )
+      )
+        throw Error(
+          "Image dimensions are missing or exceed the browser canvas limit: " +
+            source.path,
+        );
+      return createImageBitmap(new Blob([bytes], { type: mime }));
+    },
+  });
   return {
+    graphics,
     get audioStatus() {
       return audioStatus;
     },
@@ -77,8 +129,7 @@ export function createTk3PlayerServices(
         );
         return;
       }
-      if (name !== "mediaplay")
-        throw Error("Unsupported player service: " + name);
+      if (name !== "mediaplay") return graphics.apply(effect);
       const source = await asset("Media", String(args[0]));
       if (!/\.(?:mid|midi|wav)$/i.test(source.path))
         throw Error("MediaPlay supports MIDI and WAV: " + source.path);
@@ -129,6 +180,7 @@ export function createTk3PlayerServices(
     },
     destroy() {
       destroyed = true;
+      graphics.destroy();
       stopMusic();
       if (graphicUrl) URL.revokeObjectURL(graphicUrl);
       graphicUrl = null;

@@ -33,9 +33,19 @@ const builtinArity = new Map(
     done: [0],
     fontsize: [1],
     bold: [1],
-    clear: [0],
-    text: [3],
-    pixeltext: [3],
+    clear: [0, 1],
+    text: [3, 4],
+    pixeltext: [3, 4],
+    createcanvas: [2, 3],
+    killcanvas: [1],
+    setimage: [5, 6],
+    setimagetransparent: [8, 9],
+    drawcanvas: [3, 5, 6],
+    getpixel: [5, 6],
+    fillrect: [4, 5],
+    setpixel: [2, 3],
+    mousestatus: [1],
+    keydown: [1, 2],
     colorrgb: [3],
     menugraphic: [1],
     fightmenugraphic: [1],
@@ -199,7 +209,8 @@ export function compileTk3Language(
     let offset = 0,
       depth = 0;
     const now = () => tokens[offset];
-    const is = (value) => now().value === value;
+    const is = (value) =>
+      ["op", "id"].includes(now().type) && now().value === value;
     const take = () => tokens[offset++];
     const fail = (row, message) => {
       throw scriptIssue(row.path, row.line, message);
@@ -237,7 +248,10 @@ export function compileTk3Language(
       const row = now();
       guard(row);
       let left;
-      if (["!", "~", "-", "+", "++", "--"].includes(now().value)) {
+      if (
+        now().type === "op" &&
+        ["!", "~", "-", "+", "++", "--"].includes(now().value)
+      ) {
         const op = take().value;
         left = { kind: "unary", operator: op, value: expr(14), row };
       } else if (is("(")) {
@@ -280,7 +294,7 @@ export function compileTk3Language(
           continue;
         }
         const op = now().value,
-          precedence = binaryPrecedence[op];
+          precedence = now().type === "op" ? binaryPrecedence[op] : undefined;
         if (!precedence || precedence < min) break;
         take();
         const right = expr(precedence === 1 ? precedence : precedence + 1);
@@ -320,7 +334,7 @@ export function compileTk3Language(
     }
     function statement(top) {
       const row = now(),
-        word = now().value;
+        word = now().type === "id" ? now().value : undefined;
       guard(row);
       try {
         if (word === "include" && top) {
@@ -471,7 +485,8 @@ export function compileTk3Language(
         if (word === "return" || word === "returnmethod") {
           take();
           const value =
-            now().type === "nl" || [";", "}"].includes(now().value)
+            now().type === "nl" ||
+            (now().type === "op" && [";", "}"].includes(now().value))
               ? { kind: "literal", value: 0, row }
               : expr();
           return { kind: "return", value, row };
@@ -479,7 +494,7 @@ export function compileTk3Language(
         const value = expr();
         if (
           !["eof", "nl"].includes(now().type) &&
-          ![";", "}"].includes(now().value)
+          !(now().type === "op" && [";", "}"].includes(now().value))
         )
           fail(now(), "Expected statement separator.");
         return { kind: "expression", value, row };
@@ -591,7 +606,16 @@ export function compileTk3Language(
               row.line,
               "Invalid argument count for " + n.name + "().",
             );
-          for (const arg of n.args) value(arg);
+          const outputs =
+            n.name === "getpixel"
+              ? [2, 3, 4]
+              : n.name === "createcanvas" && n.args.length === 3
+                ? [2]
+                : [];
+          for (const [index, arg] of n.args.entries()) {
+            if (arity && outputs.includes(index)) reference(arg);
+            else value(arg);
+          }
           emit("call", row, {
             name: n.name,
             argc: n.args.length,

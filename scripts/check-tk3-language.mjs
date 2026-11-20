@@ -89,6 +89,13 @@ assert.deepEqual(
   { choice: 2, picked: 20, other: 9 },
   "Native switch is an if/else chain without C fallthrough",
 );
+assert.deepEqual(
+  done(
+    'dash="-"; plus="+"; punctuation=")"+";"+"}"; words="if"+"else"; rgb=255+"-"+0+"-"+0;',
+  ),
+  { dash: "-", plus: "+", punctuation: ");}", words: "ifelse", rgb: "255-0-0" },
+  "Operator/keyword/delimiter-shaped string tokens remain literal values",
+);
 let yielded = start(`result=outer(4); after=1;
   method outer(n) { local(sum)=n*2; local(sum)+=inner(n+1); return sum; }
   method inner(n) { mwin("Value="+n); wait(); return n; }

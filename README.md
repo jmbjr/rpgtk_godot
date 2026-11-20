@@ -110,6 +110,15 @@ also passes Play → title → New Game → intro → initial board locally.
 Save/load and native battle/menu plugins remain unsupported.
 [Shared language, source evidence and limits](docs/specs/tk3-script-interaction.md)
 
+The TK3 test game's **M** action now runs its mouse/image/RGB demo. Move and
+click over its canvas, then press Escape or **Send Escape** to return. **G**
+runs its display-pixel sampler; its authored loop needs Reset to leave.
+For public fixtures, download **TK3 Canvas · Harbor** (E key after startup)
+or **TK3 Canvas · Grove** (drawing during startup). Canvas/image, pixel and
+live input services are shared across all triggers.
+[Canvas/input coverage and native evidence boundary](docs/specs/tk3-canvas-input.md)
+
+
 
 ## Smoke test
 

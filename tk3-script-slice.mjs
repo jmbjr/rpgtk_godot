@@ -229,6 +229,34 @@ function run(state) {
       configurable: true,
     });
   };
+  if (exec.pendingService && Object.hasOwn(exec, "serviceResult")) {
+    const pending = exec.pendingService,
+      result = exec.serviceResult;
+    try {
+      if (!result || typeof result !== "object")
+        throw Error("Missing service result.");
+      const returned = result.value ?? 0;
+      if (!["number", "string"].includes(typeof returned))
+        throw Error("Invalid service return value.");
+      const writes = result?.outputs ?? [];
+      if (writes.length !== pending.outputs.length)
+        throw Error("Incomplete service output values.");
+      for (const output of pending.outputs) {
+        const found = writes.find((item) => item.index === output.index);
+        if (!found || !["number", "string"].includes(typeof found.value))
+          throw Error("Invalid service output value.");
+        write(output.ref, found.value);
+      }
+      pop();
+      push(returned);
+      if (result?.presented) screen.active = true;
+      if (result?.frameYielded) exec.steps = 0;
+      delete exec.pendingService;
+      delete exec.serviceResult;
+    } catch (error) {
+      return fail(pending, error.message);
+    }
+  }
   let last = { path: exec.path, line: 1 };
   for (let steps = 0; steps < languageLimits.sliceSteps; steps++) {
     if (++exec.steps > languageLimits.totalSteps)
@@ -368,6 +396,53 @@ function run(state) {
           exec.pc = exec.instructions.length;
           continue;
         }
+        const canvasService =
+          [
+            "createcanvas",
+            "killcanvas",
+            "setimage",
+            "setimagetransparent",
+            "drawcanvas",
+            "getpixel",
+            "fillrect",
+            "setpixel",
+            "mousestatus",
+            "keydown",
+          ].includes(name) ||
+          (name === "clear" && args.length === 1) ||
+          (["text", "pixeltext"].includes(name) && args.length === 4);
+        if (canvasService) {
+          const outputIndices =
+            name === "getpixel"
+              ? [2, 3, 4]
+              : name === "createcanvas" && args.length === 3
+                ? [2]
+                : [];
+          const outputs = outputIndices.map((index) => ({
+            index,
+            ref: args[index],
+          }));
+          exec.pendingService = { path: node.path, line: node.line, outputs };
+          push(0);
+          return {
+            status: "effect",
+            state: snapshot(),
+            effect: {
+              kind: "runtime-service",
+              name,
+              args: args.map((value, index) =>
+                outputIndices.includes(index) ? 0 : value,
+              ),
+              style: {
+                fontSize: screen.fontSize,
+                bold: screen.bold,
+                color: screen.color,
+              },
+              path: node.path,
+              line: node.line,
+            },
+          };
+        }
         if (name === "mwin") {
           const text = literal(args[0]);
           message = message ? message + "\n" + text : text;
@@ -438,6 +513,8 @@ function run(state) {
           push(0);
         } else if (name === "clear") {
           screen.active = true;
+          screen.paintEpoch = (screen.paintEpoch ?? 0) + 1;
+          screen.cleared = true;
           screen.texts = [];
           screenChars = 0;
           push(0);
@@ -561,6 +638,13 @@ export function startTk3Script(state, source, path, context = {}) {
     };
   return run({
     ...state,
+    screen: {
+      ...state.screen,
+      active: false,
+      texts: [],
+      cleared: false,
+      programId: (state.screen?.programId ?? 0) + 1,
+    },
     message: "",
     diagnostic: null,
     execution: execution(path, compiled.instructions, context),
@@ -569,10 +653,20 @@ export function startTk3Script(state, source, path, context = {}) {
 
 // Resume after an approved outside effect, such as erasing the
 // triggering item. Unlike Send(), no board remount is involved.
-export function resumeTk3Effect(state) {
+export function resumeTk3Effect(state, result) {
   if (!state.execution || state.execution.waiting || state.pendingFight)
     return { status: "inactive", state };
-  return run(state);
+  return run(
+    state.execution.pendingService
+      ? {
+          ...state,
+          execution: {
+            ...state.execution,
+            serviceResult: result,
+          },
+        }
+      : state,
+  );
 }
 
 // A battle outcome is explicit. Running its victory program is an
@@ -655,7 +749,11 @@ export function rejectTk3Effect(state, effect, message) {
 // Resume only after the outer scene owner has validated and committed Send.
 // The script continues at the statement *after* Send, on the new board.
 export function resumeTk3Transfer(state) {
-  if (!state.execution || state.execution.waiting)
+  if (
+    !state.execution ||
+    state.execution.waiting ||
+    state.execution.pendingService
+  )
     return { status: "inactive", state };
   return run(state);
 }

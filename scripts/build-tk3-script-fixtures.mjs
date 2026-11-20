@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { buildScriptFixtureZip, scriptFixtureSpecs }
   from "../docs/specs/fixtures/tk3-script-interaction-fixtures.mjs";
-import { buildStartupExecutionGame, buildTitleExecutionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
+import { buildStartupExecutionGame, buildTitleExecutionGame, buildCanvasExecutionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { buildStartupLabZip }
   from "../docs/specs/fixtures/tk3-startup-fixture.mjs";
 
@@ -37,4 +37,12 @@ for (const id of ["harbor", "grove"]) {
   await writeFile(resolve(folder, filename),
     await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" }));
   console.log(filename + ": generic RPGCode title, cursor map, included library and New Game.");
+}
+
+for (const id of ["harbor", "grove"]) {
+  const zip = await buildCanvasExecutionGame(id);
+  const filename = "tk3-canvas-" + id + ".zip";
+  await writeFile(resolve(folder, filename),
+    await zip.generateAsync({type:"uint8array",compression:"DEFLATE"}));
+  console.log(filename + ": native-style canvas, image/pixel services and live input.");
 }

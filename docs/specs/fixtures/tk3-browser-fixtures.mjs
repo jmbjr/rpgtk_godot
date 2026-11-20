@@ -247,3 +247,47 @@ export async function buildTitleExecutionGame(id) {
   zip.file("Sibling/Prg/" + helper, "method Prepare(a,b) { wrong=1; }");
   return zip;
 }
+
+// Canvas programs share services with the player; their control flow is authored here.
+export async function buildCanvasExecutionGame(id) {
+  const harbor=id==='harbor',root=harbor?'HarborLab/':'';
+  const zip=await buildTitleExecutionGame(id);
+  zip.file(root+'Bitmap/chart.png',diagnosticPng);
+  zip.file('Sibling/Bitmap/foreign-only.png',diagnosticPng);
+  const helper=harbor?'scope.prg':'colors.prg';
+  const script=[
+    'method ReadColor(surface,x,y) {',
+    '  getPixel(x,y,local(red),local(green),local(blue),surface);',
+    '  return red+"-"+green+"-"+blue;',
+    '}',
+    'method ShowScope(label) {',
+    '  local(panel)=createCanvas(640,480); createCanvas(640,480,local(mask));',
+    '  colorRGB(34,56,78); fillRect(0,0,640,480,mask);',
+    '  colorRGB(255,0,0); fillRect(0,0,40,40,mask);',
+    '  setImage("chart.png",80,60,16,16,mask);',
+    harbor?'  while(!KeyDown("ESC")) {':'  for(local(turn)=0; !KeyDown("ESC"); ++turn) {',
+    '    clear(panel); colorRGB(8,16,24); fillRect(0,0,640,480,panel);',
+    '    setImage("chart.png",480,100,128,128,panel);',
+    '    setImageTransparent("chart.png",200,100,32,32,255,255,255,panel);',
+    '    px=MouseStatus(0); py=MouseStatus(1); sample=ReadColor(mask,px,py);',
+    '    colorRGB(255,255,255); pixelText(12,12,label,panel);',
+    '    pixelText(12,40,px+"x"+py,panel); pixelText(12,68,sample,panel);',
+    '    if(MouseStatus(2)){pixelText(12,96,"Pressed",panel);}',
+    '    elseif(MouseStatus(3)){pixelText(12,96,"Secondary",panel);}',
+    '    else{pixelText(12,96,"Released",panel);}',
+    '    chord=KeyDown("A","B"); frames+=1; drawCanvas(panel,0,0);',
+    '  }',
+    '  killCanvas(panel); killCanvas(mask); canvas_done+=1;',
+    '  mwin(label+" closed"); wait(); mwinCls();',
+    '}',
+  ].join('\n');
+  zip.file(root+'Prg/'+helper,script);
+  if(harbor)zip.file(root+'Prg/station_report.prg','#include "scope.prg"\nShowScope("Harbor scope"); caller_done=1;');
+  else {
+    const startup=root+'Prg/morning.prg';
+    const source=await zip.file(startup).async('string');
+    zip.file(startup,'#include "colors.prg"\n'+source.replace('startup_returned=1;',
+      'ShowScope("Grove palette"); caller_done=1; startup_returned=1;'));
+  }
+  return zip;
+}
