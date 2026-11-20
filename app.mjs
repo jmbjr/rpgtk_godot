@@ -2513,6 +2513,7 @@ function mountPlayable(scene, options, mode = launchMode) {
   activePlayable?.destroy({ preserveServices: activePlayable.services === replacement.services });
   byId("play-stage").replaceWith(panel);
   activePlayable = replacement;
+  replacement.activate();
   byId("workspace").hidden = true;
   panel.focus({ preventScroll: true });
   return { panel, replacement };

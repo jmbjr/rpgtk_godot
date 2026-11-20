@@ -85,12 +85,12 @@ The old 300-line limit is removed. Separate bounds are 1 MiB of aggregate source
 100,000 tokens/instructions, 32 source files, 64 nesting/call levels, 8,192 stored
 values/operand slots, 65,536 characters per string and 1 MiB of accounted session
 characters. A run is limited to 20,000 instructions between yields and 250,000
-instructions across its continuation. Diagnostics identify the actual source.
+instructions across its continuation between real presented graphics frames. Diagnostics identify the actual source.
 A non-yielding loop faults instead of blocking the UI indefinitely.
 
 Classes, script-defined objects, by-reference parameters/returns, implicit
 library calls, native threads, native error recovery, save/load, plugins,
-full canvas/image APIs, party management and board-entry execution remain
+canvas/image APIs beyond the documented slice, party management and board-entry execution remain
 unsupported. Finite-number checks and bounds are browser policies. This is a
 larger generic subset, not full native Toolkit equivalence.
 
@@ -123,3 +123,14 @@ original source audits, Send coordinate evidence and earlier fixture checkpoints
 The current Talk selector still uses an inclusive 46-pixel same-layer range;
 that range and the browser's 9-pixel collision circle are browser policies,
 not native activation geometry.
+
+
+## Canvas and live-input extension
+
+[Canvas/input coverage and evidence](tk3-canvas-input.md) adds offscreen handles,
+image/color-key blits, pixel/RGB outputs and live pointer/key polling to these
+same services. Drawing a screen frame yields real browser time and resets the
+continuation instruction counter; pure loops and non-presenting service loops
+remain bounded. The supplied TK3 M/G programs are local checkpoints. Input
+command registration at the pinned native revision remains an explicit evidence
+gap; the document separates that from source-verified canvas signatures.

@@ -437,6 +437,119 @@ try {
     await click("play-close");
   }
   console.log("Generic title Chromium passed: two independent archives, original text and cursor choices, MIDI/WAV, keyboard/touch New Game, 350-line helper execution, caller return, Talk state, reset, exit, explicit save diagnostic and direct diagnostics.");
+  for (const id of ["harbor", "grove"]) {
+    const harbor = id === "harbor";
+    const title = harbor ? "Harbor scope" : "Grove palette";
+    const begin = harbor ? "Depart" : "Wake";
+    const bytes = await readFile(resolve(site, "tk3-canvas-" + id + ".zip"));
+    await archive("renamed-canvas-" + id + ".zip", bytes);
+    const openScope = async () => {
+      await control("play-script-choices").getByRole("button", {name:begin,exact:true}).click();
+      await expectText("play-dialogue-text", /ready/);
+      await talk();
+      if (harbor) {
+        await expectText("play-feedback", /GAM startup completed/);
+        await page.keyboard.press("e");
+      }
+      await expectText("play-screen-text", title);
+    };
+    await gamPlay(); await openScope();
+    assert.equal(await control("play-talk").isDisabled(),true);
+    assert.equal(await control("play-runtime-actions").getByRole("button").first().isDisabled(),true);
+    const display = control("play-script-screen").locator("canvas");
+    await display.scrollIntoViewIfNeeded();
+    const bounds = await display.boundingBox();
+    const point = (x,y) => ({x:bounds.x+x*bounds.width/640,y:bounds.y+y*bounds.height/480});
+    let p = point(20,20); await page.mouse.move(p.x,p.y);
+    await variables(/sample = "255-0-0"/);
+    p = point(100,100); await page.mouse.move(p.x,p.y);
+    await variables(/sample = "34-56-78"/);
+    await page.mouse.down(); await expectText("play-screen-text", /Pressed/);
+    await page.mouse.up(); await expectText("play-screen-text", /Released/);
+    await page.mouse.down({button:"right"}); await expectText("play-screen-text", /Secondary/);
+    await page.mouse.up({button:"right"});
+    await page.keyboard.down("a"); await page.keyboard.down("b");
+    await variables(/chord = 1/);
+    await page.keyboard.up("a"); await page.keyboard.up("b");
+    await variables(/chord = 0/);
+    const pixels = await display.evaluate(canvas => {
+      const context = canvas.getContext("2d");
+      return [[214,108],[200,100],[600,400]].map(([x,y]) => [...context.getImageData(x,y,1,1).data]);
+    });
+    assert.deepEqual(pixels,[[8,16,24,255],[255,70,70,255],[8,16,24,255]],"Color-key transparency and scaled image blits use real canvas pixels");
+    if (!harbor) {
+      const touch=await page.context().newCDPSession(page);
+      p=point(25,25);
+      try {
+        await touch.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[p]});
+        await expectText("play-screen-text",/Pressed/);
+        await variables(/sample = "255-0-0"/);
+      } finally {
+        await touch.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}); await touch.detach();
+      }
+      assert.doesNotMatch(await control("play-script-variables").innerText(),/caller_done/);
+    }
+    await click("play-script-escape");
+    await expectText("play-dialogue-text", title+" closed");
+    await variables(/canvas_done = 1/);
+    await talk();
+    await variables(/caller_done = 1/);
+    assert.equal(await control("play-script-screen").isVisible(),false);
+    await click("play-reset"); await openScope();
+    await click("play-close");
+    await control("play-launch").waitFor();
+    await gamPlay(); await openScope();
+    await click("play-reset");
+    await control("play-script-choices").getByRole("button",{name:begin,exact:true}).waitFor();
+    await variables(/startup_runs = 1/);
+    assert.doesNotMatch(await control("play-script-variables").innerText(),/frames|canvas_done/);
+    await click("play-close");
+    if (harbor) {
+      const zip=await JSZip.loadAsync(bytes);
+      const helper="HarborLab/Prg/scope.prg";
+      zip.file(helper,(await zip.file(helper).async("string")).replace('setImage("chart.png"','setImage("foreign-only.png"'));
+      await archive("foreign-canvas.zip",await zip.generateAsync({type:"nodebuffer"}));
+      await gamPlay();
+      await control("play-script-choices").getByRole("button",{name:begin,exact:true}).click();
+      await talk(); await page.keyboard.press("e");
+      await expectText("play-script-diagnostic",/HarborLab\/Prg\/scope.prg:9:.*missing/);
+      assert.equal(await control("play-talk").isDisabled(),false);
+      await click("play-close");
+    }
+  }
+  const canvasAudit = await page.evaluate(async () => {
+    const {createTk3CanvasServices}=await import("./tk3-canvas-services.mjs");
+    let release;
+    const services=createTk3CanvasServices({readImage:()=>new Promise(resolve=>{release=resolve;})});
+    const view=document.createElement("canvas");view.width=view.height=8;
+    services.setSurface(view,view);services.sync({programId:1,paintEpoch:0,cleared:true,texts:[]});
+    const call=(name,args,style)=>services.apply({name,args,style});
+    const a=(await call("createcanvas",[2,2])).value;
+    await call("fillrect",[0,0,2,2,a],{color:[9,27,81]});
+    await call("drawcanvas",[a,0,0,8,8]);
+    const read=await call("getpixel",[7,7,0,0,0]);
+    const failures=[];
+    for(const [name,args] of [["getpixel",[-1,0,0,0,0]],["killcanvas",[999]],
+      ["createcanvas",[0,2]],["createcanvas",[4096,4096]]]) {
+      try{await call(name,args);}catch(error){failures.push(error.message);}
+    }
+    while(services.stats.canvases<64)await call("createcanvas",[1,1]);
+    try{await call("createcanvas",[1,1]);}catch(error){failures.push(error.message);}
+    const pending=call("setimage",["pending.png",0,0,1,1]);
+    let closed=false;services.destroy();release({width:1,height:1,close(){closed=true;}});
+    let rejected=false;try{await pending;}catch{rejected=true;}
+    const stats=services.stats;
+    const next=createTk3CanvasServices({readImage:()=>{throw Error("unused");}});
+    const fresh=document.createElement("canvas");fresh.width=fresh.height=8;next.setSurface(fresh,fresh);
+    const frame=next.apply({name:"fillrect",args:[0,0,1,1],style:{color:[0,0,0]}});
+    next.destroy();let frameCancelled=false;try{await frame;}catch{frameCancelled=true;}
+    return {read,failures,closed,rejected,stats,frameCancelled};
+  });
+  assert.deepEqual(canvasAudit.read.outputs.map(out=>out.value),[9,27,81]);
+  assert.equal(canvasAudit.failures.length,5);
+  assert.deepEqual(canvasAudit.stats,{canvases:0,images:0,pixels:0,pendingFrames:0});
+  assert.ok(canvasAudit.closed && canvasAudit.rejected && canvasAudit.frameCancelled);
+  console.log("Canvas Chromium passed: shared startup/key/helper continuations, image/RGB/color-key pixels, live pointer and chord input, touch, Escape, reset/close, rooted failures, resource bounds and pending work cancellation.");
   // Reload the document to clear the unrelated inspection GAM. Exports
   // below must include exactly the archive's files, including unused ones.
   await page.goto(base);

@@ -102,3 +102,7 @@
 #play-script-choices button[aria-pressed="true"] { border: 2px solid #f5c96c; background: #493b20; }
 #play-dialogue { background-size: 100% 100%; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+.play-script-screen > canvas { touch-action: none; }
+#play-script-escape { display: block; margin: .5rem auto; min-height: 44px; }
+#play-script-escape[hidden] { display: none; }

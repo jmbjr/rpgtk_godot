@@ -206,7 +206,12 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   const serviceStatus = document.createElement("p");
   serviceStatus.id = "play-audio-status";
   serviceStatus.className = "technical";
-  scriptScreen.append(screenCanvas, screenText, choices);
+  const escapeButton = document.createElement("button");
+  escapeButton.id = "play-script-escape";
+  escapeButton.type = "button";
+  escapeButton.textContent = "Send Escape";
+  escapeButton.title = "Supply ESC to a script polling KeyDown; Reset interrupts any program.";
+  scriptScreen.append(screenCanvas, screenText, choices, escapeButton);
   mapFrame.after(scriptScreen, serviceStatus);
   let choice = null, choiceIndex = 0, screenVersion = null, exited = false;
   let actor = initialMovementState(scene.world);
@@ -264,6 +269,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     element.classList.toggle("label-above", item.labelAbove);
   };
   const listeners = new AbortController();
+  escapeButton.addEventListener("click", () => services.graphics.pressKey("ESC"), {signal:listeners.signal});
   const busy = () => Boolean(exited || startupActive || activeFight || gameOver || scriptSession.execution);
   const initialGuidance = describePlayableTargets(scene, actorAtLayer());
   markerLayer.replaceChildren();
@@ -333,6 +339,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   const updateScreen = () => {
     const screen = scriptSession.screen;
     scriptScreen.hidden = !screen?.active;
+    escapeButton.hidden = !screen?.active || !scriptSession.execution || Boolean(choice);
     mapFrame.hidden = Boolean(screen?.active);
     serviceStatus.textContent = services.audioStatus;
     serviceStatus.hidden = !services.audioStatus;
@@ -340,14 +347,9 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (!screen?.active || screenVersion === screen) return;
     screenVersion = screen;
     const context = screenCanvas.getContext("2d");
-    context.fillStyle = "black"; context.fillRect(0, 0, screenCanvas.width, screenCanvas.height);
-    context.textBaseline = "top";
-    screenText.textContent = screen.texts.map(t => t.text).join("\n");
-    for (const item of screen.texts) {
-      context.font = (item.bold ? "bold " : "") + item.fontSize + "px Arial, sans-serif";
-      context.fillStyle = "rgb(" + item.color.join(",") + ")";
-      context.fillText(item.text, item.x, item.y);
-    }
+    services.graphics.sync(screen);
+    services.graphics.paint(context);
+    screenText.textContent = services.graphics.texts.map(t => t.text).join("\n");
     if (choice) {
       const point = choice.points[choiceIndex];
       context.fillStyle = "#f5c96c";
@@ -491,7 +493,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       dialogueProgress.textContent = (wait?.path ?? running.path) + ":" + (wait?.line ?? 1);
     }
     for (const { button } of runtimeControls) button.disabled = busy();
-    talkButton.disabled = Boolean(exited || choice || activeFight || gameOver) ||
+    talkButton.disabled = Boolean(exited || choice || activeFight || gameOver || (scriptSession.execution && !scriptWaiting)) ||
       !(scriptWaiting || target || boardKey);
     talkButton.textContent = scriptWaiting ? "Next / Finish" : "Talk";
     const hint = gameOver ?
@@ -513,9 +515,12 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (stepped.status === "effect" && stepped.effect?.kind === "runtime-service") {
       scriptSession = stepped.state;
       clearHeld();
-      void services.apply(stepped.effect).then(() => {
+      void Promise.resolve().then(() => {
+        services.graphics.sync(scriptSession.screen);
+        return services.apply(stepped.effect);
+      }).then(result => {
         if (listeners.signal.aborted) return;
-        if (!applyScriptStep(resumeTk3Effect(scriptSession))) { draw(); updateStatus(); }
+        if (!applyScriptStep(resumeTk3Effect(scriptSession, result))) { draw(); updateStatus(); }
       }, error => {
         if (listeners.signal.aborted) return;
         applyScriptStep(rejectTk3Effect(scriptSession, stepped.effect, error.message));
@@ -832,6 +837,10 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   }
   return {
     services,
+    activate() {
+      services.graphics.setSurface(screenCanvas, canvas);
+      screenVersion = null; draw(); updateStatus();
+    },
     continueScript(step = resumeTk3Transfer(scriptSession)) {
       if (!applyScriptStep(step)) {
         draw();
