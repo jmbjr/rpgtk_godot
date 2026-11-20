@@ -21,6 +21,7 @@ try {
   for (const [path, value, message] of [
     ["unused.js", String.raw`const selectors = [/\bchecked\s*\[/i];`, /Game-specific production assumption/],
     ["unused.mjs", String.raw`const selectors = [/\bclues\s*\+\+/i, /\bupdateclues\s*\(/i];`, /Game-specific production assumption/],
+    ["bstw-title/unused-helper.mjs", 'export {};', /Retired production path/],
     ["model.mjs", '// Inclusive maximum indices: in BSTW there are nine slots.', /Game-specific production assumption/],
     ["lazy.mjs", 'export const choose = () => import("./bstw-title.mjs");', /Retired production reference/],
     ["experiments/movement-sandbox/inn-contract.json", '{}', /Retired production payload/],

@@ -18,6 +18,7 @@ export function verifyProductionFile(path, text = "") {
   const code = /\.(?:m?js|html|css|svg|map)$/i.test(path);
   const configuration = /\.json$/i.test(path) && !/^(?:docs|fixtures)\//.test(path);
   if (thirdPartyCode.has(path) || !(code || configuration)) return;
+  assert.doesNotMatch(path, retiredReference, "Retired production path: " + path);
   assert.doesNotMatch(text, retiredReference, "Retired production reference: " + path);
   assert.doesNotMatch(text, gameSelectors, "Game-specific production assumption: " + path);
 }
