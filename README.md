@@ -105,6 +105,10 @@ object's source-authored response when startup is skipped.
 For a full title-to-board check, download **TK3 Title · Harbor** or
 **TK3 Title · Grove**, upload it, choose **Play game**, and select **Depart**
 or **Wake**. Advance the helper message, then Talk and move on the board.
+Gameplay MIDI defaults to **GeneralUser GS 2.0.3**, sharing the inspector’s
+hosted sound bank. The audio status shows loading, the selected bank and failures.
+[Gameplay MIDI behavior and verification](docs/specs/tk3-gameplay-midi.md)
+
 Reset returns to the source title. The unchanged owner TK3.10 diagnostic ZIP
 also passes Play → title → New Game → intro → initial board locally.
 Save/load and native battle/menu plugins remain unsupported.

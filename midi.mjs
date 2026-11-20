@@ -1,5 +1,23 @@
 import { readMidiWithMessages } from "./media.mjs";
 
+let generalUserGsDownload;
+export const generalUserGs = {
+  name: "GeneralUser GS 2.0.3",
+  async arrayBuffer() {
+    generalUserGsDownload ??= fetch(new URL("./vendor/generaluser-gs/GeneralUser-GS.sf2", import.meta.url))
+      .then(response => {
+        if (!response.ok) throw new Error(`Could not download GeneralUser GS (HTTP ${response.status}).`);
+        return response.blob();
+      })
+      .catch(error => {
+        generalUserGsDownload = undefined;
+        throw error;
+      });
+    // The audio worklet takes ownership of each playback's ArrayBuffer.
+    return (await generalUserGsDownload).arrayBuffer();
+  },
+};
+
 export function midiTimeline(bytes) {
   const events = [];
   const midi = readMidiWithMessages(bytes, (tick, status, args, _track, port) => {

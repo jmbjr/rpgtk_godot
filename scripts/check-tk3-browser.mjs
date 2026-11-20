@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import JSZip from "../vendor/jszip.min.js";
 import { chromium } from "playwright";
-import { buildBrowserGame, buildStartupExecutionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
+import { buildBrowserGame, buildStartupExecutionGame, buildTitleExecutionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { nativeMainFixture } from "../docs/specs/fixtures/native-main-29-fixtures.mjs";
 
 const site = resolve(process.argv[2] ?? "site");
@@ -65,6 +65,22 @@ try {
 
   await page.addInitScript(() => {
     window.frameAudioStarts = 0;
+    window.midiContexts = [];
+    window.midiWorklets = [];
+    const Context = window.AudioContext;
+    window.AudioContext = class extends Context {
+      constructor(...args) { super(...args); window.midiContexts.push(this); }
+    };
+    const Worklet = window.AudioWorkletNode;
+    window.AudioWorkletNode = class extends Worklet {
+      constructor(context, ...args) {
+        super(context, ...args);
+        const analyser = context.createAnalyser();
+        const mute = context.createGain(); mute.gain.value = 0;
+        this.connect(analyser); analyser.connect(mute); mute.connect(context.destination);
+        window.midiWorklets.push({ node: this, analyser });
+      }
+    };
     const createUrl = URL.createObjectURL;
     URL.createObjectURL = function (blob) {
       if (blob.type === "application/json") window.exportedGame = blob.text();
@@ -352,6 +368,119 @@ try {
   }
   console.log("Shared startup Chromium passed: nested and flat GAM helpers, keyboard/touch wait and caller continuation, Talk state, transfer/return, recoverable failures, encounters, reset and direct mode.");
 
+  // Exercise the real hosted bank and worklet through staged production imports.
+  // Each reload clears the module cache; route gates make cancellation observable.
+  const bankRoute = "**/vendor/generaluser-gs/GeneralUser-GS.sf2";
+  const midiZip = await buildTitleExecutionGame("harbor");
+  const longerNote = Buffer.from(await midiZip.file("HarborLab/Media/note.mid").async("uint8array"));
+  longerNote[13] = 12; // Four seconds: enough to observe remount continuity before looping.
+  midiZip.file("HarborLab/Media/note.mid", longerNote);
+  midiZip.file("HarborLab/Prg/station_report.prg", "mediaStop(); stopped=1;");
+  const startupPath = "HarborLab/Prg/harbor_start.prg";
+  const originalStartup = await midiZip.file(startupPath).async("string");
+  const loadMidi = async (source = originalStartup) => {
+    midiZip.file(startupPath, source);
+    await archive("gs-session.zip", await midiZip.generateAsync({type:"nodebuffer"}));
+    await gamPlay();
+    await expectText("play-screen-text", "Harbor departure");
+  };
+  const closedContexts = () => page.waitForFunction(() =>
+    window.midiContexts.every(context => context.state === "closed"));
+  const gsPlaying = () => control("play-audio-status").filter({
+    hasText: /Playing MIDI:.*GeneralUser GS 2.0.3/,
+  }).waitFor({timeout:20000});
+  const sampledAudio = () => page.waitForFunction(() => window.midiWorklets.some(({analyser}) => {
+    const samples = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(samples);
+    return samples.some(sample => Math.abs(sample) > 0.0001);
+  }), null, {timeout:20000});
+
+  for (const action of ["stop", "replace", "close", "reset"]) {
+    await page.reload();
+    let releaseBank;
+    let requests = 0;
+    const gate = new Promise(resolve => { releaseBank = resolve; });
+    await page.route(bankRoute, async route => { requests++; await gate; await route.continue(); });
+    await loadMidi(["stop", "replace"].includes(action) ? originalStartup.replace('mediaPlay("note.mid");',
+      action === "stop" ? 'mediaPlay("note.mid"); mediaStop();' : 'mediaPlay("note.mid"); mediaPlay("tone.wav");') : originalStartup);
+    if (!["stop", "replace"].includes(action)) await expectText("play-audio-status", /Loading MIDI with GeneralUser GS/);
+    await page.waitForFunction(() => window.midiContexts.length === 1);
+    if (action === "close") await click("play-close");
+    if (action === "reset") {
+      await click("play-reset");
+      await expectText("play-screen-text", "Harbor departure");
+      await page.waitForFunction(() => window.midiContexts.length === 2 && window.midiContexts[0].state === "closed");
+    } else await closedContexts();
+    releaseBank();
+    if (action === "reset") {
+      await gsPlaying(); await sampledAudio();
+      assert.equal(await page.evaluate(() => window.midiWorklets.length), 1,
+        "Only the new reset session starts a worklet after the shared download");
+      assert.equal(requests, 1, "Reset coalesces the pending bank download");
+      await click("play-close"); await closedContexts();
+    } else {
+      // Await the same cached bank promise to prove the delayed load settled.
+      await page.evaluate(async () => { const {generalUserGs} = await import("./midi.mjs"); await generalUserGs.arrayBuffer(); });
+      assert.equal(await page.evaluate(() => window.midiWorklets.length), 0,
+        action + " prevents stale worklet creation");
+      if (action === "replace") await expectText("play-audio-status", /Playing WAV:/);
+      if (["stop", "replace"].includes(action)) await click("play-close");
+    }
+    await page.unroute(bankRoute);
+  }
+
+  await page.reload();
+  let bankRequests = 0;
+  await page.route(bankRoute, async route => {
+    bankRequests++;
+    if (bankRequests === 1) await route.fulfill({status:503,body:"Unavailable"});
+    else await route.continue();
+  });
+  await loadMidi();
+  await expectText("play-audio-status", /Unable to play MIDI.*HTTP 503.*note.mid/);
+  await closedContexts();
+  assert.equal(await page.evaluate(() => window.midiWorklets.length), 0);
+  await click("play-reset"); await gsPlaying(); await sampledAudio();
+  assert.equal(bankRequests, 2, "A new play retries the failed bank download");
+  const contextCount = await page.evaluate(() => window.midiContexts.length);
+  // Send and normal startup completion both remount the board with these services.
+  await click("play-close"); await closedContexts();
+  await loadMidi(originalStartup.replace('startup_returned=1; end();',
+    'Send("channel.brd",3,3); startup_returned=1; end();'));
+  await gsPlaying();
+  await control("play-script-choices").getByRole("button", {name:"Depart",exact:true}).click();
+  await expectText("play-dialogue-text", /Harbor ready/);
+  await page.keyboard.press("Enter");
+  await expectText("play-feedback", /GAM startup completed/);
+  await gsPlaying();
+  assert.equal(await page.evaluate(() => window.midiContexts.length), contextCount + 1,
+    "Board transfers and startup completion retain their audio context");
+  assert.equal(bankRequests, 2, "Cached bank bytes are reused across sessions");
+  // The short synthetic MIDI must finish and restart through the GS transport.
+  const loops = await page.evaluate(() => window.midiWorklets.length);
+  await page.waitForFunction(count => window.midiWorklets.length > count, loops, {timeout:20000});
+  await gsPlaying();
+  assert.equal(await page.evaluate(() => window.midiContexts.filter(c => c.state !== "closed").length), 1);
+  await page.keyboard.press("e"); await variables(/stopped = 1/);
+  await closedContexts();
+  assert.equal(await control("play-audio-status").isVisible(), false);
+  await click("play-reset"); await gsPlaying();
+  await control("play-script-choices").getByRole("button", {name:"Leave",exact:true}).click();
+  await expectText("play-feedback", /windows\(\) exited/); await closedContexts();
+  await click("play-close");
+  await page.unroute(bankRoute);
+  await page.reload();
+  const processorRoute = "**/vendor/soundfont/spessasynth_processor.min.js";
+  await page.route(processorRoute, route => route.fulfill({status:503,body:"Unavailable"}));
+  await loadMidi();
+  await expectText("play-audio-status", /Unable to play MIDI.*note.mid/);
+  await closedContexts();
+  assert.equal(await page.evaluate(() => window.midiWorklets.length), 0);
+  await click("play-close");
+  await page.unroute(processorRoute);
+  await page.reload();
+  console.log("GS gameplay Chromium passed: real SF2/worklet sampled output, loading/failure/retry, loop, board continuity, cached bank, mediaStop and reset/close/exit cancellation.");
+
   for (const id of ["harbor", "grove"]) {
     const harbor = id === "harbor";
     const title = harbor ? "Harbor departure" : "Orchard morning";
@@ -363,7 +492,7 @@ try {
     const menu = control("play-script-choices");
     await menu.getByRole("button", {name:begin,exact:true}).waitFor();
     await expectText("play-screen-text", title);
-    await expectText("play-audio-status", harbor ? /Playing MIDI:/ : /Playing WAV:/);
+    await expectText("play-audio-status", harbor ? /Playing MIDI:.*GeneralUser GS 2.0.3/ : /Playing WAV:/);
     assert.equal(await control("play-map-frame").isVisible(), false);
     await variables(/startup_runs = 1/);
     const position = await control("play-status").innerText();
