@@ -1,14 +1,7 @@
-import { resolveAsset } from "./model.mjs";
+export { boardEntryBinding } from "./tk3-behavior-bindings.mjs";
 import { callTk3Program, resumeTk3Transfer, rejectTk3Effect } from "./tk3-script-slice.mjs";
 
 // Same decoded binding/reference as Explorer; no filename or program-shape rules.
-export function boardEntryBinding(board, artifacts, projectRoot) {
-  const value = board.entryProgram ?? "";
-  const found = resolveAsset(artifacts, "Prg", value, projectRoot);
-  return { owner:board.path, slot:null, role:"Board entry program", value,
-    path:found.path ?? null, line:1, status:found.status,
-    ...(found.candidates ? {candidates:found.candidates} : {}) };
-}
 export function enterTk3Board(state, scene, artifacts) {
   const binding = scene.boardEntry;
   if (!binding || binding.status === "unset")

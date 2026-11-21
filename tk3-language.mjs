@@ -25,6 +25,7 @@ const builtinArity = new Map(
   Object.entries({
     mwin: [1],
     wait: [0],
+    thread: [2,3], killthread: [1], getthreadid: [0,1], threadsleep: [2], threadwake: [1],
     mwincls: [0],
     send: [3, 4],
     fightenemy: [2],
@@ -609,6 +610,8 @@ export function compileTk3Language(
           const outputs =
             n.name === "getpixel"
               ? [2, 3, 4]
+              : n.name === "thread" && n.args.length === 3 ? [2]
+              : n.name === "getthreadid" && n.args.length === 1 ? [0]
               : n.name === "createcanvas" && n.args.length === 3
                 ? [2]
                 : [];

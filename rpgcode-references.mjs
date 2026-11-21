@@ -6,7 +6,7 @@ const audio = ["mid", "midi", "wav", "mp3", "ogg", "wma", "avi"];
 const first = (names, folder, types) => names.split(" ").map(name =>
   [name, [[0, { folder, types }]]]);
 const roles = new Map([
-  ...first("include run", "Prg"),
+  ...first("include run thread", "Prg"),
   ...first("send viewbrd", "Boards"),
   ...first("addplayer newplyr", "Chrs"),
   ...first("giveitem takeitem createitem", "Item"),

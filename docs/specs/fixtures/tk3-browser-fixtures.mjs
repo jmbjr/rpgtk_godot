@@ -369,3 +369,28 @@ export async function buildBoardEntryGame(id) {
   zip.file(root+'Prg/'+(harbor?'station_report.prg':'runtime.prg'),send);
   return zip;
 }
+
+export async function buildBackgroundGame(id) {
+  const harbor=id==='harbor',root=harbor?'HarborLab/':'',zip=await buildBoardEntryGame(id);
+  const boardPath=root+'Boards/'+(harbor?'wharf.brd':'meadow.brd');
+  const worker=harbor?'weather_task.prg':'pulse_worker.prg';
+  let board=await zip.file(boardPath).async('nodebuffer');
+  board=replace(board,pack(short(0),z(''),short(1),z('alpha'),z('beta')),
+    pack(short(0),z(worker),short(1),z('alpha'),z('beta')));
+  if(harbor)board=replace(board,pack(z('dockbell.itm'),z('mwininn.prg'),z('')),
+    pack(z('dockbell.itm'),z('mwininn.prg'),z('bell_motion.prg')));
+  else {
+    const path='Item/oakidol.itm';
+    zip.file(path,replace(await zip.file(path).async('nodebuffer'),pack(z(''),z('pickup.prg')),pack(z('idle_worker.prg'),z('pickup.prg'))));
+  }
+  zip.file(boardPath,board);
+  zip.file(root+'Prg/'+(harbor?'mwininn.prg':'pickup.prg'),'mwin("Worker interaction"); wait(); mwinCls(); talks+=1;');
+  zip.file(root+'Prg/'+worker,'while(true) { board_ticks+=1; threadSleep(getThreadId(),0.05); }');
+  zip.file(root+'Prg/'+(harbor?'bell_motion.prg':'idle_worker.prg'),'while(true) { item_ticks+=1; threadSleep(getThreadId(),0.08); }');
+  zip.file(root+'Prg/bad_worker.prg','missingMethod();');
+  zip.file(root+'Prg/spin_worker.prg','while(true){spins+=1;}');
+  zip.file(root+'Prg/persistent_worker.prg','while(true) { persistent_ticks+=1; threadSleep(getThreadId(),0.04); }');
+  const entry=root+'Prg/'+(harbor?'harbor_entry.prg':'grove_entry.prg');
+  zip.file(entry,'if(persistent_id==0){persistent_id=thread("persistent_worker.prg",true);}\n'+await zip.file(entry).async('string'));
+  return zip;
+}

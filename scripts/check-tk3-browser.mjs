@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import JSZip from "../vendor/jszip.min.js";
 import { chromium } from "playwright";
-import { buildBrowserGame, buildStartupExecutionGame, buildTitleExecutionGame, buildNeutralInspectionGame, buildBoardEntryGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
+import { buildBrowserGame, buildStartupExecutionGame, buildTitleExecutionGame, buildNeutralInspectionGame, buildBoardEntryGame, buildBackgroundGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { nativeMainFixture } from "../docs/specs/fixtures/native-main-29-fixtures.mjs";
 
 const site = resolve(process.argv[2] ?? "site");
@@ -846,6 +846,41 @@ try {
     await page.locator("#source #line-1.active-line").waitFor();
   }
   console.log("Board entry Chromium passed: title/intro/entry order, destination wait before Send caller, return visits, reset/direct launch and source navigation.");
+  await page.goto(base);
+  checkpoint="cooperative background programs";
+  for(const id of ["harbor","grove"]) {
+    await page.goto(base);
+    const harbor=id==="harbor",zip=await buildBackgroundGame(id);
+    await archive("background-"+id+".zip",await zip.generateAsync({type:"nodebuffer"}));
+    const exported=await accountForArchive(await zip.generateAsync({type:"nodebuffer"}));
+    assert.ok(exported.behaviorBindings.some(b=>b.role==="Board thread" && b.slot===0 && b.status==="resolved"));
+    assert.ok(exported.behaviorBindings.some(b=>b.entitySlot===0 && b.role===(harbor?"Native sprite multitask program":"On-board program")));
+    await gamPlay();
+    await control("play-script-choices").getByRole("button",{name:harbor?"Depart":"Wake",exact:true}).click();
+    await talk(); await expectText("play-dialogue-text",id+" entry 1"); await talk();
+    await page.waitForFunction(()=>Number(document.querySelector("#play-script-variables").textContent.match(/board_ticks = (\d+)/)?.[1])>=3);
+    await expectText("play-task-status",/Board thread.*ready|Board thread.*sleeping/);
+    const position=await control("play-status").innerText();
+    await move("ArrowDown",()=>page.waitForFunction(before=>document.querySelector("#play-status").textContent!==before,position));
+    await talk(); await expectText("play-dialogue-text","Worker interaction");
+    const paused=await control("play-script-variables").innerText();
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    assert.equal(await control("play-script-variables").innerText(),paused,"Foreground wait owns globals while tasks pause");
+    await talk(); await variables(/talks = 1/);
+    await page.keyboard.press(harbor?"e":"t");
+    await expectText("play-dialogue-text",/destination entry/);
+    await expectText("play-task-status",/persistent_worker.prg/);
+    const status=await control("play-task-status").innerText();
+    assert.doesNotMatch(status,/Board thread|Native sprite multitask program/);
+    if(!harbor) assert.match(status,/On-board program.*idle_worker.prg/,"Destination inherits its own item task");
+    await talk(); await expectText("play-dialogue-text",id+" entry 2");await talk();
+    await variables(/returned = 2/);
+    await click("play-reset");
+    await control("play-script-choices").getByRole("button",{name:harbor?"Depart":"Wake",exact:true}).waitFor();
+    assert.doesNotMatch(await control("play-script-variables").innerText(),/board_ticks|item_ticks|persistent_ticks/);
+    await click("play-close");
+  }
+  console.log("Background Chromium passed: shared VM/global progress, board/item/persistent bindings in JSON, movement responsiveness, modal coordination, transfer cleanup and fresh reset.");
   await page.goto(base);
   const legacyBytes = await readFile(resolve(site, "tk2-legacy-game.zip"));
   await archive("tk2-legacy-game.zip", legacyBytes);

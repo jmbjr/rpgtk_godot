@@ -172,5 +172,11 @@ export async function buildScriptFixtureZip(spec) {
   // Source placed object in slot 1 references another PRG in the
   // original synthetic test board. Omit it deliberately to exercise
   // unresolved reference filtering (without blocking play).
+  // Decoder specimens carry placeholder background bindings. These runnable
+  // fixtures have no background behavior until a dedicated lab authors it.
+  for (const file of Object.values(zip.files).filter(f=>!f.dir)) {
+    if (/\.brd$/i.test(file.name)) zip.file(file.name, replaceOnce(await file.async("nodebuffer"), "ambient.prg\0", "\0"));
+    if (/\.itm$/i.test(file.name)) zip.file(file.name, replaceOnce(await file.async("nodebuffer"), "board.prg\0", "\0"));
+  }
   return zip;
 }
