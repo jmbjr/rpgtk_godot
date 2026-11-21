@@ -647,8 +647,21 @@ export function startTk3Script(state, source, path, context = {}) {
     },
     message: "",
     diagnostic: null,
+    transferCount: 0,
     execution: execution(path, compiled.instructions, context),
   });
+}
+
+// Native synchronous nested CProgram: retain the caller's complete VM frame.
+export function callTk3Program(state, source, path, context = {}) {
+  if (state.execution?.waiting || state.pendingFight) return { status: "busy", state };
+  if ((state.scriptStack?.length ?? 0) >= 16)
+    return rejectTk3Effect(state, {path,line:1}, "Nested board-entry budget exceeded.");
+  const compiled = compileTk3Interaction(source, path, context);
+  if (!compiled.ok) return rejectTk3Effect(state, compiled.diagnostic, compiled.diagnostic.message);
+  return run({ ...state, message:"", diagnostic:null,
+    execution:execution(path, compiled.instructions, context),
+    scriptStack:[...(state.scriptStack ?? []), ...(state.execution ? [state.execution] : [])] });
 }
 
 // Resume after an approved outside effect, such as erasing the
@@ -708,6 +721,7 @@ export function advanceTk3Script(state, key = "") {
     return { status: "inactive", state };
   return run({
     ...state,
+    transferCount: 0,
     execution: {
       ...state.execution,
       waiting: false,
@@ -724,6 +738,7 @@ export function chooseTk3Cursor(state, index) {
     return { status: "invalid-choice", state };
   return run({
     ...state,
+    transferCount: 0,
     execution: {
       ...exec,
       waiting: false,

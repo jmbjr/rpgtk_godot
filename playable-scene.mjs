@@ -1,3 +1,4 @@
+import { boardEntryBinding } from "./tk3-board-entry.mjs";
 import { mainFileBindings } from "./model.mjs";
 import { buildReferences } from "./artifacts.mjs";
 import { mapBoardPlacements } from "./placed-sprites.mjs";
@@ -173,6 +174,7 @@ export function buildPlayableScene(artifacts, graph, selectedMain, options = {})
     },
     walking: walks,
     placements, boardPrograms,
+    boardEntry: boardEntryBinding(board, artifacts, projectRoot),
     // Pure sandbox stepper sees only verified TT_SOLID geometry.
     world,
     collisionPolicy: vectorCollision.status + "; 9px circle; " + vectorCollision.reason,

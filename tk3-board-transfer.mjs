@@ -17,6 +17,7 @@ export function resolveTk3BoardTransfer(response, currentScene, artifacts, graph
   });
   const rootMatch = currentScene?.boardPath?.match(/^(.*\/)?Boards\/[^/]+\.brd$/i);
   if (!currentScene?.ok || !rootMatch) return fail("Source board is not a valid archive BRD path.");
+  if ((response.state.transferCount ?? 0) >= 32) return fail("Transfer budget exceeded before user input.");
   const file = transfer.file;
   if (typeof file !== "string" || !/^[^\\/:*?"<>|]+\.brd$/i.test(file) ||
       file === "." || file.includes(".."))
@@ -49,7 +50,8 @@ export function resolveTk3BoardTransfer(response, currentScene, artifacts, graph
     { projectRoot: currentScene.projectRoot, boardPath: resolved.path, start: { x, y, layer } });
   if (!next.ok) return fail("Destination " + resolved.path +
     " is not playable: " + next.issues.map(i => i.detail).join("; "));
-  const continued = deferResume ? response : resumeTk3Transfer(response.state);
+  const state = {...response.state, transferCount:(response.state.transferCount ?? 0)+1};
+  const continued = deferResume ? {...response,state} : resumeTk3Transfer(state);
   return {
     ...continued, scene: next,
     fromBoardPath: currentScene.boardPath,

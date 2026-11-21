@@ -39,6 +39,7 @@ jobs:
           node --check tk3-canvas-services.mjs
           node --check tk3-player-services.mjs
           node --check tk3-script-slice.mjs
+          node --check tk3-board-entry.mjs
           node --check tk3-board-transfer.mjs
           node --check tk3-board-programs.mjs
           node --check tk3-gam-startup.mjs
@@ -104,6 +105,7 @@ jobs:
           node scripts/check-tk3-player-services.mjs
           node scripts/check-tk3-canvas.mjs
           node scripts/check-tk3-board-programs.mjs
+          node scripts/check-tk3-board-entry.mjs
           node scripts/check-tk3-startup.mjs
           node scripts/check-tk3-runtime-keys.mjs
           node scripts/check-tk3-fight-bridge.mjs
@@ -118,6 +120,7 @@ jobs:
           mkdir -p site/vendor
           cp .nojekyll index.html style.css app.mjs archive.mjs archive-inventory.mjs model.mjs rpgcode-references.mjs artifacts.mjs asset-format.mjs tile-palette.mjs records.mjs game-graph.mjs inspector-history.mjs connection-map.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs tile-matches.mjs tile-pdf.mjs catalog.json site/
           cp native-board-tail.mjs script-trace.mjs save-state.mjs pe-inspect.mjs plugin-audit.mjs playability-audit.mjs playable-scene.mjs placed-sprites.mjs vector-collision.mjs tk3-language.mjs tk3-canvas-services.mjs tk3-player-services.mjs tk3-script-slice.mjs tk3-board-transfer.mjs tk3-board-programs.mjs tk3-gam-startup.mjs tk3-runtime-keys.mjs tk3-fight-bridge.mjs site/
+          cp tk3-board-entry.mjs site/
           mkdir -p site/experiments/movement-sandbox
           cp experiments/movement-sandbox/{engine,playtest-guidance,authored-play}.mjs experiments/movement-sandbox/sandbox.css site/experiments/movement-sandbox/
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
