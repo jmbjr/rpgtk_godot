@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { buildScriptFixtureZip, scriptFixtureSpecs }
   from "../docs/specs/fixtures/tk3-script-interaction-fixtures.mjs";
-import { buildStartupExecutionGame, buildTitleExecutionGame, buildCanvasExecutionGame, buildBoardEntryGame, buildBackgroundGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
+import { buildStartupExecutionGame, buildTitleExecutionGame, buildCanvasExecutionGame, buildBoardEntryGame, buildBackgroundGame, buildMovingGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { buildStartupLabZip }
   from "../docs/specs/fixtures/tk3-startup-fixture.mjs";
 
@@ -55,4 +55,9 @@ for(const id of ["harbor","grove"]) {
 for(const id of ["harbor","grove"]) {
   const zip=await buildBackgroundGame(id);
   await writeFile(resolve(folder,"tk3-background-"+id+".zip"),await zip.generateAsync({type:"uint8array",compression:"DEFLATE"}));
+}
+
+for(const id of ["harbor","grove"]) {
+ const zip=await buildMovingGame(id);
+ await writeFile(resolve(folder,"tk3-living-"+id+".zip"),await zip.generateAsync({type:"uint8array",compression:"DEFLATE"}));
 }

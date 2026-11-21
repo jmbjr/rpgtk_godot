@@ -90,8 +90,96 @@ was changed. Inert decoder placeholders are cleared in runnable fixtures only.
 
 Background Harbor/Grove use board and item counters plus a persistent task.
 After title/entry, counters advance while directional input remains responsive;
-Talk pauses background execution, transfers discard board/item tasks, persistent
+Talk pauses background execution, transfers discard old board/item tasks (new
+board placements may start their own inherited tasks), persistent
 work survives, and reset/close dispose everything. Harbor uses a BRD override;
 Grove inherits the ITM on-board program. CI separately tests faults, limits,
 sleep/wake/kill, shared globals and erased-item ownership. This establishes
-synthetic task behavior; private `man_wander.prg` remains unavailable.
+synthetic task behavior; the private diagnostic copy of `man_wander.prg` remains
+unavailable. The pinned upstream specimen was inspected below.
+
+## Authored item movement
+
+Pinned native evidence:
+
+- `rpgcode/functions.cpp:273–307,2115–2136,2688–2701,2734–2768`:
+  current-board numeric slot or bound source/target handle; PushItem queues
+  directions, ItemSpeed sets seconds per step, ItemLocation returns coordinates
+  and layer through output references.
+- `movement/CSprite/CSprite.cpp:658–735,868–901` and `CSprite.h:51–57,159`:
+  comma-separated cardinal/diagonal directions; GAM `MF_PUSH_PIXEL=2` uses 8px
+  pushes, other verified movement modes 0/1 use 32px; foreground movement waits,
+  background movement continues unless `tkMV_PAUSE_THREAD=1`; queue replacement
+  uses `tkMV_CLEAR_QUEUE=2`. A new movement task owner wakes the previous owner;
+  ThreadWake releases a movement wait without cancelling its queue. Native
+  ItemSpeed stores seconds as milliseconds.
+- `movement/CSprite/CSprite.cpp` collision/render paths use the entity's current
+  position/layer; the browser shares one entity record across script handles,
+  movement, rendering, player collision and Talk selection/markers.
+
+`tk3-entities.mjs` belongs to the existing player service session. Opening a board
+reconstructs its slot identities/positions; reset/close/exit disposes all movement
+and rejects pending foreground continuations. Flags 0–3 and bounded queues (128)
+are supported; unsupported flags, handles, direction strings or GAM modes report
+source diagnostics. ItemSpeed accepts >0 through 60 seconds; initial zero speed
+uses 0.0625 seconds (browser policy). Diagonal direction art is used when present;
+missing animation falls back to the initial authored artwork. Complete nonempty
+ANM TST/TBM frames, timing and transparency use the existing decoders. Blank
+reserved ANM slots are skipped. Animation sounds/standing-idle timing are deferred.
+
+Browser collision remains swept <=4px substeps with a radius-9 circle, same-layer
+supported native vectors, board bounds and current player/item positions. It does
+not implement native sprite base polygons, pathfinding or all native movement
+flags. A blocked path ends its queue and resumes its caller; the UI records blocked
+state. Native movement speed/easing and polygon overlap parity are not claimed.
+Foreground dialogue/choices/combat pause item movement and background quanta;
+foreground PushItem itself allows movement while its VM continuation waits.
+EraseItem hides the same entity from drawing/collision/Talk and pauses its task.
+Existing browser erasure history persists across return visits until reset; native
+save/reload persistence remains separate. Persistent tasks lose stale bound-item
+handles after transfer; numeric handles refer to the new current board.
+
+Living boards Harbor/Grove exercise nested versus flat projects, BRD multitask
+versus ITM inheritance, E/W versus S/N queued routes, shared globals, animation,
+Talk's ItemLocation outputs and range at the moved position, blocked movement,
+transfer/return and reset during a foreground movement wait. B starts that
+foreground wait in the Living boards fixtures. These generated archives contain
+no owner assets.
+ItemPath/native pathfinding and the private diagnostic game's actual bindings
+remain unresolved: no pirate movement or actual-ZIP acceptance is claimed from
+these synthetic routes.
+
+
+## Pinned upstream demo inspection (distinct from owner ZIP)
+
+The same Toolkit checkout includes public `build/main/demo.gam` and
+`build/game/demo/` specimens. They were decoded locally through the normal
+GAM/BRD/ITM readers; no assets or source were copied into this repository/Pages.
+This is pinned-upstream specimen inspection, not execution of the private archive
+with SHA-256 `367302f4819b3bfde8e434d22561d61e03cd83f92a38cb18a3dd7aa27a55dc3f`.
+
+| Public pinned specimen | Observed binding |
+| --- | --- |
+| GAM 2.9 | Project `Game\demo\`, startup `start.prg`, board `start.brd`, character `start.tem`. |
+| `start.brd` | Empty entry/board thread; slot 0 `oldman.itm`, activation `oldman.prg`, inline multitask ItemPath with WAYPOINT_LINK to `wp_oldman`, repeat 0; position (214,300,L1). |
+| `out.brd` | Empty entry/board thread; slot 0 `man.itm`, activation `man.prg`, multitask `man_wander.prg`; position (336,128,L1). |
+| Native ITM 2.7 | Empty On-board/Pickup fields in both; speed 0.3 (oldman), 0.1 (man). The BRD supplies the behavior overrides. |
+
+`build/game/demo/Prg/man_wander.prg` SHA-256 is
+`cc07a22a7c48f456e51e05500e657b5af865dd36a2b6fe5fad3bb1351bf39bb6`.
+It uses a free abs method/ternary expression, PlayerLocation for an explicit player
+handle, ItemLocation(source), ItemPath with PAUSE_THREAD|PATHFIND, Random, shared
+variables, ThreadSleep/GetThreadID, and Run(man.prg)/End after intercept. The
+encounter program owns mwin/wait and fightEnemy; its victory program erases the
+source item. This establishes requirements in the public pinned specimen only.
+It does not establish equality with the owner's diagnostic archive or native
+runtime behavior in this workspace.
+
+Follow-up requirements: inline task source/owner navigation, native waypoint/link
+and ItemPath/pathfinding semantics, PlayerLocation/Random services, foreground
+event dispatch from an item task with source ownership, and actual private-ZIP
+binding/comparison/execution. The current file-backed task resolver retains the
+inline multitask value as unresolved filename evidence and a visible task error;
+it does not execute it. Native `functions.cpp:7170–7230` documents ItemPath modes,
+`2773–2804` PlayerLocation outputs, and `1584–1598` Random's 1..max result. The
+current PushItem acceptance routes deliberately do not claim those capabilities.

@@ -1,3 +1,4 @@
+import { entityCommands } from "../../tk3-entities.mjs";
 import { tilePixels } from "../../artifacts.mjs";
 import { tileBitmapSprite } from "../../sprites.mjs";
 import { spriteDrawOrder, spritePixelOrigin } from "../../placed-sprites.mjs";
@@ -134,6 +135,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       frames: data.frames.map(frame => imageFor(frame, [0, 0, 0], frame.transparentColor)) }]));
 
   const placedImages = new Map();
+  const itemAnimations = new Map();
   const artFailures = new Map();
   const placed = scene.placements ?? [];
   for (const placement of placed) {
@@ -154,6 +156,21 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     } catch (error) {
       artFailures.set(placement.slot, error.message);
     }
+  }
+  const decodeItemFrame=frame=>{
+    if(frame.kind==="tst")return imageFor(frame,[0,0,0],frame.transparentColor);
+    const sprite=tileBitmapSprite(artifacts.get(frame.path),artifacts,graph);
+    if(!sprite || sprite.missing.length)throw Error("Item animation artwork unavailable.");
+    const rgba=sprite.pixels;if(frame.transparentColor>=0)keyFrameColor(rgba,frame.transparentColor);
+    return pixelCanvas(rgba,sprite.width,sprite.height);
+  };
+  for(const p of placed) {
+    const directions={};
+    for(const [direction,a] of Object.entries(p.walking ?? {})) {
+      try {directions[direction]={...a,frames:a.frames.map(decodeItemFrame)};}
+      catch(error){artFailures.set(p.slot,error.message);}
+    }
+    itemAnimations.set(p.slot,directions);
   }
   const diagnostic = section.querySelector("#play-placements");
   diagnostic.replaceChildren();
@@ -245,17 +262,31 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     }
     taskStatus.hidden=!records.length;
   };
+  const entityStatus=document.createElement("div");entityStatus.id="play-entity-status";taskStatus.after(entityStatus);
+  const updateEntities=()=>{
+    entityStatus.replaceChildren(...services.entities.all.map(e=>{
+      const row=document.createElement("p");row.className="technical";
+      const a=itemAnimations.get(e.slot)?.[e.facing];
+      const frame=a && e.moving?Math.floor(e.animationMs/a.pauseMs)%a.frames.length:0;
+      Object.assign(row.dataset,{entitySlot:String(e.slot),x:String(e.position.x),y:String(e.position.y),layer:String(e.position.layer),moving:String(e.moving),facing:e.facing,frame:String(frame),erased:String(e.erased),blocked:String(e.blocked)});
+      row.textContent="Item slot "+e.slot+" · "+e.name+" · ("+e.position.x.toFixed(1)+", "+e.position.y.toFixed(1)+", layer "+e.position.layer+") · "+(e.erased?"erased":e.blocked?"blocked":e.moving?"moving "+e.facing:"idle")+" · frame "+frame;
+      return row;
+    }));
+  };
   let activeFight = null;
   let gameOver = false;
   let defeatProgramActive = options.defeatProgramActive ?? false;
   let gameOverMessage = "";
   const removedItemSlots = new Set(
     scriptSession.erasedItems?.[scene.boardPath] ?? []);
-  const availablePlacements = () =>
-    placed.filter(placement => !removedItemSlots.has(placement.slot));
+  services.entities.enter(scene,scriptSession);
+  const availablePlacements = () => services.entities.visible;
+  scene.world.dynamicEntities=()=>availablePlacements().filter(p=>p.position.layer===scene.start.layer).map(p=>p.position);
+  const availablePlacementBySlot=slot=>availablePlacements().some(p=>p.slot===slot);
   const visibleScene = () => ({ ...scene, placements: availablePlacements() });
   const rememberRemoved = slot => {
     removedItemSlots.add(slot);
+    const e=services.entities.all.find(e=>e.slot===slot);if(e){e.erased=true;e.queue=[];}
     scriptSession = { ...scriptSession, erasedItems: {
       ...scriptSession.erasedItems,
       [scene.boardPath]: [...removedItemSlots],
@@ -321,7 +352,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   const updatePlaytestMarkers = () => {
     const guide = describePlayableTargets(visibleScene(), actorAtLayer());
     for (const [slot, marker] of targetMarkers)
-      marker.hidden = removedItemSlots.has(slot);
+      marker.hidden = !availablePlacementBySlot(slot);
     locateMarker(playerMarker, guide.player);
     for (const target of guide.targets) {
       const marker = targetMarkers.get(target.slot);
@@ -431,8 +462,10 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
           ctx.drawImage(animation.frames[frame], origin.x, origin.y);
           continue;
         }
-        const image = placedImages.get(entry.slot);
         const placement = entry.placement;
+        const animation=itemAnimations.get(entry.slot)?.[placement.facing];
+        const frame=animation && placement.moving ? Math.floor(placement.animationMs/animation.pauseMs)%animation.frames.length : 0;
+        const image=animation?.frames[frame] ?? placedImages.get(entry.slot);
         if (image) {
           const origin = spritePixelOrigin(placement.position, image.width, image.height);
           ctx.drawImage(image, origin.x, origin.y);
@@ -580,10 +613,9 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (stepped.status === "effect") {
       const e = stepped.effect;
       scriptSession = stepped.state;
-      const valid = e?.kind === "erase-item" && e.alias === "source" &&
-        e.sourceBoardPath === scene.boardPath &&
-        Number.isInteger(e.sourceItemSlot) &&
-        placed.some(p => p.slot === e.sourceItemSlot);
+      let entity=null;
+      try {if(e?.kind==="erase-item")entity=services.entities.resolve(e.alias,e);}catch {}
+      const valid=Boolean(entity);
       if (!valid) {
         const diagnostic = { path: e?.path ?? "(script)", line: e?.line ?? 1,
           text: (e?.path ?? "(script)") + ":" + (e?.line ?? 1) +
@@ -595,7 +627,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
         clearHeld();
         return false;
       }
-      rememberRemoved(e.sourceItemSlot);
+      rememberRemoved(entity.slot);
       interactionFeedback = "Source RPGCode erased item slot " + e.sourceItemSlot +
         " from the current board.";
       const next = resumeTk3Effect(scriptSession);
@@ -695,10 +727,17 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     updateStatus();
   };
   const animate = timestamp => {
-    scriptSession=services.tasks.tick(scriptSession,timestamp,busy());
+    scriptSession=services.tasks.tick(scriptSession,timestamp,busy(),(effect,task,state)=>{
+      if(effect.kind==="erase-item"){const next=services.entities.erase(effect,state);removedItemSlots.add(services.entities.resolve(effect.alias,effect).slot);return {value:0,state:next};}
+      if(entityCommands.has(effect.name))return services.entities.handle(effect,task);
+      throw Error("Background effect requires foreground ownership: "+(effect.name ?? effect.kind));
+    });
     updateTasks();
     const seconds = lastFrame === null ? 0 : Math.max(0, (timestamp - lastFrame) / 1000);
     lastFrame = timestamp;
+    services.entities.setActor(actorAtLayer());
+    services.entities.tick(seconds,Boolean(activeFight || gameOver || scriptSession.execution?.waiting || startupActive || exited));
+    updateEntities();
     const prior = actor;
     actor = stepMovement(actor, busy() ?
       { x: 0, y: 0 } : input(), seconds, scene.world);

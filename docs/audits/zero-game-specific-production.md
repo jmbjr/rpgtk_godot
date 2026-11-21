@@ -47,3 +47,15 @@ and indexed filename references establish source locations, not runtime
 availability, conditional reachability or a complete AST. Excerpts are bounded
 and disclose truncation. Native plugins/combat, save/load, full language and
 board-entry execution remain separate compatibility work under #123.
+
+## Authored board milestone follow-up
+
+The later #123 board-entry/task/item-movement checkpoints consume decoded BRD
+entry/thread/sprite fields, typed ITM fallback programs and the existing RPGCode
+VM. `tk3-behavior-bindings.mjs` supplies both execution and connected JSON.
+`tk3-entities.mjs` consumes slot handles, GAM push mode and native movement
+commands; neither game names nor variable/menu/coordinate patterns select behavior.
+All new modules are included in the complete staged production-policy scan.
+Living boards Harbor/Grove retain independent source-owned control flow and
+layouts. The lifecycle specification records source pins and browser policies;
+private archive/native parity and deployed owner acceptance remain separate.

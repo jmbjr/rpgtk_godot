@@ -1,3 +1,4 @@
+import { createTk3Entities, entityCommands } from "./tk3-entities.mjs";
 import { createTk3TaskScheduler, taskCommands } from "./tk3-tasks.mjs";
 import { resolveAsset } from "./model.mjs";
 import { defaultMidiTone, generalUserGs, playMidi } from "./midi.mjs";
@@ -12,6 +13,7 @@ export function createTk3PlayerServices(
   projectRoot,
   { readBytes, midiPlayer = playMidi } = {},
 ) {
+  const entities=createTk3Entities(artifacts);
   const tasks=createTk3TaskScheduler(artifacts,projectRoot);
   let playback = null,
     audio = null,
@@ -96,7 +98,7 @@ export function createTk3PlayerServices(
     },
   });
   return {
-    graphics, tasks,
+    graphics, tasks, entities,
     get audioStatus() {
       return audioStatus;
     },
@@ -109,6 +111,7 @@ export function createTk3PlayerServices(
     async apply(effect) {
       if (destroyed) throw Error("Play session was closed.");
       const { name, args } = effect;
+      if(entityCommands.has(name))return entities.handle(effect);
       if(taskCommands.has(name)) return tasks.handle(effect);
       if (name === "mediastop") {
         stopMusic();
@@ -189,6 +192,7 @@ export function createTk3PlayerServices(
       destroyed = true;
       graphics.destroy();
       tasks.destroy();
+      entities.destroy();
       stopMusic();
       if (graphicUrl) URL.revokeObjectURL(graphicUrl);
       graphicUrl = null;
