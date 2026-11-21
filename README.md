@@ -316,3 +316,7 @@ The MIDI preview bundles [WebAudio TinySynth](https://github.com/g200kg/webaudio
 The vendored constructor accepts the existing `internalcontext` setting so
 the viewer can route the synth through its own audio graph. Both the synth
 and the selected MIDI bytes run locally in the browser.
+
+Board-entry programs now run on initial entry, Send and return visits through
+the shared VM. Download **TK3 Board entry · Harbor/Grove** to test title → intro
+→ entry → transfer/return. [Ordering and evidence](docs/specs/tk3-board-lifecycle.md).

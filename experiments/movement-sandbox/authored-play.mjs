@@ -14,6 +14,7 @@ import { PRG_STOPS_MOVEMENT, insideTk3BoardProgram,
 import { listTk3RuntimeKeys, startTk3RuntimeKey } from "../../tk3-runtime-keys.mjs";
 import { describePlayableTargets } from "./playtest-guidance.mjs";
 
+import { enterTk3Board } from "../../tk3-board-entry.mjs";
 import { createTk3PlayerServices } from "../../tk3-player-services.mjs";
 
 const keyDirections = new Map([
@@ -183,6 +184,17 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       (program.reason ? " (" + program.reason + ")" : "");
     diagnostic.append(row);
   }
+  if (scene.boardEntry?.value) {
+    const entry = document.createElement("li");
+    entry.textContent = "Board entry · " + scene.boardEntry.owner + " → " + scene.boardEntry.value + " · " + scene.boardEntry.status;
+    if (scene.boardEntry.path && options.onInspectSource) {
+      const link = document.createElement("button"); link.type="button";
+      link.textContent="Inspect board entry source";
+      link.addEventListener("click",()=>options.onInspectSource(scene.boardEntry.path,1));
+      entry.append(link);
+    }
+    diagnostic.append(entry);
+  }
   const services = options.services ?? createTk3PlayerServices(artifacts, scene.projectRoot, { readBytes: options.readBytes });
   const scriptScreen = document.createElement("div");
   scriptScreen.id = "play-script-screen";
@@ -217,6 +229,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   let actor = initialMovementState(scene.world);
   let scriptSession = options.scriptSession ?? initialTk3ScriptState();
   let startupActive = options.startupActive ?? false;
+  let entryOnly = false;
   let activeFight = null;
   let gameOver = false;
   let defeatProgramActive = options.defeatProgramActive ?? false;
@@ -605,7 +618,9 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (defeatProgramActive &&
         ["completed", "error"].includes(response.status))
       defeatProgramActive = false;
-    interactionFeedback = finishedDefeatPrg ?
+    const finishedEntry=entryOnly && response.status === "completed";
+    if (["completed","error"].includes(response.status)) entryOnly=false;
+    interactionFeedback = finishedEntry ? interactionFeedback : finishedDefeatPrg ?
       "GAM game-over RPGCode completed; Toolkit does not implicitly reset after a configured program." :
       response.status === "completed" ?
         "Source RPGCode program finished. Variables persist until Reset." : "";
@@ -841,6 +856,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       services.graphics.setSurface(screenCanvas, canvas);
       screenVersion = null; draw(); updateStatus();
     },
+    enterBoard() { entryOnly=!scriptSession.execution; this.continueScript(enterTk3Board(scriptSession, scene, artifacts)); },
     continueScript(step = resumeTk3Transfer(scriptSession)) {
       if (!applyScriptStep(step)) {
         draw();

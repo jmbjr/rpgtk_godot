@@ -353,3 +353,19 @@ export async function buildNeutralInspectionGame(id) {
   zip.file('Demo/Prg/start.prg', 'mwin("Foreign startup must not run");');
   return zip;
 }
+
+export async function buildBoardEntryGame(id) {
+  const harbor=id==='harbor',root=harbor?'HarborLab/':'';
+  const zip=await buildTitleExecutionGame(id);
+  const opening=harbor?'wharf.brd':'meadow.brd', destination=harbor?'channel.brd':'ridge.brd';
+  const entry=harbor?'harbor_entry.prg':'grove_entry.prg';
+  for(const [name,script] of [[opening,entry],[destination,'destination_entry.prg']]) {
+    const path=root+'Boards/'+name;
+    zip.file(path,replace(await zip.file(path).async('nodebuffer'),z('arrival.prg'),z(script)));
+  }
+  zip.file(root+'Prg/'+entry,'entry_visits+=1; mwin("'+id+' entry "+entry_visits); wait(); mwinCls();');
+  zip.file(root+'Prg/destination_entry.prg','destination_visits+=1; mwin("'+id+' destination entry"); wait(); mwinCls();');
+  const send='before_send=entry_visits; Send("'+destination+'",19,27); after_entry=destination_visits; Send("'+opening+'",19,27); returned=entry_visits;';
+  zip.file(root+'Prg/'+(harbor?'station_report.prg':'runtime.prg'),send);
+  return zip;
+}

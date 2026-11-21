@@ -126,6 +126,7 @@ export async function buildScriptFixtureZip(spec) {
   zip.file(r + "/Boards/" + spec.board, brd);
   zip.file(r + "/Chrs/" + spec.character, tem);
   zip.file(r + "/Item/" + spec.item, itm);
+  zip.file(r + "/Prg/arrival.prg", "// Synthetic entry has no effects.\n");
   zip.file(r + "/Prg/" + spec.startup, "// Synthetic startup; not executed by direct board launch.\n");
   zip.file(r + "/Prg/" + spec.script, sourceForScriptFixture(spec));
   if (spec.secondBoard) {
