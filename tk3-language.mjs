@@ -30,6 +30,7 @@ const builtinArity = new Map(
     send: [3, 4],
     fightenemy: [2],
     eraseitem: [1],
+    pushitem:[2,3], itemlocation:[4], itemspeed:[2],
     end: [0],
     done: [0],
     fontsize: [1],
@@ -608,7 +609,7 @@ export function compileTk3Language(
               "Invalid argument count for " + n.name + "().",
             );
           const outputs =
-            n.name === "getpixel"
+            n.name === "itemlocation" ? [1,2,3] : n.name === "getpixel"
               ? [2, 3, 4]
               : n.name === "thread" && n.args.length === 3 ? [2]
               : n.name === "getthreadid" && n.args.length === 1 ? [0]

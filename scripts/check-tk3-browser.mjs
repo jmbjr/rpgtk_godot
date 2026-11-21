@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import JSZip from "../vendor/jszip.min.js";
 import { chromium } from "playwright";
-import { buildBrowserGame, buildStartupExecutionGame, buildTitleExecutionGame, buildNeutralInspectionGame, buildBoardEntryGame, buildBackgroundGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
+import { buildBrowserGame, buildStartupExecutionGame, buildTitleExecutionGame, buildNeutralInspectionGame, buildBoardEntryGame, buildBackgroundGame, buildMovingGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { nativeMainFixture } from "../docs/specs/fixtures/native-main-29-fixtures.mjs";
 
 const site = resolve(process.argv[2] ?? "site");
@@ -878,9 +878,58 @@ try {
     await click("play-reset");
     await control("play-script-choices").getByRole("button",{name:harbor?"Depart":"Wake",exact:true}).waitFor();
     assert.doesNotMatch(await control("play-script-variables").innerText(),/board_ticks|item_ticks|persistent_ticks/);
-    await click("play-close");
+    await control("play-script-choices").getByRole("button",{name:harbor?"Depart":"Wake",exact:true}).click();
+    await talk();await expectText("play-dialogue-text",id+" entry 1");await talk();
+    const taskSource=control("play-task-status").getByRole("button",{name:"Inspect task source",exact:true}).first();
+    await taskSource.click();
+    await pathIs((harbor?"HarborLab/":"")+"Prg/"+(harbor?"weather_task.prg":"pulse_worker.prg"));
+    await page.locator("#source .active-line").waitFor();
   }
   console.log("Background Chromium passed: shared VM/global progress, board/item/persistent bindings in JSON, movement responsiveness, modal coordination, transfer cleanup and fresh reset.");
+  await page.goto(base);
+  checkpoint="authored NPC movement";
+  for(const id of ["harbor","grove"]) {
+    await page.goto(base);
+    const harbor=id==="harbor",zip=await buildMovingGame(id);
+    await archive("living-"+id+".zip",await zip.generateAsync({type:"nodebuffer"}));
+    await gamPlay();
+    await control("play-script-choices").getByRole("button",{name:harbor?"Depart":"Wake",exact:true}).click();
+    await talk(); await expectText("play-dialogue-text",id+" entry 1"); await talk();
+    await page.waitForFunction(harbor=>{
+      const e=document.querySelector('#play-entity-status [data-entity-slot="0"]');
+      return e && Number(e.dataset[harbor?'x':'y'])>(harbor?70:48);
+    },harbor);
+    await page.waitForFunction(()=>document.querySelector('#play-entity-status [data-entity-slot="0"]').dataset.frame==='1');
+    const npcPixel=await page.evaluate(()=>{
+      const e=document.querySelector('#play-entity-status [data-entity-slot="0"]');
+      return {facing:e.dataset.facing,frame:Number(e.dataset.frame),pixel:[...document.querySelector('#play-canvas').getContext('2d').getImageData(Math.round(Number(e.dataset.x)),Math.round(Number(e.dataset.y))-16,1,1).data]};
+    });
+    const tile={south:14,north:16,east:12,west:10}[npcPixel.facing]+npcPixel.frame-1;
+    assert.deepEqual(npcPixel.pixel,[(tile*13+30)%256,(tile*7+50)%256,(tile*17+80)%256,255],"Original ANM/TST pixels follow the moving NPC");
+    assert.doesNotMatch(await control("play-task-status").innerText(),/error|Unsupported/);
+    if(harbor) {
+      // Original placement was within Talk range. Its current location is not.
+      assert.equal(await control("play-talk").isDisabled(),true);
+      await move("ArrowRight",()=>page.waitForFunction(()=>!document.querySelector('#play-talk').disabled));
+    }
+    await talk();await expectText("play-dialogue-text",/Moving worker at/);
+    const paused=await page.locator('#play-entity-status [data-entity-slot="0"]').getAttribute('data-x');
+    const pausedY=await page.locator('#play-entity-status [data-entity-slot="0"]').getAttribute('data-y');
+    assert.match(await control("play-dialogue-text").innerText(),new RegExp("Moving worker at "+Math.trunc(Number(paused))+","+Math.trunc(Number(pausedY))));
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    assert.equal(await page.locator('#play-entity-status [data-entity-slot="0"]').getAttribute('data-x'),paused);
+    await talk();await variables(/talks = 1/);
+    if(!harbor)await page.waitForFunction(()=>document.querySelector('#play-entity-status [data-entity-slot="0"]').dataset.blocked==='true');
+    await page.keyboard.press(harbor?'e':'t');await expectText("play-dialogue-text",/destination entry/);
+    await talk();await expectText("play-dialogue-text",id+" entry 2");await talk();await variables(/returned = 2/);
+    await page.keyboard.press('b');await variables(/foreground_started = 1/);
+    assert.doesNotMatch(await control("play-script-variables").innerText(),/foreground_returned/);
+    await click("play-reset");
+    await control("play-script-choices").getByRole("button",{name:harbor?"Depart":"Wake",exact:true}).waitFor();
+    assert.doesNotMatch(await control("play-script-variables").innerText(),/talk_x|item_ticks|npc_x|foreground_returned|foreground_started/);
+    await click("play-close");assert.equal(await control("play-entity-status").count(),0);
+  }
+  console.log("Living boards Chromium passed: two normal uploads/title/entry, cooperative moving NPCs, animation, live Talk position/range, modal pause, blocked movement, transfer and reset/close.");
   await page.goto(base);
   const legacyBytes = await readFile(resolve(site, "tk2-legacy-game.zip"));
   await archive("tk2-legacy-game.zip", legacyBytes);

@@ -1,7 +1,7 @@
 import { tileBitmapSprite } from "./sprites.mjs";
 
 // Native Toolkit 3.1 item setup selects MV_S (South) initially.
-// Keep one authored first frame; no script, activation, or item movement.
+// Retain first-frame fallback alongside authored directional animation frames.
 const valid = (asset, type) =>
   asset?.type === type && asset.decodeStatus === "decoded" && !asset.error;
 
@@ -67,6 +67,35 @@ export function resolveInitialItemArtwork(item, artifacts, graph) {
   return { status: "missing", reason: failures.join("; ") };
 }
 
+
+export function resolveItemAnimations(item, artifacts, graph) {
+  const result={};
+  if(!valid(item,"itm") || item.version!==7)return result;
+  for(const field of item.directionalAnimations ?? []) {
+    const edge=(graph.outgoing.get(item.path) ?? []).find(e=>e.evidence===field.evidence && e.value===field.value);
+    const animation=artifacts.get(edge?.to);
+    if(edge?.status!=="Resolved" || !valid(animation,"anm"))continue;
+    if(!Number.isFinite(animation.pauseSeconds) || animation.pauseSeconds<0)continue;
+    const frames=[];
+    for(const [i,frame] of animation.frames.entries()) {
+      if(!frame.image)continue;
+      const ref=(graph.outgoing.get(animation.path) ?? []).find(e=>e.evidence==="Frame "+(i+1)+" image");
+      const image=artifacts.get(ref?.to);
+      if(ref?.status!=="Resolved")break;
+      if(valid(image,"tst") && ref.tile>=1 && ref.tile<=image.count && animation.width===32 && animation.height===32)
+        frames.push({kind:"tst",path:image.path,tile:ref.tile,width:32,height:32,transparentColor:frame.transparentColor});
+      else if(valid(image,"tbm")) {
+        const sprite=tileBitmapSprite(image,artifacts,graph);
+        if(!sprite || sprite.missing.length || sprite.width!==animation.width || sprite.height!==animation.height)break;
+        frames.push({kind:"tbm",path:image.path,width:sprite.width,height:sprite.height,transparentColor:frame.transparentColor});
+      } else break;
+    }
+    if(frames.length===animation.frames.filter(f=>f.image).length && frames.length)
+      result[field.direction.toLowerCase()]={path:animation.path,pauseMs:animation.pauseSeconds===0?1000/60:animation.pauseSeconds*1000,frames};
+  }
+  return result;
+}
+
 export function mapBoardPlacements(board, artifacts, graph) {
   const edges = graph.outgoing.get(board.path) ?? [];
   return (board.sprites ?? []).filter(sprite => sprite.filename || sprite.activationProgram)
@@ -124,6 +153,7 @@ export function mapBoardPlacements(board, artifacts, graph) {
         artStatus: art.status, artReason: art.reason ?? "",
         artSource: art.source ?? null, animationPath: art.animationPath ?? null,
         artwork: art.artwork ?? null,
+        walking: itemResolved ? resolveItemAnimations(item,artifacts,graph) : {},
       };
     });
 }
