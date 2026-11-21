@@ -871,7 +871,8 @@ try {
     await expectText("play-dialogue-text",/destination entry/);
     await expectText("play-task-status",/persistent_worker.prg/);
     const status=await control("play-task-status").innerText();
-    assert.doesNotMatch(status,/Board thread|On-board program|Native sprite multitask program/);
+    assert.doesNotMatch(status,/Board thread|Native sprite multitask program/);
+    if(!harbor) assert.match(status,/On-board program.*idle_worker.prg/,"Destination inherits its own item task");
     await talk(); await expectText("play-dialogue-text",id+" entry 2");await talk();
     await variables(/returned = 2/);
     await click("play-reset");
