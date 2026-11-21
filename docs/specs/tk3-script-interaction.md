@@ -92,7 +92,7 @@ A non-yielding loop faults instead of blocking the UI indefinitely.
 
 Classes, script-defined objects, by-reference parameters/returns, implicit
 library calls, native threads, native error recovery, save/load, plugins,
-canvas/image APIs beyond the documented slice, party management and board-entry execution remain
+canvas/image APIs beyond the documented slice, party management remain
 unsupported. Finite-number checks and bounds are browser policies. This is a
 larger generic subset, not full native Toolkit equivalence.
 
@@ -136,3 +136,6 @@ continuation instruction counter; pure loops and non-presenting service loops
 remain bounded. The supplied TK3 M/G programs are local checkpoints. Input
 command registration at the pinned native revision remains an explicit evidence
 gap; the document separates that from source-verified canvas signatures.
+
+[Board lifecycle](tk3-board-lifecycle.md) extends this shared path with nested
+entry execution, caller continuation and bounded re-entrant transfers.

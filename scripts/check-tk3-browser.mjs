@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import JSZip from "../vendor/jszip.min.js";
 import { chromium } from "playwright";
-import { buildBrowserGame, buildStartupExecutionGame, buildTitleExecutionGame, buildNeutralInspectionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
+import { buildBrowserGame, buildStartupExecutionGame, buildTitleExecutionGame, buildNeutralInspectionGame, buildBoardEntryGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { nativeMainFixture } from "../docs/specs/fixtures/native-main-29-fixtures.mjs";
 
 const site = resolve(process.argv[2] ?? "site");
@@ -819,6 +819,34 @@ try {
   console.log("Generic inspection Chromium passed: nested/flat archives, misleading game/title/character/program names, ordinary quest variables, parsed excerpt/JSON agreement and exact jumps, static unsupported calls/references, Play/Talk/reset/direct entrypoints.");
   await page.goto(base);
   checkpoint = "existing Explorer media regressions";
+  checkpoint="authored board entry";
+  for(const id of ["harbor","grove"]) {
+    await page.goto(base);
+    const harbor=id==="harbor",zip=await buildBoardEntryGame(id), root=harbor?"HarborLab/":"";
+    await archive("board-entry-"+id+".zip",await zip.generateAsync({type:"nodebuffer"}));
+    await gamPlay();
+    await control("play-script-choices").getByRole("button",{name:harbor?"Depart":"Wake",exact:true}).click();
+    await expectText("play-dialogue-text",/ready/); await talk();
+    await expectText("play-dialogue-text",id+" entry 1");
+    await variables(/startup_ready = 1/); await talk();
+    await page.keyboard.press(harbor?"e":"t");
+    await expectText("play-dialogue-text",id+" destination entry");
+    assert.doesNotMatch(await control("play-script-variables").innerText(),/after_entry/);
+    await talk(); await expectText("play-dialogue-text",id+" entry 2");
+    await talk(); await variables(/after_entry = 1.*returned = 2/);
+    await click("play-reset");
+    await control("play-script-choices").getByRole("button",{name:harbor?"Depart":"Wake",exact:true}).waitFor();
+    await click("play-close"); await directPlay();
+    await expectText("play-dialogue-text",id+" entry 1");
+    assert.doesNotMatch(await control("play-script-variables").innerText(),/startup_ready/);
+    await talk();
+    const inspect=page.getByRole("button",{name:"Inspect board entry source",exact:true});
+    await inspect.evaluate(el=>el.closest("details").open=true); await inspect.click();
+    await pathIs(root+"Prg/"+(harbor?"harbor_entry.prg":"grove_entry.prg"));
+    await page.locator("#source #line-1.active-line").waitFor();
+  }
+  console.log("Board entry Chromium passed: title/intro/entry order, destination wait before Send caller, return visits, reset/direct launch and source navigation.");
+  await page.goto(base);
   const legacyBytes = await readFile(resolve(site, "tk2-legacy-game.zip"));
   await archive("tk2-legacy-game.zip", legacyBytes);
   const legacy = await accountForArchive(legacyBytes);

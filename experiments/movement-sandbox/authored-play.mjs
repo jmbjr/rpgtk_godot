@@ -14,6 +14,7 @@ import { PRG_STOPS_MOVEMENT, insideTk3BoardProgram,
 import { listTk3RuntimeKeys, startTk3RuntimeKey } from "../../tk3-runtime-keys.mjs";
 import { describePlayableTargets } from "./playtest-guidance.mjs";
 
+import { enterTk3Board } from "../../tk3-board-entry.mjs";
 import { createTk3PlayerServices } from "../../tk3-player-services.mjs";
 
 const keyDirections = new Map([
@@ -182,6 +183,17 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       " · " + program.raw + " · " + program.status +
       (program.reason ? " (" + program.reason + ")" : "");
     diagnostic.append(row);
+  }
+  if (scene.boardEntry?.value) {
+    const entry = document.createElement("li");
+    entry.textContent = "Board entry · " + scene.boardEntry.owner + " → " + scene.boardEntry.value + " · " + scene.boardEntry.status;
+    if (scene.boardEntry.path && options.onInspectSource) {
+      const link = document.createElement("button"); link.type="button";
+      link.textContent="Inspect board entry source";
+      link.addEventListener("click",()=>options.onInspectSource(scene.boardEntry.path,1));
+      entry.append(link);
+    }
+    diagnostic.append(entry);
   }
   const services = options.services ?? createTk3PlayerServices(artifacts, scene.projectRoot, { readBytes: options.readBytes });
   const scriptScreen = document.createElement("div");
@@ -841,6 +853,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       services.graphics.setSurface(screenCanvas, canvas);
       screenVersion = null; draw(); updateStatus();
     },
+    enterBoard() { this.continueScript(enterTk3Board(scriptSession, scene, artifacts)); },
     continueScript(step = resumeTk3Transfer(scriptSession)) {
       if (!applyScriptStep(step)) {
         draw();

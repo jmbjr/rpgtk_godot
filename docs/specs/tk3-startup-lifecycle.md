@@ -83,7 +83,7 @@ and invoke startup again. Direct diagnostics skip startup.
 Failed transfers preserve the current board and show a source diagnostic.
 A cancelled encounter ends the active startup script and releases input.
 Unsupported commands, player creation, class initialization and save/load
-produce source diagnostics. Automatic board-entry execution remains unsupported.
+produce source diagnostics. [Authored board-entry execution](tk3-board-lifecycle.md) now follows startup and Send through the same VM.
 The [shared language and title services](tk3-script-interaction.md) document
 the current grammar, native evidence, browser policies and limits.
 

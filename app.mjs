@@ -2486,6 +2486,7 @@ function mountPlayable(scene, options, mode = launchMode) {
   }[mode];
   const replacement = mountAuthoredBoard(panel, scene, playContext.artifacts,
     playContext.graph, { ...options, readBytes: path => archive.file(path).async("uint8array"),
+      onInspectSource: (path,line) => { closePlayable(); selectArtifact(path,undefined,line); },
       onTransfer: remountTransferredBoard,
       onStartupComplete: finishGamStartup,
       onRestart: () => launchPlayableWithSession(launchMode) });
@@ -2510,15 +2511,16 @@ function remountTransferredBoard({ scene, ...options }) {
     return "Unable to render destination: " + error.message;
   }
   queueMicrotask(() => {
-    if (activePlayable === replacement) replacement.continueScript();
+    if (activePlayable === replacement) replacement.enterBoard();
   });
   return null;
 }
 
 function finishGamStartup(scriptSession, services) {
   try {
-    mountPlayable(playableScene, { scriptSession, services,
+    const {replacement} = mountPlayable(playableScene, { scriptSession, services,
       arrivalFeedback: "GAM startup completed; opening the configured board." });
+    queueMicrotask(()=> { if(activePlayable===replacement) replacement.enterBoard(); });
     return null;
   } catch (error) {
     return "Unable to render the configured opening board: " + error.message;
@@ -2551,8 +2553,10 @@ function launchPlayableWithSession(mode) {
     boardDiagnostics.open = false;
     panel.scrollIntoView({ behavior: "instant", block: "start" });
     status("gam-startup-status", arrivalFeedback);
-    if (outcome?.step && outcome.status !== "completed") queueMicrotask(() => {
-      if (activePlayable === replacement) replacement.continueScript(outcome.step);
+    queueMicrotask(() => {
+      if (activePlayable !== replacement) return;
+      if (outcome?.step && outcome.status !== "completed") replacement.continueScript(outcome.step);
+      else replacement.enterBoard();
     });
     return true;
   } catch (error) {
