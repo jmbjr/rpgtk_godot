@@ -229,6 +229,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   let actor = initialMovementState(scene.world);
   let scriptSession = options.scriptSession ?? initialTk3ScriptState();
   let startupActive = options.startupActive ?? false;
+  let entryOnly = false;
   let activeFight = null;
   let gameOver = false;
   let defeatProgramActive = options.defeatProgramActive ?? false;
@@ -617,7 +618,9 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     if (defeatProgramActive &&
         ["completed", "error"].includes(response.status))
       defeatProgramActive = false;
-    interactionFeedback = finishedDefeatPrg ?
+    const finishedEntry=entryOnly && response.status === "completed";
+    if (["completed","error"].includes(response.status)) entryOnly=false;
+    interactionFeedback = finishedEntry ? interactionFeedback : finishedDefeatPrg ?
       "GAM game-over RPGCode completed; Toolkit does not implicitly reset after a configured program." :
       response.status === "completed" ?
         "Source RPGCode program finished. Variables persist until Reset." : "";
@@ -853,7 +856,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       services.graphics.setSurface(screenCanvas, canvas);
       screenVersion = null; draw(); updateStatus();
     },
-    enterBoard() { this.continueScript(enterTk3Board(scriptSession, scene, artifacts)); },
+    enterBoard() { entryOnly=!scriptSession.execution; this.continueScript(enterTk3Board(scriptSession, scene, artifacts)); },
     continueScript(step = resumeTk3Transfer(scriptSession)) {
       if (!applyScriptStep(step)) {
         draw();
