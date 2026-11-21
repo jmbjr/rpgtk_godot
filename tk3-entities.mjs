@@ -12,14 +12,14 @@ const directions = {
 // the same position and erasure records. Browser collision uses a 9px circle.
 export function createTk3Entities(artifacts) {
   let scene=null, entities=[], generation=0, destroyed=false, actor=null;
-  const waiters=new Set();
+  const waiters=new Set(), worlds=new Map();
   const cancel=()=>{generation++;for(const w of waiters)w.reject(Error("Item movement owner was closed."));waiters.clear();};
   const api={
     enter(next,state) {
-      cancel();scene=next;actor=null;
+      cancel();scene=next;actor=null;worlds.clear();
       entities=(scene.placements ?? []).map(p=>({...p,position:{...p.position},queue:[],facing:"south",moving:false,blocked:false,animationMs:0,
-        seconds:Math.max(0.01,artifacts.get(p.itemPath)?.speed || 0.0625),
-        erased:(state.erasedItems?.[scene.boardPath] ?? []).includes(p.slot), enabled:!p.activation.loadingVariable ||
+        seconds:artifacts.get(p.itemPath)?.speed || 0.0625,
+        waitOwner:0, erased:(state.erasedItems?.[scene.boardPath] ?? []).includes(p.slot), enabled:!p.activation.loadingVariable ||
           String(state.variables[p.activation.loadingVariable.toLowerCase()] ?? 0)===p.activation.loadingValue}));
     },
     get all(){return entities;},
@@ -63,8 +63,8 @@ export function createTk3Entities(artifacts) {
       const end=e.queue.at(-1) ?? e.position;
       let x=end.x,y=end.y;
       for(const s of steps){const [dx,dy,facing]=directions[s];x+=dx*step;y+=dy*step;e.queue.push({x,y,facing});}
-      const token=generation;
-      const ready=()=>destroyed || token!==generation || e.erased || !e.queue.length;
+      const token=generation,owner=task && (flags&1)?++e.waitOwner:null;
+      const ready=()=>destroyed || token!==generation || (owner!==null && owner!==e.waitOwner) || e.erased || !e.queue.length;
       const result={value:0};
       if(task)return {...result,...(flags&1?{ready}: {})};
       return new Promise((resolve,reject)=>waiters.add({ready,resolve:()=>resolve(result),reject}));
@@ -77,8 +77,9 @@ export function createTk3Entities(artifacts) {
         const target=e.queue[0],dx=target.x-e.position.x,dy=target.y-e.position.y,distance=Math.hypot(dx,dy);
         const amount=Math.min(distance,32/e.seconds*Math.max(0,Math.min(seconds,0.05)));
         const count=Math.max(1,Math.ceil(amount/4));e.facing=target.facing;e.blocked=false;
-        const board=artifacts.get(scene.boardPath);
-        const world={...scene.world,dynamicEntities:undefined,vectorCollision:compileBoardVectorCollision(board,e.position.layer)};
+        if(!worlds.has(e.position.layer))worlds.set(e.position.layer,{...scene.world,dynamicEntities:undefined,
+          vectorCollision:compileBoardVectorCollision(artifacts.get(scene.boardPath),e.position.layer)});
+        const world=worlds.get(e.position.layer);
         for(let i=0;i<count && distance;i++) {
           const x=e.position.x+dx/distance*amount/count,y=e.position.y+dy/distance*amount/count;
           const overlaps=api.visible.some(other=>other!==e && other.position.layer===e.position.layer && Math.hypot(x-other.position.x,y-other.position.y)<18) ||

@@ -23,6 +23,10 @@ for(const id of ['harbor','grove']) {
  const response=startTk3Script(state,'itemLocation("source",x,y,l);','probe.prg',{artifacts,projectRoot:scene.projectRoot,sourceItemSlot:0,sourceBoardPath:scene.boardPath});
  assert.equal(response.status,'effect');const result=entities.handle(response.effect,{id:99});
  const done=resumeTk3Effect(response.state,result);assert.equal(done.status,'completed');assert.equal(done.state.variables.x,Math.trunc(entity.position.x));assert.equal(done.state.variables.l,1);
+ const firstWait=entities.handle({name:'pushitem',args:[0,'E',1]},{id:41});
+ const secondWait=entities.handle({name:'pushitem',args:[0,'W',3]},{id:42});
+ assert.ok(firstWait.ready(),'A replacement movement task wakes the previous owner');assert.equal(secondWait.ready(),false);
+ const nonblocking=entities.handle({name:'pushitem',args:[0,'E',0]},{id:43});assert.equal(nonblocking.ready,undefined);
  const effect={name:'pushitem',args:[0,'E',2]};
  const foreground=entities.handle(effect);for(let i=0;i<200;i++)entities.tick(.02);await foreground;
  const pending=entities.handle({name:'pushitem',args:[0,'W',2]});const cancelled=assert.rejects(pending,/owner was closed/);entities.enter(scene,state);await cancelled;
@@ -33,5 +37,14 @@ for(const id of ['harbor','grove']) {
  state=tasks.tick(erased,6000);assert.equal(tasks.records.find(t=>t.entitySlot===0).status,'paused-erased');
  entities.enter(scene,initialTk3ScriptState());assert.equal(entities.all[0].position.x,origin.x);assert.equal(entities.all[0].erased,false);
  const waiting=entities.handle({name:'pushitem',args:[0,'E']});const closed=assert.rejects(waiting,/owner was closed/);entities.destroy();await closed;tasks.destroy();
+ const waitingEntities=createTk3Entities(artifacts),waitingTasks=createTk3TaskScheduler(artifacts,scene.projectRoot);
+ let shared=initialTk3ScriptState();waitingEntities.enter(scene,shared);waitingTasks.enter(scene,shared);
+ for(let t=0;t<200;t+=20)shared=waitingTasks.tick(shared,t,false,(e,task)=>waitingEntities.handle(e,task));
+ const movingTask=waitingTasks.records.find(t=>t.entitySlot===0);assert.equal(movingTask.status,'moving');
+ waitingTasks.handle({name:'threadwake',args:[movingTask.id]});
+ for(let t=200;t<400;t+=20)shared=waitingTasks.tick(shared,t,false,(e,task)=>waitingEntities.handle(e,task));
+ assert.ok(shared.variables.item_ticks>0,'ThreadWake releases an outstanding movement continuation');
+ assert.ok(waitingEntities.all[0].queue.length,'Waking a task does not cancel its queued movement');
+ waitingTasks.destroy();waitingEntities.destroy();
 }
 console.log('Entity movement passed: shared identity/position/layer, live Talk selection, animation frames, queues, blocked completion, VM outputs, modal pause, erasure and owner cancellation/reset.');

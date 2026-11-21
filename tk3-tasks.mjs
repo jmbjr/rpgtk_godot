@@ -46,7 +46,7 @@ export function createTk3TaskScheduler(artifacts, projectRoot) {
       else if(name==="threadsleep") {
         const seconds=Number(args[1]); if(!Number.isFinite(seconds)||seconds<0||seconds>86400)throw Error("Invalid thread sleep duration.");
         task(args[0]).wakeAt=seconds===0?Infinity:now+seconds*1000;
-      } else if(name==="threadwake") task(args[0]).wakeAt=0;
+      } else if(name==="threadwake") {const t=task(args[0]);t.wakeAt=0;if(t.result?.ready)t.result={...t.result,ready:undefined};}
       else throw Error("Unsupported task service: "+name);
       const index=name==="thread" && args.length===3?2:name==="getthreadid" && args.length===1?0:null;
       return {value,outputs:index===null?[]:[{index,value}]};

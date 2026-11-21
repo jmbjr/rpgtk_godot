@@ -75,6 +75,7 @@ export function resolveItemAnimations(item, artifacts, graph) {
     const edge=(graph.outgoing.get(item.path) ?? []).find(e=>e.evidence===field.evidence && e.value===field.value);
     const animation=artifacts.get(edge?.to);
     if(edge?.status!=="Resolved" || !valid(animation,"anm"))continue;
+    if(!Number.isFinite(animation.pauseSeconds) || animation.pauseSeconds<0)continue;
     const frames=[];
     for(const [i,frame] of animation.frames.entries()) {
       if(!frame.image)continue;
@@ -90,7 +91,7 @@ export function resolveItemAnimations(item, artifacts, graph) {
       } else break;
     }
     if(frames.length===animation.frames.filter(f=>f.image).length && frames.length)
-      result[field.direction.toLowerCase()]={path:animation.path,pauseMs:Math.max(10,animation.pauseSeconds*1000),frames};
+      result[field.direction.toLowerCase()]={path:animation.path,pauseMs:animation.pauseSeconds===0?1000/60:animation.pauseSeconds*1000,frames};
   }
   return result;
 }

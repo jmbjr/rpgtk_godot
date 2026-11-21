@@ -90,7 +90,8 @@ was changed. Inert decoder placeholders are cleared in runnable fixtures only.
 
 Background Harbor/Grove use board and item counters plus a persistent task.
 After title/entry, counters advance while directional input remains responsive;
-Talk pauses background execution, transfers discard board/item tasks, persistent
+Talk pauses background execution, transfers discard old board/item tasks (new
+board placements may start their own inherited tasks), persistent
 work survives, and reset/close dispose everything. Harbor uses a BRD override;
 Grove inherits the ITM on-board program. CI separately tests faults, limits,
 sleep/wake/kill, shared globals and erased-item ownership. This establishes
@@ -108,7 +109,9 @@ Pinned native evidence:
   comma-separated cardinal/diagonal directions; GAM `MF_PUSH_PIXEL=2` uses 8px
   pushes, other verified movement modes 0/1 use 32px; foreground movement waits,
   background movement continues unless `tkMV_PAUSE_THREAD=1`; queue replacement
-  uses `tkMV_CLEAR_QUEUE=2`. Native ItemSpeed stores seconds as milliseconds.
+  uses `tkMV_CLEAR_QUEUE=2`. A new movement task owner wakes the previous owner;
+  ThreadWake releases a movement wait without cancelling its queue. Native
+  ItemSpeed stores seconds as milliseconds.
 - `movement/CSprite/CSprite.cpp` collision/render paths use the entity's current
   position/layer; the browser shares one entity record across script handles,
   movement, rendering, player collision and Talk selection/markers.
@@ -138,7 +141,9 @@ handles after transfer; numeric handles refer to the new current board.
 Living boards Harbor/Grove exercise nested versus flat projects, BRD multitask
 versus ITM inheritance, E/W versus S/N queued routes, shared globals, animation,
 Talk's ItemLocation outputs and range at the moved position, blocked movement,
-transfer/return and reset. These generated archives contain no owner assets.
+transfer/return and reset during a foreground movement wait. B starts that
+foreground wait in the Living boards fixtures. These generated archives contain
+no owner assets.
 Wander/native pathfinding and the private diagnostic game's actual bindings and
 `man_wander.prg` are unresolved: no pirate movement or actual-ZIP acceptance is
 claimed from these synthetic routes.

@@ -922,9 +922,11 @@ try {
     if(!harbor)await page.waitForFunction(()=>document.querySelector('#play-entity-status [data-entity-slot="0"]').dataset.blocked==='true');
     await page.keyboard.press(harbor?'e':'t');await expectText("play-dialogue-text",/destination entry/);
     await talk();await expectText("play-dialogue-text",id+" entry 2");await talk();await variables(/returned = 2/);
+    await page.keyboard.press('b');await variables(/foreground_started = 1/);
+    assert.doesNotMatch(await control("play-script-variables").innerText(),/foreground_returned/);
     await click("play-reset");
     await control("play-script-choices").getByRole("button",{name:harbor?"Depart":"Wake",exact:true}).waitFor();
-    assert.doesNotMatch(await control("play-script-variables").innerText(),/talk_x|item_ticks|npc_x/);
+    assert.doesNotMatch(await control("play-script-variables").innerText(),/talk_x|item_ticks|npc_x|foreground_returned|foreground_started/);
     await click("play-close");assert.equal(await control("play-entity-status").count(),0);
   }
   console.log("Living boards Chromium passed: two normal uploads/title/entry, cooperative moving NPCs, animation, live Talk position/range, modal pause, blocked movement, transfer and reset/close.");
