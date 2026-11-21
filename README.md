@@ -1,5 +1,9 @@
 # RPG Toolkit 2 · Game Explorer
 
+Start with [what you can do with the Game Explorer](CAPABILITIES.md) for a
+task-based capability inventory, or the [project tracks and proposed usability
+sprints](docs/PROJECT_TRACKS.md) for the current roadmap/issue map.
+
 A static viewer for issue #3. Run `npm ci` to prepare the optional sound-bank
 player, then serve the repository root with Python 3 and open
 `http://localhost:8000` in a browser.
