@@ -55,3 +55,43 @@ Explorer/media, GS, canvas, title and encounter regressions. CI evidence is
 recorded in #123/PRs. Actual-ZIP execution, deployment, owner acceptance and native
 Toolkit parity remain separate. In particular, no `man_wander.prg` trigger or
 pirate behavior is inferred without the owner's diagnostic archive bytes.
+
+## Cooperative background programs
+
+Pinned `common/board.cpp:477–495,1555–1563` creates/frees board threads, and
+`movement/CItem/CItem.cpp:92–109,138–168` uses a BRD multitask override or ITM
+on-board program, runs only active items, and destroys item threads on unload.
+`rpgcode/CProgram.cpp:109–208` owns the global task set, instruction quanta and
+sleep clocks; its global variable heap is shared with foreground programs.
+`rpgcode/functions.cpp:5527–5653` supplies Thread(file,persist[,out]),
+GetThreadID([out]), KillThread, ThreadSleep(id,seconds) and ThreadWake.
+Sleep zero is indefinite. `app/winmain.cpp:617` schedules tasks in the main loop;
+Reset/close destroy all threads. Explicit persistent Thread calls survive board
+changes; BRD/item tasks are board-owned. EraseItem pauses an item task.
+
+The browser uses the existing compiler and VM, at most 32 tasks and 512
+instructions per task per animation frame, with an 8ms soft scheduling budget
+and round-robin fairness (one quantum may exceed the clock budget). Sources compile once; frames retain
+locals, expressions and sleep continuations. Globals merge serially with the
+foreground at each quantum. Board loading registers tasks before entry but
+foreground execution/modal input owns the driver until it returns. Background
+programs cannot draw dialogue/canvas or initiate Send/combat/exit in this slice;
+such effects fault visibly in that task instead of stealing foreground UI.
+Error isolation and these foreground restrictions are browser policies, not
+claims of native parity. No worker, second interpreter or archive recognizer is
+used. Shared source/storage bounds still apply to each task; sleep is wall-clock.
+
+The pure `tk3-behavior-bindings.mjs` resolver feeds task activation and the
+connected JSON `behaviorBindings` collection. It retains board, source owner,
+slot/entity slot, role, resolution/candidates and target entry line 1. Source
+trace includes configured board-thread entrypoints. Active task diagnostics
+link the current helper/line and the owner back into Explorer. No binary layout
+was changed. Inert decoder placeholders are cleared in runnable fixtures only.
+
+Background Harbor/Grove use board and item counters plus a persistent task.
+After title/entry, counters advance while directional input remains responsive;
+Talk pauses background execution, transfers discard board/item tasks, persistent
+work survives, and reset/close dispose everything. Harbor uses a BRD override;
+Grove inherits the ITM on-board program. CI separately tests faults, limits,
+sleep/wake/kill, shared globals and erased-item ownership. This establishes
+synthetic task behavior; private `man_wander.prg` remains unavailable.

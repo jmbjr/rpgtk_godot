@@ -1,3 +1,4 @@
+import { exportBehaviorBindings } from "./tk3-behavior-bindings.mjs";
 import { buildReferences } from "./artifacts.mjs";
 import { mainFileBindings } from "./model.mjs";
 import { traceProjectDependencies } from "./script-trace.mjs";
@@ -112,6 +113,7 @@ export function connectedGameRecord(artifacts, catalog, { archiveName, externalM
     root,
     artifacts: Object.fromEntries(records.map(record => [record.$id, record])),
     actors, commands, capabilities, edges,
+    behaviorBindings: exportBehaviorBindings(artifacts,graph.inventory),
     scriptTrace: traceProjectDependencies(artifacts, graph,
       externalMain ?? (mains.length === 1 ? artifacts.get(mains[0]) : null)),
     pluginAudit: auditProjectPlugins(artifacts,

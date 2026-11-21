@@ -92,7 +92,7 @@ export function traceProjectDependencies(artifacts, graph, mainFile) {
       });
     }
     for (const edge of edges) {
-      if (/^(?:Native board program · slot |Native sprite activation program · slot |Native sprite multitask program · slot |Board entry program$|Board program \()/i.test(edge.evidence)) {
+      if (/^(?:Native board program · slot |Native sprite activation program · slot |Native sprite multitask program · slot |Board thread · slot |Board entry program$|Board program \()/i.test(edge.evidence)) {
         add(edge.evidence, boardPath, edge);
       }
     }

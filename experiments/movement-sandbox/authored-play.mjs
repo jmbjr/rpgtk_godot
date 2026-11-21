@@ -230,6 +230,21 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   let scriptSession = options.scriptSession ?? initialTk3ScriptState();
   let startupActive = options.startupActive ?? false;
   let entryOnly = false;
+  const taskStatus=document.createElement("div");taskStatus.id="play-task-status";
+  const taskRows=new Map(); serviceStatus.after(taskStatus);
+  const updateTasks=()=>{
+    const records=services.tasks.records,ids=new Set(records.map(r=>r.id));
+    for(const [id,row] of taskRows)if(!ids.has(id)){row.remove();taskRows.delete(id);}
+    for(const t of records){
+      let row=taskRows.get(t.id);
+      if(!row){row=document.createElement("p");row.className="technical";taskRows.set(t.id,row);taskStatus.append(row);}
+      const text="Task "+t.id+" · "+t.role+" · owner "+t.owner+" · slot "+t.slot+" · "+t.path+":"+t.line+" · "+t.status+(t.error?" · "+t.error:"");
+      if(row.dataset.status!==text){row.dataset.status=text;row.replaceChildren(document.createTextNode(text));
+        if(options.onInspectSource){const b=document.createElement("button");b.type="button";b.textContent="Inspect task source";b.onclick=()=>options.onInspectSource(t.path,t.line);row.append(b);
+          const owner=document.createElement("button");owner.type="button";owner.textContent="Inspect task owner";owner.onclick=()=>options.onInspectSource(t.owner,t.ownerLine);row.append(owner);}}
+    }
+    taskStatus.hidden=!records.length;
+  };
   let activeFight = null;
   let gameOver = false;
   let defeatProgramActive = options.defeatProgramActive ?? false;
@@ -680,6 +695,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     updateStatus();
   };
   const animate = timestamp => {
+    scriptSession=services.tasks.tick(scriptSession,timestamp,busy());
+    updateTasks();
     const seconds = lastFrame === null ? 0 : Math.max(0, (timestamp - lastFrame) / 1000);
     lastFrame = timestamp;
     const prior = actor;
@@ -856,7 +873,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
       services.graphics.setSurface(screenCanvas, canvas);
       screenVersion = null; draw(); updateStatus();
     },
-    enterBoard() { entryOnly=!scriptSession.execution; this.continueScript(enterTk3Board(scriptSession, scene, artifacts)); },
+    enterBoard() { entryOnly=!scriptSession.execution; services.tasks.enter(scene,scriptSession); this.continueScript(enterTk3Board(scriptSession, scene, artifacts)); },
     continueScript(step = resumeTk3Transfer(scriptSession)) {
       if (!applyScriptStep(step)) {
         draw();

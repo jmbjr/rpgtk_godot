@@ -320,3 +320,8 @@ and the selected MIDI bytes run locally in the browser.
 Board-entry programs now run on initial entry, Send and return visits through
 the shared VM. Download **TK3 Board entry · Harbor/Grove** to test title → intro
 → entry → transfer/return. [Ordering and evidence](docs/specs/tk3-board-lifecycle.md).
+
+**TK3 Background · Harbor/Grove** demonstrate board/item-owned cooperative
+programs and a persistent thread. Their counters advance while moving; Talk
+pauses background work. Active diagnostics link task source and owner back to
+Explorer; connected JSON includes the same behavior bindings.
