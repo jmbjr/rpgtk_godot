@@ -95,7 +95,8 @@ board placements may start their own inherited tasks), persistent
 work survives, and reset/close dispose everything. Harbor uses a BRD override;
 Grove inherits the ITM on-board program. CI separately tests faults, limits,
 sleep/wake/kill, shared globals and erased-item ownership. This establishes
-synthetic task behavior; private `man_wander.prg` remains unavailable.
+synthetic task behavior; the private diagnostic copy of `man_wander.prg` remains
+unavailable. The pinned upstream specimen was inspected below.
 
 ## Authored item movement
 
@@ -144,6 +145,41 @@ Talk's ItemLocation outputs and range at the moved position, blocked movement,
 transfer/return and reset during a foreground movement wait. B starts that
 foreground wait in the Living boards fixtures. These generated archives contain
 no owner assets.
-Wander/native pathfinding and the private diagnostic game's actual bindings and
-`man_wander.prg` are unresolved: no pirate movement or actual-ZIP acceptance is
-claimed from these synthetic routes.
+ItemPath/native pathfinding and the private diagnostic game's actual bindings
+remain unresolved: no pirate movement or actual-ZIP acceptance is claimed from
+these synthetic routes.
+
+
+## Pinned upstream demo inspection (distinct from owner ZIP)
+
+The same Toolkit checkout includes public `build/main/demo.gam` and
+`build/game/demo/` specimens. They were decoded locally through the normal
+GAM/BRD/ITM readers; no assets or source were copied into this repository/Pages.
+This is pinned-upstream specimen inspection, not execution of the private archive
+with SHA-256 `367302f4819b3bfde8e434d22561d61e03cd83f92a38cb18a3dd7aa27a55dc3f`.
+
+| Public pinned specimen | Observed binding |
+| --- | --- |
+| GAM 2.9 | Project `Game\demo\`, startup `start.prg`, board `start.brd`, character `start.tem`. |
+| `start.brd` | Empty entry/board thread; slot 0 `oldman.itm`, activation `oldman.prg`, inline multitask ItemPath with WAYPOINT_LINK to `wp_oldman`, repeat 0; position (214,300,L1). |
+| `out.brd` | Empty entry/board thread; slot 0 `man.itm`, activation `man.prg`, multitask `man_wander.prg`; position (336,128,L1). |
+| Native ITM 2.7 | Empty On-board/Pickup fields in both; speed 0.3 (oldman), 0.1 (man). The BRD supplies the behavior overrides. |
+
+`build/game/demo/Prg/man_wander.prg` SHA-256 is
+`cc07a22a7c48f456e51e05500e657b5af865dd36a2b6fe5fad3bb1351bf39bb6`.
+It uses a free abs method/ternary expression, PlayerLocation for an explicit player
+handle, ItemLocation(source), ItemPath with PAUSE_THREAD|PATHFIND, Random, shared
+variables, ThreadSleep/GetThreadID, and Run(man.prg)/End after intercept. The
+encounter program owns mwin/wait and fightEnemy; its victory program erases the
+source item. This establishes requirements in the public pinned specimen only.
+It does not establish equality with the owner's diagnostic archive or native
+runtime behavior in this workspace.
+
+Follow-up requirements: inline task source/owner navigation, native waypoint/link
+and ItemPath/pathfinding semantics, PlayerLocation/Random services, foreground
+event dispatch from an item task with source ownership, and actual private-ZIP
+binding/comparison/execution. The current file-backed task resolver retains the
+inline multitask value as unresolved filename evidence and a visible task error;
+it does not execute it. Native `functions.cpp:7170–7230` documents ItemPath modes,
+`2773–2804` PlayerLocation outputs, and `1584–1598` Random's 1..max result. The
+current PushItem acceptance routes deliberately do not claim those capabilities.

@@ -407,6 +407,7 @@ export async function buildMovingGame(id) {
   zip.file(main,replace(await zip.file(main).async('nodebuffer'),pack(Buffer.from([1,2,3,4]),z('cursor.png')),pack(Buffer.from([1,2,3,1]),z('cursor.png'))));
   zip.file(main,replace(await zip.file(main).async('nodebuffer'),z(harbor?'broken.prg':'menuMain.prg'),z('movement_foreground.prg')));
   zip.file(root+'Prg/movement_foreground.prg','foreground_started=1; itemSpeed(0,6); pushItem(0,"E",2); foreground_returned=1;');
+  if(!harbor)zip.file(main,replace(await zip.file(main).async('nodebuffer'),pack(short(29),z('movement_foreground.prg')),pack(short(98),z('movement_foreground.prg'))));
   const opening=root+'Boards/'+(harbor?'wharf.brd':'meadow.brd');
   let board=replace(await zip.file(opening).async('nodebuffer'),long(2,3,68,3,32,45),long(90,0,95,0,95,64));
   board=replace(board,short(-4,1,-3,2,-5,1),short(-4,1,-2,2,-6,0));

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {buildMovingGame} from '../docs/specs/fixtures/tk3-browser-fixtures.mjs';
 import {readArtifacts,buildReferences} from '../artifacts.mjs';
 import {buildPlayableScene} from '../playable-scene.mjs';
+import {listTk3RuntimeKeys} from '../tk3-runtime-keys.mjs';
 import {createTk3Entities} from '../tk3-entities.mjs';
 import {createTk3TaskScheduler} from '../tk3-tasks.mjs';
 import {initialTk3ScriptState,startTk3Script,resumeTk3Effect} from '../tk3-script-slice.mjs';
@@ -9,6 +10,7 @@ import {selectTk3ScriptTarget} from '../tk3-script-slice.mjs';
 for(const id of ['harbor','grove']) {
  const {artifacts}=await readArtifacts(await buildMovingGame(id),{}),graph=buildReferences(artifacts);
  const scene=buildPlayableScene(artifacts,graph);assert.ok(scene.ok);
+ assert.ok(listTk3RuntimeKeys(scene,artifacts).some(a=>a.program==='movement_foreground.prg' && a.label==='B' && a.status==='resolved'));
  const entities=createTk3Entities(artifacts),tasks=createTk3TaskScheduler(artifacts,scene.projectRoot);
  let state=initialTk3ScriptState();entities.enter(scene,state);tasks.enter(scene,state);
  const origin={...entities.all[0].position};let moved=false,blocked=false;
