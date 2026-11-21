@@ -840,7 +840,7 @@ try {
     await expectText("play-dialogue-text",id+" entry 1");
     assert.doesNotMatch(await control("play-script-variables").innerText(),/startup_ready/);
     await talk();
-    const inspect=page.getByRole("button",{name:"Inspect board entry source",exact:true});
+    const inspect=page.getByRole("button",{name:"Inspect board entry source",exact:true,includeHidden:true});
     await inspect.evaluate(el=>el.closest("details").open=true); await inspect.click();
     await pathIs(root+"Prg/"+(harbor?"harbor_entry.prg":"grove_entry.prg"));
     await page.locator("#source #line-1.active-line").waitFor();
