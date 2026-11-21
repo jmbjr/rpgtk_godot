@@ -63,6 +63,7 @@ export function createTk3TaskScheduler(artifacts, projectRoot) {
           (state.erasedItems?.[t.boardPath] ?? []).includes(t.entitySlot)){t.status="paused-erased";continue;}
         if(t.enabled===false){t.status="paused-inactive";continue;}
         if(t.wakeAt>now){t.status="sleeping";continue;}
+        if(t.result?.ready && !t.result.ready()){t.status="moving";continue;}
         try {
           const response=resumeTk3Task({...t.state,variables:state.variables},t.result);
           t.result=null; t.state=response.state;
@@ -70,7 +71,9 @@ export function createTk3TaskScheduler(artifacts, projectRoot) {
           if(response.status==="effect" && taskCommands.has(response.effect.name)) {
             t.result=api.handle(response.effect,t.id,state.variables);t.status="ready";
           } else if(response.status==="effect" && service) {
-            t.result=service(response.effect,t);t.status="ready";
+            t.result=service(response.effect,t,state);
+            if(t.result?.state)state=t.result.state;
+            t.status="ready";
           } else if(response.status==="yielded") t.status="ready";
           else if(response.status==="completed") t.status="completed";
           else throw Error(response.state.diagnostic?.text ?? "Background program cannot own foreground/modal effect: "+response.status);

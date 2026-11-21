@@ -325,3 +325,12 @@ the shared VM. Download **TK3 Board entry · Harbor/Grove** to test title → in
 programs and a persistent thread. Their counters advance while moving; Talk
 pauses background work. Active diagnostics link task source and owner back to
 Explorer; connected JSON includes the same behavior bindings.
+
+The **TK3 Living boards · Harbor / Grove** downloads exercise authored board entry,
+cooperative board/item programs and animated PushItem NPC routes through normal
+upload and Play. Talk targets the NPC's current position; E (Harbor) or T (Grove)
+transfers and returns through authored entries. Reset repeats the title. Task and
+entity diagnostics retain source owner/slot and current position; task source and
+owner buttons return to Explorer. See [authored board lifecycle](docs/specs/tk3-board-lifecycle.md)
+for pinned native evidence and browser approximations. These are synthetic checks;
+the private diagnostic ZIP and its wandering program have not been validated.

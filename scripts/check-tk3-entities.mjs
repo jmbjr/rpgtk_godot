@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import {buildMovingGame} from '../docs/specs/fixtures/tk3-browser-fixtures.mjs';
+import {readArtifacts,buildReferences} from '../artifacts.mjs';
+import {buildPlayableScene} from '../playable-scene.mjs';
+import {createTk3Entities} from '../tk3-entities.mjs';
+import {createTk3TaskScheduler} from '../tk3-tasks.mjs';
+import {initialTk3ScriptState,startTk3Script,resumeTk3Effect} from '../tk3-script-slice.mjs';
+import {selectTk3ScriptTarget} from '../tk3-script-slice.mjs';
+for(const id of ['harbor','grove']) {
+ const {artifacts}=await readArtifacts(await buildMovingGame(id),{}),graph=buildReferences(artifacts);
+ const scene=buildPlayableScene(artifacts,graph);assert.ok(scene.ok);
+ const entities=createTk3Entities(artifacts),tasks=createTk3TaskScheduler(artifacts,scene.projectRoot);
+ let state=initialTk3ScriptState();entities.enter(scene,state);tasks.enter(scene,state);
+ const origin={...entities.all[0].position};let moved=false,blocked=false;
+ for(let time=0;time<4500;time+=20){state=tasks.tick(state,time,false,(e,t)=>entities.handle(e,t));entities.tick(.02);moved ||= Math.hypot(entities.all[0].position.x-origin.x,entities.all[0].position.y-origin.y)>20;blocked ||= entities.all[0].blocked;}
+ assert.ok(moved);assert.ok(state.variables.item_ticks>=1);assert.ok(!tasks.records.some(t=>t.error));
+ if(id==='grove')assert.ok(blocked,'Blocked queued movement must complete without trapping the task');
+ const entity=entities.all[0];assert.equal(entity.walking.east.frames.length,2);assert.equal(entity.walking.south.frames.length,2);
+ const frozen={...entity.position};entities.tick(.04,true);assert.deepEqual(entity.position,frozen);
+ const view={...scene,placements:entities.visible};assert.equal(selectTk3ScriptTarget(view,{...entity.position,x:entity.position.x-20})?.slot,0);
+ assert.equal(selectTk3ScriptTarget(view,{...entity.position,x:entity.position.x-80}),null);
+ // Same VM output references and bound handles as actual item tasks.
+ const response=startTk3Script(state,'itemLocation("source",x,y,l);','probe.prg',{artifacts,projectRoot:scene.projectRoot,sourceItemSlot:0,sourceBoardPath:scene.boardPath});
+ assert.equal(response.status,'effect');const result=entities.handle(response.effect,{id:99});
+ const done=resumeTk3Effect(response.state,result);assert.equal(done.status,'completed');assert.equal(done.state.variables.x,Math.trunc(entity.position.x));assert.equal(done.state.variables.l,1);
+ const effect={name:'pushitem',args:[0,'E',2]};
+ const foreground=entities.handle(effect);for(let i=0;i<200;i++)entities.tick(.02);await foreground;
+ const pending=entities.handle({name:'pushitem',args:[0,'W',2]});const cancelled=assert.rejects(pending,/owner was closed/);entities.enter(scene,state);await cancelled;
+ assert.throws(()=>entities.handle({name:'pushitem',args:[0,'E',8]}),/flags/);
+ assert.throws(()=>entities.handle({name:'pushitem',args:[0,Array(129).fill('E').join(',')]}),/excessive/);
+ assert.throws(()=>entities.resolve('source',{sourceBoardPath:'other.brd',sourceItemSlot:0}),/handle/);
+ const erased=entities.erase({alias:0},state);assert.ok(erased.erasedItems[scene.boardPath].includes(0));assert.ok(!entities.visible.some(e=>e.slot===0));
+ state=tasks.tick(erased,6000);assert.equal(tasks.records.find(t=>t.entitySlot===0).status,'paused-erased');
+ entities.enter(scene,initialTk3ScriptState());assert.equal(entities.all[0].position.x,origin.x);assert.equal(entities.all[0].erased,false);
+ const waiting=entities.handle({name:'pushitem',args:[0,'E']});const closed=assert.rejects(waiting,/owner was closed/);entities.destroy();await closed;tasks.destroy();
+}
+console.log('Entity movement passed: shared identity/position/layer, live Talk selection, animation frames, queues, blocked completion, VM outputs, modal pause, erasure and owner cancellation/reset.');

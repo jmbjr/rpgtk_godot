@@ -95,3 +95,50 @@ work survives, and reset/close dispose everything. Harbor uses a BRD override;
 Grove inherits the ITM on-board program. CI separately tests faults, limits,
 sleep/wake/kill, shared globals and erased-item ownership. This establishes
 synthetic task behavior; private `man_wander.prg` remains unavailable.
+
+## Authored item movement
+
+Pinned native evidence:
+
+- `rpgcode/functions.cpp:273–307,2115–2136,2688–2701,2734–2768`:
+  current-board numeric slot or bound source/target handle; PushItem queues
+  directions, ItemSpeed sets seconds per step, ItemLocation returns coordinates
+  and layer through output references.
+- `movement/CSprite/CSprite.cpp:658–735,868–901` and `CSprite.h:51–57,159`:
+  comma-separated cardinal/diagonal directions; GAM `MF_PUSH_PIXEL=2` uses 8px
+  pushes, other verified movement modes 0/1 use 32px; foreground movement waits,
+  background movement continues unless `tkMV_PAUSE_THREAD=1`; queue replacement
+  uses `tkMV_CLEAR_QUEUE=2`. Native ItemSpeed stores seconds as milliseconds.
+- `movement/CSprite/CSprite.cpp` collision/render paths use the entity's current
+  position/layer; the browser shares one entity record across script handles,
+  movement, rendering, player collision and Talk selection/markers.
+
+`tk3-entities.mjs` belongs to the existing player service session. Opening a board
+reconstructs its slot identities/positions; reset/close/exit disposes all movement
+and rejects pending foreground continuations. Flags 0–3 and bounded queues (128)
+are supported; unsupported flags, handles, direction strings or GAM modes report
+source diagnostics. ItemSpeed accepts >0 through 60 seconds; initial zero speed
+uses 0.0625 seconds (browser policy). Diagonal direction art is used when present;
+missing animation falls back to the initial authored artwork. Complete nonempty
+ANM TST/TBM frames, timing and transparency use the existing decoders. Blank
+reserved ANM slots are skipped. Animation sounds/standing-idle timing are deferred.
+
+Browser collision remains swept <=4px substeps with a radius-9 circle, same-layer
+supported native vectors, board bounds and current player/item positions. It does
+not implement native sprite base polygons, pathfinding or all native movement
+flags. A blocked path ends its queue and resumes its caller; the UI records blocked
+state. Native movement speed/easing and polygon overlap parity are not claimed.
+Foreground dialogue/choices/combat pause item movement and background quanta;
+foreground PushItem itself allows movement while its VM continuation waits.
+EraseItem hides the same entity from drawing/collision/Talk and pauses its task.
+Existing browser erasure history persists across return visits until reset; native
+save/reload persistence remains separate. Persistent tasks lose stale bound-item
+handles after transfer; numeric handles refer to the new current board.
+
+Living boards Harbor/Grove exercise nested versus flat projects, BRD multitask
+versus ITM inheritance, E/W versus S/N queued routes, shared globals, animation,
+Talk's ItemLocation outputs and range at the moved position, blocked movement,
+transfer/return and reset. These generated archives contain no owner assets.
+Wander/native pathfinding and the private diagnostic game's actual bindings and
+`man_wander.prg` are unresolved: no pirate movement or actual-ZIP acceptance is
+claimed from these synthetic routes.

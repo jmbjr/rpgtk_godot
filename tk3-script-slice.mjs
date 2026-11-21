@@ -205,7 +205,8 @@ function run(state) {
   };
   const table = (ref) => (ref.scope === "local" ? exec.locals : vars);
   const read = (ref) =>
-    Object.hasOwn(table(ref), ref.name) ? table(ref)[ref.name] : undefined;
+    Object.hasOwn(table(ref), ref.name) ? table(ref)[ref.name] :
+      ({tkmv_pause_thread:1,tkmv_clear_queue:2})[ref.name];
   const write = (ref, value) => {
     if (!ref || typeof ref.name !== "string")
       throw Error("Invalid variable reference.");
@@ -410,12 +411,12 @@ function run(state) {
             "setpixel",
             "mousestatus",
             "keydown",
-          ].includes(name) || ["thread","killthread","getthreadid","threadsleep","threadwake"].includes(name) ||
+          ].includes(name) || ["thread","killthread","getthreadid","threadsleep","threadwake","pushitem","itemlocation","itemspeed"].includes(name) ||
           (name === "clear" && args.length === 1) ||
           (["text", "pixeltext"].includes(name) && args.length === 4);
         if (canvasService) {
           const outputIndices =
-            name === "getpixel"
+            name === "itemlocation" ? [1,2,3] : name === "getpixel"
               ? [2, 3, 4]
               : name === "thread" && args.length === 3 ? [2]
               : name === "getthreadid" && args.length === 1 ? [0]
@@ -433,6 +434,7 @@ function run(state) {
             state: snapshot(),
             effect: {
               kind: "runtime-service",
+              sourceItemSlot: exec.sourceItemSlot, sourceBoardPath: exec.sourceBoardPath,
               name,
               args: args.map((value, index) =>
                 outputIndices.includes(index) ? 0 : value,
@@ -594,6 +596,7 @@ function run(state) {
             state: snapshot(),
             effect: {
               kind: "runtime-service",
+              sourceItemSlot: exec.sourceItemSlot, sourceBoardPath: exec.sourceBoardPath,
               name,
               args,
               path: node.path,

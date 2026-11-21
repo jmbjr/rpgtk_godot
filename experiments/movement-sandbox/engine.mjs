@@ -33,6 +33,7 @@ export function circleBlocked(world, x, y, radius = ACTOR_RADIUS) {
       if (dx * dx + dy * dy < radius * radius) return true;
     }
   }
+  if(world.dynamicEntities?.().some(p=>Math.hypot(x-p.x,y-p.y)<radius+9))return true;
   return circleBlockedByVectors(world.vectorCollision, x, y, radius);
 }
 

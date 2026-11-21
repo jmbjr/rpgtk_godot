@@ -394,3 +394,44 @@ export async function buildBackgroundGame(id) {
   zip.file(entry,'if(persistent_id==0){persistent_id=thread("persistent_worker.prg",true);}\n'+await zip.file(entry).async('string'));
   return zip;
 }
+
+// Native ITM artwork and two independent authored movement/control flows.
+export async function buildMovingGame(id) {
+  const {nativeItem27}=await import('./native-item-27-fixtures.mjs');
+  const harbor=id==='harbor',root=harbor?'HarborLab/':'',zip=await buildBackgroundGame(id);
+  let item=replace(nativeItem27(),z('Synthetic Amulet'),z(harbor?'Harbor courier':'Grove walker'));
+  for(const direction of ['south','north','east','west'])item=replace(item,z('native_'+direction+'.anm'),z('test_'+direction+'.anm'));
+  item=replace(item,z('board.prg'),z(harbor?'':'idle_worker.prg'));
+  zip.file(root+'Item/'+(harbor?'dockbell.itm':'oakidol.itm'),item);
+  const main=root+(harbor?'Main/HarborLab.gam':'GroveLab.gam');
+  zip.file(main,replace(await zip.file(main).async('nodebuffer'),pack(Buffer.from([1,2,3,4]),z('cursor.png')),pack(Buffer.from([1,2,3,1]),z('cursor.png'))));
+  const opening=root+'Boards/'+(harbor?'wharf.brd':'meadow.brd');
+  let board=replace(await zip.file(opening).async('nodebuffer'),long(2,3,68,3,32,45),long(90,0,95,0,95,64));
+  board=replace(board,short(-4,1,-3,2,-5,1),short(-4,1,-2,2,-6,0));
+  if(harbor)board=replace(board,z('send("channel.brd", 19, 27, 1)'),z(''));
+  zip.file(opening,board);
+  // Fixed 32px push mode in GAM is verified below by importer/unit tests.
+  const worker=root+'Prg/'+(harbor?'bell_motion.prg':'idle_worker.prg');
+  zip.file(worker,harbor ? [
+    'itemSpeed("source",0.8);',
+    'while(true){',
+    '  pushItem("source","E",tkMV_PAUSE_THREAD);',
+    '  itemLocation("source",npc_x,npc_y,npc_layer); item_ticks+=1;',
+    '  threadSleep(getThreadId(),0.7);',
+    '  pushItem("source","W",1); threadSleep(getThreadId(),0.7);',
+    '}',
+  ].join('\n') : [
+    'itemSpeed("source",0.7);',
+    'while(true){',
+    '  pushItem("source","S",1);',
+    '  itemLocation("source",npc_x,npc_y,npc_layer); item_ticks+=1;',
+    '  threadSleep(getThreadId(),0.6);',
+    '  pushItem("source","N",1); threadSleep(getThreadId(),0.6);',
+    '}',
+  ].join('\n'));
+  zip.file(root+'Prg/'+(harbor?'mwininn.prg':'pickup.prg'),[
+    'itemLocation("source",talk_x,talk_y,talk_layer);',
+    'mwin("Moving worker at "+talk_x+","+talk_y); wait(); mwinCls(); talks+=1;',
+  ].join('\n'));
+  return zip;
+}
