@@ -76,6 +76,8 @@ function binary(op, a, b) {
 function execution(path, instructions, context = {}) {
   return {
     path,
+    cooperative: Boolean(context.cooperative),
+    taskId: context.taskId ?? null,
     instructions,
     methods: Object.fromEntries(
       instructions.flatMap((node, pc) =>
@@ -258,7 +260,7 @@ function run(state) {
     }
   }
   let last = { path: exec.path, line: 1 };
-  for (let steps = 0; steps < languageLimits.sliceSteps; steps++) {
+  for (let steps = 0; steps < (exec.cooperative ? 512 : languageLimits.sliceSteps); steps++) {
     if (++exec.steps > languageLimits.totalSteps)
       return fail(last, "Total instruction budget exceeded.");
     if (exec.pc >= exec.instructions.length) {
@@ -408,13 +410,15 @@ function run(state) {
             "setpixel",
             "mousestatus",
             "keydown",
-          ].includes(name) ||
+          ].includes(name) || ["thread","killthread","getthreadid","threadsleep","threadwake"].includes(name) ||
           (name === "clear" && args.length === 1) ||
           (["text", "pixeltext"].includes(name) && args.length === 4);
         if (canvasService) {
           const outputIndices =
             name === "getpixel"
               ? [2, 3, 4]
+              : name === "thread" && args.length === 3 ? [2]
+              : name === "getthreadid" && args.length === 1 ? [0]
               : name === "createcanvas" && args.length === 3
                 ? [2]
                 : [];
@@ -620,6 +624,7 @@ function run(state) {
       return fail(node, error.message);
     }
   }
+  if (exec.cooperative) return {status:"yielded",state:snapshot()};
   return fail(last, "Instruction slice budget exceeded.");
 }
 
@@ -636,7 +641,7 @@ export function startTk3Script(state, source, path, context = {}) {
         execution: null,
       },
     };
-  return run({
+  const prepared = {
     ...state,
     screen: {
       ...state.screen,
@@ -649,7 +654,15 @@ export function startTk3Script(state, source, path, context = {}) {
     diagnostic: null,
     transferCount: 0,
     execution: execution(path, compiled.instructions, context),
-  });
+  };
+  return context.defer ? {status:"prepared",state:prepared} : run(prepared);
+}
+
+// One bounded VM quantum per scheduler frame, with a shared global heap.
+export function resumeTk3Task(state, result) {
+  if (!state.execution) return {status:"completed",state};
+  const next={...state, execution:{...state.execution,steps:0}};
+  return result ? resumeTk3Effect(next,result) : run(next);
 }
 
 // Native synchronous nested CProgram: retain the caller's complete VM frame.

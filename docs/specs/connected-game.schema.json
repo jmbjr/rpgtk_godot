@@ -93,6 +93,14 @@
       }
     },
     "edges": {"type": "array", "items": {"$ref": "#/$defs/edge"}},
+    "behaviorBindings": {"type":"array","items":{"type":"object","additionalProperties":false,
+      "required":["owner","board","slot","role","value","target","line","status","entitySlot"],
+      "properties": {
+        "owner":{"type":"string"},"board":{"type":"string"},"slot":{"type":["integer","null"]},
+        "role":{"type":"string"},"value":{"type":"string"},"target":{"type":["string","null"]},
+        "line":{"type":"integer","minimum":1},"status":{"type":"string"},
+        "entitySlot":{"type":["integer","null"]},"candidates":{"type":"array","items":{"type":"string"}}
+      }}},
     "scriptTrace": {"$ref": "#/$defs/scriptTrace"},
     "pluginAudit": {"$ref": "#/$defs/pluginAudit"},
     "playabilityAssessment": {"$ref": "#/$defs/playabilityAssessment"},

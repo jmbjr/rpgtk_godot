@@ -91,7 +91,7 @@ instructions across its continuation between real presented graphics frames. Dia
 A non-yielding loop faults instead of blocking the UI indefinitely.
 
 Classes, script-defined objects, by-reference parameters/returns, implicit
-library calls, native threads, native error recovery, save/load, plugins,
+library calls, thread APIs beyond the documented cooperative slice, native error recovery, save/load, plugins,
 canvas/image APIs beyond the documented slice, party management remain
 unsupported. Finite-number checks and bounds are browser policies. This is a
 larger generic subset, not full native Toolkit equivalence.
