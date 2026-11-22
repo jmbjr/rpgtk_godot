@@ -37,7 +37,11 @@ let browser,page;const errors=[];const watchdog=setTimeout(()=>{console.error('S
 try{
  browser=await chromium.launch({executablePath:process.env.TK3_CHROMIUM||undefined});report.browserVersion=browser.version();
  page=await browser.newPage({viewport:report.desktop});page.setDefaultTimeout(7000);page.on('pageerror',e=>errors.push(e.message));
- const shot=async name=>{await page.screenshot({path:resolve(output,name)});report.screenshots.push(name);};
+ const shot=async name=>{
+   // Let viewport/focus-driven layout finish painting before preserving evidence.
+   await page.evaluate(()=>new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done))));
+   await page.screenshot({path:resolve(output,name),animations:'disabled'});report.screenshots.push(name);
+ };
  const pathIs=async path=>page.locator('#source-path').filter({hasText:path}).waitFor();
  const file=async path=>{
    const folder=path.slice(0,path.lastIndexOf('/')+1);await page.locator(`#folder-list button[data-folder="${folder}"]`).click();
