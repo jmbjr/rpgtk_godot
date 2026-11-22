@@ -370,6 +370,10 @@ function restoreSelection({ path, folder, tile, line, inlineSlot }) {
   }
   updateSelectionIdentity();
   if (line || fileChanged || lineChanged) jumpToLine(line, inlineSlot);
+  if (!line && (fileChanged || tileChanged)) {
+    const target = tile ? byId("graph").querySelector(`[data-tile="${tile}"]`) : byId("asset-name");
+    target?.focus({ preventScroll: true });
+  }
 }
 
 window.addEventListener("popstate", event => {
@@ -413,9 +417,9 @@ function showArtifact() {
   for (const id of ["asset-format", "asset-metadata", "asset-record"]) byId(id).replaceChildren();
   byId(program ? "command-slot" : "preview-slot").append(byId("graph-block"));
   byId("graph-title").hidden = !program;
-  byId("selection").textContent = selectionLabel(selected);
   byId("file-title").textContent = program ? "Source" : artifact?.runs ? "Board preview" :
-    artifact?.type === "bkg" && !artifact.error ? "Battle background preview" : "File details";
+    artifact?.type === "bkg" && !artifact.error ? "Battle background preview" :
+    ["wav", "mid"].includes(artifact?.type) ? "Audio playback" : "Preview and overview";
   byId("graph-title").textContent = program ? "RPGCode command reference" : "Asset preview & details";
   byId("graph").replaceChildren();
   byId("reference").replaceChildren();

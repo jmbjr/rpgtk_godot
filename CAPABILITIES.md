@@ -5,7 +5,8 @@ its files connect. You can also try the supported parts of an imported
 Toolkit 3 game and export structural information for further work.
 
 This is a **working capability inventory**, reviewed against main
-`53a47eeca10e87050eccf5aaa8823817b5aa1496` on November 21, 2026.
+`e392e99f10754e9ad2612e76243f23753713161f` (#137 merged), with the
+Sprint 2 selection changes proposed in the review PR on November 22, 2026.
 It describes tasks a person can accomplish, rather than every parser,
 command or technical panel. The groupings are proposals for discussion;
 they do not commit the website to a particular navigation design.
@@ -15,7 +16,7 @@ they do not commit the website to a particular navigation design.
 | I want to… | Start here | A useful result looks like… |
 | --- | --- | --- |
 | Rediscover an old game's art and sound | Open its ZIP, then choose **Browse artwork** or **Listen to audio** | Recognizable boards, sprites, animations and playable music/sounds |
-| Find where a picture, sound or program is used | Select the file, then follow **Used by** or **Connection map** | A linked consumer, with a source line, field or placement where available |
+| Find where a picture, sound or program is used | Select the file, then inspect **Connections → Used by** | A linked consumer, with a source line, field or placement where available |
 | Understand why something is missing or unsupported | Inspect its references and decoding status | The recorded filename, resolution result and available source evidence |
 | Understand what a program refers to | Select a PRG and follow its source/reference links | Movement between the program, referenced assets and command documentation |
 | Try a game's supported behavior | Use **Play game** after import | Authored startup and board behavior, or a diagnostic identifying the unsupported operation |

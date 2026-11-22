@@ -37,7 +37,7 @@ try{
  const shot=async name=>{await page.screenshot({path:resolve(output,name)});report.screenshots.push(name);};
  const pathIs=async path=>page.locator('#source-path').filter({hasText:path}).waitFor();
  const file=async path=>{
-   const folder=path.slice(0,path.lastIndexOf('/')+1);await page.locator('#folder-list button').evaluateAll((nodes,folder)=>nodes.find(n=>n.dataset.folder===folder)?.click(),folder);
+   const folder=path.slice(0,path.lastIndexOf('/')+1);await page.locator(`#folder-list button[data-folder="${folder}"]`).click();
    await page.locator('#file-list button').filter({hasText:path.split('/').at(-1)}).click();await pathIs(path);};
  const upload=async input=>{await page.locator('#archive').setInputFiles({name:input.name,mimeType:'application/zip',buffer:input.bytes});await page.locator('#opened-archive').filter({hasText:input.name}).waitFor();};
  const clear=async()=>{const control=page.getByRole('button',{name:'Clear filters',exact:true});if(await control.isEnabled())await control.click();};
@@ -49,13 +49,13 @@ try{
  };
  // Actual baseline build, same exact archives/viewport/selection; no mockups.
  await page.goto(base+'/__before__/');await upload(inputs[0]);await file(inputs[0].board);await page.locator('#source canvas').first().waitFor();
- await page.locator('#workspace').scrollIntoViewIfNeeded();await shot('before-board-desktop.png');
- await file('Game/TK2LegacyLab/Tiles/lab.tst');await page.locator('#workspace').scrollIntoViewIfNeeded();await shot('before-tiles-desktop.png');
+ await page.locator('#workspace').evaluate(e=>e.scrollIntoView({block:'start'}));await shot('before-board-desktop.png');
+ await file('Game/TK2LegacyLab/Tiles/lab.tst');await page.locator('#workspace').evaluate(e=>e.scrollIntoView({block:'start'}));await shot('before-tiles-desktop.png');
  await page.setViewportSize(report.mobile);await page.locator('#file-title').scrollIntoViewIfNeeded();await shot('before-tiles-mobile.png');
  await page.setViewportSize(report.desktop);await page.goto(base);
  for(const input of inputs){
    await upload(input);await file(input.board);await page.locator('#source canvas').first().waitFor();
-   assert.equal(await page.locator('#asset-kind').innerText(),'Board');assert.equal(await page.locator('#asset-name').innerText(),input.board.split('/').at(-1));
+   assert.equal(await page.locator('#asset-kind').textContent(),'Board');assert.equal(await page.locator('#asset-name').innerText(),input.board.split('/').at(-1));
    assert.equal(await page.locator('#connections details.connection-map').count(),0);
    await page.locator('#asset-name').evaluate(e=>e.scrollIntoView({block:'start'}));await shot(input===inputs[0]?'after-board-desktop.png':'after-native-board-desktop.png');
    // Export actual connected JSON, then follow the exact same board/tile fact in UI.
