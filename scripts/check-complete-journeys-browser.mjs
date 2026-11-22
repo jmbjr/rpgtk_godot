@@ -138,7 +138,7 @@ try{
    assert.equal(await page.evaluate(()=>history.length),historyLength,'Section jump adds no history stop');
    await page.locator('#explore-audio').press('Enter');const soundPath=await page.locator('#source-path').innerText(),sound=record(connected,soundPath);
    const caller=sound.references.incoming.find(edge=>edge.line&&targetPath(connected,edge.source)?.toLowerCase().endsWith('.prg'));assert.ok(caller,'Audio shortcut has an indexed program caller');
-   if(sound.type==='wav'){
+   if(sound.format==='wav'){
      await page.locator('#graph audio').waitFor({state:'attached'});await page.locator('#graph audio').evaluate(a=>a.addEventListener('playing',()=>a.dataset.played='yes',{once:true}));
      await page.waitForFunction(()=>document.querySelector('#graph .audio-controls button')?.disabled===false);
      await page.getByRole('button',{name:'Play WAV',exact:true}).press('Enter');await page.locator('#graph audio[data-played="yes"]').waitFor({state:'attached'});
@@ -151,7 +151,7 @@ try{
    await follow(caller);const callerPath=targetPath(connected,caller.source);await pathIs(callerPath);await page.locator(`#line-${caller.line}.active-line`).waitFor();
    assert.equal(await page.getByLabel('File type',{exact:true}).inputValue(),'');assert.equal(await page.getByLabel('Direction',{exact:true}).inputValue(),'');
    await page.locator('#selection-back').press('Enter');await pathIs(soundPath);await page.locator('#selection-forward').press('Enter');await page.locator(`#line-${caller.line}.active-line`).waitFor();
-   let probe=Object.values(connected.artifacts).find(a=>a.type==='prg'&&a.references.outgoing.some(e=>e.status==='dynamic')&&a.references.outgoing.some(e=>e.status==='missing'));
+   let probe=Object.values(connected.artifacts).find(a=>a.format==='prg'&&a.references.outgoing.some(e=>e.status==='dynamic')&&a.references.outgoing.some(e=>e.status==='missing'));
    assert.ok(probe,'Example contains explicit missing/computed source evidence');
    if(probe.path!==callerPath){const included=record(connected,callerPath).references.outgoing.find(e=>e.target&&targetPath(connected,e.target)===probe.path);assert.ok(included);await follow(included);await pathIs(probe.path);}
    for(const resolution of ['missing','dynamic']){
