@@ -91,7 +91,7 @@ has been found.
 
 | Capability | How to use it today | Boundary |
 | --- | --- | --- |
-| Read a program beside command/reference evidence | Select a PRG to read source first; choose a call to inspect its **RPGCode command reference** under **Technical details** | Static call scanning is partial; recognizing a call does not mean Play can execute it |
+| Read a program beside command/reference evidence | Select a PRG to read source first; choose a call to inspect its **RPGCode command reference** under **Technical details** | Command highlighting covers legacy # syntax; Connections also indexes recognized native file references. Recognizing a call does not mean Play can execute it |
 | Inspect decoded records and format documentation | Use **Technical details** for detected format, decoded fields/diagnostics and **View decoded JSON**; follow revision-specific specifications | Some layouts/fields still have partial or missing historical/editor evidence |
 | Investigate startup and board behavior bindings | Inspect GAM/BRD/ITM bindings; follow entry/task source and owner links | Inline background source currently needs further support; task execution and inspection are separate checks |
 | Inspect plugin or save-file metadata | Open supported DLL/SAV records | The site does not execute arbitrary DLLs or resume a game from an inspected save |

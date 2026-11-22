@@ -22,7 +22,10 @@ reading order follows the person's tasks:
 1. **What is this?** Type, filename, full archive path, selected tile/source line
    and inspection support. Inspection is explicitly distinct from runtime support.
 2. **See, hear or read it.** Existing preview/playback controls first; PRG source
-   first for programs. No empty placeholder between identity and useful content.
+   first for programs. The existing command catalog highlights legacy # syntax;
+   native bare calls remain readable source with exact static file-reference
+   navigation in Connections. This boundary is explicit in the support note.
+   No empty placeholder between identity and useful content.
 3. **How is it connected?** One visible connection view. Used by means incoming;
    References means outgoing. Each neighbor shows its first recorded evidence and
    an Inspect connection action; selecting it reveals every exact edge, source

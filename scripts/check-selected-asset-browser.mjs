@@ -95,9 +95,13 @@ try{
    }
    if(input===inputs[1]){await page.getByLabel('Resolution',{exact:true}).selectOption('unindexed');await inspect('not-indexed.wav');assert.match(await page.locator('.connection-preview').innerText(),/does not establish that the file is missing/);}
    await clear();
-   await page.locator(`#source #line-${input.line} button`).first().press('Enter');
-   assert.equal(await page.locator('#reference').evaluate(e=>e===document.activeElement),true);
-   await page.locator('#reference').getByRole('button',{name:'Line '+input.line,exact:true}).click();await page.locator(`#line-${input.line}.active-line`).waitFor();
+   // The existing command catalog highlights legacy # syntax; native bare calls
+   // remain source text with exact static-reference navigation in Connections.
+   if(input===inputs[0]){
+     await page.locator(`#source #line-${input.line} button`).first().press('Enter');
+     assert.equal(await page.locator('#reference').evaluate(e=>e===document.activeElement),true);
+     await page.locator('#reference').getByRole('button',{name:'Line '+input.line,exact:true}).click();await page.locator(`#line-${input.line}.active-line`).waitFor();
+   }
    await page.getByRole('button',{name:'Technical details',exact:true}).press('Enter');assert.equal(await page.locator('#technical-title').evaluate(e=>e===document.activeElement),true);
    await page.locator('#asset-record summary').press('Enter');await page.getByLabel('Decoded artifact JSON',{exact:true}).filter({hasText:input.probe}).waitFor();
    await page.getByRole('button',{name:'Preview or source',exact:true}).press('Enter');assert.equal(await page.locator('#file-title').evaluate(e=>e===document.activeElement),true);

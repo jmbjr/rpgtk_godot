@@ -12,7 +12,7 @@ export function assetIdentity(asset) {
   const kind = names[asset.type] ?? "Archive file";
   let support;
   if (asset.error) support = "This file could not be decoded. Its recorded error, archive location and indexed connections remain available below.";
-  else if (asset.type === "prg") support = "Source inspection available. Recognized commands and static references are indexed; this does not establish gameplay compatibility.";
+  else if (asset.type === "prg") support = "Source inspection available. Command highlighting covers legacy # syntax; Connections includes recognized legacy and native file references. Inspection does not establish gameplay compatibility.";
   else if (asset.sourceFormat?.supported === false) support = "This file layout is not verified as supported. Any available inspection is partial; use its format notes, decoded record and connections as evidence.";
   else if (asset.decodeStatus === "unidentified") support = "No decoder or preview is available for this format. You can inspect its archive record and any indexed connections.";
   else if (["dll", "sav", "doc", "gam", "spc", "ste", "___"].includes(asset.type)) support = "Record inspection available. Decoding these fields does not run this file or establish original Toolkit parity.";
