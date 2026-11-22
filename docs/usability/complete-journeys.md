@@ -46,7 +46,9 @@ A board shortcut uses the configured opening-board binding when previewable,
 otherwise a supported typed BRD. Audio priority uses typed graph edges, not
 filenames or source-pattern recognition. Existing runtime/resolver/record/export
 semantics remain shared. No game-specific decision or new runtime command is added.
-Simulated encounter outcomes stay explicitly labeled as compatibility tests.
+Restart labels follow the active mode: Restart game versus Reset board diagnostic.
+Closing Play returns focus to the preserved file selection. Simulated encounter
+outcomes stay explicitly labeled as compatibility tests.
 
 Owner feedback available here is the request to reduce complexity and explain
 capabilities, plus earlier confusion about apparently unchanged builds.
@@ -90,7 +92,8 @@ node scripts/check-complete-journeys-browser.mjs site dist/complete-journeys-rev
 The last suite opens both normal chooser examples at 1365×960 and 390×844,
 uses actual WAV/GS MIDI controls, downloaded JSON facts, exact source/tile
 links and native/in-page history, then investigates explicit missing/computed
-references and exports from Technical details. Normal title/choice/wait and
+references and exports from Technical details. The staged tileset PDF download also exercises the fingerprinted lazy chunk.
+Normal title/choice/wait and
 direct diagnostics are compared with input scope stated. Stale unversioned
 app/style routes are deliberately retained: the fingerprinted entry and chunks
 must still load the current interface. The build manifest records review and

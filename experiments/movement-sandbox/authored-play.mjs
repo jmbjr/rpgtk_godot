@@ -572,8 +572,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     const hint = gameOver ?
       "Game over (test): restart the opening board to start fresh." :
       activeFight ? "Test encounter: choose a simulated outcome or cancel below." :
-      scriptWaiting ?
-      "Conversation active · use Next or the Talk shortcut." :
+      busy() ? describeScriptInput({ choice, waiting: scriptSession.execution?.waiting,
+        inputKind: scriptSession.execution?.inputKind, running: true, exited }) :
       target ? "Near " + target.filename + ": Talk runs " + target.programPath + " from this ZIP." :
       boardKey ? "Press Talk to run " + boardKey.raw + "." :
       (scene.boardPrograms ?? []).some(p => p.status === "resolved" && p.kind === "step") ?

@@ -43,6 +43,8 @@ try {
   page.on("pageerror", error => errors.push(error.message));
   const base = "http://127.0.0.1:" + server.address().port;
   const control = id => page.locator("#" + id);
+  // Lifecycle assertions read diagnostic text even when its evidence disclosure
+  // is closed; user-facing evidence checks explicitly disclose it below.
   // These regression helpers explicitly disclose the technical evidence they
   // inspect. First-use acceptance separately exercises actual keyboard controls.
   const disclose = async id => control(id).evaluate(node => {
@@ -526,7 +528,7 @@ try {
     await expectText("play-audio-status", harbor ? /Playing MIDI:.*GeneralUser GS 2.0.3/ : /Playing WAV:/);
     assert.equal(await control("play-map-frame").isVisible(), false);
     await variables(/startup_runs = 1/);
-    const position = await control("play-status").innerText();
+    const position = await control("play-status").textContent();
     await page.keyboard.press("ArrowDown");
     if (harbor) {
       await page.keyboard.press("Enter");
@@ -536,7 +538,7 @@ try {
     } else {
       await page.keyboard.press("ArrowUp");
     }
-    assert.equal(await control("play-status").innerText(), position, "Title navigation cannot move the board actor");
+    assert.equal(await control("play-status").textContent(), position, "Title navigation cannot move the board actor");
     if (harbor) await page.keyboard.press("Enter");
     else await menu.getByRole("button", {name:begin,exact:true}).tap();
     await expectText("play-dialogue-text", harbor ? "Harbor ready" : "Orchard ready");
@@ -545,7 +547,7 @@ try {
     await click("play-reset");
     await menu.getByRole("button", {name:begin,exact:true}).waitFor();
     await variables(/startup_runs = 1/);
-    assert.doesNotMatch(await control("play-script-variables").innerText(), /startup_checksum/);
+    assert.doesNotMatch(await control("play-script-variables").textContent(), /startup_checksum/);
     await menu.getByRole("button", {name:begin,exact:true}).tap();
     await expectText("play-dialogue-text", /ready/);
     await page.keyboard.press("Enter");
@@ -553,12 +555,12 @@ try {
     assert.equal(await control("play-script-screen").isVisible(), false);
     await variables(new RegExp("result = " + (harbor ? 6 : 10)));
     await variables(/startup_ready = 1/);
-    assert.doesNotMatch(await control("play-script-variables").innerText(), /wrong/);
+    assert.doesNotMatch(await control("play-script-variables").textContent(), /wrong/);
     await talk();
     await expectText("play-dialogue-text", "Startup prepared this object.");
     await talk();
     await control("play-dialogue").waitFor({state:"hidden"});
-    const beforeMove = (await control("play-status").innerText()).match(/\((\d+), (\d+), layer/);
+    const beforeMove = (await control("play-status").textContent()).match(/\((\d+), (\d+), layer/);
     const moved = () => page.waitForFunction(y => {
       const point = document.querySelector("#play-status").textContent.match(/\((\d+), (\d+), layer/);
       return Number(point[2]) > y + 1;
@@ -647,7 +649,7 @@ try {
       } finally {
         await touch.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}); await touch.detach();
       }
-      assert.doesNotMatch(await control("play-script-variables").innerText(),/caller_done/);
+      assert.doesNotMatch(await control("play-script-variables").textContent(),/caller_done/);
     }
     await click("play-script-escape");
     await expectText("play-dialogue-text", title+" closed");
@@ -662,7 +664,7 @@ try {
     await click("play-reset");
     await control("play-script-choices").getByRole("button",{name:begin,exact:true}).waitFor();
     await variables(/startup_runs = 1/);
-    assert.doesNotMatch(await control("play-script-variables").innerText(),/frames|canvas_done/);
+    assert.doesNotMatch(await control("play-script-variables").textContent(),/frames|canvas_done/);
     await click("play-close");
     if (harbor) {
       const zip=await JSZip.loadAsync(bytes);
@@ -847,14 +849,14 @@ try {
     await variables(/startup_ready = 1/); await talk();
     await page.keyboard.press(harbor?"e":"t");
     await expectText("play-dialogue-text",id+" destination entry");
-    assert.doesNotMatch(await control("play-script-variables").innerText(),/after_entry/);
+    assert.doesNotMatch(await control("play-script-variables").textContent(),/after_entry/);
     await talk(); await expectText("play-dialogue-text",id+" entry 2");
     await talk(); await variables(/after_entry = 1.*returned = 2/);
     await click("play-reset");
     await control("play-script-choices").getByRole("button",{name:harbor?"Depart":"Wake",exact:true}).waitFor();
     await click("play-close"); await directPlay();
     await expectText("play-dialogue-text",id+" entry 1");
-    assert.doesNotMatch(await control("play-script-variables").innerText(),/startup_ready/);
+    assert.doesNotMatch(await control("play-script-variables").textContent(),/startup_ready/);
     await talk();
     const inspect=page.getByRole("button",{name:"Inspect board entry source",exact:true,includeHidden:true});
     await inspect.evaluate(el=>el.closest("details").open=true); await inspect.click();
@@ -876,12 +878,12 @@ try {
     await talk(); await expectText("play-dialogue-text",id+" entry 1"); await talk();
     await page.waitForFunction(()=>Number(document.querySelector("#play-script-variables").textContent.match(/board_ticks = (\d+)/)?.[1])>=3);
     await expectText("play-task-status",/Board thread.*ready|Board thread.*sleeping/);
-    const position=await control("play-status").innerText();
+    const position=await control("play-status").textContent();
     await move("ArrowDown",()=>page.waitForFunction(before=>document.querySelector("#play-status").textContent!==before,position));
     await talk(); await expectText("play-dialogue-text","Worker interaction");
-    const paused=await control("play-script-variables").innerText();
+    const paused=await control("play-script-variables").textContent();
     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-    assert.equal(await control("play-script-variables").innerText(),paused,"Foreground wait owns globals while tasks pause");
+    assert.equal(await control("play-script-variables").textContent(),paused,"Foreground wait owns globals while tasks pause");
     await talk(); await variables(/talks = 1/);
     await page.keyboard.press(harbor?"e":"t");
     await expectText("play-dialogue-text",/destination entry/);
@@ -893,7 +895,7 @@ try {
     await variables(/returned = 2/);
     await click("play-reset");
     await control("play-script-choices").getByRole("button",{name:harbor?"Depart":"Wake",exact:true}).waitFor();
-    assert.doesNotMatch(await control("play-script-variables").innerText(),/board_ticks|item_ticks|persistent_ticks/);
+    assert.doesNotMatch(await control("play-script-variables").textContent(),/board_ticks|item_ticks|persistent_ticks/);
     await control("play-script-choices").getByRole("button",{name:harbor?"Depart":"Wake",exact:true}).click();
     await talk();await expectText("play-dialogue-text",id+" entry 1");await talk();
     const taskSource=control("play-task-status").getByRole("button",{name:"Inspect task source",exact:true}).first();
@@ -942,10 +944,10 @@ try {
     await page.keyboard.press(harbor?'e':'t');await expectText("play-dialogue-text",/destination entry/);
     await talk();await expectText("play-dialogue-text",id+" entry 2");await talk();await variables(/returned = 2/);
     await page.keyboard.press('b');await variables(/foreground_started = 1/);
-    assert.doesNotMatch(await control("play-script-variables").innerText(),/foreground_returned/);
+    assert.doesNotMatch(await control("play-script-variables").textContent(),/foreground_returned/);
     await click("play-reset");
     await control("play-script-choices").getByRole("button",{name:harbor?"Depart":"Wake",exact:true}).waitFor();
-    assert.doesNotMatch(await control("play-script-variables").innerText(),/talk_x|item_ticks|npc_x|foreground_returned|foreground_started/);
+    assert.doesNotMatch(await control("play-script-variables").textContent(),/talk_x|item_ticks|npc_x|foreground_returned|foreground_started/);
     await click("play-close");assert.equal(await control("play-entity-status").count(),0);
   }
   console.log("Living boards Chromium passed: two normal uploads/title/entry, cooperative moving NPCs, animation, live Talk position/range, modal pause, blocked movement, transfer and reset/close.");

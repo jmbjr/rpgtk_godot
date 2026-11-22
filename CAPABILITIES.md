@@ -205,7 +205,9 @@ Technical details links to whole-archive export without adding a selection stop.
 Selected file/folder rows reveal within their own lists; connection evidence
 receives keyboard focus and has a return-to-list action. Filters apply to the
 current file/tile. Authored title choices, dialogue waits and running/exited
-programs have distinct instructions. Positions/entities/globals are in existing
+programs have distinct instructions. **Restart game** repeats normal startup;
+**Reset board diagnostic** repeats direct entry. Closing Play returns to the
+preserved file selection. Positions/entities/globals are in existing
 runtime evidence; active task source controls and errors remain visible.
 
 The public TK2 and TK3 examples now include clearly authored static inspection

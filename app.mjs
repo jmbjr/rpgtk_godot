@@ -2506,6 +2506,7 @@ function mountPlayable(scene, options, mode = launchMode) {
   // canvas, input listeners, current position and animation frame intact.
   const panel = playTemplate.cloneNode(true);
   panel.hidden = false;
+  panel.querySelector("#play-reset").textContent = mode === "gam" ? "Restart game" : "Reset board diagnostic";
   panel.querySelector("#play-launch-mode").textContent = {
     gam: "Launch mode: Game startup",
     direct: "Launch mode: Direct board diagnostic",

@@ -117,6 +117,11 @@ try{
    assert.ok(tileEdge);await follow(tileEdge);const tilePath=targetPath(connected,tileEdge.target),tile=tileEdge.target.tileIndex;
    await pathIs(tilePath);await page.locator(`#graph [data-tile="${tile}"][aria-pressed="true"]`).waitFor();
    assert.match(await page.locator('#selection-context').innerText(),new RegExp('Tile '+tile));
+   if(viewport==='desktop'&&!input.native){
+     const [pdf]=await Promise.all([page.waitForEvent('download'),page.getByRole('button',{name:'Download print-and-play PDF',exact:true}).press('Enter')]);
+     const bytes=await readFile(await pdf.path());assert.equal(bytes.subarray(0,4).toString(),'%PDF');assert.ok(bytes.length>1000);
+     report.pdf={name:pdf.suggestedFilename(),bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')};
+   }
    assert.ok(await page.locator('#file-list').evaluate(list=>{const row=list.querySelector('[aria-pressed="true"]'),a=row.getBoundingClientRect(),b=list.getBoundingClientRect();return a.top>=b.top-1&&a.bottom<=b.bottom+1;}),'Selected row revealed inside list');
    await inspect(tileEdge);assert.equal(await page.locator('.connection-preview').evaluate(e=>e===document.activeElement),true);
    await page.getByRole('button',{name:'Back to connection list',exact:true}).press('Enter');assert.equal(await page.locator('.connection-node[aria-pressed="true"]').evaluate(e=>e===document.activeElement),true);
@@ -163,12 +168,12 @@ try{
    assert.equal(await page.evaluate(()=>history.length),beforeExport,'Export shortcut adds no history stop');
    if(input.native){
      await page.locator('#play-gam-startup').press('Enter');await page.getByRole('button',{name:'Depart',exact:true}).waitFor();
-     assert.match(await page.locator('#play-target-hint').innerText(),/Choose an option/);assert.match(await page.locator('#play-launch-mode').innerText(),/Game startup/);
+     assert.match(await page.locator('#play-target-hint').innerText(),/Choose an option/);assert.match(await page.locator('#play-launch-mode').innerText(),/Game startup/);assert.equal(await page.locator('#play-reset').innerText(),'Restart game');
      assert.equal(await page.locator('.play-placements').evaluate(e=>e.open),false);await page.locator('#play-stage').evaluate(e=>e.scrollIntoView({block:'start'}));await shot('after-title-'+viewport+'.png');
      await page.getByRole('button',{name:'Depart',exact:true}).press('Enter');await page.locator('#play-dialogue-text').filter({hasText:'Harbor ready'}).waitFor();
      await page.locator('#play-talk').press('Enter');await page.locator('#play-close').press('Enter');await pathIs(probe.path);
      if(!await page.locator('#play-board-diagnostics').evaluate(e=>e.open))await page.locator('#play-board-diagnostics > summary').click();
-     await page.locator('#play-direct').press('Enter');assert.match(await page.locator('#play-launch-mode').innerText(),/Direct board diagnostic/);
+     await page.locator('#play-direct').press('Enter');assert.match(await page.locator('#play-launch-mode').innerText(),/Direct board diagnostic/);assert.equal(await page.locator('#play-reset').innerText(),'Reset board diagnostic');
      assert.equal(await page.getByRole('button',{name:'Depart',exact:true}).count(),0);assert.doesNotMatch(await page.locator('#play-script-variables').textContent(),/startup_runs/);
      assert.match(await page.locator('#play-fight-test').textContent(),/Simulate victory \(test only\)/);await page.locator('#play-close').press('Enter');
    }

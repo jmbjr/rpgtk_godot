@@ -129,7 +129,7 @@ try {
   await page.locator('#play-board-diagnostics > summary').click();assert.match(await page.locator('#play-board-diagnostics').innerText(),/not normal Play/);
   await page.locator('#play-direct').click();await page.locator('#play-dialogue-text').filter({hasText:'grove entry 1'}).waitFor();
   assert.match(await page.locator('#play-launch-mode').innerText(),/Direct board diagnostic/);
-  assert.doesNotMatch(await page.locator('#play-script-variables').innerText(),/startup_ready|startup_runs/);
+  assert.doesNotMatch(await page.locator('#play-script-variables').textContent(),/startup_ready|startup_runs/);
   await page.locator('#play-close').click();report.results.push('Toolkit 3 title and moving-character examples open through the common loader. Normal startup reaches source choices; direct diagnostics bypasses startup but runs entry.');
 
   // Failed replacement keeps the previous archive and gives a usable recovery.
