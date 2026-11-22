@@ -42,7 +42,7 @@ button:hover, button[aria-pressed="true"], .download-button:hover { background: 
 .bindings div { border-top: 1px solid var(--line); padding-top: .5rem; }
 dt { color: var(--muted); font-size: .8rem; }
 dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
-.workspace { display: grid; grid-template-columns: minmax(170px, .8fr) minmax(340px, 2fr) minmax(260px, 1.2fr); gap: .8rem; margin-top: 1rem; align-items: start; }
+.workspace { display: grid; grid-template-columns: minmax(180px, 240px) minmax(0, 1fr); gap: .8rem; margin-top: 1rem; align-items: start; }
 .section-head { display: flex; gap: .55rem; align-items: baseline; flex-wrap: wrap; justify-content: space-between; }
 .file-list, .source, .command-list { max-height: 34rem; overflow: auto; padding: 3px; margin-top: .65rem; }
 .file-list { display: grid; gap: .25rem; }
@@ -69,7 +69,7 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 .jump-list { display: flex; flex-wrap: wrap; gap: .35rem; }
 @media (max-width: 950px) {
   .workspace { grid-template-columns: minmax(150px, 1fr) minmax(0, 3fr); }
-  .graph-panel { grid-column: 1 / -1; }
+
 }
 @media (max-width: 590px) {
   .page { width: calc(100% - 1rem); }
@@ -96,8 +96,8 @@ dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 .edge-group summary { cursor: pointer; color: var(--gold); }
 .edge-list { display: grid; gap: .25rem; list-style: none; padding-left: .65rem; font-size: .82rem; }
 .edge-list button { text-align: left; }
-.board-controls { display: flex; align-items: center; justify-content: space-between; padding: .45rem; color: var(--gold); font: .85rem system-ui, sans-serif; }
-.board-controls select { max-width: 70%; padding: .25rem; font: inherit; }
+.board-controls { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; justify-content: space-between; padding: .45rem; color: var(--gold); font: .85rem system-ui, sans-serif; }
+.board-controls select { max-width: 100%; padding: .25rem; font: inherit; }
 .board-stage { position: relative; background: #111113; }
 .board-stage .artifact-image { position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; object-fit: cover; }
 .board-map { display: block; position: relative; width: 100%; height: auto; image-rendering: pixelated; }
@@ -381,3 +381,33 @@ body.has-archive .intro-copy { margin-block: .75rem .4rem; }
 
 .task-record-text { display: block; }
 .task-source-actions { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .35rem; }
+
+/* A selection has one reading order: identity, useful content, connections, evidence. */
+.archive-browser .file-list { max-height: 15rem; }
+.asset-identity #asset-kind { margin-top: 0; }
+#asset-name { overflow-wrap: anywhere; font-size: 1.8rem; }
+#selection:empty { display: none; }
+.support-note { border-left: 3px solid #9b8c75; padding-left: .7rem; font-size: .9rem; }
+.asset-sections { display: flex; flex-wrap: wrap; gap: .5rem; }
+.asset-content { margin-top: 1.5rem; padding-top: 1.1rem; border-top: 1px solid var(--line); min-width: 0; }
+.asset-content > h3 { font-size: 1.3rem; }
+#asset-name, #file-title, #technical-title, #reference { scroll-margin-top: 1rem; }
+#preview-slot #reference:empty { display: none; }
+#graph-block .section-head:has(#graph-title[hidden]) { display: none; }
+#asset-format .asset-format { margin-top: .75rem; }
+.connection-node-name strong, .connection-node-evidence, .connection-node-action { display: block; }
+.connection-node-evidence { font: .75rem var(--mono); color: var(--muted); margin-top: .25rem; }
+.connection-node-action { color: var(--gold); font-size: .75rem; margin-top: .25rem; }
+.connection-map-summary { margin: .5rem 0; }
+.connection-map-summary span { margin-left: 0; }
+.connection-nodes { max-height: 23rem; }
+.connection-preview .edge-list { max-height: 22rem; }
+.decode-error { color: #f2b9ac; }
+@media (max-width: 590px) {
+  .archive-browser { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: .5rem; }
+  .archive-browser .section-head { grid-row: 1; margin: 0; padding: 0; border: 0; }
+  .archive-browser #folder-list { grid-column: 1; grid-row: 2; }
+  .archive-browser #file-list { grid-column: 2; grid-row: 2; }
+  .archive-browser .file-list { max-height: 10rem; }
+  .selected-asset { padding: .75rem; }
+}

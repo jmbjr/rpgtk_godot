@@ -1,3 +1,4 @@
+import { assetIdentity, referenceExplanation } from "./asset-presentation.mjs";
 import { indexTilesets, matchEmbeddedTile } from "./tile-matches.mjs";
 import { formatSummary, formatSpecTarget, isTileFormat, mainSourceFormat, tileMode } from "./asset-format.mjs";
 import { openGameArchive } from "./archive.mjs";
@@ -61,7 +62,6 @@ let references = { incoming: new Map(), outgoing: new Map() };
 let tileSelection;
 let selectedLine;
 let selectedInlineSlot;
-let connectionMapOpen = false;
 let connectionFilters = {};
 const inspectorHistory = createInspectorHistory(window.history);
 let animationTimer;
@@ -368,7 +368,12 @@ function restoreSelection({ path, folder, tile, line, inlineSlot }) {
     }
     renderConnections(path);
   }
+  updateSelectionIdentity();
   if (line || fileChanged || lineChanged) jumpToLine(line, inlineSlot);
+  if (!line && (fileChanged || tileChanged)) {
+    const target = tile ? byId("graph").querySelector(`[data-tile="${tile}"]`) : byId("asset-name");
+    target?.focus({ preventScroll: true });
+  }
 }
 
 window.addEventListener("popstate", event => {
@@ -380,6 +385,16 @@ function selectionLabel(path) {
   if (!path) return "";
   if (mainFile && mainFileBindings(mainFile, artifacts)[0][1].path === path) return "Configured startup";
   return "Selected file";
+}
+
+function updateSelectionIdentity() {
+  const artifact = artifacts.get(selected);
+  const { kind, support } = assetIdentity(artifact);
+  byId("asset-name").textContent = selected ? basename(selected) : "Selection";
+  byId("asset-kind").textContent = kind;
+  byId("asset-support").textContent = support;
+  byId("selection").textContent = [selectionLabel(selected), tileSelection ? `Tile ${tileSelection}` : "",
+    selectedLine ? `Source line ${selectedLine}` : ""].filter(Boolean).join(" · ");
 }
 
 function showArtifact() {
@@ -398,15 +413,20 @@ function showArtifact() {
   const program = artifact?.type === "prg" ? artifact.program : undefined;
   const source = byId("source");
   byId("source-path").textContent = selected ?? "";
-  byId("selection").textContent = selectionLabel(selected);
+  updateSelectionIdentity();
+  for (const id of ["asset-format", "asset-metadata", "asset-record"]) byId(id).replaceChildren();
+  byId(program ? "command-slot" : "preview-slot").append(byId("graph-block"));
+  byId("graph-title").hidden = !program;
   byId("file-title").textContent = program ? "Source" : artifact?.runs ? "Board preview" :
-    artifact?.type === "bkg" && !artifact.error ? "Battle background preview" : "File details";
+    artifact?.type === "bkg" && !artifact.error ? "Battle background preview" :
+    ["wav", "mid"].includes(artifact?.type) ? "Audio playback" : "Preview and overview";
   byId("graph-title").textContent = program ? "RPGCode command reference" : "Asset preview & details";
   byId("graph").replaceChildren();
   byId("reference").replaceChildren();
   byId("connections").replaceChildren();
   byId("counts").textContent = "";
-  source.replaceChildren(el("p", artifact ? "Details for this file appear in the inspector." : "Choose a file to inspect."));
+  source.replaceChildren();
+  source.hidden = !(program || artifact?.runs || artifact?.type === "bkg");
   if (!artifact) return;
   if (program) {
     renderSource(program);
@@ -415,8 +435,10 @@ function showArtifact() {
       traceProgramDependencies(artifacts, references, artifact.path)));
   } else {
     renderAsset(artifact);
+    for (const fields of byId("graph").querySelectorAll(":scope > .asset-fields")) byId("asset-metadata").append(fields);
   }
-  byId("graph").prepend(assetFormatHeader(artifact));
+  byId("asset-format").append(assetFormatHeader(artifact));
+  if (artifact.error) byId("asset-metadata").append(el("p", artifact.error, "decode-error"));
   renderConnections(artifact.path);
 }
 
@@ -845,7 +867,7 @@ function renderAsset(artifact) {
     }
     const portrait = edges.find(edge => edge.evidence === "Character portrait")?.to;
     if (portrait) showMedia(panel, portrait, `${artifact.name} portrait`);
-    panel.append(stats);
+    byId("asset-metadata").append(stats);
     if (artifact.walkingAnimations) {
       panel.append(el("h3", "Toolkit 3 walking animations"),
         el("p", "These graphics are ANM files linked by the character, not embedded walking tiles. Select a direction to open its full animation with frame controls."));
@@ -1393,7 +1415,7 @@ function renderNativeItem(panel, artifact) {
     geometry.append(el("p", `${base.role} · slot ${base.slot} · ${base.points.length} points: `
       + base.points.map(p => `(${p.x}, ${p.y})`).join(" → "), "technical"));
   }
-  panel.append(geometry);
+  byId("asset-metadata").append(geometry);
 }
 
 function renderItemSprites(panel, artifact) {
@@ -1598,7 +1620,7 @@ function renderBoardMetadata(panel, board, edges) {
 
 function renderBoard(panel, board, edges) {
   panel.append(el("p", `${board.width} × ${board.height} tiles · ${board.layers} layers · MAP-01 Boards`));
-  renderBoardMetadata(panel, board, edges);
+  renderBoardMetadata(byId("asset-metadata"), board, edges);
   const sets = boardTilesets(edges, references, artifacts);
   panel.append(el("h3", "Tilesets used"));
   if (!sets.size) panel.append(el("p", "No resolved tilesets in the decoded board references."));
@@ -1934,7 +1956,8 @@ function renderMidiControls(panel, artifact) {
     () => archive.file(artifact.path).async("uint8array"),
     () => midiPlayback?.currentTime ?? -1,
   );
-  panel.append(controls, message, pianoRoll, renderMidiTracks(artifact.tracks), renderMidiSoundBank(), renderMidiTone());
+  panel.append(controls, message, pianoRoll);
+  byId("asset-metadata").append(renderMidiTracks(artifact.tracks), renderMidiSoundBank(), renderMidiTone());
 }
 
 function renderMidiSoundBank() {
@@ -2119,12 +2142,10 @@ function renderConnections(path) {
   const incoming = references.incoming.get(path) ?? [];
   const outgoing = references.outgoing.get(path) ?? [];
   const uses = tileSelection ? incoming.filter(edge => edge.tile === tileSelection) : incoming;
-  const title = tileSelection ? `Used by · Tile ${tileSelection}` : "Used by";
+  container.append(el("h3", tileSelection ? `Connections · Tile ${tileSelection}` : "Connections"));
   if (tileSelection) container.append(formatSpecLink("tst", "#tile-addressing"));
   container.append(renderConnectionMap(path, uses, outgoing, incoming.length - uses.length));
-  renderEdges(container, title, uses, true);
-  renderEdges(container, "References", outgoing, false);
-  container.append(jsonPanel(() => artifactRecord(artifacts.get(path), references)));
+  byId("asset-record").replaceChildren(jsonPanel(() => artifactRecord(artifacts.get(path), references)));
 }
 
 const connectionTypes = {
@@ -2155,15 +2176,16 @@ function evidenceLabel(edge) {
 
 function openConnection({ path, tile, line, inlineSlot }) {
   selectArtifact(path, tile, line, undefined, inlineSlot);
+  if (!line) {
+    const target = tile ? byId("graph").querySelector(`[data-tile="${tile}"]`) : byId("asset-name");
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: "nearest" });
+  }
 }
 
 function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
-  const map = el("details", "", "reference connection-map");
-  map.open = connectionMapOpen;
-  map.addEventListener("toggle", () => {
-    if (map.isConnected) connectionMapOpen = map.open;
-  });
-  const summary = el("summary", "Connection map", "connection-map-summary");
+  const map = el("section", "", "connection-map");
+  const summary = el("p", "", "connection-map-summary");
   const stats = el("span", "", "technical");
   summary.append(stats);
   const controls = el("div", "", "connection-filters");
@@ -2256,13 +2278,19 @@ function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
           active = control;
           control.setAttribute("aria-pressed", "true");
           preview.replaceChildren(el("h4", title), el("p", node.path ?? node.status, "technical"));
+          preview.append(el("p", referenceExplanation(node.edges[0])));
           if (destination) preview.append(button("Open in inspector", () => openConnection(destination)));
           const evidence = el("ul", "", "edge-list");
           for (const edge of node.edges) {
             const exact = referenceDestination(edge, reverse, artifacts);
             const label = evidenceLabel(edge) + (edge.tiles ? ` · ${countLabel(edge.tiles, "board placement")}` : "");
             const entry = el("li");
-            entry.append(exact && node.edges.length > 1 ? button(label, () => openConnection(exact)) : el("span", label));
+            entry.append(el("p", `${edge.external ? "External configuration" : edge.from}${edge.inlineSlot === undefined ? "" : ` · program slot ${edge.inlineSlot}`}`, "technical"));
+            entry.append(exact ? button(label, () => openConnection(exact)) : el("span", label));
+            const source = !reverse && edge.line && referenceDestination(edge, true, artifacts);
+            if (source) entry.append(button("View reference in source", () => openConnection(source)));
+            for (const candidate of edge.candidates ?? []) entry.append(button(`Inspect candidate · ${candidate}`, () => openConnection({ path: candidate })));
+            for (const candidate of edge.projectCandidates ?? []) entry.append(el("p", `Project candidate · ${typeof candidate === "string" ? candidate : JSON.stringify(candidate)}`, "technical"));
             evidence.append(entry);
           }
           preview.append(evidence);
@@ -2282,7 +2310,10 @@ function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
         } else {
           control.append(badge);
         }
-        control.append(el("span", title, "connection-node-name"), el("span", String(node.edges.length), "connection-node-count"));
+        const identity = el("span", "", "connection-node-name");
+        identity.append(el("strong", title), el("span", evidenceLabel(node.edges[0]), "connection-node-evidence"),
+          el("span", "Inspect connection →", "connection-node-action"));
+        control.append(identity, el("span", String(node.edges.length), "connection-node-count"));
         if (destination) control.addEventListener("dblclick", () => openConnection(destination));
         list.append(control);
       }
@@ -2325,7 +2356,7 @@ function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
     if (!shown) sections.push(el("p", filtering ? "No references match these filters." : "No direct references in the indexed fields."));
     neighborhood.replaceChildren(...sections);
   }
-  map.append(summary, el("p", "Select a direct neighbor to inspect its reference evidence."), controls, counts);
+  map.append(summary, el("p", "Used by shows files that refer to this selection. References shows what it uses. Select a connection to see its recorded field or source line, then follow it."), controls, counts);
   if (otherIncoming) map.append(el("p", `${countLabel(otherIncoming, "reference")} to other tiles or the whole tileset hidden.`, "technical"));
   map.append(neighborhood);
   renderNeighborhood();
@@ -2345,49 +2376,13 @@ function jsonPanel(record) {
   return details;
 }
 
-function renderEdges(container, title, edges, reverse) {
-  const section = el("section", "", "reference");
-  section.append(el("h3", title));
-  if (!edges.length) section.append(el("p", "No matching references in the indexed fields."));
-  const groups = new Map();
-  for (const edge of edges) {
-    const key = reverse ? edge.from : edge.to ?? edge.value;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(edge);
-  }
-  for (const [name, group] of groups) {
-    const details = el("details", "", "edge-group");
-    details.open = edges.length <= 12;
-    details.append(el("summary", `${name} · ${group.length}`, "technical"));
-    const list = el("ul", "", "edge-list");
-    for (const edge of group) {
-      const destination = referenceDestination(edge, reverse, artifacts);
-      const label = evidenceLabel(edge);
-      const item = el("li");
-      item.append(destination ? button(label, () => openConnection(destination)) :
-        el("span", edge.to ? label : `${label} · ${edge.status}`));
-      if (edge.candidates?.length) {
-        const candidates = el("ul", "", "technical");
-        for (const path of edge.candidates) {
-          const candidate = el("li");
-          candidate.append(button(path, () => selectArtifact(path)));
-          candidates.append(candidate);
-        }
-        item.append(candidates);
-      }
-      list.append(item);
-    }
-    details.append(list);
-    section.append(details);
-  }
-  container.append(section);
-}
-
 function jumpToLine(line, inlineSlot) {
-  document.querySelector("#source .active-line, #graph .active-line")?.classList.remove("active-line");
+  document.querySelector(".selected-asset .active-line")?.classList.remove("active-line");
   const target = line && byId(inlineSlot === undefined ?
     `line-${line}` : `inline-program-${inlineSlot}-line-${line}`);
-  if (target?.closest("details")) target.closest("details").open = true;
+  for (let ancestor = target?.parentElement; ancestor; ancestor = ancestor.parentElement) {
+    if (ancestor.tagName === "DETAILS") ancestor.open = true;
+  }
   if (!target) return;
   target.classList.add("active-line");
   target.focus({ preventScroll: true });
@@ -2466,6 +2461,7 @@ function showReference(group) {
     jumps.append(button(`Line ${line}`, () => selectArtifact(selected, undefined, line), "line-jump"));
   }
   reference.append(jumps);
+  focusResult("reference");
 }
 
 function closePlayable() {
@@ -2617,16 +2613,14 @@ for (const [kind, types] of [["artwork", artworkTypes], ["audio", ["wav", "mid"]
     if (!path) return;
     selectArtifact(path);
     status("explore-feedback", "Opened " + path + (kind === "audio" ? ". Use the playback controls in its inspector." : ". Explore its preview and numbered tiles where available."));
-    focusResult("graph-title");
+    focusResult("asset-name");
   });
 }
 byId("explore-connections").addEventListener("click", () => {
   const hasEdges = path => (references.incoming.get(path)?.length || references.outgoing.get(path)?.length);
   const path = hasEdges(selected) ? selected : paths.find(hasEdges);
   if (!path) return;
-  connectionMapOpen = true;
   if (path !== selected) selectArtifact(path);
-  else byId("connections").querySelector(".connection-map").open = true;
   status("explore-feedback", "Connections for " + path + ". Choose a relationship to follow its recorded field, source line or tile.");
   focusResult("connections");
 });
@@ -2818,3 +2812,7 @@ byId("main-file").addEventListener("change", async event => {
   selectDefault();
   if (uploadedMainFile && !archive) focusResult("archive-heading");
 });
+
+for (const control of document.querySelectorAll("[data-section]")) {
+  control.addEventListener("click", () => focusResult(control.dataset.section));
+}

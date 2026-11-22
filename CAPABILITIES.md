@@ -5,7 +5,8 @@ its files connect. You can also try the supported parts of an imported
 Toolkit 3 game and export structural information for further work.
 
 This is a **working capability inventory**, reviewed against main
-`53a47eeca10e87050eccf5aaa8823817b5aa1496` on November 21, 2026.
+`e392e99f10754e9ad2612e76243f23753713161f` (#137 merged), with the
+Sprint 2 selection changes proposed in the review PR on November 22, 2026.
 It describes tasks a person can accomplish, rather than every parser,
 command or technical panel. The groupings are proposals for discussion;
 they do not commit the website to a particular navigation design.
@@ -15,7 +16,7 @@ they do not commit the website to a particular navigation design.
 | I want to… | Start here | A useful result looks like… |
 | --- | --- | --- |
 | Rediscover an old game's art and sound | Open its ZIP, then choose **Browse artwork** or **Listen to audio** | Recognizable boards, sprites, animations and playable music/sounds |
-| Find where a picture, sound or program is used | Select the file, then follow **Used by** or **Connection map** | A linked consumer, with a source line, field or placement where available |
+| Find where a picture, sound or program is used | Select the file, then inspect **Connections → Used by** | A linked consumer, with a source line, field or placement where available |
 | Understand why something is missing or unsupported | Inspect its references and decoding status | The recorded filename, resolution result and available source evidence |
 | Understand what a program refers to | Select a PRG and follow its source/reference links | Movement between the program, referenced assets and command documentation |
 | Try a game's supported behavior | Use **Play game** after import | Authored startup and board behavior, or a diagnostic identifying the unsupported operation |
@@ -57,7 +58,7 @@ are explained while the complete file browser remains usable.
 | Open a local game archive | Use **Open a game archive → Game archive**; optional GAM is under **Open from a URL or supply a Main File** | Reads supported archive/layout bytes in browser memory; an arbitrary ZIP is not necessarily a compatible game |
 | Open a game from a link | Expand **Open from a URL or supply a Main File**, then paste a public HTTPS **Game ZIP URL** | Requires the host to allow browser reads; download and import locally if it does not |
 | Open supported packaged downloads | Import a single-game Actions wrapper ZIP or recognized Toolkit installer/package | Supported wrappers are recognized structurally; this does not run an EXE or installer |
-| Find an asset or program | Browse the archive's folders and files | Inventory includes files whose contents cannot yet be decoded |
+| Find an asset or program | Browse the archive's folders and files; the selection header shows its type, name, archive path and inspection support | Inventory includes files whose contents cannot yet be decoded |
 | See which files configure the game | Inspect Main File bindings and linked startup assets | Recognized GAM versions expose different supported fields; inspecting a different GAM does not silently replace Play's embedded launch configuration |
 
 ## 2. See and hear the contents
@@ -76,9 +77,9 @@ are explained while the complete file browser remains usable.
 
 | Capability | How to use it today | Boundary |
 | --- | --- | --- |
-| Find what a file uses and what uses it | Follow **References**, **Used by** and **Connection map** | The index covers recognized bindings and static references; computed runtime filenames can remain unknown |
-| Follow a relationship to its evidence | Open its target, source line, tile number, board slot or owner | Evidence precision depends on the relationship; unresolved targets retain the raw value/candidates |
-| Narrow a crowded connection view | Filter the direct map by direction, neighbor type or resolution | This is direct-neighbor navigation, not an expandable whole-game multi-hop graph |
+| Find what a file uses and what uses it | Use the visible **Connections** section: **Used by** (incoming) and **References** (outgoing) | The index covers recognized bindings and static references; computed runtime filenames can remain unknown |
+| Follow a relationship to its evidence | Select **Inspect connection**, read the field/line/value evidence, then **Open in inspector** or follow an exact evidence button | Evidence precision depends on the relationship; unresolved targets retain the raw value/candidates |
+| Narrow a crowded connection view | Filter **Connections** by direction, neighbor type or resolution | This is direct-neighbor navigation, not an expandable whole-game multi-hop graph |
 | Retrace an investigation | Use browser Back/Forward between inspector selections | Opening another ZIP starts a new archive trail |
 
 The original goal of connecting every asset remains an acceptance target.
@@ -90,8 +91,8 @@ has been found.
 
 | Capability | How to use it today | Boundary |
 | --- | --- | --- |
-| Read a program beside command/reference evidence | Select a PRG, choose a call and jump between source and references | Static call scanning is partial; recognizing a call does not mean Play can execute it |
-| Inspect decoded records and format documentation | Expand decoded JSON and follow revision-specific specifications | Some layouts/fields still have partial or missing historical/editor evidence |
+| Read a program beside command/reference evidence | Select a PRG to read source first; choose a call to inspect its **RPGCode command reference** under **Technical details** | Command highlighting covers legacy # syntax; Connections also indexes recognized native file references. Recognizing a call does not mean Play can execute it |
+| Inspect decoded records and format documentation | Use **Technical details** for detected format, decoded fields/diagnostics and **View decoded JSON**; follow revision-specific specifications | Some layouts/fields still have partial or missing historical/editor evidence |
 | Investigate startup and board behavior bindings | Inspect GAM/BRD/ITM bindings; follow entry/task source and owner links | Inline background source currently needs further support; task execution and inspection are separate checks |
 | Inspect plugin or save-file metadata | Open supported DLL/SAV records | The site does not execute arbitrary DLLs or resume a game from an inspected save |
 
@@ -130,9 +131,10 @@ future work. Existing DODGE print-and-play/TTS experiments have their own
 
 ## What evidence supports this inventory?
 
-This draft was prepared by the integration review chat from all 18 repository
-issues and their discussions, recent merged PRs, the current source and its
-contracts. It is a repository review, not a new human usability study.
+The original inventory was prepared from all 18 repository issues and their
+discussions, merged PRs, source and contracts at `53a47ee`. That historical
+evidence is recorded below; Sprint 1 merge/deployment and Sprint 2 review
+evidence follow it. These reviews are not a human usability study.
 
 | Evidence class | What was checked for this draft | What it establishes |
 | --- | --- | --- |
@@ -163,7 +165,7 @@ verifier and observed result.
 
 ## First-use usability milestone evidence
 
-The website revision following #136 adds the starting actions and labels above.
+PR #137 merged at `e392e99f10754e9ad2612e76243f23753713161f` and added the first-use starting actions.
 The exact review head, required CI, matched desktop/mobile screenshots and input
 hashes are recorded in its PR and generated `first-use-review` Actions artifact.
 Acceptance uses the staged site: open examples through the chooser, preview art,
@@ -171,3 +173,23 @@ play WAV/MIDI, follow a relationship to evidence, retrace selection history,
 export JSON, and distinguish normal Play from direct diagnostics. Keyboard and
 390px viewport checks are automated. This does not establish deployed owner
 acceptance, private-ZIP execution or original Toolkit parity.
+
+
+## Selected-asset usability milestone evidence
+
+[PR #138](https://github.com/jmbjr/rpgtk_godot/pull/138), currently unmerged,
+presents one selection in this order: identity/support, useful preview
+or program source, visible incoming/outgoing connections, then technical details.
+The section buttons move keyboard focus without adding history stops or restarting
+media. Exact source-line/tile navigation still uses the shared resolver and history.
+Missing, computed, ambiguous, foreign-project and unindexed references explain
+what is known and retain raw evidence/candidates; unknown formats do not claim a
+preview. Technical MIDI controls and decoded JSON remain accessible below.
+
+The review PR and `selected-asset-review` Actions artifact record the exact head,
+baseline `e392e99`, Chromium version, synthetic TK2/TK3 ZIP hashes and matched
+before/after screenshots. Staged upload journeys verify board → tile → incoming
+use, sound → caller source line → Back/Forward, unresolved-reference evidence,
+connected JSON agreement, keyboard focus and 390px layout. Existing media/runtime/
+PDF regressions remain required. Owner usability acceptance, deployment and actual
+private-ZIP execution are separate and are not established by these tests.
