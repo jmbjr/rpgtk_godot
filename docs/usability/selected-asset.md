@@ -1,5 +1,7 @@
 # Make a selected asset understandable: usability Sprint 2
 
+Review: [PR #138](https://github.com/jmbjr/rpgtk_godot/pull/138), unmerged.
+
 Baseline: main `e392e99f10754e9ad2612e76243f23753713161f`, merged #137.
 Fetched main and inspected the existing clean workspace/branches before creating
 `usability-selected-asset`. Read #37/#123 and the capability/track/first-use docs.

@@ -131,9 +131,10 @@ future work. Existing DODGE print-and-play/TTS experiments have their own
 
 ## What evidence supports this inventory?
 
-This draft was prepared by the integration review chat from all 18 repository
-issues and their discussions, recent merged PRs, the current source and its
-contracts. It is a repository review, not a new human usability study.
+The original inventory was prepared from all 18 repository issues and their
+discussions, merged PRs, source and contracts at `53a47ee`. That historical
+evidence is recorded below; Sprint 1 merge/deployment and Sprint 2 review
+evidence follow it. These reviews are not a human usability study.
 
 | Evidence class | What was checked for this draft | What it establishes |
 | --- | --- | --- |
@@ -176,7 +177,8 @@ acceptance, private-ZIP execution or original Toolkit parity.
 
 ## Selected-asset usability milestone evidence
 
-Sprint 2 presents one selection in this order: identity/support, useful preview
+[PR #138](https://github.com/jmbjr/rpgtk_godot/pull/138), currently unmerged,
+presents one selection in this order: identity/support, useful preview
 or program source, visible incoming/outgoing connections, then technical details.
 The section buttons move keyboard focus without adding history stops or restarting
 media. Exact source-line/tile navigation still uses the shared resolver and history.

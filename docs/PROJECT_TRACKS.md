@@ -92,7 +92,8 @@ checks and Pages deployment were verified by the owner at handoff. Owner
 usability acceptance is not established by merge or automated checks. Material decisions
 and the short owner checklist are in [first-use.md](usability/first-use.md).
 
-Sprint 2 now implements the selection identity, preview/source, single visible
+Sprint 2 ([PR #138](https://github.com/jmbjr/rpgtk_godot/pull/138), in review)
+implements the selection identity, preview/source, single visible
 connection view and technical evidence structure described in
 [selected-asset.md](usability/selected-asset.md). Its review PR/Actions artifact
 record synthetic evidence; it remains unmerged until owner review.
