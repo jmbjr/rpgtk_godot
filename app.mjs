@@ -2518,7 +2518,7 @@ function mountPlayable(scene, options, mode = launchMode) {
       onRestart: () => launchPlayableWithSession(launchMode) });
   panel.querySelector("#play-close").addEventListener("click", () => {
     closePlayable();
-    byId("play-gam-startup").focus({ preventScroll: true });
+    focusResult(selected ? "asset-name" : "archive-heading");
   });
   activePlayable?.destroy({ preserveServices: activePlayable.services === replacement.services });
   byId("play-stage").replaceWith(panel);

@@ -5,8 +5,8 @@ its files connect. You can also try the supported parts of an imported
 Toolkit 3 game and export structural information for further work.
 
 This is a **working capability inventory**, reviewed against main
-`e392e99f10754e9ad2612e76243f23753713161f` (#137 merged), with the
-Sprint 2 selection changes proposed in the review PR on November 22, 2026.
+`ff0f2fb288c05e27b1911920d0f7b9a9d79c99f6` (#138 merged), with the
+Sprint 3 journey refinements in review in #139 on November 22, 2026.
 It describes tasks a person can accomplish, rather than every parser,
 command or technical panel. The groupings are proposals for discussion;
 they do not commit the website to a particular navigation design.
@@ -20,12 +20,12 @@ they do not commit the website to a particular navigation design.
 | Understand why something is missing or unsupported | Inspect its references and decoding status | The recorded filename, resolution result and available source evidence |
 | Understand what a program refers to | Select a PRG and follow its source/reference links | Movement between the program, referenced assets and command documentation |
 | Try a game's supported behavior | Use **Play game** after import | Authored startup and board behavior, or a diagnostic identifying the unsupported operation |
-| Take structural information into another tool | Choose **Export archive structure → Download connected game JSON** | Decoded records and linked evidence, with unresolved references preserved |
+| Take structural information into another tool | Choose **Technical details → Export connected JSON · whole archive**, or **Archive actions → Export archive structure** | Decoded records and linked evidence, with unresolved references preserved |
 | Make physical cards from a tileset | Select a supported TST and download its print-and-play PDF | Cards containing that tileset's tiles in order |
 
 The first-use interface now names the command/catalog view **RPGCode command
 reference**. It remains distinct from this inventory of user tasks. After
-import, **Browse artwork**, **Listen to audio**, **Follow connections**, and
+import, **Browse artwork**, **Browse boards**, **Listen to audio**, **Follow connections**, and
 **Play game** provide starting actions; every archive file remains browsable.
 
 ## First-use starting points
@@ -44,8 +44,10 @@ including both Harbor/Grove variants and the narrower startup/canvas/task labs.
 Native Toolkit setup instructions are there as secondary detail. Examples are
 synthetic compatibility inputs, not promises about an arbitrary real game.
 
-After import, task buttons choose visual/audio records from that archive or open
-the selected file's indexed connections. They use the normal inspector and
+After import, task buttons choose typed records from the archive or open
+the selected file's indexed connections. **Browse boards** prefers its configured
+opening board when previewable. **Listen to audio** prefers media with an indexed
+program/source-line caller, falling back to other supported audio. They use the normal inspector and
 selection history. **Play game** follows the embedded Main File; direct board
 diagnostics explicitly bypass startup. Configuration, compatibility evidence and
 connected JSON export are available below the task choices. Missing task inputs
@@ -79,8 +81,8 @@ are explained while the complete file browser remains usable.
 | --- | --- | --- |
 | Find what a file uses and what uses it | Use the visible **Connections** section: **Used by** (incoming) and **References** (outgoing) | The index covers recognized bindings and static references; computed runtime filenames can remain unknown |
 | Follow a relationship to its evidence | Select **Inspect connection**, read the field/line/value evidence, then **Open in inspector** or follow an exact evidence button | Evidence precision depends on the relationship; unresolved targets retain the raw value/candidates |
-| Narrow a crowded connection view | Filter **Connections** by direction, neighbor type or resolution | This is direct-neighbor navigation, not an expandable whole-game multi-hop graph |
-| Retrace an investigation | Use browser Back/Forward between inspector selections | Opening another ZIP starts a new archive trail |
+| Narrow a crowded connection view | Filter **Connections** by direction, **File type** or resolution; a changed file/tile starts unfiltered | This is direct-neighbor navigation, not an expandable whole-game multi-hop graph |
+| Retrace an investigation | Use selection **Back/Forward**, or browser Back/Forward, between exact file/tile/source stops | The in-page controls stop at the current archive boundary; opening another ZIP starts a new trail |
 
 The original goal of connecting every asset remains an acceptance target.
 Inventory coverage, reference discovery and successful resolution are
@@ -121,7 +123,7 @@ and [board lifecycle contract](docs/specs/tk3-board-lifecycle.md).
 
 | Capability | How to use it today | Boundary |
 | --- | --- | --- |
-| Export a connected structural description | **Export archive structure → Download connected game JSON** | Includes supported decoded records, identities, relationships and unresolved evidence; it is not an editable or rebuilt playable project |
+| Export a connected structural description | **Technical details → Export connected JSON · whole archive**, or **Archive actions → Export archive structure** | Includes supported decoded records, identities, relationships and unresolved evidence; it is not an editable or rebuilt playable project |
 | Print a selected tileset as cards | Select a supported TST → **Download print-and-play PDF** | Exports the whole selected tileset in order; it does not infer a complete game's tabletop rules |
 
 Selecting/recombining a graph subset, editing assets/programs, generating a
@@ -177,7 +179,7 @@ acceptance, private-ZIP execution or original Toolkit parity.
 
 ## Selected-asset usability milestone evidence
 
-[PR #138](https://github.com/jmbjr/rpgtk_godot/pull/138), currently unmerged,
+[PR #138](https://github.com/jmbjr/rpgtk_godot/pull/138), merged at `ff0f2fb`,
 presents one selection in this order: identity/support, useful preview
 or program source, visible incoming/outgoing connections, then technical details.
 The section buttons move keyboard focus without adding history stops or restarting
@@ -193,3 +195,34 @@ use, sound → caller source line → Back/Forward, unresolved-reference evidenc
 connected JSON agreement, keyboard focus and 390px layout. Existing media/runtime/
 PDF regressions remain required. Owner usability acceptance, deployment and actual
 private-ZIP execution are separate and are not established by these tests.
+
+
+## Complete-journey refinement evidence
+
+[PR #139](https://github.com/jmbjr/rpgtk_godot/pull/139) keeps selection identity,
+Back/Forward, section navigation and Archive actions available while reading.
+Technical details links to whole-archive export without adding a selection stop.
+Selected file/folder rows reveal within their own lists; connection evidence
+receives keyboard focus and has a return-to-list action. Filters apply to the
+current file/tile. Authored title choices, dialogue waits and running/exited
+programs have distinct instructions. Positions/entities/globals are in existing
+runtime evidence; active task source controls and errors remain visible.
+
+The public TK2 and TK3 examples now include clearly authored static inspection
+references: a real media caller and unexecuted missing/computed references. These
+are synthetic source evidence, not claims that missing targets execute. Exact
+source locations and connected JSON still come from the shared graph.
+
+#138's main checks and Pages deployment independently passed in Actions
+[45011045812](https://github.com/jmbjr/rpgtk_godot/actions/runs/45011045812).
+A cached production tab mixed old assets with new HTML; fresh HTTP bytes matched
+main. The new staging step fingerprints first-party entry/chunks/styles and shows
+the source revision in the footer. Cached HTML may still represent an older build;
+pinned vendor/media files retain their existing paths. The PR's fresh-context
+production observation and matched staged journeys record exact build/input hashes,
+Chromium version, keyboard and 390px evidence in `complete-journeys-review`.
+
+See [complete-journeys.md](docs/usability/complete-journeys.md) for observations,
+decisions, limitations and the single owner checklist. Automated synthetic tests,
+implementer walkthrough, original/private ZIPs, merge, deployment and owner/newcomer
+acceptance remain distinct. **Human Sprint 3 acceptance is pending.**

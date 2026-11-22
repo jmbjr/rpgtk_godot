@@ -6,7 +6,7 @@ import { readArtifacts, buildReferences } from "../artifacts.mjs";
 import { mainFileBindings } from "../model.mjs";
 import { buildPlayableScene } from "../playable-scene.mjs";
 import { executeGamStartup } from "../tk3-gam-startup.mjs";
-import { buildStartupExecutionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
+import { buildStartupExecutionGame, buildTitleExecutionGame } from "../docs/specs/fixtures/tk3-browser-fixtures.mjs";
 import { resolveTk3BoardTransfer } from "../tk3-board-transfer.mjs";
 import { initialTk3ScriptState, startPlacedTk3Script, advanceTk3Script, resumeTk3Effect, chooseTk3Cursor }
   from "../tk3-script-slice.mjs";
@@ -185,3 +185,10 @@ if (process.argv[2]) {
   console.log("Original TK3.10 diagnostic ZIP: GAM startup compiles, yields window/music services, presents a cursor map, runs New Game intro and ends normally.");
 }
 console.log("GAM startup passed: shared rooted helper execution, wait/caller continuation, Talk state, transfer, helper diagnostics, fresh sessions and binding errors.");
+
+// Public title examples must remain compilable as their inspection evidence grows.
+for (const id of ["harbor", "grove"]) {
+  const {a,scene}=await decode(await buildTitleExecutionGame(id));
+  const started=executeGamStartup(a,scene);
+  assert.equal(started.ok,true,JSON.stringify(started.diagnostic));
+}

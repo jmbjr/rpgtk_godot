@@ -23,9 +23,11 @@ Run reference, and compared direct diagnostics.
 That browser initially mixed cached pre-Sprint-2 JS/CSS with refreshed HTML:
 identity stayed “Selection” and old duplicate connection lists appeared.
 Do not attribute the mixed-client layout to current source. Fresh-context
-production/staged checks are separate evidence. The execution environment later
-became unavailable; local edits were reconstructed against main through GitHub.
-Actions supplies executable validation; no unavailable local check is claimed.
+production/staged checks are separate evidence. The execution environment temporarily became unavailable; local edits were
+reconstructed against main through GitHub, then reconciled with a preserved local
+recovery copy when the environment returned. Local non-browser checks and Actions
+provide executable evidence. Local Chromium cannot launch because workspace Unix
+sockets are restricted; browser results are CI evidence.
 
 ## Observed friction and decisions
 
@@ -70,3 +72,40 @@ and deployment of this change are pending.
    and export the whole archive's connected JSON.
 3. Try the title example with normal Play, then direct diagnostics. Repeat the
    navigation with keyboard and a phone; record remaining confusion and browser.
+
+
+## Reproduce and interpret the evidence
+
+Run the normal Pages workflow. After copying/building staged inputs, it runs:
+
+```
+node scripts/stage-viewer-build.mjs site
+node scripts/check-staged-site.mjs site
+node scripts/check-tk3-browser.mjs site
+node scripts/check-first-use-browser.mjs site dist/first-use-review
+node scripts/check-selected-asset-browser.mjs site dist/selected-asset-review
+node scripts/check-complete-journeys-browser.mjs site dist/complete-journeys-review
+```
+
+The last suite opens both normal chooser examples at 1365×960 and 390×844,
+uses actual WAV/GS MIDI controls, downloaded JSON facts, exact source/tile
+links and native/in-page history, then investigates explicit missing/computed
+references and exports from Technical details. Normal title/choice/wait and
+direct diagnostics are compared with input scope stated. Stale unversioned
+app/style routes are deliberately retained: the fingerprinted entry and chunks
+must still load the current interface. The build manifest records review and
+integration revisions. Existing generic player/media/title/canvas/entry/task/
+movement/encounter, zero-game-specific staged auditing and PDF checks stay on.
+
+Matched screenshots serve exact baseline HTML/CSS/app/history/player-presentation
+sources against the same staged synthetic inputs. The public examples' source
+fixtures have also improved; the fresh production observation records original
+Pages bytes separately. Do not treat a screenshot comparison as proof that the
+baseline published archive already contained the new inspection examples.
+
+The artifact includes exact ZIPs, SHA-256, byte lengths, source/build revisions,
+Chromium version, viewports, screenshots and results. A fresh browser also samples
+public Pages and records asset hashes/coherence independently; it is neither
+owner acceptance nor deployment of this PR. Public observation failures are
+recorded separately from the required staged assertions. No private archive,
+private source, native executable or DLL was supplied/run/published.
