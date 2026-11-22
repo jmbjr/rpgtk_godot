@@ -2287,7 +2287,6 @@ function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
             const entry = el("li");
             entry.append(el("p", `${edge.external ? "External configuration" : edge.from}${edge.inlineSlot === undefined ? "" : ` · program slot ${edge.inlineSlot}`}`, "technical"));
             entry.append(exact ? button(label, () => openConnection(exact)) : el("span", label));
-            if (!edge.to) entry.append(el("p", referenceExplanation(edge)));
             const source = !reverse && edge.line && referenceDestination(edge, true, artifacts);
             if (source) entry.append(button("View reference in source", () => openConnection(source)));
             for (const candidate of edge.candidates ?? []) entry.append(button(`Inspect candidate · ${candidate}`, () => openConnection({ path: candidate })));

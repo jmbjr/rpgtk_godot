@@ -114,7 +114,7 @@ try{
  await inspect(/line 2/);await page.locator('.connection-preview .edge-list button').first().press('Enter');await page.locator('#line-2.active-line').waitFor();
  await page.setViewportSize(report.desktop);await upload(inputs[0]);await file('Game/TK2LegacyLab/Other/unknown.xyz');assert.match(await page.locator('#asset-support').innerText(),/No decoder or preview/);
  await file('Game/TK2LegacyLab/Boards/unsupported.brd');assert.match(await page.locator('#asset-support').innerText(),/could not be decoded|not verified as supported/);assert.ok((await page.locator('#asset-metadata').innerText()).length);
- await file('Game/TK2LegacyLab/Tiles/lab.tst');await page.setViewportSize(report.mobile);await page.locator('.selected-asset').evaluate(e=>e.scrollIntoView({block:'start'}));await shot('after-tiles-mobile.png');assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ await file('Game/TK2LegacyLab/Tiles/lab.tst');await page.locator('#graph [data-tile="3"]').click();await page.setViewportSize(report.mobile);await page.locator('.selected-asset').evaluate(e=>e.scrollIntoView({block:'start'}));await shot('after-tiles-mobile.png');assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  assert.deepEqual(errors,[]);report.results.push('390px: no page-wide overflow, identity/preview/control access and exact caller navigation. Unsupported/unidentified records retain explanations and diagnostics. No page errors.');
  console.log('Selected-asset staged browser passed:',report.results.join('\n'));
 }catch(error){report.failure={message:error.message,url:page?.url()};if(page)await page.screenshot({path:resolve(output,'failure.png')});throw error;
