@@ -887,6 +887,9 @@ try {
     await control("play-script-choices").getByRole("button",{name:harbor?"Depart":"Wake",exact:true}).click();
     await talk();await expectText("play-dialogue-text",id+" entry 1");await talk();
     const taskSource=control("play-task-status").getByRole("button",{name:"Inspect task source",exact:true}).first();
+    await taskSource.focus();
+    await page.evaluate(async()=>{for(let i=0;i<8;i++)await new Promise(requestAnimationFrame);});
+    assert.equal(await taskSource.evaluate(el=>el===document.activeElement),true,"Task diagnostics retain keyboard focus during live updates");
     await taskSource.click();
     await pathIs((harbor?"HarborLab/":"")+"Prg/"+(harbor?"weather_task.prg":"pulse_worker.prg"));
     await page.locator("#source .active-line").waitFor();

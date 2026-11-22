@@ -31,6 +31,10 @@ native Toolkit instructions. A new visitor had to infer the result of each lab.
   task action. Preserve shared selection history, source links, playback and
   exports. The misleading “Capability graph” heading becomes “RPGCode command
   reference”; its data and command-reference behavior are unchanged.
+- Standalone optional GAM inspection still exposes its configuration/bindings
+  before a ZIP is supplied. Live task source/owner buttons retain their DOM
+  identity and focus while status text updates; navigation reads the current
+  task record rather than a stale snapshot.
 - Failed replacement imports preserve the last imported archive/context and
   provide recovery text. Obsolete requests cannot replace a newer import.
 

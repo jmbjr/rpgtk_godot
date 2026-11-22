@@ -155,6 +155,21 @@ try {
   assert.equal(await page.getByRole('button',{name:'notes.txt',exact:true}).isEnabled(),true);
   report.results.push('An archive without supported art/audio/relationships explains unavailable shortcuts and retains its complete file browser.');
 
+  const mainOnly=await browser.newPage({viewport:report.desktop});mainOnly.setDefaultTimeout(7000);
+  mainOnly.on('pageerror',e=>errors.push(e.message));await mainOnly.goto(base);
+  await mainOnly.locator('#more-import-options > summary').click();
+  const mainBytes=await (await JSZip.loadAsync(legacy)).file('Main/TK2LegacyLab.gam').async('nodebuffer');
+  await mainOnly.locator('#main-file').setInputFiles({name:'standalone-inspection.gam',mimeType:'',buffer:mainBytes});
+  await mainOnly.locator('#archive-heading').filter({hasText:'Main File inspection'}).waitFor();
+  await mainOnly.locator('#bindings').filter({hasText:'room.brd'}).waitFor();
+  assert.equal(await mainOnly.locator('#archive-details').evaluate(e=>e.open),true);
+  assert.equal(await mainOnly.locator('#archive-actions').isVisible(),false);
+  assert.equal(await mainOnly.locator('#archive-export').isVisible(),false);
+  await mainOnly.locator('#archive').setInputFiles({name:'local-with-inspection.zip',mimeType:'',buffer:legacy});
+  await mainOnly.locator('#archive-heading').filter({hasText:'Your archive is open'}).waitFor();
+  assert.equal(await mainOnly.locator('#archive-actions').isVisible(),true);await mainOnly.close();
+  report.results.push('A standalone optional GAM still exposes configuration/bindings without a ZIP; subsequent archive opening restores normal task actions.');
+
   await page.setViewportSize(report.mobile);await page.goto(base);await shot('after-mobile.png');
   const noOverflow=async()=>assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'No page-wide horizontal overflow at 390px');
   await noOverflow();await example('tk2-legacy-game.zip');await noOverflow();await shot('after-imported-mobile.png');

@@ -42,6 +42,7 @@
               <a id="archive-download" target="_blank" rel="noopener noreferrer" hidden>Download ZIP for local import</a>
               <p class="help-text">Public HTTPS links must allow browser reads. If a link is blocked, download its ZIP and open the local file above.</p>
               <label class="main-picker">Optional Main File · GAM<input id="main-file" type="file" accept=".gam"></label>
+              <p id="main-status" class="technical" role="status">A Main File can identify the configured startup script.</p>
               <p class="help-text">Use a separate GAM to inspect its configuration. Play always uses the Main File inside the game archive.</p>
             </details>
           </div>
@@ -90,8 +91,8 @@
 
       <section id="archive-overview" class="panel archive-overview" aria-labelledby="archive-heading" hidden>
         <div class="section-head"><h2 id="archive-heading" tabindex="-1">Your archive is open</h2><span id="opened-archive"></span></div>
-        <p>Choose a starting point, or browse any folder and file below. Previews and connections are available even when gameplay is unsupported.</p>
-        <div class="next-actions">
+        <p id="archive-next-copy">Choose a starting point, or browse any folder and file below. Previews and connections are available even when gameplay is unsupported.</p>
+        <div id="archive-actions" class="next-actions">
           <div class="next-action">
             <h3>See the artwork</h3><p>Open a tileset, image or other visual asset, then explore its preview.</p>
             <button id="explore-artwork" type="button">Browse artwork</button><p id="artwork-count" class="help-text"></p>
@@ -120,7 +121,6 @@
           </details>
           <details id="archive-details" class="secondary-detail">
             <summary>Archive configuration &amp; compatibility evidence</summary>
-            <p id="main-status" class="technical" role="status">A Main File can identify the configured startup script.</p>
             <dl id="bindings" class="bindings" hidden></dl>
             <div id="main-data"></div>
           </details>

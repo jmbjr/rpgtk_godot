@@ -225,6 +225,7 @@ function selectDefault(newArchive = false) {
   }
   renderBrowser();
   showArtifact();
+  refreshFirstOverview();
   if (archive) refreshFirstActions();
   const selection = { path: selected, folder: selectedFolder, tile: tileSelection, line: selectedLine };
   if (newArchive) inspectorHistory.reset(crypto.getRandomValues(new Uint32Array(4)).join("-"), selection);
@@ -2579,6 +2580,20 @@ function taskFiles(types) {
     return !file.error && ["decoded", "media"].includes(file.decodeStatus) && types.includes(file.type);
   }).sort((a,b) => types.indexOf(artifacts.get(a).type) - types.indexOf(artifacts.get(b).type));
 }
+function refreshFirstOverview() {
+  byId("archive-overview").hidden = !archive && !uploadedMainFile;
+  byId("archive-heading").textContent = archive ? "Your archive is open" : "Main File inspection";
+  byId("opened-archive").textContent = archive ? archiveName : uploadedMainFile?.filename ?? "";
+  byId("archive-next-copy").textContent = archive ?
+    "Choose a starting point, or browse any folder and file below. Previews and connections are available even when gameplay is unsupported." :
+    "Inspect this GAM's configuration below. Open a game archive to resolve its asset bindings, browse files or try supported gameplay.";
+  byId("archive-actions").hidden = !archive;
+  byId("explore-feedback").hidden = !archive;
+  byId("play-board-diagnostics").hidden = !archive;
+  byId("archive-export").hidden = !archive;
+  if (!archive && uploadedMainFile) byId("archive-details").open = true;
+}
+
 function refreshFirstActions() {
   for (const [kind, types, label] of [["artwork", artworkTypes, "visual assets"], ["audio", ["wav", "mid"], "audio files"]]) {
     const files = taskFiles(types);
@@ -2689,6 +2704,7 @@ async function loadArchive(name, readBytes) {
   } catch (error) {
     if (request === archiveRequest) {
       status("archive-status", `Unable to open ${name}. ${error.message}` + (archive ? " Your previous archive is still open." : " Choose another archive or example."), true);
+      if (uploadedMainFile && !archive) refreshFirstOverview();
       if (archive) {
         byId("archive-overview").hidden = false;
         byId("play-launch").hidden = false;
@@ -2800,4 +2816,5 @@ byId("main-file").addEventListener("change", async event => {
     status("main-status", `Unable to read ${file.name}. ${error.message}`, true);
   }
   selectDefault();
+  if (uploadedMainFile && !archive) focusResult("archive-heading");
 });

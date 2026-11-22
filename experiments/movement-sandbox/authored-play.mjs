@@ -251,14 +251,25 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
   const taskRows=new Map(); serviceStatus.after(taskStatus);
   const updateTasks=()=>{
     const records=services.tasks.records,ids=new Set(records.map(r=>r.id));
-    for(const [id,row] of taskRows)if(!ids.has(id)){row.remove();taskRows.delete(id);}
+    for(const [id,view] of taskRows)if(!ids.has(id)){view.row.remove();taskRows.delete(id);}
     for(const t of records){
-      let row=taskRows.get(t.id);
-      if(!row){row=document.createElement("p");row.className="technical";taskRows.set(t.id,row);taskStatus.append(row);}
+      let view=taskRows.get(t.id);
+      if(!view){
+        const row=document.createElement("p"),label=document.createElement("span");
+        row.className="technical";label.className="task-record-text";row.append(label);
+        view={row,label,task:t};taskRows.set(t.id,view);taskStatus.append(row);
+        if(options.onInspectSource){
+          const actions=document.createElement("span");actions.className="task-source-actions";
+          const source=document.createElement("button");source.type="button";source.textContent="Inspect task source";
+          source.onclick=()=>options.onInspectSource(view.task.path,view.task.line);
+          const owner=document.createElement("button");owner.type="button";owner.textContent="Inspect task owner";
+          owner.onclick=()=>options.onInspectSource(view.task.owner,view.task.ownerLine);
+          actions.append(source,owner);row.append(actions);
+        }
+      }
+      view.task=t;
       const text="Task "+t.id+" · "+t.role+" · owner "+t.owner+" · slot "+t.slot+" · "+t.path+":"+t.line+" · "+t.status+(t.error?" · "+t.error:"");
-      if(row.dataset.status!==text){row.dataset.status=text;row.replaceChildren(document.createTextNode(text));
-        if(options.onInspectSource){const b=document.createElement("button");b.type="button";b.textContent="Inspect task source";b.onclick=()=>options.onInspectSource(t.path,t.line);row.append(b);
-          const owner=document.createElement("button");owner.type="button";owner.textContent="Inspect task owner";owner.onclick=()=>options.onInspectSource(t.owner,t.ownerLine);row.append(owner);}}
+      if(view.label.textContent!==text)view.label.textContent=text;
     }
     taskStatus.hidden=!records.length;
   };
