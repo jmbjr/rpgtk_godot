@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Inspect RPG Toolkit 2 game files and trace RPGCode commands in your browser.">
-  <title>RPG Toolkit 2 · Game Explorer</title>
+  <meta name="description" content="Open RPG Toolkit 2 and 3 game archives to preview artwork, listen to audio, follow source connections and try supported gameplay.">
+  <title>RPG Toolkit · Game Explorer</title>
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./experiments/movement-sandbox/sandbox.css">
   <script defer src="./vendor/jszip.min.js"></script>
@@ -12,66 +12,124 @@
   <script type="module" src="./app.mjs"></script>
 </head>
 <body>
+  <a class="skip-link" href="#archive">Skip to opening a game</a>
   <div class="page">
-    <header class="site-header"><strong>RPG Toolkit 2</strong><span>Game Explorer</span></header>
+    <header class="site-header"><strong>RPG Toolkit · Game Explorer</strong><span>Toolkit 2 &amp; 3</span></header>
     <main>
       <header class="intro">
-        <p class="eyebrow">Toolkit 2 · Source viewer</p>
+        <p class="eyebrow">Art · Sound · Source · Supported play</p>
         <h1>Game Explorer</h1>
-        <p>Open a game archive and follow its RPGCode from source to command reference.</p>
+        <p class="intro-copy">Open an RPG Toolkit 2 or 3 game to see its artwork, listen to its music,
+          and follow how its files connect. You can also try supported Toolkit 3 gameplay.</p>
+        <p class="local-note">Your game stays in your browser. No account or installation needed.</p>
       </header>
 
       <section class="panel import-panel" aria-labelledby="import-heading">
-        <h2 id="import-heading">Open a game</h2>
-        <div class="pickers">
-          <label>Game archive <span>ZIP / downloaded artifact</span><input id="archive" type="file"></label>
-          <label>Main File <span>Optional · GAM</span><input id="main-file" type="file" accept=".gam"></label>
+        <div class="open-grid">
+          <div>
+            <p class="step-label">Start here</p>
+            <h2 id="import-heading">Open a game archive</h2>
+            <p>Choose a game ZIP or a downloaded Actions artifact. No extraction needed.</p>
+            <label class="archive-picker" for="archive">Game archive<input id="archive" type="file" aria-describedby="archive-help"></label>
+            <p id="archive-help" class="help-text">Supported Toolkit packages can also be inspected; installers are read as data, never run.</p>
+            <details id="more-import-options" class="secondary-detail">
+              <summary>Open from a URL or supply a Main File</summary>
+              <form id="archive-url-form" class="archive-url-form">
+                <label for="archive-url">Game ZIP URL</label>
+                <input id="archive-url" type="url" required placeholder="https://example.com/game.zip">
+                <button type="submit">Open URL</button>
+              </form>
+              <a id="archive-download" target="_blank" rel="noopener noreferrer" hidden>Download ZIP for local import</a>
+              <p class="help-text">Public HTTPS links must allow browser reads. If a link is blocked, download its ZIP and open the local file above.</p>
+              <label class="main-picker">Optional Main File · GAM<input id="main-file" type="file" accept=".gam"></label>
+              <p class="help-text">Use a separate GAM to inspect its configuration. Play always uses the Main File inside the game archive.</p>
+            </details>
+          </div>
+          <details id="examples" class="example-chooser" open>
+            <summary>Try an example</summary>
+            <p>No game ZIP handy? Choose a small generated test game by what you want to experience.</p>
+            <label for="example-choice">I want to…</label>
+            <select id="example-choice" aria-describedby="example-description">
+              <option value="./tk2-legacy-game.zip" data-description="Preview Toolkit 2 artwork, play music and sounds, and trace the files that use them.">Explore artwork, audio &amp; connections · Toolkit 2</option>
+              <option value="./tk3-title-harbor.zip" data-description="Start a Toolkit 3 game through its own source-drawn title, choices and opening board.">Try a game's title &amp; choices · Toolkit 3</option>
+              <option value="./tk3-living-grove.zip" data-description="Watch a character move, approach and Talk, then transfer between boards or Reset. Gameplay support is partial.">Meet a moving character &amp; Talk · Toolkit 3</option>
+            </select>
+            <p id="example-description" class="help-text" aria-live="polite">Preview Toolkit 2 artwork, play music and sounds, and trace the files that use them.</p>
+            <button type="button" id="open-example">Open example</button>
+          </details>
         </div>
-        <form id="archive-url-form" class="archive-url-form">
-          <label for="archive-url">Game ZIP URL</label>
-          <input id="archive-url" type="url" required placeholder="https://example.com/game.zip">
-          <button type="submit">Open URL</button>
-        </form>
-        <a id="archive-download" target="_blank" rel="noopener noreferrer" hidden>Download ZIP for local import</a>
-        <p>Select a downloaded ZIP or GitHub Actions artifact; the viewer validates the archive content.</p>
-        <div class="sprite-controls">
+        <p id="archive-status" class="archive-status" role="status" aria-live="polite">Choose a game archive or open an example to begin.</p>
+        <details id="regression-downloads" class="secondary-detail">
+          <summary>All test-game downloads · complete regression collection</summary>
+          <p>Download any of these generated ZIPs for local import or repeatable compatibility checks. The chooser above opens a smaller selection directly.</p>
+        <div class="regression-links">
           <a class="download-button" href="./tk2-test-game.zip" download="tk2-test-game.zip">Download baseline ZIP</a>
           <a class="download-button" href="./tk2-legacy-game.zip" download="tk2-legacy-game.zip">Download legacy ZIP</a>
           <a class="download-button" href="./tk3-script-harbor.zip" download="tk3-script-harbor.zip">TK3 Script Lab A · Harbor</a>
           <a class="download-button" href="./tk3-script-grove.zip" download="tk3-script-grove.zip">TK3 Script Lab B · Grove</a>
           <a class="download-button" href="./tk3-startup-harbor.zip" download="tk3-startup-harbor.zip">TK3 Startup · Harbor helpers</a>
           <a class="download-button" href="./tk3-startup-grove.zip" download="tk3-startup-grove.zip">TK3 Startup · Grove helpers</a>
-            <a class="button secondary" href="./tk3-title-harbor.zip" download>TK3 Title · Harbor</a>
-            <a class="button secondary" href="./tk3-title-grove.zip" download>TK3 Title · Grove</a>
-            <a class="button secondary" href="./tk3-living-harbor.zip" download>TK3 Living boards · Harbor</a>
-            <a class="button secondary" href="./tk3-living-grove.zip" download>TK3 Living boards · Grove</a>
-            <a class="button secondary" href="./tk3-background-harbor.zip" download>TK3 Background · Harbor</a>
-            <a class="button secondary" href="./tk3-background-grove.zip" download>TK3 Background · Grove</a>
-            <a class="button secondary" href="./tk3-entry-harbor.zip" download>TK3 Board entry · Harbor</a>
-            <a class="button secondary" href="./tk3-entry-grove.zip" download>TK3 Board entry · Grove</a>
-            <a class="button secondary" href="./tk3-canvas-harbor.zip" download>TK3 Canvas · Harbor</a>
-            <a class="button secondary" href="./tk3-canvas-grove.zip" download>TK3 Canvas · Grove</a>
+            <a class="download-button" href="./tk3-title-harbor.zip" download>TK3 Title · Harbor</a>
+            <a class="download-button" href="./tk3-title-grove.zip" download>TK3 Title · Grove</a>
+            <a class="download-button" href="./tk3-living-harbor.zip" download>TK3 Living boards · Harbor</a>
+            <a class="download-button" href="./tk3-living-grove.zip" download>TK3 Living boards · Grove</a>
+            <a class="download-button" href="./tk3-background-harbor.zip" download>TK3 Background · Harbor</a>
+            <a class="download-button" href="./tk3-background-grove.zip" download>TK3 Background · Grove</a>
+            <a class="download-button" href="./tk3-entry-harbor.zip" download>TK3 Board entry · Harbor</a>
+            <a class="download-button" href="./tk3-entry-grove.zip" download>TK3 Board entry · Grove</a>
+            <a class="download-button" href="./tk3-canvas-harbor.zip" download>TK3 Canvas · Harbor</a>
+            <a class="download-button" href="./tk3-canvas-grove.zip" download>TK3 Canvas · Grove</a>
           <a class="download-button" href="./tk3-script-startup.zip" download="tk3-script-startup.zip">TK3 Script Lab C · Lantern startup</a>
         </div>
-        <p>For browser inspection, select a game ZIP or a GitHub Actions artifact ZIP containing one game ZIP; no extraction is needed. To run in Toolkit 2, extract the game ZIP into your Toolkit 2 folder. Open <code>Main/TK2TestLab.gam</code> for the baseline or <code>Main/TK2LegacyLab.gam</code> for legacy format checks. Open the standalone GPH tiles individually in the tile editor.</p>
-        <div class="statuses">
-          <p id="archive-status" role="status">Choose a game ZIP to browse its folders and files.</p>
-          <p id="main-status" role="status">A Main File can identify the configured startup script.</p>
-        </div>
-        <dl id="bindings" class="bindings" hidden></dl>
-        <div id="main-data"></div>
-        <div id="play-launch" class="play-launch" hidden>
-          <button type="button" id="play-gam-startup" disabled>Play game</button>
-          <details id="play-board-diagnostics">
-            <summary>Board diagnostics</summary>
-            <button type="button" id="play-direct" disabled>Play opening board (direct diagnostic)</button>
+          <details class="secondary-detail">
+            <summary>Run these examples in the original Toolkit</summary>
+            <p>To run in Toolkit 2, extract the game ZIP into your Toolkit 2 folder. Open <code>Main/TK2TestLab.gam</code> for the baseline or <code>Main/TK2LegacyLab.gam</code> for legacy format checks. Open standalone GPH tiles individually in the tile editor.</p>
           </details>
-          <span id="gam-startup-status" class="technical" role="status" aria-live="polite"></span>
-          <span id="play-eligibility" class="technical" role="status"></span>
+        </details>
+      </section>
+
+      <section id="archive-overview" class="panel archive-overview" aria-labelledby="archive-heading" hidden>
+        <div class="section-head"><h2 id="archive-heading" tabindex="-1">Your archive is open</h2><span id="opened-archive"></span></div>
+        <p>Choose a starting point, or browse any folder and file below. Previews and connections are available even when gameplay is unsupported.</p>
+        <div class="next-actions">
+          <div class="next-action">
+            <h3>See the artwork</h3><p>Open a tileset, image or other visual asset, then explore its preview.</p>
+            <button id="explore-artwork" type="button">Browse artwork</button><p id="artwork-count" class="help-text"></p>
+          </div>
+          <div class="next-action">
+            <h3>Hear the game</h3><p>Open music or a sound, then use its playback controls.</p>
+            <button id="explore-audio" type="button">Listen to audio</button><p id="audio-count" class="help-text"></p>
+          </div>
+          <div class="next-action">
+            <h3>Follow a connection</h3><p>See what a file uses or what uses it. Open a relationship to inspect its evidence.</p>
+            <button id="explore-connections" type="button">Follow connections</button><p id="connection-count" class="help-text"></p>
+          </div>
+          <div id="play-launch" class="next-action" hidden>
+            <h3>Try supported gameplay</h3><p>Normal Play runs the game's configured startup before its opening board. Toolkit 3 support is partial.</p>
+            <button type="button" id="play-gam-startup" disabled>Play game</button>
+            <p id="gam-startup-status" class="help-text" role="status" aria-live="polite"></p>
+          </div>
         </div>
-        <div class="sprite-controls">
-          <button type="button" id="export-game-json" disabled>Download connected game JSON</button>
-          <span id="game-export-status" class="technical" role="status"></span>
+        <p id="explore-feedback" class="help-text" role="status"></p>
+        <div class="archive-tools">
+          <details id="play-board-diagnostics" class="secondary-detail">
+            <summary>Board diagnostics · bypass startup</summary>
+            <p>Start a fresh opening-board session without running the GAM startup program. Board entry still runs. This can investigate a board when the normal startup is unsupported; it is not normal Play.</p>
+            <button type="button" id="play-direct" disabled>Play opening board (direct diagnostic)</button>
+            <p id="play-eligibility" class="technical" role="status"></p>
+          </details>
+          <details id="archive-details" class="secondary-detail">
+            <summary>Archive configuration &amp; compatibility evidence</summary>
+            <p id="main-status" class="technical" role="status">A Main File can identify the configured startup script.</p>
+            <dl id="bindings" class="bindings" hidden></dl>
+            <div id="main-data"></div>
+          </details>
+          <details id="archive-export" class="secondary-detail">
+            <summary>Export archive structure</summary>
+            <p>Take the decoded records and their connections into another tool. This JSON does not rebuild or convert a playable game.</p>
+            <button type="button" id="export-game-json" disabled>Download connected game JSON</button>
+            <span id="game-export-status" class="technical" role="status"></span>
+          </details>
         </div>
       </section>
 
@@ -156,19 +214,19 @@
         <section class="panel source-panel" aria-labelledby="source-title">
           <div class="section-head"><h2 id="source-title">Files</h2><span id="file-count"></span></div>
           <div id="file-list" class="file-list"></div>
-          <div class="section-head file-heading"><h3 id="file-title">Selection</h3><span id="selection"></span></div>
+          <div class="section-head file-heading"><h3 id="file-title" tabindex="-1">Selection</h3><span id="selection"></span></div>
           <p id="source-path" class="technical"></p>
           <div id="source" class="source" tabindex="0" aria-label="Selected file details"></div>
         </section>
         <section class="panel graph-panel" aria-labelledby="graph-title">
-          <div class="section-head"><h2 id="graph-title">Capability graph</h2><span id="counts"></span></div>
+          <div class="section-head"><h2 id="graph-title" tabindex="-1">File inspector</h2><span id="counts"></span></div>
           <div id="graph"></div>
           <div id="reference" class="reference" aria-live="polite"></div>
-          <div id="connections"></div>
+          <div id="connections" tabindex="-1"></div>
         </section>
       </section>
     </main>
-    <footer>Files are opened locally in your browser. The explorer shows static source relationships.</footer>
+    <footer>Game files stay in your browser. Connections come from recognized archive fields and source references; gameplay compatibility is partial.</footer>
   </div>
 </body>
 </html>

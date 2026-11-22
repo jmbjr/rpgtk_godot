@@ -225,6 +225,7 @@ function selectDefault(newArchive = false) {
   }
   renderBrowser();
   showArtifact();
+  if (archive) refreshFirstActions();
   const selection = { path: selected, folder: selectedFolder, tile: tileSelection, line: selectedLine };
   if (newArchive) inspectorHistory.reset(crypto.getRandomValues(new Uint32Array(4)).join("-"), selection);
   else inspectorHistory.replace(selection);
@@ -399,7 +400,7 @@ function showArtifact() {
   byId("selection").textContent = selectionLabel(selected);
   byId("file-title").textContent = program ? "Source" : artifact?.runs ? "Board preview" :
     artifact?.type === "bkg" && !artifact.error ? "Battle background preview" : "File details";
-  byId("graph-title").textContent = program ? "Capability graph" : "Artifact inspector";
+  byId("graph-title").textContent = program ? "RPGCode command reference" : "Asset preview & details";
   byId("graph").replaceChildren();
   byId("reference").replaceChildren();
   byId("connections").replaceChildren();
@@ -2431,7 +2432,7 @@ function renderGraph(result) {
     list.append(node);
   }
   byId("graph").replaceChildren(graphRoles, relation, list);
-  byId("reference").replaceChildren(el("p", "Select a command in the source or graph to inspect its reference and occurrences."));
+  byId("reference").replaceChildren(el("p", "Select a command in the source or command list to inspect its reference and occurrences."));
 }
 
 function showReference(group) {
@@ -2569,15 +2570,68 @@ const boardDiagnostics = byId("play-board-diagnostics");
 byId("play-direct").addEventListener("click", launchPlayableScene);
 byId("play-gam-startup").addEventListener("click", () => launchPlayableWithSession("gam"));
 
+// Task entry points choose from imported records, never from game identity.
+const artworkTypes = ["tst", "gph", "png", "jpg", "jpeg", "gif", "bmp", "brd", "tem", "itm", "ene", "bkg", "anm", "tan", "tbm"];
+function taskFiles(types) {
+  return paths.filter(path => {
+    const file = artifacts.get(path);
+    return !file.error && ["decoded", "media"].includes(file.decodeStatus) && types.includes(file.type);
+  }).sort((a,b) => types.indexOf(artifacts.get(a).type) - types.indexOf(artifacts.get(b).type));
+}
+function refreshFirstActions() {
+  for (const [kind, types, label] of [["artwork", artworkTypes, "visual assets"], ["audio", ["wav", "mid"], "audio files"]]) {
+    const files = taskFiles(types);
+    const action = byId("explore-" + kind);
+    action.disabled = !files.length;
+    action.title = files.length ? "Open " + files[0] : "No supported " + label + " found in this archive.";
+    byId(kind + "-count").textContent = files.length ? files.length + " " + label + " available." : "No supported " + label + " found. You can still browse every file below.";
+  }
+  const count = [...references.outgoing.values()].reduce((sum,edges) => sum + edges.length, 0);
+  byId("explore-connections").disabled = !count;
+  byId("connection-count").textContent = count ? count + " indexed relationships; unresolved targets keep their evidence." : "No relationships indexed. Files and decoded details remain available.";
+}
+function focusResult(id) {
+  const target = byId(id);
+  target.focus({preventScroll:true});
+  target.scrollIntoView({block:"start", behavior:"instant"});
+}
+for (const [kind, types] of [["artwork", artworkTypes], ["audio", ["wav", "mid"]]]) {
+  byId("explore-" + kind).addEventListener("click", () => {
+    const path = taskFiles(types)[0];
+    if (!path) return;
+    selectArtifact(path);
+    status("explore-feedback", "Opened " + path + (kind === "audio" ? ". Use the playback controls in its inspector." : ". Explore its preview and numbered tiles where available."));
+    focusResult("graph-title");
+  });
+}
+byId("explore-connections").addEventListener("click", () => {
+  const hasEdges = path => (references.incoming.get(path)?.length || references.outgoing.get(path)?.length);
+  const path = hasEdges(selected) ? selected : paths.find(hasEdges);
+  if (!path) return;
+  connectionMapOpen = true;
+  selectArtifact(path);
+  status("explore-feedback", "Connections for " + path + ". Choose a relationship to follow its recorded field, source line or tile.");
+  focusResult("connections");
+});
+byId("example-choice").addEventListener("change", event => {
+  byId("example-description").textContent = event.target.selectedOptions[0].dataset.description;
+});
+byId("open-example").addEventListener("click", () => {
+  openArchiveUrl(new URL(byId("example-choice").value, window.location.href));
+});
+
 async function loadArchive(name, readBytes) {
   const request = ++archiveRequest;
   closePlayable();
-  playableScene = null;
-  playContext = null;
+  // Retain the last successfully imported context if a replacement fails.
   boardDiagnostics.open = false;
   byId("play-gam-startup").disabled = true;
+  byId("play-direct").disabled = true;
   status("gam-startup-status", "");
   byId("play-launch").hidden = true;
+  byId("archive-overview").hidden = true;
+  byId("open-example").disabled = true;
+  byId("import-heading").closest("section").setAttribute("aria-busy", "true");
   status("archive-status", `Opening ${name}…`);
   byId("export-game-json").disabled = true;
   status("game-export-status", "");
@@ -2612,21 +2666,41 @@ async function loadArchive(name, readBytes) {
     // never an unrelated separately uploaded GAM.
     playContext = createTk3PlayContext(artifacts, archiveMainFile, references);
     playableScene = playContext.scene;
+    byId("archive-overview").hidden = false;
+    byId("opened-archive").textContent = name;
+    document.body.classList.add("has-archive");
+    byId("examples").open = false;
+    status("explore-feedback", "");
+    refreshFirstActions();
     byId("play-launch").hidden = false;
     byId("play-direct").disabled = !playableScene.ok;
     byId("play-gam-startup").disabled = !playableScene.ok;
     status("gam-startup-status", playableScene.ok ?
       "Play follows the embedded GAM startup and opening board." :
-      "GAM startup unavailable until the opening scene is playable.", !playableScene.ok);
+      "Play is unavailable for this archive. You can still explore its files and inspect the compatibility evidence below.", !playableScene.ok);
     status("play-eligibility", playableScene.ok ?
       "Ready: " + playableScene.boardPath + " · " + playableScene.characterName +
       " at (" + playableScene.start.x + ", " + playableScene.start.y +
       ", layer " + playableScene.start.layer + ")" :
       "Cannot play: " + playableScene.issues.slice(0, 2).map(issue => issue.detail).join(" "), !playableScene.ok);
+    focusResult("archive-heading");
   } catch (error) {
-    if (request === archiveRequest) status("archive-status", `Unable to open ${name}. ${error.message}`, true);
+    if (request === archiveRequest) {
+      status("archive-status", `Unable to open ${name}. ${error.message}` + (archive ? " Your previous archive is still open." : " Choose another archive or example."), true);
+      if (archive) {
+        byId("archive-overview").hidden = false;
+        byId("play-launch").hidden = false;
+        byId("play-gam-startup").disabled = !playableScene?.ok;
+        byId("play-direct").disabled = !playableScene?.ok;
+        status("gam-startup-status", playableScene?.ok ? "Play follows the embedded GAM startup and opening board." : "Play is unavailable for this archive. Explore its files or inspect compatibility evidence.");
+      }
+    }
   } finally {
-    if (request === archiveRequest) byId("export-game-json").disabled = !archive;
+    if (request === archiveRequest) {
+      byId("export-game-json").disabled = !archive;
+      byId("open-example").disabled = false;
+      byId("import-heading").closest("section").setAttribute("aria-busy", "false");
+    }
   }
 }
 
@@ -2675,10 +2749,17 @@ byId("archive-url-form").addEventListener("submit", event => {
     archiveDownload?.abort();
     archiveRequest++;
     byId("export-game-json").disabled = !archive;
+    byId("open-example").disabled = false;
+    byId("import-heading").closest("section").setAttribute("aria-busy", "false");
     status("archive-status", "Enter a public HTTPS URL for a game ZIP.", true);
     download.hidden = true;
     return;
   }
+  openArchiveUrl(url);
+});
+
+function openArchiveUrl(url) {
+  const download = byId("archive-download");
   archiveDownload?.abort();
   const controller = new AbortController();
   archiveDownload = controller;
@@ -2691,6 +2772,7 @@ byId("archive-url-form").addEventListener("submit", event => {
       return await response.arrayBuffer();
     } catch (error) {
       if (controller.signal.aborted) throw error;
+      byId("more-import-options").open = true;
       download.href = url.href;
       download.hidden = false;
       if (error instanceof TypeError) {
@@ -2699,7 +2781,7 @@ byId("archive-url-form").addEventListener("submit", event => {
       throw error;
     }
   });
-});
+}
 
 byId("main-file").addEventListener("change", async event => {
   const file = event.target.files[0];

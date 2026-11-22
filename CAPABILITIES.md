@@ -14,25 +14,48 @@ they do not commit the website to a particular navigation design.
 
 | I want to… | Start here | A useful result looks like… |
 | --- | --- | --- |
-| Rediscover an old game's art and sound | Open its ZIP, then browse its files | Recognizable boards, sprites, animations and playable music/sounds |
+| Rediscover an old game's art and sound | Open its ZIP, then choose **Browse artwork** or **Listen to audio** | Recognizable boards, sprites, animations and playable music/sounds |
 | Find where a picture, sound or program is used | Select the file, then follow **Used by** or **Connection map** | A linked consumer, with a source line, field or placement where available |
 | Understand why something is missing or unsupported | Inspect its references and decoding status | The recorded filename, resolution result and available source evidence |
 | Understand what a program refers to | Select a PRG and follow its source/reference links | Movement between the program, referenced assets and command documentation |
 | Try a game's supported behavior | Use **Play game** after import | Authored startup and board behavior, or a diagnostic identifying the unsupported operation |
-| Take structural information into another tool | Choose **Download connected game JSON** | Decoded records and linked evidence, with unresolved references preserved |
+| Take structural information into another tool | Choose **Export archive structure → Download connected game JSON** | Decoded records and linked evidence, with unresolved references preserved |
 | Make physical cards from a tileset | Select a supported TST and download its print-and-play PDF | Cards containing that tileset's tiles in order |
 
-The exact labels above describe today's interface. A later usability sprint
-may change them. The website's existing **Capability graph** refers to
-RPGCode commands and catalog entries; it is a technical view, distinct from
-this list of user tasks.
+The first-use interface now names the command/catalog view **RPGCode command
+reference**. It remains distinct from this inventory of user tasks. After
+import, **Browse artwork**, **Listen to audio**, **Follow connections**, and
+**Play game** provide starting actions; every archive file remains browsable.
+
+## First-use starting points
+
+The primary input is **Open a game archive → Game archive**. **Try an example**
+opens one of three generated ZIPs directly through the same import path:
+
+| Experience | Example input | Recognizable result |
+| --- | --- | --- |
+| Explore artwork, audio & connections · Toolkit 2 | `tk2-legacy-game.zip` | Tiles/boards to preview, MIDI/WAV to play, linked source/field evidence |
+| Try a game's title & choices · Toolkit 3 | `tk3-title-harbor.zip` | The archive's supported source title, choices and opening board |
+| Meet a moving character & Talk · Toolkit 3 | `tk3-living-grove.zip` | Background movement, Talk at the current location and board transfer/reset |
+
+The complete 17-ZIP collection remains under **All test-game downloads**,
+including both Harbor/Grove variants and the narrower startup/canvas/task labs.
+Native Toolkit setup instructions are there as secondary detail. Examples are
+synthetic compatibility inputs, not promises about an arbitrary real game.
+
+After import, task buttons choose visual/audio records from that archive or open
+the selected file's indexed connections. They use the normal inspector and
+selection history. **Play game** follows the embedded Main File; direct board
+diagnostics explicitly bypass startup. Configuration, compatibility evidence and
+connected JSON export are available below the task choices. Missing task inputs
+are explained while the complete file browser remains usable.
 
 ## 1. Open and find things in a game
 
 | Capability | How to use it today | Boundary |
 | --- | --- | --- |
-| Open a local game archive | Choose **Game archive**; optionally choose a separate GAM Main File | Reads supported archive/layout bytes in browser memory; an arbitrary ZIP is not necessarily a compatible game |
-| Open a game from a link | Paste a public HTTPS **Game ZIP URL** | Requires the host to allow browser reads; download and import locally if it does not |
+| Open a local game archive | Use **Open a game archive → Game archive**; optional GAM is under **Open from a URL or supply a Main File** | Reads supported archive/layout bytes in browser memory; an arbitrary ZIP is not necessarily a compatible game |
+| Open a game from a link | Expand **Open from a URL or supply a Main File**, then paste a public HTTPS **Game ZIP URL** | Requires the host to allow browser reads; download and import locally if it does not |
 | Open supported packaged downloads | Import a single-game Actions wrapper ZIP or recognized Toolkit installer/package | Supported wrappers are recognized structurally; this does not run an EXE or installer |
 | Find an asset or program | Browse the archive's folders and files | Inventory includes files whose contents cannot yet be decoded |
 | See which files configure the game | Inspect Main File bindings and linked startup assets | Recognized GAM versions expose different supported fields; inspecting a different GAM does not silently replace Play's embedded launch configuration |
@@ -45,7 +68,7 @@ this list of user tasks.
 | Inspect a board's visual composition | Open a BRD, toggle supported layers and follow its tiles | Static preview coverage and player projection coverage differ; full isometric/native editor parity is unfinished |
 | Inspect characters, items, enemies and backgrounds | Open the corresponding asset inspector; follow its source art | Rendering depends on a supported record version and resolvable component assets |
 | Watch an animation | Open TAN/ANM or supported animated sprite controls | ANM preview can step/play/loop and play supported frame WAVs; board preview may show a first frame |
-| Listen to music and sounds | Open MIDI/WAV and use playback, pause/reset and available sound controls | MIDI uses browser synthesis/sound banks; it is not a claim of original hardware/plugin sound parity |
+| Listen to music and sounds | Choose **Listen to audio**, or open MIDI/WAV from the file browser; use playback, pause/reset and sound controls | MIDI uses browser synthesis/sound banks; it is not a claim of original hardware/plugin sound parity |
 | Examine how MIDI music is arranged | Expand MIDI tracks or the piano roll and select instruments | This is inspection/playback, not a music editor |
 | Preview supported fonts and images | Open the file; enter sample text for a font | Availability follows the supported decoder/browser image format |
 
@@ -83,8 +106,8 @@ their success is evidence for their exercised behavior.
 | --- | --- | --- |
 | Start through the game's own supported startup | Choose **Play game** | Supported GAM startup, included helpers, source title/text/cursor choices, media and canvas/input share the runtime; unsupported language/services diagnose |
 | Move around and activate supported board interactions | Move with keys/D-pad; Talk or use imported game keys/regions | Supported placements, step/key triggers and board transfers use session state; collision uses documented browser approximations |
-| Observe board entry, background programs and moving characters | Try **TK3 Living boards · Harbor/Grove**, or compatible imported source | File-backed cooperative tasks and queued PushItem movement work; ItemPath/pathfinding, inline tasks and some task-to-foreground transitions remain open |
-| Investigate a board while bypassing startup | Use **Board diagnostics → Play opening board (direct diagnostic)** | Fresh session, startup skipped, board entry still runs; this is a different evidence path from normal Play |
+| Observe board entry, background programs and moving characters | Choose **Try an example → Meet a moving character & Talk · Toolkit 3**, or use the Living boards ZIPs in **All test-game downloads** | File-backed cooperative tasks and queued PushItem movement work; ItemPath/pathfinding, inline tasks and some task-to-foreground transitions remain open |
+| Investigate a board while bypassing startup | Use **Board diagnostics · bypass startup → Play opening board (direct diagnostic)** | Fresh session, startup skipped, board entry still runs; this is a different evidence path from normal Play |
 | Test encounter follow-up scripts | Use the explicitly labeled simulated outcome controls | Runs supported victory/defeat follow-up behavior; native combat is not implemented |
 | Inspect a running script problem | Read the diagnostic and follow available source/owner links into Explorer | A useful error is evidence of a boundary, not a successful execution result |
 
@@ -97,7 +120,7 @@ and [board lifecycle contract](docs/specs/tk3-board-lifecycle.md).
 
 | Capability | How to use it today | Boundary |
 | --- | --- | --- |
-| Export a connected structural description | **Download connected game JSON** | Includes supported decoded records, identities, relationships and unresolved evidence; it is not an editable or rebuilt playable project |
+| Export a connected structural description | **Export archive structure → Download connected game JSON** | Includes supported decoded records, identities, relationships and unresolved evidence; it is not an editable or rebuilt playable project |
 | Print a selected tileset as cards | Select a supported TST → **Download print-and-play PDF** | Exports the whole selected tileset in order; it does not infer a complete game's tabletop rules |
 
 Selecting/recombining a graph subset, editing assets/programs, generating a
@@ -136,3 +159,15 @@ entries based on that feedback. Keep detailed syntax/version tables in the
 specifications; update this file when a user task, starting action or support
 boundary changes. Record human verification with the build, input, browser,
 verifier and observed result.
+
+
+## First-use usability milestone evidence
+
+The website revision following #136 adds the starting actions and labels above.
+The exact review head, required CI, matched desktop/mobile screenshots and input
+hashes are recorded in its PR and generated `first-use-review` Actions artifact.
+Acceptance uses the staged site: open examples through the chooser, preview art,
+play WAV/MIDI, follow a relationship to evidence, retrace selection history,
+export JSON, and distinguish normal Play from direct diagnostics. Keyboard and
+390px viewport checks are automated. This does not establish deployed owner
+acceptance, private-ZIP execution or original Toolkit parity.
