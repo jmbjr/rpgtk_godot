@@ -13,7 +13,7 @@ import { PRG_STOPS_MOVEMENT, insideTk3BoardProgram,
   selectTk3BoardStep, selectTk3BoardKey, startTk3BoardProgram }
   from "../../tk3-board-programs.mjs";
 import { listTk3RuntimeKeys, startTk3RuntimeKey } from "../../tk3-runtime-keys.mjs";
-import { describePlayableTargets } from "./playtest-guidance.mjs";
+import { describePlayableTargets, describeScriptInput } from "./playtest-guidance.mjs";
 
 import { enterTk3Board } from "../../tk3-board-entry.mjs";
 import { createTk3PlayerServices } from "../../tk3-player-services.mjs";
@@ -273,7 +273,7 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     }
     taskStatus.hidden=!records.length;
   };
-  const entityStatus=document.createElement("div");entityStatus.id="play-entity-status";taskStatus.after(entityStatus);
+  const entityStatus=document.createElement("div");entityStatus.id="play-entity-status";section.querySelector("#play-runtime-evidence").append(entityStatus);
   const updateEntities=()=>{
     entityStatus.replaceChildren(...services.entities.all.map(e=>{
       const row=document.createElement("p");row.className="technical";
@@ -378,7 +378,8 @@ export function mountAuthoredBoard(section, scene, artifacts, graph, options = {
     const instruction = talking ? (gameOver ?
       "Game over: restart the opening board to begin a new session." :
       activeFight ? "Test encounter open: choose a test outcome or cancel below." :
-      "Conversation active: use Next / Finish.") :
+      describeScriptInput({ choice, waiting: scriptSession.execution?.waiting,
+        inputKind: scriptSession.execution?.inputKind, running: true, exited })) :
       boardMarkers.some(m => m.program.kind === "step") ?
         guide.hint + " · Walk INTO a BOARD · STEP region to run its source PRG." :
         guide.hint;

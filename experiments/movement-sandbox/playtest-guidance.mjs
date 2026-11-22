@@ -68,3 +68,12 @@ export function describePlayableTargets(scene, actor) {
   }
   return { player, targets, hint, nearest };
 }
+
+// A cursor map is not a dialogue wait; describe the actual input state.
+export function describeScriptInput({ choice, waiting, inputKind, running, exited }) {
+  if (exited) return "The program exited. Reset to start a fresh session or return to the file viewer.";
+  if (choice) return "Choose an option on the game screen. Use up/down and Enter, or select an option.";
+  if (waiting && inputKind === "wait") return "Conversation active: use Next / Finish.";
+  if (running) return "Authored program running. Follow the game screen; Reset starts a fresh session.";
+  return null;
+}

@@ -217,6 +217,11 @@ export async function buildTitleExecutionGame(id) {
     '  mwin(label + " ready"); wait(); mwinCls();',
     '  startup_ready = 1; return sum;',
     '}',
+    '// Uncalled source-inspection examples: their targets need execution or a missing file.',
+    'method InspectAudioReferences() {',
+    '  wav(soundName);',
+    '  wav("unavailable.wav");',
+    '}',
   ].join('\n'));
   const settings = 'fontSize(' + (harbor ? '18' : '22') + '); bold(true); winGraphic("window.png");\n';
   const sound = 'mediaPlay("' + (harbor ? 'note.mid' : 'tone.wav') + '");\n';

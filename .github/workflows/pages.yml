@@ -140,6 +140,10 @@ jobs:
           node scripts/build-tk2-test-game.mjs site/tk2-test-game.zip
           node scripts/build-tk2-test-game.mjs site/tk2-legacy-game.zip --legacy
           node scripts/build-tk2-test-game.mjs site/tk2-text-gam-game.zip --text-gam
+      - name: Fingerprint the public viewer build
+        env:
+          REVIEW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/stage-viewer-build.mjs site
       - name: Verify published viewer modules
         run: |
           node scripts/check-production-policy.mjs

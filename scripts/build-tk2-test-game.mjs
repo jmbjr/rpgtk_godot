@@ -232,7 +232,11 @@ for (const folder of ["Main", "Game", project, ...["Bitmap", "Bkrounds", "Boards
   zip.file(`${folder}/`, "", { ...options, dir: true });
 }
 zip.file(files.main, mainFile(), options);
-zip.file(files.startup, `#MWin("${title}. Press a key to walk around.")\r\n#Wait(key$)\r\n#MWinCls()\r\n#End\r\n`, options);
+// The reachable media call gives the inspection example a source-backed caller.
+// Calls after End illustrate static evidence only; they do not execute.
+const audioProbe = legacy || textGam ? '#Wav("tone.wav")\r\n' : "";
+const staticProbe = legacy || textGam ? '* Inspection evidence only: these calls follow End and do not execute.\r\n#Wav(soundName$)\r\n#Wav("unavailable.wav")\r\n' : "";
+zip.file(files.startup, `#MWin("${title}. Press a key to walk around.")\r\n#Wait(key$)\r\n#MWinCls()\r\n${audioProbe}#End\r\n${staticProbe}`, options);
 zip.file(files.board, boardFile(), options);
 zip.file(files.tiles, tilesetFile(), options);
 zip.file(files.player, characterFile(), options);
