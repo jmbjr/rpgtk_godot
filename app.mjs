@@ -2184,6 +2184,7 @@ function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
   function filterControl(key, title, options) {
     const label = el("label", title);
     const select = el("select");
+    select.setAttribute("aria-label", title);
     for (const [value, text] of options) {
       const option = el("option", text);
       option.value = value;
