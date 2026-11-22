@@ -230,6 +230,7 @@ function selectDefault(newArchive = false) {
   const selection = { path: selected, folder: selectedFolder, tile: tileSelection, line: selectedLine };
   if (newArchive) inspectorHistory.reset(crypto.getRandomValues(new Uint32Array(4)).join("-"), selection);
   else inspectorHistory.replace(selection);
+  updateSelectionNavigation();
 }
 
 function renderScriptWalk(walk) {
@@ -312,6 +313,16 @@ function bindingValue(name, result) {
   return `${name} · ${label}${candidates?.length ? " · " + candidates.join(", ") : ""}`;
 }
 
+function revealSelectedRow(container, row) {
+  if (!row) return;
+  const top = row.getBoundingClientRect().top - container.getBoundingClientRect().top;
+  if (top < 0 || top + row.offsetHeight > container.clientHeight)
+    container.scrollTop += top - (container.clientHeight - row.offsetHeight) / 2;
+}
+function updateSelectionNavigation() {
+  byId("selection-back").disabled = !inspectorHistory.canBack;
+  byId("selection-forward").disabled = !inspectorHistory.canForward;
+}
 function renderBrowser() {
   byId("workspace").hidden = !archive;
   byId("folder-list").replaceChildren(...folders.map(folder => {
@@ -339,6 +350,10 @@ function renderBrowser() {
     return node;
   }));
   if (!files.length) byId("file-list").append(el("p", "No files in this folder."));
+  for (const id of ["folder-list", "file-list"]) {
+    const list = byId(id);
+    revealSelectedRow(list, list.querySelector('[aria-pressed="true"]'));
+  }
 }
 
 function selectArtifact(path, tile, line, folder = path ? directory(path) : selectedFolder, inlineSlot) {
@@ -352,6 +367,7 @@ function restoreSelection({ path, folder, tile, line, inlineSlot }) {
   const fileChanged = path !== selected || folder !== selectedFolder;
   const tileChanged = tile !== tileSelection;
   const lineChanged = line !== selectedLine || inlineSlot !== selectedInlineSlot;
+  if (fileChanged || tileChanged) connectionFilters = {};
   selected = path;
   selectedFolder = folder;
   tileSelection = tile;
@@ -369,6 +385,7 @@ function restoreSelection({ path, folder, tile, line, inlineSlot }) {
     renderConnections(path);
   }
   updateSelectionIdentity();
+  updateSelectionNavigation();
   if (line || fileChanged || lineChanged) jumpToLine(line, inlineSlot);
   if (!line && (fileChanged || tileChanged)) {
     const target = tile ? byId("graph").querySelector(`[data-tile="${tile}"]`) : byId("asset-name");
@@ -379,6 +396,7 @@ function restoreSelection({ path, folder, tile, line, inlineSlot }) {
 window.addEventListener("popstate", event => {
   const selection = inspectorHistory.restore(event.state);
   if (selection) restoreSelection(selection);
+  updateSelectionNavigation();
 });
 
 function selectionLabel(path) {
@@ -393,6 +411,9 @@ function updateSelectionIdentity() {
   byId("asset-name").textContent = selected ? basename(selected) : "Selection";
   byId("asset-kind").textContent = kind;
   byId("asset-support").textContent = support;
+  byId("selection-context").textContent = [selected ? basename(selected) : "Choose a file",
+    tileSelection ? `Tile ${tileSelection}` : "", selectedLine ? `Line ${selectedLine}` : ""].filter(Boolean).join(" · ");
+  byId("selection-context").title = selected ?? "";
   byId("selection").textContent = [selectionLabel(selected), tileSelection ? `Tile ${tileSelection}` : "",
     selectedLine ? `Source line ${selectedLine}` : ""].filter(Boolean).join(" · ");
 }
@@ -2068,7 +2089,7 @@ function renderMidiTone() {
 async function renderWaveControls(panel, path) {
   const revision = inspectorRevision;
   const controls = el("div", "", "audio-controls");
-  const message = el("p");
+  const message = el("p", "Loading WAV…");
   message.setAttribute("role", "status");
   const audio = el("audio");
   audio.hidden = true;
@@ -2112,6 +2133,7 @@ async function renderWaveControls(panel, path) {
     if (revision !== inspectorRevision) return;
     mediaUrl = URL.createObjectURL(new Blob([blob], { type: "audio/wav" }));
     audio.src = mediaUrl;
+    message.textContent = "Ready to play WAV.";
     play.disabled = false;
     reset.disabled = false;
   } catch {
@@ -2194,6 +2216,7 @@ function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
   counts.setAttribute("role", "status");
   const preview = el("div", "", "connection-preview");
   preview.setAttribute("aria-live", "polite");
+  preview.tabIndex = -1;
   let active;
 
   const { types, statuses } = connectionFilterOptions(incoming, outgoing, artifacts);
@@ -2223,7 +2246,7 @@ function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
     controls.append(label);
   }
   filterControl("direction", "Direction", [["", "Both directions"], ["incoming", "Used by"], ["outgoing", "References"]]);
-  filterControl("type", "Neighbor type", [["", "All types"], ...types
+  filterControl("type", "File type", [["", "All types"], ...types
     .map(type => [type, connectionTypeLabel(type)]).sort((a, b) => a[1].localeCompare(b[1]))]);
   filterControl("resolution", "Resolution", [["", "All references"], ["resolved", "Resolved"],
     ["no-target", "Without a target"], ...[...statuses].sort((a, b) => a[1].localeCompare(b[1]))]);
@@ -2293,8 +2316,13 @@ function renderConnectionMap(path, incoming, outgoing, otherIncoming) {
             for (const candidate of edge.projectCandidates ?? []) entry.append(el("p", `Project candidate · ${typeof candidate === "string" ? candidate : JSON.stringify(candidate)}`, "technical"));
             evidence.append(entry);
           }
-          preview.append(evidence);
+          preview.append(evidence, button("Back to connection list", () => {
+            control.focus({ preventScroll: true });
+            control.scrollIntoView({ block: "nearest" });
+          }));
           section.after(preview);
+          preview.focus({ preventScroll: true });
+          preview.scrollIntoView({ block: "nearest" });
         }, "connection-node");
         control.setAttribute("aria-pressed", "false");
         control.title = node.label;
@@ -2479,6 +2507,7 @@ function mountPlayable(scene, options, mode = launchMode) {
   // canvas, input listeners, current position and animation frame intact.
   const panel = playTemplate.cloneNode(true);
   panel.hidden = false;
+  panel.querySelector("#play-reset").textContent = mode === "gam" ? "Restart game" : "Reset board diagnostic";
   panel.querySelector("#play-launch-mode").textContent = {
     gam: "Launch mode: Game startup",
     direct: "Launch mode: Direct board diagnostic",
@@ -2491,7 +2520,7 @@ function mountPlayable(scene, options, mode = launchMode) {
       onRestart: () => launchPlayableWithSession(launchMode) });
   panel.querySelector("#play-close").addEventListener("click", () => {
     closePlayable();
-    byId("play-gam-startup").focus({ preventScroll: true });
+    focusResult(selected ? "asset-name" : "archive-heading");
   });
   activePlayable?.destroy({ preserveServices: activePlayable.services === replacement.services });
   byId("play-stage").replaceWith(panel);
@@ -2574,7 +2603,11 @@ function taskFiles(types) {
   return paths.filter(path => {
     const file = artifacts.get(path);
     return !file.error && ["decoded", "media"].includes(file.decodeStatus) && types.includes(file.type);
-  }).sort((a,b) => types.indexOf(artifacts.get(a).type) - types.indexOf(artifacts.get(b).type));
+  }).sort((a,b) => {
+    const caller = path => (references.incoming.get(path) ?? []).some(edge => edge.line && artifacts.get(edge.from)?.type === "prg");
+    return (types.includes("wav") ? Number(caller(b)) - Number(caller(a)) : 0) ||
+      types.indexOf(artifacts.get(a).type) - types.indexOf(artifacts.get(b).type);
+  });
 }
 function refreshFirstOverview() {
   byId("archive-overview").hidden = !archive && !uploadedMainFile;
@@ -2591,6 +2624,11 @@ function refreshFirstOverview() {
 }
 
 function refreshFirstActions() {
+  const boards = taskFiles(["brd"]);
+  const configuredBoard = mainFile && mainFileBindings(mainFile, artifacts).find(([role]) => role === "Opening board")?.[1].path;
+  byId("explore-boards").title = configuredBoard ?? boards[0] ?? "";
+  byId("explore-boards").disabled = !boards.length;
+  byId("board-count").textContent = boards.length ? boards.length + " boards available to inspect." : "No supported board preview found.";
   for (const [kind, types, label] of [["artwork", artworkTypes, "visual assets"], ["audio", ["wav", "mid"], "audio files"]]) {
     const files = taskFiles(types);
     const action = byId("explore-" + kind);
@@ -2816,3 +2854,16 @@ byId("main-file").addEventListener("change", async event => {
 for (const control of document.querySelectorAll("[data-section]")) {
   control.addEventListener("click", () => focusResult(control.dataset.section));
 }
+
+byId("selection-back").addEventListener("click", () => inspectorHistory.back());
+byId("selection-forward").addEventListener("click", () => inspectorHistory.forward());
+byId("selection-export").addEventListener("click", () => {
+  byId("archive-export").open = true;
+  focusResult("export-game-json");
+});
+byId("explore-boards").addEventListener("click", () => {
+  const boards = taskFiles(["brd"]);
+  const configured = mainFile && mainFileBindings(mainFile, artifacts).find(([role]) => role === "Opening board")?.[1].path;
+  const path = boards.includes(configured) ? configured : boards[0];
+  if (path) { selectArtifact(path); focusResult("asset-name"); }
+});

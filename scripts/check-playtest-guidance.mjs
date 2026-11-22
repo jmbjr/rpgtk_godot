@@ -6,7 +6,7 @@ import { readArtifacts, buildReferences } from "../artifacts.mjs";
 import { buildPlayableScene } from "../playable-scene.mjs";
 import { initialMovementState, stepMovement } from "../experiments/movement-sandbox/engine.mjs";
 import {
-  describePlayableTargets, PLAYTEST_TALK_RADIUS,
+  describePlayableTargets, describeScriptInput, PLAYTEST_TALK_RADIUS,
 } from "../experiments/movement-sandbox/playtest-guidance.mjs";
 import {
   buildScriptFixtureZip, scriptFixtureSpecs,
@@ -113,3 +113,9 @@ assert.match(css, /\.play-map-marker__label/);
 assert.match(css, /\.play-map-marker\.label-left/);
 assert.match(css, /\.play-map-marker\.label-above/);
 console.log("Script Lab playtest visibility: archive targets, marker placement, readable DOM overlay, and artwork preservation passed.");
+
+assert.match(describeScriptInput({choice:{},running:true,waiting:true}),/Choose an option/);
+assert.match(describeScriptInput({running:true,waiting:true,inputKind:"wait"}),/Next \/ Finish/);
+assert.match(describeScriptInput({running:true}),/Authored program running/);
+assert.match(describeScriptInput({exited:true}),/program exited/);
+assert.equal(describeScriptInput({}),null);

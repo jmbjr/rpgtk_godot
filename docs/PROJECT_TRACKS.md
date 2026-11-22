@@ -80,7 +80,7 @@ person, not completed usability research:
 - Many disclosures preserve valuable detail, but their quantity and labels do
   not by themselves tell someone what to open first or what a result means.
 
-## First-use milestone merged; selected-asset milestone in review
+## Sprints 1 and 2 merged; Sprint 3 implementation in review
 
 PR #136 merged at `7265632fd80b12add39725e2fd94e2054f94c58f` and established this
 inventory/track map. PR #137 implements Sprint 1 below: accurate identity, one
@@ -92,11 +92,20 @@ checks and Pages deployment were verified by the owner at handoff. Owner
 usability acceptance is not established by merge or automated checks. Material decisions
 and the short owner checklist are in [first-use.md](usability/first-use.md).
 
-Sprint 2 ([PR #138](https://github.com/jmbjr/rpgtk_godot/pull/138), in review)
+Sprint 2 ([PR #138](https://github.com/jmbjr/rpgtk_godot/pull/138), merged at `ff0f2fb`)
 implements the selection identity, preview/source, single visible
 connection view and technical evidence structure described in
 [selected-asset.md](usability/selected-asset.md). Its review PR/Actions artifact
-record synthetic evidence; it remains unmerged until owner review.
+record synthetic evidence. Main [Actions 45011045812](https://github.com/jmbjr/rpgtk_godot/actions/runs/45011045812) passed checks and Pages deployment; independently verified during Sprint 3.
+Human acceptance is still separate.
+
+Sprint 3 ([PR #139](https://github.com/jmbjr/rpgtk_godot/pull/139), in review)
+refines complete board/tile/history, audio/caller, unresolved-reference,
+technical/export and normal/direct Play journeys. [Complete-journey notes](usability/complete-journeys.md)
+record the implementer's production observations, source corroboration, cached
+asset issue, decisions and required fresh-context staged evidence. No newcomer
+study or owner usability acceptance has been performed. The implementation and
+automated checks do not complete the human acceptance item below.
 
 ## Usability delivery sequence
 

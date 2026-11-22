@@ -7,6 +7,8 @@ const browser = {
   get state() { return entries[index]; },
   replaceState(state) { entries[index] = structuredClone(state); },
   pushState(state) { entries.splice(++index, entries.length, structuredClone(state)); },
+  back() { index--; },
+  forward() { index++; },
 };
 const trail = createInspectorHistory(browser);
 const traverse = delta => trail.restore(entries[index += delta]);
@@ -52,3 +54,16 @@ assert.equal(traverse(-2), undefined);
 assert.deepEqual(traverse(1), board, "Forward can re-enter the active ZIP's trail");
 
 console.log("Inspector history passed: repeated visits, exact tiles and lines, branching, and archive isolation.");
+
+// UI controls must not leave the page or enter another ZIP's history.
+trail.reset("bounded", board);
+assert.equal(trail.canBack,false); assert.equal(trail.canForward,false);
+const firstIndex=index; trail.back(); assert.equal(index,firstIndex);
+trail.visit(tile); assert.equal(trail.canBack,true);
+trail.back(); assert.deepEqual(trail.restore(browser.state),board);
+assert.equal(trail.canBack,false); assert.equal(trail.canForward,true);
+trail.forward(); assert.deepEqual(trail.restore(browser.state),tile);
+assert.equal(trail.canForward,false);
+trail.back(); trail.restore(browser.state); trail.visit(program);
+assert.equal(trail.canForward,false,"Branching discards the forward inspector trail");
+trail.reset("new-bounded", board); trail.back(); assert.equal(trail.canBack,false);

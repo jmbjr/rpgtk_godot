@@ -3,7 +3,9 @@
 Status: PR #137 merged at `e392e99f10754e9ad2612e76243f23753713161f`.
 Integration checks and Pages deployment were verified at the owner handoff;
 that is separate from human usability acceptance. Sprint 2 evolves the selection
-layout described here; see [selected-asset.md](selected-asset.md).
+layout described here; see [selected-asset.md](selected-asset.md). Sprint 2 merged
+at `ff0f2fb` with checks/Pages complete. [Sprint 3](complete-journeys.md) now adds
+context-preserving complete journeys; human acceptance remains pending.
 
 Baseline: main `7265632fd80b12add39725e2fd94e2054f94c58f` (#136).
 The implementer inspected the rendered Pages landing page before editing. It

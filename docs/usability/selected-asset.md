@@ -1,6 +1,10 @@
 # Make a selected asset understandable: usability Sprint 2
 
-Review: [PR #138](https://github.com/jmbjr/rpgtk_godot/pull/138), unmerged.
+Status: [PR #138](https://github.com/jmbjr/rpgtk_godot/pull/138) merged at
+`ff0f2fb288c05e27b1911920d0f7b9a9d79c99f6`. Checks and Pages deployment passed
+in Actions 45011045812, independently verified during Sprint 3. Owner usability
+acceptance remains pending. [Sprint 3](complete-journeys.md) refines return paths,
+filter lifetime, evidence focus and the build identity.
 
 Baseline: main `e392e99f10754e9ad2612e76243f23753713161f`, merged #137.
 Fetched main and inspected the existing clean workspace/branches before creating
@@ -78,8 +82,8 @@ real WAV/GS MIDI/animation lifecycle, source/history, JSON/PDF, title/canvas,
 entry/task/movement/encounter and full staged-file production checks stay enabled.
 
 This is **automated synthetic evidence**. No private diagnostic ZIP was supplied
-or rerun. Original Toolkit execution, deployment of this PR and owner usability
-acceptance are not claimed. Ambiguous candidates are compared with connected JSON and followed/backtracked
+or rerun. Original Toolkit execution and owner usability acceptance are not claimed.
+The later merge/deployment status above supersedes this PR-only checkpoint. Ambiguous candidates are compared with connected JSON and followed/backtracked
 through the staged UI. Foreign-only explanatory mappings have unit coverage;
 their resolver behavior remains covered by existing archive/connection checks. Broader format/runtime limits remain in #123/#79.
 

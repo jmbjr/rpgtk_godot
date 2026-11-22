@@ -100,13 +100,14 @@ try {
   await page.getByRole('button',{name:'Listen to audio',exact:true}).press('Enter');
   const audioPath=await page.locator('#source-path').innerText();assert.match(audioPath,/\.wav$/);
   await page.locator('#graph audio').evaluate(a=>a.addEventListener('playing',()=>a.dataset.played='true',{once:true}));
+  await page.waitForFunction(()=>document.querySelector('#graph .audio-controls button')?.disabled===false);
   await page.getByRole('button',{name:'Play WAV',exact:true}).press('Enter');
   await page.locator('#graph audio[data-played="true"]').waitFor({state:'attached'});
   await page.getByRole('button',{name:'Reset WAV to beginning',exact:true}).press('Enter');
   assert.equal(await page.locator('#graph audio').evaluate(a=>a.currentTime),0);
   await page.getByRole('button',{name:'Follow connections',exact:true}).press('Enter');
   assert.equal(await page.locator('#connections .connection-map').isVisible(),true);
-  await page.locator('#connections .connection-map').getByLabel('Neighbor type',{exact:true}).selectOption('anm');
+  await page.locator('#connections .connection-map').getByLabel('File type',{exact:true}).selectOption('anm');
   const neighbor=page.locator('#connections .connection-node').filter({hasText:'effect.anm'});
   await neighbor.press('Enter');await page.locator('.connection-preview').filter({hasText:'Frame 1 sound'}).waitFor();
   await shot('after-relationship-desktop.png');
@@ -129,7 +130,7 @@ try {
   await page.locator('#play-board-diagnostics > summary').click();assert.match(await page.locator('#play-board-diagnostics').innerText(),/not normal Play/);
   await page.locator('#play-direct').click();await page.locator('#play-dialogue-text').filter({hasText:'grove entry 1'}).waitFor();
   assert.match(await page.locator('#play-launch-mode').innerText(),/Direct board diagnostic/);
-  assert.doesNotMatch(await page.locator('#play-script-variables').innerText(),/startup_ready|startup_runs/);
+  assert.doesNotMatch(await page.locator('#play-script-variables').textContent(),/startup_ready|startup_runs/);
   await page.locator('#play-close').click();report.results.push('Toolkit 3 title and moving-character examples open through the common loader. Normal startup reaches source choices; direct diagnostics bypasses startup but runs entry.');
 
   // Failed replacement keeps the previous archive and gives a usable recovery.
@@ -178,7 +179,7 @@ try {
   await page.locator('#graph audio').evaluate(a=>a.addEventListener('playing',()=>a.dataset.played='true',{once:true}));
   await page.getByRole('button',{name:'Play WAV',exact:true}).tap();await page.locator('#graph audio[data-played="true"]').waitFor({state:'attached'});
   await page.getByRole('button',{name:'Follow connections',exact:true}).tap();await noOverflow();
-  await page.locator('#connections .connection-map').getByLabel('Neighbor type',{exact:true}).selectOption('anm');
+  await page.locator('#connections .connection-map').getByLabel('File type',{exact:true}).selectOption('anm');
   await page.locator('#connections .connection-node').filter({hasText:'effect.anm'}).tap();
   await page.locator('.connection-preview').filter({hasText:'Frame 1 sound'}).waitFor();await shot('after-relationship-mobile.png');
   await page.locator('.connection-preview').getByRole('button',{name:'Open in inspector',exact:true}).tap();

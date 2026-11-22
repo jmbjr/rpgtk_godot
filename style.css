@@ -411,3 +411,20 @@ body.has-archive .intro-copy { margin-block: .75rem .4rem; }
   .archive-browser .file-list { max-height: 10rem; }
   .selected-asset { padding: .75rem; }
 }
+
+/* Keep the investigation and its return path available while reading. */
+.selection-toolbar { position: sticky; top: 0; z-index: 6; background: var(--panel); border-bottom: 1px solid var(--line); padding: .6rem 0; }
+.selection-trail { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; margin-bottom: .4rem; }
+#selection-context { min-width: 0; overflow-wrap: anywhere; font-size: .85rem; color: var(--gold); }
+.selection-toolbar button { font-size: .85rem; }
+.selection-toolbar button:disabled { opacity: .45; cursor: default; }
+.selected-asset :is(#file-title, #technical-title, #connections, #reference, .source-row, .connection-preview) { scroll-margin-top: 8rem; }
+.task-buttons { display: flex; flex-wrap: wrap; gap: .4rem; }
+#selection-export { margin-bottom: .7rem; }
+.connection-preview:focus { outline: 2px solid var(--gold); outline-offset: 2px; }
+@media (max-width: 590px) {
+  .selected-asset :is(#file-title, #technical-title, #connections, #reference, .source-row, .connection-preview) { scroll-margin-top: 11rem; }
+  .selection-toolbar .asset-sections { gap: .3rem; }
+  .selection-toolbar button { padding: .35rem .45rem; }
+  footer { flex-direction: column; }
+}

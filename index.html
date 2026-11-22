@@ -95,7 +95,7 @@
         <div id="archive-actions" class="next-actions">
           <div class="next-action">
             <h3>See the artwork</h3><p>Open a tileset, image or other visual asset, then explore its preview.</p>
-            <button id="explore-artwork" type="button">Browse artwork</button><p id="artwork-count" class="help-text"></p>
+            <div class="task-buttons"><button id="explore-artwork" type="button">Browse artwork</button><button id="explore-boards" type="button">Browse boards</button></div><p id="board-count" class="help-text"></p><p id="artwork-count" class="help-text"></p>
           </div>
           <div class="next-action">
             <h3>Hear the game</h3><p>Open music or a sound, then use its playback controls.</p>
@@ -142,6 +142,17 @@
           </div>
         </div>
         <p id="play-launch-mode" class="technical"></p>
+        <p id="play-target-hint" class="play-target-hint" role="status" aria-live="off">
+          Locate the labeled player and object, then walk into Talk range.
+        </p>
+
+        <div id="play-map-frame" class="play-map-frame">
+          <canvas id="play-canvas" class="sandbox-canvas play-canvas" width="640" height="480"
+            role="img" aria-label="Playable imported board with source tiles and animated character">
+            A modern browser with 2D canvas is required.
+          </canvas>
+          <div id="play-map-markers" class="play-map-markers" aria-hidden="true"></div>
+        </div>
         <div class="play-pad-row">
           <span>Walk with WASD, arrows, or D-pad.</span>
           <div class="sandbox-dpad" role="group" aria-label="Move authored character">
@@ -152,22 +163,12 @@
             <button type="button" class="pad-south" data-move="south" aria-label="Move south">▼</button>
           </div>
         </div>
-        <p id="play-target-hint" class="play-target-hint" role="status" aria-live="off">
-          Locate the labeled player and object, then walk into Talk range.
-        </p>
+
+        <details class="play-diagnostics">
+          <summary>Collision and source geometry diagnostics</summary>
         <label class="technical play-marker-toggle"><input type="checkbox" id="play-markers-enabled" checked>
           Show readable playtest markers (original artwork stays underneath)
         </label>
-        <div id="play-map-frame" class="play-map-frame">
-          <canvas id="play-canvas" class="sandbox-canvas play-canvas" width="640" height="480"
-            role="img" aria-label="Playable imported board with source tiles and animated character">
-            A modern browser with 2D canvas is required.
-          </canvas>
-          <div id="play-map-markers" class="play-map-markers" aria-hidden="true"></div>
-        </div>
-        <p id="play-status" class="sandbox-status" role="status" aria-live="off"></p>
-        <details class="play-diagnostics">
-          <summary>Collision and source geometry diagnostics</summary>
           <p id="play-collision" class="technical" role="status">Collision policy: awaiting source board.</p>
           <label class="technical play-vector-toggle"><input type="checkbox" id="play-vector-overlay"> Show verified wall outlines</label>
         </details>
@@ -196,10 +197,13 @@
           <button type="button" id="play-gameover-restart" class="play-source-choice">Restart opening board</button>
         </section>
         <p id="play-feedback" class="sandbox-landmark" role="status" aria-live="polite">Approach an authored object to talk.</p>
-        <p id="play-script-variables" class="technical" role="status">Script variables (session): (none yet)</p>
         <p id="play-script-diagnostic" class="technical" role="alert" hidden></p>
         <details class="play-placements">
-          <summary>Authored placements and artwork diagnostics</summary>
+          <summary>Runtime, placements and artwork evidence</summary>
+          <div id="play-runtime-evidence">
+        <p id="play-status" class="sandbox-status" role="status" aria-live="off"></p>
+            <p id="play-script-variables" class="technical" role="status">Script variables (session): (none yet)</p>
+          </div>
           <ol id="play-placements"></ol>
         </details>
         <p id="play-error" class="technical" role="status" hidden></p>
@@ -220,12 +224,20 @@
             <p id="source-path" class="technical"></p>
             <p id="selection"></p>
             <p id="asset-support" class="support-note"></p>
+          </header>
+          <div class="selection-toolbar">
+            <div class="selection-trail" role="group" aria-label="Archive selection history">
+              <button type="button" id="selection-back" disabled>Back</button>
+              <button type="button" id="selection-forward" disabled>Forward</button>
+              <span id="selection-context"></span>
+            </div>
             <nav class="asset-sections" aria-label="Selected asset sections">
               <button type="button" data-section="file-title">Preview or source</button>
               <button type="button" data-section="connections">Connections</button>
               <button type="button" data-section="technical-title">Technical details</button>
+              <button type="button" data-section="archive-heading">Archive actions</button>
             </nav>
-          </header>
+          </div>
           <section class="asset-content" aria-labelledby="file-title">
             <h3 id="file-title" tabindex="-1">Preview</h3>
             <div id="source" class="source" tabindex="0" aria-label="Selected file details"></div>
@@ -241,6 +253,7 @@
           <section class="asset-content" aria-labelledby="technical-title">
             <h3 id="technical-title" tabindex="-1">Technical details</h3>
             <p>Detected format, decoded fields and inspection evidence. These records describe the imported file; they do not guarantee complete runtime support.</p>
+            <button id="selection-export" type="button">Export connected JSON · whole archive</button>
             <div id="asset-format"></div>
             <div id="asset-metadata"></div>
             <div id="command-slot"></div>
@@ -249,7 +262,7 @@
         </article>
       </section>
     </main>
-    <footer>Game files stay in your browser. Connections come from recognized archive fields and source references; gameplay compatibility is partial.</footer>
+    <footer><span id="build-version">Development build</span><span>Game files stay in your browser. Connections come from recognized archive fields and source references; gameplay compatibility is partial.</span></footer>
   </div>
 </body>
 </html>
