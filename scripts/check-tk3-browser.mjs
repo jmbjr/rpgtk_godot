@@ -43,8 +43,14 @@ try {
   page.on("pageerror", error => errors.push(error.message));
   const base = "http://127.0.0.1:" + server.address().port;
   const control = id => page.locator("#" + id);
-  const click = id => control(id).click();
-  const expectText = (id, hasText) => control(id).filter({ hasText }).waitFor();
+  // These regression helpers explicitly disclose the technical evidence they
+  // inspect. First-use acceptance separately exercises actual keyboard controls.
+  const disclose = async id => control(id).evaluate(node => {
+    for(let parent=node.parentElement;parent;parent=parent.parentElement)
+      if(parent.tagName==="DETAILS")parent.open=true;
+  });
+  const click = async id => { await disclose(id); await control(id).click(); };
+  const expectText = async (id, hasText) => { await disclose(id); await control(id).filter({ hasText }).waitFor(); };
   const variables = value => expectText("play-script-variables", value);
   const board = value => expectText("play-heading", value);
   const talk = () => click("play-talk");
@@ -881,6 +887,9 @@ try {
     await control("play-script-choices").getByRole("button",{name:harbor?"Depart":"Wake",exact:true}).click();
     await talk();await expectText("play-dialogue-text",id+" entry 1");await talk();
     const taskSource=control("play-task-status").getByRole("button",{name:"Inspect task source",exact:true}).first();
+    await taskSource.focus();
+    await page.evaluate(async()=>{for(let i=0;i<8;i++)await new Promise(requestAnimationFrame);});
+    assert.equal(await taskSource.evaluate(el=>el===document.activeElement),true,"Task diagnostics retain keyboard focus during live updates");
     await taskSource.click();
     await pathIs((harbor?"HarborLab/":"")+"Prg/"+(harbor?"weather_task.prg":"pulse_worker.prg"));
     await page.locator("#source .active-line").waitFor();

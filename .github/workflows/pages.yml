@@ -145,6 +145,19 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           node scripts/check-tk3-browser.mjs site
+      - name: Check first-use journeys and capture matched screenshots
+        env:
+          REVIEW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          git fetch --no-tags --depth=1 origin 7265632fd80b12add39725e2fd94e2054f94c58f
+          node scripts/check-first-use-browser.mjs site dist/first-use-review
+      - name: Upload first-use screenshots and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: first-use-review
+          path: dist/first-use-review
+          if-no-files-found: warn
       - name: Build and verify synthetic CMP1 wrapper
         run: node scripts/build-tk2-installer-fixture.mjs site/tk2-legacy-game.zip dist/tk2-legacy-cmp1-test-wrapper.zip
       - name: Compare alternate GAM and validate all 57 matrix rows

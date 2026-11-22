@@ -1,10 +1,17 @@
-# RPG Toolkit 2 · Game Explorer
+# RPG Toolkit · Game Explorer
 
 Start with [what you can do with the Game Explorer](CAPABILITIES.md) for a
 task-based capability inventory, or the [project tracks and proposed usability
 sprints](docs/PROJECT_TRACKS.md) for the current roadmap/issue map.
 
-A static viewer for issue #3. Run `npm ci` to prepare the optional sound-bank
+Open Toolkit 2/3 archives to preview artwork, listen to audio, follow source
+connections and try supported Toolkit 3 play. Start with **Open a game archive**
+or choose one of three experiences under **Try an example**. After import, use
+**Browse artwork**, **Listen to audio**, **Follow connections**, or **Play game**.
+The full test-game download collection and technical evidence remain available
+as secondary details.
+
+A static explorer evolved from issue #3. Run `npm ci` to prepare the optional sound-bank
 player, then serve the repository root with Python 3 and open
 `http://localhost:8000` in a browser.
 
