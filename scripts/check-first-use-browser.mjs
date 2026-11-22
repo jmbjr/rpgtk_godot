@@ -96,6 +96,7 @@ try {
   await page.locator('#graph button[data-tile="1"]').press('Enter');
   await page.getByRole('button',{name:'Follow connections',exact:true}).press('Enter');
   assert.equal(await page.locator('#graph button[data-tile="1"]').getAttribute('aria-pressed'),'true','Opening connections preserves the selected tile');
+  assert.equal(await page.locator('#connections .connection-map').evaluate(e=>e.open),true);
   await page.getByRole('button',{name:'Listen to audio',exact:true}).press('Enter');
   const audioPath=await page.locator('#source-path').innerText();assert.match(audioPath,/\.wav$/);
   await page.locator('#graph audio').evaluate(a=>a.addEventListener('playing',()=>a.dataset.played='true',{once:true}));
@@ -105,6 +106,7 @@ try {
   assert.equal(await page.locator('#graph audio').evaluate(a=>a.currentTime),0);
   await page.getByRole('button',{name:'Follow connections',exact:true}).press('Enter');
   assert.equal(await page.locator('#connections .connection-map').evaluate(e=>e.open),true);
+  await page.locator('#connections .connection-map').getByLabel('Neighbor type',{exact:true}).selectOption('anm');
   const neighbor=page.locator('#connections .connection-node').filter({hasText:'effect.anm'});
   await neighbor.press('Enter');await page.locator('.connection-preview').filter({hasText:'Frame 1 sound'}).waitFor();
   await shot('after-relationship-desktop.png');
@@ -161,6 +163,7 @@ try {
   await page.locator('#graph audio').evaluate(a=>a.addEventListener('playing',()=>a.dataset.played='true',{once:true}));
   await page.getByRole('button',{name:'Play WAV',exact:true}).tap();await page.locator('#graph audio[data-played="true"]').waitFor({state:'attached'});
   await page.getByRole('button',{name:'Follow connections',exact:true}).tap();await noOverflow();
+  await page.locator('#connections .connection-map').getByLabel('Neighbor type',{exact:true}).selectOption('anm');
   await page.locator('#connections .connection-node').filter({hasText:'effect.anm'}).tap();
   await page.locator('.connection-preview').filter({hasText:'Frame 1 sound'}).waitFor();await shot('after-relationship-mobile.png');
   await page.locator('.connection-preview').getByRole('button',{name:'Open in inspector',exact:true}).tap();
