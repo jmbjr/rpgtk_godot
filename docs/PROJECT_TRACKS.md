@@ -80,6 +80,17 @@ person, not completed usability research:
 - Many disclosures preserve valuable detail, but their quantity and labels do
   not by themselves tell someone what to open first or what a result means.
 
+## First-use milestone implementation in review
+
+PR #136 merged at `7265632fd80b12add39725e2fd94e2054f94c58f` and established this
+inventory/track map. PR #137 implements Sprint 1 below: accurate identity, one
+archive picker, three experience-labeled examples and post-import task actions,
+with normal Play separated from direct diagnostics. Its PR and `first-use-review`
+Actions artifact record the exact build, fixture hashes, desktop/mobile screenshots,
+keyboard/journey results and remaining owner acceptance. It is not merged or
+accepted by a person merely because its synthetic checks pass. Material decisions
+and the short owner checklist are in [first-use.md](usability/first-use.md).
+
 ## Proposed usability sprints
 
 These are reviewable outcomes for discussion. They do not prescribe a new

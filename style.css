@@ -377,3 +377,4 @@ body.has-archive .intro-copy { margin-block: .75rem .4rem; }
   .intro-copy { font-size: 1rem; }
   .next-action { padding: .85rem; }
 }
+#archive-heading, #graph-title, #connections { scroll-margin-top: 1rem; }

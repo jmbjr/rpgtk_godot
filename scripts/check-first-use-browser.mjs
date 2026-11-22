@@ -34,12 +34,12 @@ const report={baseline,head:process.env.REVIEW_SHA ?? execFileSync("git",["rev-p
 for(const name of ["tk2-legacy-game.zip","tk3-title-harbor.zip","tk3-living-grove.zip"]) {
   const bytes=await readFile(resolve(site,name));report.inputs.push({name,bytes:bytes.length,sha256:createHash("sha256").update(bytes).digest("hex")});
 }
-let browser;
+let browser, page;
 const watchdog=setTimeout(()=>{console.error("First-use browser checks timed out");process.exit(1);},90000);watchdog.unref();
 try {
   browser=await chromium.launch({executablePath:process.env.TK3_CHROMIUM || undefined});
   report.browserVersion=browser.version();
-  const page=await browser.newPage({viewport:report.desktop,hasTouch:true});page.setDefaultTimeout(7000);
+  page=await browser.newPage({viewport:report.desktop,hasTouch:true});page.setDefaultTimeout(7000);
   const errors=[];page.on("pageerror",e=>errors.push(e.message));
   const shot=async name=>{await page.screenshot({path:resolve(output,name),fullPage:false});report.screenshots.push(name);};
   const ready=async name=>{
@@ -93,6 +93,9 @@ try {
   assert.ok(await page.locator('#graph .tile-grid canvas').first().evaluate(c=>c.getContext('2d').getImageData(0,0,32,32).data.some(v=>v!==0)));
   const artPath=await page.locator('#source-path').innerText();assert.match(artPath,/\.tst$/);
   await shot('after-artwork-desktop.png');
+  await page.locator('#graph button[data-tile="1"]').press('Enter');
+  await page.getByRole('button',{name:'Follow connections',exact:true}).press('Enter');
+  assert.equal(await page.locator('#graph button[data-tile="1"]').getAttribute('aria-pressed'),'true','Opening connections preserves the selected tile');
   await page.getByRole('button',{name:'Listen to audio',exact:true}).press('Enter');
   const audioPath=await page.locator('#source-path').innerText();assert.match(audioPath,/\.wav$/);
   await page.locator('#graph audio').evaluate(a=>a.addEventListener('playing',()=>a.dataset.played='true',{once:true}));
@@ -166,7 +169,12 @@ try {
   assert.deepEqual(errors,[]);report.results.push('No uncaught page errors. Owner/deployed acceptance and private-ZIP/native parity remain unverified.');
   console.log('First-use staged Chromium passed: identity, chooser and local import/recovery, artwork/audio, connection evidence/history/export, normal vs direct Play, keyboard and narrow mobile.');
 } catch(error) {
-  report.failure=String(error.stack ?? error);throw error;
+  report.failure=String(error.stack ?? error);
+  if(page) {
+    await page.screenshot({path:resolve(output,'failure.png'),fullPage:false}).catch(()=>{});
+    report.visibleFailureContext=await page.locator('body').innerText().then(text=>text.slice(0,12000)).catch(()=>"");
+  }
+  throw error;
 } finally {
   await writeFile(resolve(output,'results.json'),JSON.stringify(report,null,2)+'\n');
   await browser?.close();server.close(()=>clearTimeout(watchdog));

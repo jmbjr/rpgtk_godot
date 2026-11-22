@@ -2609,7 +2609,8 @@ byId("explore-connections").addEventListener("click", () => {
   const path = hasEdges(selected) ? selected : paths.find(hasEdges);
   if (!path) return;
   connectionMapOpen = true;
-  selectArtifact(path);
+  if (path !== selected) selectArtifact(path);
+  else byId("connections").querySelector(".connection-map").open = true;
   status("explore-feedback", "Connections for " + path + ". Choose a relationship to follow its recorded field, source line or tile.");
   focusResult("connections");
 });
