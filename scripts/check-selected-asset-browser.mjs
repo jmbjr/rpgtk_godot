@@ -62,8 +62,9 @@ try{
    assert.equal(await page.locator('#connections details.connection-map').count(),0);
    await page.locator('.selected-asset').evaluate(e=>e.scrollIntoView({block:'start'}));await shot(input===inputs[0]?'after-board-desktop.png':'after-native-board-desktop.png');
    // Export actual connected JSON, then follow the exact same board/tile fact in UI.
-   await page.locator('#archive-export > summary').click();const downloaded=page.waitForEvent('download');await page.getByRole('button',{name:'Download connected game JSON',exact:true}).click();
-   const exported=JSON.parse(await readFile(await (await downloaded).path(),'utf8'));
+   if(!await page.locator('#archive-export').evaluate(e=>e.open))await page.locator('#archive-export > summary').click();
+   const [downloaded]=await Promise.all([page.waitForEvent('download'),page.getByRole('button',{name:'Download connected game JSON',exact:true}).click()]);
+   const exported=JSON.parse(await readFile(await downloaded.path(),'utf8'));
    const record=Object.values(exported.artifacts).find(a=>a.path===input.board);const tileEdge=record.references.outgoing.find(e=>e.target?.tileIndex);
    assert.ok(tileEdge);const tile=tileEdge.target.tileIndex;
    const evidence=await inspect(tileEdge.evidence);await evidence.getByRole('button',{name:new RegExp(tileEdge.evidence.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))}).first().click();
