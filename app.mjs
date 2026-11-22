@@ -2089,7 +2089,7 @@ function renderMidiTone() {
 async function renderWaveControls(panel, path) {
   const revision = inspectorRevision;
   const controls = el("div", "", "audio-controls");
-  const message = el("p");
+  const message = el("p", "Loading WAV…");
   message.setAttribute("role", "status");
   const audio = el("audio");
   audio.hidden = true;
@@ -2133,6 +2133,7 @@ async function renderWaveControls(panel, path) {
     if (revision !== inspectorRevision) return;
     mediaUrl = URL.createObjectURL(new Blob([blob], { type: "audio/wav" }));
     audio.src = mediaUrl;
+    message.textContent = "Ready to play WAV.";
     play.disabled = false;
     reset.disabled = false;
   } catch {

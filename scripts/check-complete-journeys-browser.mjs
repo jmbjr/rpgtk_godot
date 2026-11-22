@@ -112,6 +112,10 @@ try{
    await example(input);assert.equal(await page.locator('#selection-back').isDisabled(),true,'New archive boundary');
    const connected=await exportJSON(false);assert.equal(connected.archive.fileCount,Object.keys(connected.artifacts).length);
    await page.locator('#explore-boards').press('Enter');await pathIs(input.board);
+   assert.equal(await page.locator('#asset-name').evaluate(e=>e===document.activeElement),true);
+   await page.keyboard.press('Tab');assert.equal(await page.locator('#selection-back').evaluate(e=>e===document.activeElement),true);
+   await page.keyboard.press('Tab');assert.equal(await page.locator('[data-section="file-title"]').evaluate(e=>e===document.activeElement),true,'Disabled Forward is skipped');
+   await page.keyboard.press('Shift+Tab');assert.equal(await page.locator('#selection-back').evaluate(e=>e===document.activeElement),true);
    if(viewport==='desktop'&&!input.native){await page.locator('.selected-asset').evaluate(e=>e.scrollIntoView({block:'start'}));await shot('after-board-desktop.png');}
    const board=record(connected,input.board);const tileEdge=board.references.outgoing.find(edge=>edge.target?.tileIndex);
    assert.ok(tileEdge);await follow(tileEdge);const tilePath=targetPath(connected,tileEdge.target),tile=tileEdge.target.tileIndex;
@@ -136,12 +140,12 @@ try{
    const caller=sound.references.incoming.find(edge=>edge.line&&targetPath(connected,edge.source)?.toLowerCase().endsWith('.prg'));assert.ok(caller,'Audio shortcut has an indexed program caller');
    if(sound.type==='wav'){
      await page.locator('#graph audio').waitFor({state:'attached'});await page.locator('#graph audio').evaluate(a=>a.addEventListener('playing',()=>a.dataset.played='yes',{once:true}));
+     await page.waitForFunction(()=>document.querySelector('#graph .audio-controls button')?.disabled===false);
      await page.getByRole('button',{name:'Play WAV',exact:true}).press('Enter');await page.locator('#graph audio[data-played="yes"]').waitFor({state:'attached'});
      await page.getByRole('button',{name:'Reset WAV to beginning',exact:true}).press('Enter');
    }else{
      await page.locator('#graph').evaluate(graph=>{new MutationObserver(()=>{if(graph.textContent.includes('Playing with GeneralUser'))graph.dataset.played='yes';}).observe(graph,{childList:true,subtree:true,characterData:true});});
      await page.getByRole('button',{name:'Play MIDI',exact:true}).press('Enter');await page.locator('#graph[data-played="yes"]').waitFor({state:'attached'});
-     await page.getByRole('button',{name:'Reset MIDI to beginning',exact:true}).press('Enter');
    }
    await page.getByRole('button',{name:'Connections',exact:true}).press('Enter');await page.getByLabel('File type',{exact:true}).selectOption('prg');await page.getByLabel('Direction',{exact:true}).selectOption('incoming');
    await follow(caller);const callerPath=targetPath(connected,caller.source);await pathIs(callerPath);await page.locator(`#line-${caller.line}.active-line`).waitFor();

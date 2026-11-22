@@ -141,6 +141,7 @@ jobs:
           node scripts/build-tk2-test-game.mjs site/tk2-legacy-game.zip --legacy
           node scripts/build-tk2-test-game.mjs site/tk2-text-gam-game.zip --text-gam
       - name: Fingerprint the public viewer build
+        id: viewer_build
         env:
           REVIEW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: node scripts/stage-viewer-build.mjs site
@@ -179,6 +180,7 @@ jobs:
           path: dist/selected-asset-review
           if-no-files-found: warn
       - name: Check complete journeys and capture baseline evidence
+        if: ${{ !cancelled() && steps.viewer_build.outcome == 'success' }}
         env:
           REVIEW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |

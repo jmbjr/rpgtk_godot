@@ -50,6 +50,11 @@ Restart labels follow the active mode: Restart game versus Reset board diagnosti
 Closing Play returns focus to the preserved file selection. Simulated encounter
 outcomes stay explicitly labeled as compatibility tests.
 
+CI also exposed a WAV readiness gap: disabled controls had no pending message,
+and a keyboard test could focus them before the archive blob was ready. The UI
+now announces Loading/Ready, and keyboard automation waits for enabled controls
+before requiring a real playing event.
+
 Owner feedback available here is the request to reduce complexity and explain
 capabilities, plus earlier confusion about apparently unchanged builds.
 There is **no newcomer study or Sprint 3 owner acceptance**. Implementer

@@ -100,6 +100,7 @@ try {
   await page.getByRole('button',{name:'Listen to audio',exact:true}).press('Enter');
   const audioPath=await page.locator('#source-path').innerText();assert.match(audioPath,/\.wav$/);
   await page.locator('#graph audio').evaluate(a=>a.addEventListener('playing',()=>a.dataset.played='true',{once:true}));
+  await page.waitForFunction(()=>document.querySelector('#graph .audio-controls button')?.disabled===false);
   await page.getByRole('button',{name:'Play WAV',exact:true}).press('Enter');
   await page.locator('#graph audio[data-played="true"]').waitFor({state:'attached'});
   await page.getByRole('button',{name:'Reset WAV to beginning',exact:true}).press('Enter');
