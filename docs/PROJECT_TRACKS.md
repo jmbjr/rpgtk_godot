@@ -63,7 +63,7 @@ acceptance remain pending. The pinned public demo's ItemPath/inline task
 requirements are still unsupported; queued PushItem fixtures do not prove
 that demo's pursuit behavior. Original Toolkit execution was not performed.
 
-## Why the current interface is difficult to explain
+## Interface findings before Sprint 1
 
 These are source/interface observations and hypotheses to validate with a
 person, not completed usability research:
@@ -80,18 +80,24 @@ person, not completed usability research:
 - Many disclosures preserve valuable detail, but their quantity and labels do
   not by themselves tell someone what to open first or what a result means.
 
-## First-use milestone implementation in review
+## First-use milestone merged; selected-asset milestone in review
 
 PR #136 merged at `7265632fd80b12add39725e2fd94e2054f94c58f` and established this
 inventory/track map. PR #137 implements Sprint 1 below: accurate identity, one
 archive picker, three experience-labeled examples and post-import task actions,
 with normal Play separated from direct diagnostics. Its PR and `first-use-review`
 Actions artifact record the exact build, fixture hashes, desktop/mobile screenshots,
-keyboard/journey results and remaining owner acceptance. It is not merged or
-accepted by a person merely because its synthetic checks pass. Material decisions
+keyboard/journey results and remaining owner acceptance. PR #137 merged at `e392e99f10754e9ad2612e76243f23753713161f`; its integration
+checks and Pages deployment were verified by the owner at handoff. Owner
+usability acceptance is not established by merge or automated checks. Material decisions
 and the short owner checklist are in [first-use.md](usability/first-use.md).
 
-## Proposed usability sprints
+Sprint 2 now implements the selection identity, preview/source, single visible
+connection view and technical evidence structure described in
+[selected-asset.md](usability/selected-asset.md). Its review PR/Actions artifact
+record synthetic evidence; it remains unmerged until owner review.
+
+## Usability delivery sequence
 
 These are reviewable outcomes for discussion. They do not prescribe a new
 framework, a full redesign or removal of technical evidence. Validate the
@@ -129,7 +135,8 @@ relationship and return without losing their place.
   and runtime limitations in terms of what the person can still do.
 - Keep decoded records, source provenance and diagnostic evidence accessible
   as secondary detail with descriptive labels.
-- Resolve the ambiguity around the current **Capability graph** label.
+- Preserve #137's **RPGCode command reference** label; the old **Capability graph**
+  ambiguity was resolved in Sprint 1.
 
 **Acceptance:** complete board → tile → used-by, sound → caller source line,
 and missing-reference investigation; Back/Forward restores the expected

@@ -207,23 +207,46 @@
       </section>
 
       <section class="workspace" aria-label="Game archive workspace" id="workspace" hidden>
-        <aside class="panel programs">
+        <aside class="panel archive-browser">
           <div class="section-head"><h2>Folders</h2></div>
           <nav id="folder-list" class="file-list" aria-label="Archive folders"></nav>
+          <div class="section-head file-heading"><h2 id="source-title">Files</h2><span id="file-count"></span></div>
+          <div id="file-list" class="file-list" role="group" aria-label="Archive files"></div>
         </aside>
-        <section class="panel source-panel" aria-labelledby="source-title">
-          <div class="section-head"><h2 id="source-title">Files</h2><span id="file-count"></span></div>
-          <div id="file-list" class="file-list"></div>
-          <div class="section-head file-heading"><h3 id="file-title" tabindex="-1">Selection</h3><span id="selection"></span></div>
-          <p id="source-path" class="technical"></p>
-          <div id="source" class="source" tabindex="0" aria-label="Selected file details"></div>
-        </section>
-        <section class="panel graph-panel" aria-labelledby="graph-title">
-          <div class="section-head"><h2 id="graph-title" tabindex="-1">File inspector</h2><span id="counts"></span></div>
-          <div id="graph"></div>
-          <div id="reference" class="reference" aria-live="polite"></div>
-          <div id="connections" tabindex="-1"></div>
-        </section>
+        <article class="panel selected-asset" aria-labelledby="asset-name">
+          <header class="asset-identity">
+            <p id="asset-kind" class="eyebrow"></p>
+            <h2 id="asset-name" tabindex="-1">Selection</h2>
+            <p id="source-path" class="technical"></p>
+            <p id="selection"></p>
+            <p id="asset-support" class="support-note"></p>
+            <nav class="asset-sections" aria-label="Selected asset sections">
+              <button type="button" data-section="file-title">Preview or source</button>
+              <button type="button" data-section="connections">Connections</button>
+              <button type="button" data-section="technical-title">Technical details</button>
+            </nav>
+          </header>
+          <section class="asset-content" aria-labelledby="file-title">
+            <h3 id="file-title" tabindex="-1">Preview</h3>
+            <div id="source" class="source" tabindex="0" aria-label="Selected file details"></div>
+            <div id="preview-slot">
+              <div id="graph-block">
+                <div class="section-head"><h3 id="graph-title" tabindex="-1">Preview</h3><span id="counts"></span></div>
+                <div id="graph"></div>
+                <div id="reference" class="reference" tabindex="-1" aria-live="polite"></div>
+              </div>
+            </div>
+          </section>
+          <section id="connections" class="asset-content" tabindex="-1" aria-label="Asset connections"></section>
+          <section class="asset-content" aria-labelledby="technical-title">
+            <h3 id="technical-title" tabindex="-1">Technical details</h3>
+            <p>Detected format, decoded fields and inspection evidence. These records describe the imported file; they do not guarantee complete runtime support.</p>
+            <div id="asset-format"></div>
+            <div id="asset-metadata"></div>
+            <div id="command-slot"></div>
+            <div id="asset-record"></div>
+          </section>
+        </article>
       </section>
     </main>
     <footer>Game files stay in your browser. Connections come from recognized archive fields and source references; gameplay compatibility is partial.</footer>

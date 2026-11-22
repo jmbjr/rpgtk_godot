@@ -721,9 +721,19 @@ try {
     await pathIs(path);
   };
   const follow = async label => {
-    const link = page.locator("#connections .edge-list button").filter({ hasText: label }).first();
-    await link.evaluate(button => { button.closest("details").open = true; });
-    await link.click();
+    // Inspect the same grouped evidence a person sees; no duplicate edge list.
+    for (;;) {
+      for (const node of await page.locator("#connections .connection-node").all()) {
+        await node.click();
+        const link = page.locator("#connections .connection-preview .edge-list button").filter({ hasText: label }).first();
+        if (await link.count()) { await link.click(); return; }
+      }
+      const more = page.locator("#connections .connection-more").filter({ hasText: /^Show more/ });
+      const available = await more.all();
+      let expanded = false;
+      for (const control of available) if (await control.isVisible()) { await control.click(); expanded = true; }
+      if (!expanded) throw Error("No connection evidence matching " + label);
+    }
   };
   const accountForArchive = async bytes => {
     const zip = await JSZip.loadAsync(bytes);
@@ -1007,11 +1017,11 @@ try {
   await page.locator("#source #line-2.active-line").waitFor();
 
   await file(tk3 + "Enemy/sentinel.ene");
-  await expectText("graph", "ENE · Binary 2.1");
-  await page.locator('#graph a[href$="/ene.md#binary-21"]').waitFor();
+  await expectText("asset-format", "ENE · Binary 2.1");
+  await page.locator('#asset-format a[href$="/ene.md#binary-21"]').waitFor();
   await page.locator('#graph canvas[aria-label="Frame preview for test_south.anm"]').waitFor();
   await file(tk3 + "Bkrounds/field.bkg");
-  await expectText("graph", "BKG · Binary 2.3");
+  await expectText("asset-format", "BKG · Binary 2.3");
   await page.waitForFunction(() => document.querySelector("#source img")?.naturalWidth === 16);
   await follow(/Battle background image.*field.png/);
   await pathIs(tk3 + "Bitmap/field.png");
