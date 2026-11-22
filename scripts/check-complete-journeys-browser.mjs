@@ -166,7 +166,7 @@ try{
    assert.equal(await page.locator('#technical-title').evaluate(e=>e===document.activeElement),true);
    assert.ok(await page.locator('.selection-toolbar').evaluate(e=>{const r=e.getBoundingClientRect();return r.top>=-1&&r.bottom<innerHeight/2;}),'Compact sticky context remains visible');
    await noOverflow();if(!input.native)await shot('after-technical-'+viewport+'.png');
-   await page.locator('#asset-record > summary').press('Enter');await page.getByLabel('Decoded artifact JSON',{exact:true}).filter({hasText:probe.path}).waitFor();
+   await page.locator('#asset-record summary').press('Enter');await page.getByLabel('Decoded artifact JSON',{exact:true}).filter({hasText:probe.path}).waitFor();
    const beforeExport=await page.evaluate(()=>history.length);
    const exported=await exportJSON(true);assert.equal(exported.archive.fileCount,connected.archive.fileCount);assert.ok(record(exported,probe.path).references.outgoing.some(e=>e.status==='dynamic'));
    assert.equal(await page.evaluate(()=>history.length),beforeExport,'Export shortcut adds no history stop');
