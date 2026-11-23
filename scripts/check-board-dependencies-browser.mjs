@@ -94,7 +94,9 @@ try{
     // Actual depth bound and paging are visible, with a continuation route.
     for(let i=0;i<4;i++){const chain=await revealRow(input.root+'Prg/chain'+i+'.prg');await expand(chain);}
     assert.match(await page.locator('#board-dependencies').innerText(),/Hop limit reached \(6\)/);
-    await page.locator('#dependency-jump').press('Enter');await shot('after-trail-'+(input.legacy?'tk2':'tk3')+'-'+viewport+'.png');
+    await page.locator('#dependency-jump').press('Enter');
+    assert.ok(await page.locator('#dependency-title').evaluate(e=>e.getBoundingClientRect().top>=document.querySelector('.selection-toolbar').getBoundingClientRect().bottom),'Investigation heading clears sticky toolbar');
+    await shot('after-trail-'+(input.legacy?'tk2':'tk3')+'-'+viewport+'.png');
     const missing=artifact(json,input.program).references.outgoing.find(e=>e.status==='missing');const missingRow=rows().and(page.locator(`[data-owner="${input.program}"][data-path=""]`)).filter({hasText:missing.value}).first();await inspect(missingRow);
     if(!input.legacy)await shot('after-evidence-tk3-'+viewport+'.png');
     // Numbered tiles use the same exact target pointer as connected JSON.

@@ -40,6 +40,11 @@ file identities in the visible outline; each occurrence keeps its own route and
 evidence and may expand independently. Changing visible branches can change
 which occurrence is first. Neither label implies execution or necessity.
 
+The first screenshot review found that a nearest-edge scroll could place the
+focused investigation heading under the sticky toolbar on a narrow viewport.
+Heading/evidence return actions now align below the toolbar; staged checks assert
+that the investigation heading is visible below it.
+
 ## Explicit limits
 
 - 120 visible relationship groups, six hops, eight groups per paging action.

@@ -12,7 +12,7 @@ const evidenceLabel = edge => [edge.evidence, edge.line ? "line " + edge.line : 
 export function mountDependencyView(container, { open, source, changed, closed }) {
   let session, artifacts, active, activeControl, snapshot;
   const control = (text, action) => { const button = node("button", text); button.type = "button"; button.addEventListener("click", action); return button; };
-  const focus = element => { element.focus({ preventScroll: true }); element.scrollIntoView({ block: "nearest" }); };
+  const focus = element => { element.focus({ preventScroll: true }); element.scrollIntoView({ block: element === heading || element === evidence ? "start" : "nearest" }); };
   const heading = node("h3", "Board dependencies"); heading.id = "dependency-title"; heading.tabIndex = -1;
   const rootLabel = node("p", "", "technical"); rootLabel.id = "dependency-root";
   const tools = node("div", "", "task-buttons");
