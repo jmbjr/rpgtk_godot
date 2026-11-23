@@ -422,7 +422,20 @@ body.has-archive .intro-copy { margin-block: .75rem .4rem; }
 .task-buttons { display: flex; flex-wrap: wrap; gap: .4rem; }
 #selection-export { margin-bottom: .7rem; }
 .connection-preview:focus { outline: 2px solid var(--gold); outline-offset: 2px; }
+.dependency-outline, .dependency-outline ol { list-style: none; padding-left: 1rem; }
+.dependency-outline { padding: 0; max-height: 32rem; overflow-y: auto; }
+.dependency-row { border-left: 2px solid var(--line); padding: .55rem .65rem; margin-block: .4rem; }
+.dependency-row p { margin-block: .25rem; overflow-wrap: anywhere; }
+.dependency-reason { font-size: .85rem; color: var(--gold); }
+.dependency-marker, .dependency-limit { color: var(--gold); font-size: .85rem; }
+.dependency-evidence { border: 1px solid var(--line); margin-top: .8rem; padding: .7rem; overflow-wrap: anywhere; }
+.dependency-evidence:focus { outline: 2px solid var(--gold); }
+.selected-asset :is(#dependency-title, #dependency-evidence) { scroll-margin-top: 10rem; }
+.dependency-row .task-buttons button { min-width: 0; overflow-wrap: anywhere; max-width: 100%; }
 @media (max-width: 590px) {
+  .dependency-outline ol { padding-left: .25rem; }
+  .dependency-row { padding-inline: .4rem; }
+  .selected-asset :is(#dependency-title, #dependency-evidence) { scroll-margin-top: 13rem; }
   .selected-asset :is(#file-title, #technical-title, #connections, #reference, .source-row, .connection-preview) { scroll-margin-top: 11rem; }
   .selection-toolbar .asset-sections { gap: .3rem; }
   .selection-toolbar button { padding: .35rem .45rem; }

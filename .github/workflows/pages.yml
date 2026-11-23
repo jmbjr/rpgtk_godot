@@ -118,6 +118,7 @@ jobs:
           node scripts/check-movement-sandbox.mjs
           node scripts/check-inspector-history.mjs
           node scripts/check-connection-map.mjs
+          node scripts/check-dependency-investigation.mjs
           node scripts/check-asset-presentation.mjs
       - name: Check tileset PDF export
         run: node scripts/check-tileset-pdf.mjs
@@ -127,6 +128,7 @@ jobs:
           cp .nojekyll index.html style.css app.mjs archive.mjs archive-inventory.mjs model.mjs rpgcode-references.mjs artifacts.mjs asset-format.mjs tile-palette.mjs records.mjs game-graph.mjs inspector-history.mjs connection-map.mjs media.mjs midi.mjs piano-roll.mjs sprites.mjs tile-matches.mjs tile-pdf.mjs catalog.json site/
           cp native-board-tail.mjs script-trace.mjs save-state.mjs pe-inspect.mjs plugin-audit.mjs playability-audit.mjs playable-scene.mjs placed-sprites.mjs vector-collision.mjs tk3-language.mjs tk3-canvas-services.mjs tk3-player-services.mjs tk3-script-slice.mjs tk3-board-transfer.mjs tk3-board-programs.mjs tk3-gam-startup.mjs tk3-runtime-keys.mjs tk3-fight-bridge.mjs site/
           cp asset-presentation.mjs site/
+          cp dependency-investigation.mjs dependency-view.mjs site/
           cp tk3-board-entry.mjs tk3-tasks.mjs tk3-behavior-bindings.mjs tk3-entities.mjs site/
           mkdir -p site/experiments/movement-sandbox
           cp experiments/movement-sandbox/{engine,playtest-guidance,authored-play}.mjs experiments/movement-sandbox/sandbox.css site/experiments/movement-sandbox/
@@ -194,7 +196,23 @@ jobs:
           path: dist/complete-journeys-review
           if-no-files-found: warn
       - name: Build and verify synthetic CMP1 wrapper
+        # Read-only dependency journeys use independently structured upload cases.
+        # Keep this before final packaging so its failure blocks deployment.
         run: node scripts/build-tk2-installer-fixture.mjs site/tk2-legacy-game.zip dist/tk2-legacy-cmp1-test-wrapper.zip
+      - name: Check board dependency investigations and capture evidence
+        if: ${{ !cancelled() && steps.viewer_build.outcome == 'success' }}
+        env:
+          REVIEW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          git fetch --no-tags --depth=1 origin cd1ecbebcc83262eaf5784d70e8e6a718db9e30b
+          node scripts/check-board-dependencies-browser.mjs site dist/board-dependencies-review
+      - name: Upload board dependency evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: board-dependencies-review
+          path: dist/board-dependencies-review
+          if-no-files-found: warn
       - name: Compare alternate GAM and validate all 57 matrix rows
         run: |
           node scripts/check-alternate-gam.mjs site/tk2-legacy-game.zip site/tk2-text-gam-game.zip

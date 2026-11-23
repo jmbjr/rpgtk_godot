@@ -236,6 +236,8 @@
               <button type="button" data-section="connections">Connections</button>
               <button type="button" data-section="technical-title">Technical details</button>
               <button type="button" data-section="archive-heading">Archive actions</button>
+              <button type="button" id="investigate-board" hidden>Investigate dependencies</button>
+              <button type="button" id="dependency-jump" hidden>Board dependencies</button>
             </nav>
           </div>
           <section class="asset-content" aria-labelledby="file-title">
@@ -249,6 +251,7 @@
               </div>
             </div>
           </section>
+          <section id="board-dependencies" class="asset-content" aria-labelledby="dependency-title" hidden></section>
           <section id="connections" class="asset-content" tabindex="-1" aria-label="Asset connections"></section>
           <section class="asset-content" aria-labelledby="technical-title">
             <h3 id="technical-title" tabindex="-1">Technical details</h3>

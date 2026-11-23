@@ -1,5 +1,11 @@
 # Complete understandable journeys: usability Sprint 3
 
+Status: #139 merged at `cd1ecbebcc83262eaf5784d70e8e6a718db9e30b`. Main
+checks and Pages deployment passed in Actions 45085632842, independently verified
+during the board-dependency milestone. The live rendered build identity matched.
+This supersedes the historical PR-only deployment wording below; human usability
+acceptance remains pending.
+
 ## Baseline recorded before interface edits
 
 Fetched main `ff0f2fb288c05e27b1911920d0f7b9a9d79c99f6` (#138 merged).
