@@ -11,6 +11,9 @@ It describes tasks a person can accomplish, rather than every parser,
 command or technical panel. The groupings are proposals for discussion;
 they do not commit the website to a particular navigation design.
 
+The [authoring capability graph](docs/AUTHORING_CAPABILITIES.md) tracks the
+prerequisites for creating new Toolkit assets, starting with tiles and tilesets.
+
 ## Start with something you want to accomplish
 
 | I want to… | Start here | A useful result looks like… |
