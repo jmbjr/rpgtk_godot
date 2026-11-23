@@ -22,7 +22,7 @@ They are not six separate website modes that a visitor should have to learn.
 
 | Track | Human outcome | Issues and current position | Remaining acceptance |
 | --- | --- | --- | --- |
-| **Explore assets and connections** | See/hear what is in a game and trace how its pieces relate | #37 and explorer scope of #123. Initial viewer, per-file JSON and connected JSON shipped in #3/#8/#9; shared resolver and connected workflows followed in #125–#126 | Complete reference/provenance coverage for supported records; clearer navigation; future multi-hop graph and selection/export/recomposition need explicit scope |
+| **Explore assets and connections** | See/hear what is in a game and trace how its pieces relate | #37 and explorer scope of #123. Initial viewer, per-file JSON and connected JSON shipped in #3/#8/#9; shared resolver and connected workflows followed in #125–#126 | Complete reference/provenance coverage for supported records; clearer navigation; bounded board dependency investigation is in review; selection/export/recomposition remain separate |
 | **Format accuracy and evidence** | Trust what the viewer says and see where knowledge is incomplete | #27 specifications; #41 Toolkit 2 converter parity; #63 historical matrix/specimens; #79 native Toolkit 3. Initial GAM work #80 is closed | Historical layouts, projection, schema/conformance completeness and original editor/save/runtime comparisons; the 57-row TK2 ledger includes 3 partial and 2 evidence-blocked rows |
 | **Generic Toolkit 3 execution** | Try supported authored behavior and diagnose a failure at its source | #123. Startup/language/title/canvas/audio in #128–#131; entry/tasks/live moving entities in #133–#135 are merged and deployed | Owner acceptance of authored boards; inline tasks, pathfinding and verified foreground handoff, broader language/objects, native combat/plugins and save/load remain separate work |
 | **Toolkit 2 execution** | Eventually try older games using verified shared systems | Next runtime phase in #2/#123, after the current generic TK3 sequence; #41/#63 provide format evidence | Define a source-backed playable slice; decoder coverage does not establish runtime compatibility |
@@ -80,7 +80,7 @@ person, not completed usability research:
 - Many disclosures preserve valuable detail, but their quantity and labels do
   not by themselves tell someone what to open first or what a result means.
 
-## Sprints 1 and 2 merged; Sprint 3 implementation in review
+## Sprints 1–3 merged; board investigation in review
 
 PR #136 merged at `7265632fd80b12add39725e2fd94e2054f94c58f` and established this
 inventory/track map. PR #137 implements Sprint 1 below: accurate identity, one
@@ -99,7 +99,7 @@ connection view and technical evidence structure described in
 record synthetic evidence. Main [Actions 45011045812](https://github.com/jmbjr/rpgtk_godot/actions/runs/45011045812) passed checks and Pages deployment; independently verified during Sprint 3.
 Human acceptance is still separate.
 
-Sprint 3 ([PR #139](https://github.com/jmbjr/rpgtk_godot/pull/139), in review)
+Sprint 3 ([PR #139](https://github.com/jmbjr/rpgtk_godot/pull/139), merged at `cd1ecbe`)
 refines complete board/tile/history, audio/caller, unresolved-reference,
 technical/export and normal/direct Play journeys. [Complete-journey notes](usability/complete-journeys.md)
 record the implementer's production observations, source corroboration, cached
@@ -181,3 +181,17 @@ merged PR or green CI into an assumed usability pass.
   acceptance and original Toolkit checks independently, with exact versions.
 - Keep private game archives, assets, DLLs and source local unless the owner
   separately authorizes publication.
+
+
+## Current Explorer checkpoint: evidenced board dependencies
+
+#139 main checks and Pages deployment passed in Actions 45085632842; verified
+independently along with the live build identity. The next review adds a bounded
+read-only outgoing investigation from a selected board: expand multiple hops,
+retain each route’s evidence, identify cycles/shared assets/unresolved links,
+open exact source/tile/owner evidence and return through the existing inspector.
+This advances #37/#123 without changing resolution, runtime or JSON semantics.
+Material decisions, limits, synthetic verification and one owner checklist are
+in [board-dependencies.md](usability/board-dependencies.md). Editing/rewriting,
+subset selection/export, merging archives and playable Godot export remain future
+work. Automated evidence and owner usability acceptance remain separate.

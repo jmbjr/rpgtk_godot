@@ -5,8 +5,8 @@ its files connect. You can also try the supported parts of an imported
 Toolkit 3 game and export structural information for further work.
 
 This is a **working capability inventory**, reviewed against main
-`ff0f2fb288c05e27b1911920d0f7b9a9d79c99f6` (#138 merged), with the
-Sprint 3 journey refinements in review in #139 on November 22, 2026.
+`cd1ecbebcc83262eaf5784d70e8e6a718db9e30b` (#139 merged), with the
+board-dependency investigation milestone in review.
 It describes tasks a person can accomplish, rather than every parser,
 command or technical panel. The groupings are proposals for discussion;
 they do not commit the website to a particular navigation design.
@@ -81,7 +81,8 @@ are explained while the complete file browser remains usable.
 | --- | --- | --- |
 | Find what a file uses and what uses it | Use the visible **Connections** section: **Used by** (incoming) and **References** (outgoing) | The index covers recognized bindings and static references; computed runtime filenames can remain unknown |
 | Follow a relationship to its evidence | Select **Inspect connection**, read the field/line/value evidence, then **Open in inspector** or follow an exact evidence button | Evidence precision depends on the relationship; unresolved targets retain the raw value/candidates |
-| Narrow a crowded connection view | Filter **Connections** by direction, **File type** or resolution; a changed file/tile starts unfiltered | This is direct-neighbor navigation, not an expandable whole-game multi-hop graph |
+| Investigate a board across several hops | Select a BRD → **Investigate dependencies**; expand routes, inspect evidence, open assets and use **Board dependencies** to return | Outgoing static evidence only; cycles stop, shared assets keep each route, unresolved/candidate references remain explicit; 120 visible groups / 6 hops |
+| Narrow a crowded connection view | Filter **Connections** by direction, **File type** or resolution; a changed file/tile starts unfiltered | These filters affect the selected asset’s direct neighbors; the separate board investigation retains its own trail |
 | Retrace an investigation | Use selection **Back/Forward**, or browser Back/Forward, between exact file/tile/source stops | The in-page controls stop at the current archive boundary; opening another ZIP starts a new trail |
 
 The original goal of connecting every asset remains an acceptance target.
@@ -228,3 +229,30 @@ See [complete-journeys.md](docs/usability/complete-journeys.md) for observations
 decisions, limitations and the single owner checklist. Automated synthetic tests,
 implementer walkthrough, original/private ZIPs, merge, deployment and owner/newcomer
 acceptance remain distinct. **Human Sprint 3 acceptance is pending.**
+
+
+## Board dependency investigation
+
+The selected board now has **Investigate dependencies**. A pinned, read-only
+outline retains its starting board while the existing inspector opens an asset,
+source line or numbered tile. **Board dependencies** returns keyboard focus to
+the investigation; **Return to board** and ordinary Back/Forward retrace inspector
+selections. Opening a different archive or rebuilding its graph clears the trail.
+
+Expansion follows the existing shared outgoing edges and identities used by
+connected JSON. Field/slot/position, source/argument/line and tile evidence remain
+available. Missing, ambiguous, computed, unindexed and foreign-project evidence
+use the same explanations; candidate inspection never chooses a target. Cycles
+stop at ancestors; shared assets are labeled and keep each evidenced route.
+There are at most 120 visible relationship groups and six hops, eight groups per
+paging action, and 60 evidence occurrences / 12 candidates per displayed edge.
+Hidden counts and inspector continuation routes disclose those limits.
+
+This is indexed static evidence, not complete runtime reachability or a list of
+files proven necessary to run the board. Editing, reference rewriting, subset
+export, cross-game merge and playable-project export remain separate work. See
+[board-dependencies.md](docs/usability/board-dependencies.md) for design/test scope.
+
+#139 merged at `cd1ecbe`; main checks and Pages deployment independently passed
+in [45085632842](https://github.com/jmbjr/rpgtk_godot/actions/runs/45085632842).
+The live rendered site showed that build. Owner/newcomer acceptance remains pending.

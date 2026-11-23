@@ -15,6 +15,7 @@ import { renderMidiPianoRoll } from "./piano-roll.mjs";
 import { artifactRecord } from "./records.mjs";
 import { connectedGameRecord, rpgcodeRoles } from "./game-graph.mjs";
 import { createInspectorHistory } from "./inspector-history.mjs";
+import { mountDependencyView } from "./dependency-view.mjs";
 import { connectionCounts, connectionFilterOptions, connectionNeighbors, connectionType,
   filterConnections, referenceDestination } from "./connection-map.mjs";
 import { characterArtworkSprite, animationFrames, battleBackground, enemySprite, itemSprites, keyFrameColor, standaloneTilePixels, tileBitmapSprite } from "./sprites.mjs";
@@ -63,6 +64,7 @@ let tileSelection;
 let selectedLine;
 let selectedInlineSlot;
 let connectionFilters = {};
+let dependencyView;
 const inspectorHistory = createInspectorHistory(window.history);
 let animationTimer;
 let stopAnimationPlayback;
@@ -198,6 +200,8 @@ function selectDefault(newArchive = false) {
   references = buildReferences(artifacts, mainFile && {
     name: mainFile.filename, bindings, external: mainFile === uploadedMainFile,
   });
+  // A rebuilt archive graph invalidates the prior investigation's identities.
+  dependencyView?.clear();
   const mainData = byId("main-data");
   mainData.replaceChildren();
   if (mainFile) mainData.append(assetFormatHeader({ type: "gam", sourceFormat: mainSourceFormat(mainFile) }));
@@ -411,6 +415,8 @@ function updateSelectionIdentity() {
   byId("asset-name").textContent = selected ? basename(selected) : "Selection";
   byId("asset-kind").textContent = kind;
   byId("asset-support").textContent = support;
+  byId("investigate-board").hidden = artifact?.type !== "brd" || dependencyView?.root === selected;
+  byId("dependency-jump").hidden = !dependencyView?.root;
   byId("selection-context").textContent = [selected ? basename(selected) : "Choose a file",
     tileSelection ? `Tile ${tileSelection}` : "", selectedLine ? `Line ${selectedLine}` : ""].filter(Boolean).join(" · ");
   byId("selection-context").title = selected ?? "";
@@ -2867,3 +2873,14 @@ byId("explore-boards").addEventListener("click", () => {
   const path = boards.includes(configured) ? configured : boards[0];
   if (path) { selectArtifact(path); focusResult("asset-name"); }
 });
+
+dependencyView = mountDependencyView(byId("board-dependencies"), {
+  open: openConnection,
+  source: destination => { openConnection(destination); if (!destination.line) focusResult("technical-title"); },
+  changed: updateSelectionIdentity,
+  closed: () => focusResult("asset-name"),
+});
+byId("investigate-board").addEventListener("click", () => {
+  if (artifacts.get(selected)?.type === "brd") dependencyView.start(selected, references, artifacts);
+});
+byId("dependency-jump").addEventListener("click", () => dependencyView.reveal());
