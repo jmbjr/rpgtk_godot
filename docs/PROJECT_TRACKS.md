@@ -1,5 +1,57 @@
 # Project tracks and proposed usability work
 
+## Current owner direction — November 22, 2026
+
+The next game-definition step is [intake #142](https://github.com/jmbjr/rpgtk_godot/issues/142):
+a completely new, simpler game authored by the owner with AI assistance, built
+one selected asset/capability increment at a time. The working reference is the
+owner's old BSTW demo, decomposed locally into candidate requirements rather than
+adopting its plugin/class-library implementation. The intake determines which
+story, dialogue, interactions and ending to retain or change. The existing TK3
+test game and generated regression labs do not define the new creative scope.
+
+Use core Toolkit editor features and ordinary procedural RPGCode first. Combat
+is provisionally excluded. Menu/inventory/save requirements need an intake
+decision: original default menus and combat are plugin-backed and must not be
+assumed to be plugin-free or implemented in the browser. Retain one generic
+player/model/runtime; keep game decisions in new content. New assets can enter
+the repository after the concrete scope is agreed; original ZIPs/assets/DLLs and
+private source stay local unless separately authorized.
+
+Intake #142 specifies exact ZIP/hash provenance, capability and requirement
+ledgers, an asset burndown, a minimum launch bundle, owner decision points and
+complete-game acceptance. [Pinned TK3 authoring references](TK3_AUTHORING_REFERENCES.md)
+support that work. #92 remains the original BSTW evidence ledger; this is a new
+authoring track, not restoration of its removed adapter or proof of original-ZIP
+compatibility.
+
+Main `840f7c55` includes merged #140's bounded multi-hop board dependency
+investigation. Actions 45090803221 passed checks and Pages deployment; human
+acceptance remains separate. Earlier review snapshots below retain their dates.
+
+### Future opportunity, gated on the simpler completed game
+
+[Opportunity #141](https://github.com/jmbjr/rpgtk_godot/issues/141) records the
+research sources and exact known license/scope limits:
+
+- [Adonthell — Waste's Edge](https://adonthell.nongnu.org/) and its
+  [data-driven port](https://github.com/Ferk/wastesedge-v32): investigation,
+  dialogue/quest material, maps and beginning/ending references.
+- [JGA: Crossroads of Destiny](https://github.com/freakified/jga): released story,
+  screenplay, chapter scenes and turn-based mechanics.
+- [Flare: Empyrean Campaign](https://github.com/flareteam/flare-game):
+  editable campaign/quest/NPC/item/enemy content.
+- [Ashes of the Hollow Sun](https://github.com/drifter2023/crpg-narrative-design):
+  open GDD; detailed dialogue, regional quests and mechanical notes remain planned.
+
+None is selected for adaptation. Promotion requires the simpler game's
+owner-agreed complete scope to be implemented and accepted on an exact deployed
+build, with all in-scope assets/scripts and story paths verified. Source/license
+review and an owner scope choice then precede any external adaptation.
+The generic TK3 → TK2 → DODGE/Godot direction remains; #33 stays separate.
+
+## Original track review snapshot
+
 Reviewed November 21, 2026 against main
 `53a47eeca10e87050eccf5aaa8823817b5aa1496`. All 18 issues, including closed
 milestones and their discussions, were reviewed. There were no open PRs at
