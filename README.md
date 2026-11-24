@@ -4,6 +4,12 @@ Start with [what you can do with the Game Explorer](CAPABILITIES.md) for a
 task-based capability inventory, or the [project tracks and proposed usability
 sprints](docs/PROJECT_TRACKS.md) for the current roadmap/issue map.
 
+For planned Toolkit authoring, read the
+[project workflow and next implementation handoff](docs/AUTHORING_WORKFLOW.md)
+alongside the [authoring capability graph](docs/AUTHORING_CAPABILITIES.md).
+They connect project requirements and contributor work to proposed asset
+variants, review and build selections. These workflows are not implemented yet.
+
 Open Toolkit 2/3 archives to preview artwork, listen to audio, follow source
 connections and try supported Toolkit 3 play. Start with **Open a game archive**
 or choose one of three experiences under **Try an example**. After import, use

@@ -5,6 +5,12 @@ This graph starts with A01, the cave terrain tileset from the
 It describes what an author must be able to do. Tool selection and web features
 are tracked separately from prerequisites.
 
+The [project authoring workflow](AUTHORING_WORKFLOW.md) adds planned W01-W07
+capabilities for connecting requirements to work, contributor skills, proposed
+asset variants, reviews and build selections. These are planned authoring
+tasks, separate from the shipped Explorer inventory. Start there for the next
+implementation handoff: request-bound tile authoring with C01.
+
 ## A01 tile and tileset dependencies
 
 ```mermaid
@@ -39,6 +45,31 @@ elsewhere. C14 covers a future editing workflow for existing Toolkit assets.
 C17 is conditional for A01 and also applies to A02 if Bruce's art uses
 transparent pixels. The downstream A05 board check verifies that a board cell
 still resolves its tile after the artwork in that slot changes.
+
+### Project context and capability status
+
+The tile-supply OR gate remains valid for both internal and external tools.
+Drawing artwork can occur independently; the integrated project workflow must
+retain the originating requirement and assignment when a person creates,
+opens, imports or saves artwork. C01's pixel round trip is accompanied by
+W03/W04 assignment and proposed-variant persistence. An individual tile can
+contribute to A01 without fulfilling its entire tileset requirement. Review
+and exact build selection are separate W05/W06 outcomes.
+
+| Capability | Current web Toolkit authoring support at main `75d6a76` | Other evidence and limits |
+| --- | --- | --- |
+| C01 | Missing drawing/edit/save/reopen workflow | External pixel-art and native Toolkit editors are candidate production tools; no selected A01 round trip is recorded |
+| C13 | Missing artwork-to-editable-tile import | The viewer previews images from archives; this does not convert artwork into a tile for authoring |
+| C14 | Missing editable-TST opening | Existing TST inspection exposes numbered previews; it does not provide an editable tileset |
+| C15 | Missing indexed tileset authoring | Repository fixture builders generate predetermined sets; they are not a general author-facing assembly workflow |
+| C16 | Missing author-facing TST export | Existing readers/tests and synthetic TST writers provide implementation evidence; JSON/PDF exports do not fulfill C16 |
+| C17 | Missing transparency authoring | Existing decoders/previews exercise transparency; authoring and export preservation still need verification |
+
+Contributor skill (for example, pixel art or tool familiarity), implemented
+software capability, available inputs and requirement fulfillment are separate
+facts. Work filters must distinguish them and allow alternative production
+routes. The workflow contract records the requirement-to-variant links and
+the evidence needed before an external route can count as verified support.
 
 ## Tools and processes to evaluate
 

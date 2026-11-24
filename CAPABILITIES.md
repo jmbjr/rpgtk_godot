@@ -13,6 +13,10 @@ they do not commit the website to a particular navigation design.
 
 The [authoring capability graph](docs/AUTHORING_CAPABILITIES.md) tracks the
 prerequisites for creating new Toolkit assets, starting with tiles and tilesets.
+The planned [project authoring workflow](docs/AUTHORING_WORKFLOW.md) connects
+requirements, skill-filtered work, attributed asset variants, review and exact
+build selections. It includes the next implementation handoff; these authoring
+features are not yet available in the Explorer.
 
 ## Start with something you want to accomplish
 
