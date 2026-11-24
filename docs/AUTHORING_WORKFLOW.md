@@ -150,8 +150,9 @@ playable Godot export. This plan does not change the DODGE specification.
 
 ## Start a local tile assignment
 
-1. Choose **Author a project tile** from the Explorer home page. Open a
-   version 1 JSON manifest. Use the
+1. From a local checkout, start the viewer with `python scripts/serve-viewer.py`
+   (use `python3` if needed). Open `http://localhost:8000`. Choose
+   **Author a project tile** to open the file picker and select a version 1 JSON manifest. Use the
    [synthetic project sample](specs/fixtures/synthetic-tile-project.json) to
    try the workflow or as a starting shape for your own manifest.
 2. Enter a contributor ID and display name. Declare comma-separated skills

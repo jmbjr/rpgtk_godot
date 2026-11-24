@@ -24,7 +24,7 @@
         <p class="local-note">Your game stays in your browser. No account or installation needed.</p>
       </header>
 
-      <p><a href="#tile-authoring">Author a project tile</a></p>
+      <p><button type="button" id="open-tile-project" disabled>Author a project tile</button></p>
 
       <section class="panel import-panel" aria-labelledby="import-heading">
         <div class="open-grid">
@@ -269,10 +269,10 @@
       <section class="panel" id="tile-authoring" aria-labelledby="tile-authoring-title">
         <h2 id="tile-authoring-title">Project tile authoring</h2>
         <p>Open a local project manifest to find tile work and save proposed variants.</p>
-        <label>Project manifest <input id="tile-project-file" type="file" accept=".json,application/json"></label>
-        <p id="tile-project-status" role="status"></p>
+        <label>Project manifest <input id="tile-project-file" type="file" accept=".json,application/json" disabled></label>
+        <p id="tile-project-status" role="status">If the picker stays disabled, serve this checkout with <code>python scripts/serve-viewer.py</code> and reload.</p>
         <div id="tile-project" hidden>
-          <h3 id="tile-project-title"></h3>
+          <h3 id="tile-project-title" tabindex="-1"></h3>
           <form id="tile-contributor">
             <fieldset>
               <legend>Contributor</legend>

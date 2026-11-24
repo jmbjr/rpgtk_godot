@@ -18,12 +18,12 @@ The full test-game download collection and technical evidence remain available
 as secondary details.
 
 A static explorer evolved from issue #3. Run `npm ci` to prepare the optional sound-bank
-player, then serve the repository root with Python 3 and open
+player, then start the local viewer server with Python 3 and open
 `http://localhost:8000` in a browser.
 
 ```sh
 npm ci
-python3 -m http.server 8000
+python scripts/serve-viewer.py
 ```
 
 Choose the game ZIP and optionally its separate Main File. The viewer reads

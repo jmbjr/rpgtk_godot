@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
@@ -22,8 +23,19 @@ const server = createServer(async (req, res) => {
     res.writeHead(404).end();
   }
 });
-await new Promise(done => server.listen(0, "127.0.0.1", done));
-const base = "http://127.0.0.1:" + server.address().port;
+let sourceServer;
+let base;
+if (process.argv.includes("--source")) {
+  sourceServer = spawn("python3", ["scripts/serve-viewer.py", "--port", "0"], { stdio: ["ignore", "pipe", "inherit"] });
+  base = await new Promise((ready, reject) => {
+    sourceServer.stdout.once("data", bytes => ready(bytes.toString().trim()));
+    sourceServer.once("error", reject);
+    sourceServer.once("exit", code => reject(new Error(`Viewer server exited (${code}).`)));
+  });
+} else {
+  await new Promise(done => server.listen(0, "127.0.0.1", done));
+  base = "http://127.0.0.1:" + server.address().port;
+}
 const errors = [];
 let browser, page;
 const contributor = {
@@ -33,7 +45,11 @@ const contributor = {
 const expected = Array(1024).fill(0);
 const openBrief = () => page.getByRole("button", { name: "Open brief · Draw diagnostic pixels" }).click();
 const openProject = async bytes => {
-  await page.getByLabel("Project manifest").setInputFiles({
+  const [chooser] = await Promise.all([
+    page.waitForEvent("filechooser"),
+    page.getByRole("button", { name: "Author a project tile" }).click(),
+  ]);
+  await chooser.setFiles({
     name: "synthetic-project.json", mimeType: "application/json", buffer: bytes,
   });
   await page.getByText("Opened synthetic-project.json.", { exact: true }).waitFor();
@@ -44,7 +60,6 @@ async function freshPage() {
   page.setDefaultTimeout(10000);
   page.on("pageerror", error => errors.push(error.message));
   await page.goto(base);
-  await page.getByRole("link", { name: "Author a project tile" }).click();
   return page;
 }
 async function save() {
@@ -170,5 +185,6 @@ try {
   console.log("Tile authoring passed in Chromium: attribution and readiness, all 1,024 decoded pixels, fresh-session reopen, immutable revision history, parallel proposals, missing artwork and independent archive inspection.");
 } finally {
   await browser?.close();
-  server.close();
+  sourceServer?.kill();
+  if (server.listening) server.close();
 }

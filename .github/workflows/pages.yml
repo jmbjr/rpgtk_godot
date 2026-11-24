@@ -157,6 +157,7 @@ jobs:
           npx playwright install --with-deps chromium
           node scripts/check-tk3-browser.mjs site
           node scripts/check-tile-authoring-browser.mjs site
+          node scripts/check-tile-authoring-browser.mjs site --source
       - name: Check first-use journeys and capture matched screenshots
         env:
           REVIEW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}

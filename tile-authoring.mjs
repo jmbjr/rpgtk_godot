@@ -4,6 +4,8 @@ import { standaloneTilePixels } from "./sprites.mjs";
 export function mountTileAuthoring() {
   const byId = id => document.getElementById(id);
   const status = byId("tile-project-status");
+  const filePicker = byId("tile-project-file");
+  const launch = byId("open-tile-project");
   const profile = byId("tile-contributor");
   const filter = byId("tile-work-filter");
   const editor = byId("tile-editor");
@@ -169,7 +171,7 @@ export function mountTileAuthoring() {
     }
   });
 
-  byId("tile-project-file").addEventListener("change", async event => {
+  filePicker.addEventListener("change", async event => {
     const request = ++openRequest;
     const file = event.target.files[0];
     event.target.value = "";
@@ -190,10 +192,15 @@ export function mountTileAuthoring() {
       byId("tile-project").hidden = false;
       renderWork();
       status.textContent = `Opened ${file.name}.`;
+      byId("tile-project-title").focus();
     } catch (error) {
       if (request === openRequest) status.textContent = `Could not open project. ${error.message}`;
     }
   });
+
+  launch.addEventListener("click", () => filePicker.click());
+  launch.disabled = filePicker.disabled = false;
+  status.textContent = "Choose a project manifest to begin.";
 
   profile.addEventListener("submit", event => {
     event.preventDefault();
