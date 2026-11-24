@@ -941,7 +941,7 @@ function readFont(bytes) {
   return { width: 8, height: 8, glyphs };
 }
 
-function readStandaloneTile(bytes) {
+export function readStandaloneTile(bytes) {
   const reader = textReader(bytes, "RPGTLKIT TILE");
   const detail = reader.number();
   const compressed = reader.number();

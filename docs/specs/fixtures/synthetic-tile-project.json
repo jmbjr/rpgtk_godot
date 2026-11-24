@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "id": "synthetic-tile-check",
+  "title": "Synthetic tile check",
+  "projectRequirements": [
+    { "id": "P01", "title": "Exercise tile authoring links", "source": "Synthetic verification only" }
+  ],
+  "assetRequirements": [
+    {
+      "id": "A01",
+      "revision": 2,
+      "projectRequirementId": "P01",
+      "title": "Diagnostic tileset need",
+      "constraints": "The individual test tile is 32 × 32 and opaque.",
+      "acceptance": "A tileset requires more than this single test submission."
+    }
+  ],
+  "workItems": [
+    {
+      "id": "work-pixel",
+      "title": "Draw diagnostic pixels",
+      "requirement": { "id": "A01", "revision": 2 },
+      "brief": "Paint one asymmetric test tile as a partial contribution.",
+      "acceptance": "Save and reopen the exact pixels.",
+      "readiness": "ready",
+      "routes": [
+        { "id": "web-pencil", "label": "Web pencil", "skills": ["diagnostic drawing"], "tools": ["web pencil"] },
+        { "id": "external-art", "label": "External drawing", "skills": ["external drawing"], "tools": ["external editor"] }
+      ]
+    },
+    {
+      "id": "work-pattern",
+      "title": "Draw a second test pattern",
+      "requirement": { "id": "A01", "revision": 2 },
+      "brief": "Trace a separate diagnostic pattern when its inputs are available.",
+      "acceptance": "Preserve the pattern in a standalone tile.",
+      "readiness": "unverified",
+      "routes": [
+        { "id": "web-pencil", "label": "Web pencil", "skills": ["pattern tracing"], "tools": ["web pencil"] }
+      ]
+    }
+  ],
+  "variants": []
+}
