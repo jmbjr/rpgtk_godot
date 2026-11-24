@@ -24,6 +24,8 @@
         <p class="local-note">Your game stays in your browser. No account or installation needed.</p>
       </header>
 
+      <p><button type="button" id="open-tile-project" disabled>Author a project tile</button></p>
+
       <section class="panel import-panel" aria-labelledby="import-heading">
         <div class="open-grid">
           <div>
@@ -263,6 +265,46 @@
             <div id="asset-record"></div>
           </section>
         </article>
+      </section>
+      <section class="panel" id="tile-authoring" aria-labelledby="tile-authoring-title">
+        <h2 id="tile-authoring-title">Project tile authoring</h2>
+        <p>Open a local project manifest to find tile work and save proposed variants.</p>
+        <label>Project manifest <input id="tile-project-file" type="file" accept=".json,application/json" disabled></label>
+        <p id="tile-project-status" role="status">If the picker stays disabled, serve this checkout with <code>python scripts/serve-viewer.py</code> and reload.</p>
+        <div id="tile-project" hidden>
+          <h3 id="tile-project-title" tabindex="-1"></h3>
+          <form id="tile-contributor">
+            <fieldset>
+              <legend>Contributor</legend>
+              <label>Contributor ID <input name="id" required></label>
+              <label>Display name <input name="name" required></label>
+              <label>Skills (comma-separated) <input name="skills"></label>
+              <label>Tools (comma-separated) <input name="tools"></label>
+              <button>Apply contributor</button>
+            </fieldset>
+          </form>
+          <button type="button" id="tile-project-download">Download project</button>
+          <label><input id="tile-work-filter" type="checkbox" checked> Show suitable work only</label>
+          <p id="tile-work-summary" role="status"></p>
+          <ul id="tile-work"></ul>
+          <div id="tile-brief" hidden></div>
+          <form id="tile-editor" hidden>
+            <h3 id="tile-editor-title"></h3>
+            <label>Variant name <input name="title" required></label>
+            <label>Pencil color <input id="tile-color" type="color" value="#ffffff"></label>
+            <div class="tile-previews">
+              <canvas id="tile-pencil" width="32" height="32" tabindex="0"
+                aria-label="Tile drawing. Use arrow keys to move and space to paint."
+                aria-describedby="tile-cursor"></canvas>
+              <figure>
+                <canvas id="tile-actual" width="32" height="32" aria-label="Actual-size tile"></canvas>
+                <figcaption>Actual size</figcaption>
+              </figure>
+            </div>
+            <p id="tile-cursor">Pixel (0, 0)</p>
+            <button>Save proposed variant and download project</button>
+          </form>
+        </div>
       </section>
     </main>
     <footer><span id="build-version">Development build</span><span>Game files stay in your browser. Connections come from recognized archive fields and source references; gameplay compatibility is partial.</span></footer>

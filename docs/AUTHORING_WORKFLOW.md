@@ -8,14 +8,11 @@ assignment, and save the result as a proposed implementation variant. A later
 review can accept that variant, provisionally accept it, or request changes.
 A particular build selects exact compatible variants to fulfill its needs.
 
-This is a planned product workflow and implementation handoff. It does not
-describe features already available in the web Toolkit. Reviewed main
-`75d6a7688a5a8a9083601ae3488ef3d71bb475b3` includes #144's
-[authoring capability graph](AUTHORING_CAPABILITIES.md), but no requirement-led
-work queue, contributor matching, variant submission, review or build-selection
-workflow. The [Explorer inventory](../CAPABILITIES.md) remains the source for
-tasks supported today. No game assets or project implementation are supplied
-by this document.
+The local tile authoring workspace implements C01 and bounded paths through
+W01–W04 and W07. It opens a local manifest, filters tile work on declared
+skills and tools, launches the web pencil from a brief, and persists proposals
+and their artwork in a project download. W05 review and W06 build selection
+remain planned. See [current starting actions](#start-a-local-tile-assignment).
 
 ## Concepts that must remain distinct
 
@@ -41,21 +38,20 @@ Keep explicit links to existing archive identities, source paths and numbered
 tiles where relevant; do not derive requirement identity from a file path.
 Existing decoded records and resolver IDs retain their current meaning.
 
-## Planned workflow capabilities
+## Workflow capabilities
 
-W01-W07 are stable workflow capability IDs introduced here. C01/C13-C17 retain
-their existing authoring meanings. All W capabilities below are planned;
-the implementation options are candidates, not shipped support claims.
+W01–W07 are stable workflow IDs. The local tile path covers the subset shown
+below. See the [capability graph](AUTHORING_CAPABILITIES.md) for C01 and C13–C17.
 
-| ID | Capability and observable result | Small initial implementation option | Later alternatives |
+| ID | Capability and observable result | Local tile implementation | Later alternatives |
 | --- | --- | --- | --- |
-| W01 | Connect a project and see its required assets, existing candidates, unmet needs and dependency context | Open a versioned local project manifest linked to the existing archive/model where available | Repository or service adapter supplying the same project records |
-| W02 | Find work suited to the contributor's skills, known tools and selected readiness filters | Explicit skill/tool tags, a contributor's self-declared profile, and a filtered work list | Shared profiles or richer recommendations with explained matches |
-| W03 | Open a bounded assignment in an appropriate authoring route with the requirement already attached | Work brief plus an editor launch carrying project, requirement, work-item and route IDs | External-tool instructions and import return path using the same assignment context |
-| W04 | Save or import an attributed proposed variant revision against the assignment | Persist editable source/output references and provenance with the project manifest | Repository-backed submissions or shared artifact storage |
-| W05 | Review an exact submission against the requirement and retain the decision and evidence | Explicit review records with reviewer, scope and provisional conditions | Collaborative review UI; permission enforcement when shared accounts are implemented |
-| W06 | Select compatible exact variant revisions for a build and identify gaps or conflicts | A build selection manifest with target and explicit requirement-to-revision bindings | Target-specific build adapters using the same selections |
-| W07 | Reopen the project and retrace a need, its work, submissions, reviews and selected uses | Reopen saved records, resolve their links and expose a compact trace view | Query/export over the same relationships |
+| W01 | Connect a project and see its required assets, existing candidates, unmet needs and dependency context | Partial: open a versioned manifest and see its requirements, work and proposals. Archive linking remains planned. | Repository or service adapter supplying the same project records |
+| W02 | Find work suited to the contributor's skills, known tools and selected readiness filters | Partial: filter by declared skill/tool fit for the web pencil. Readiness is shown independently. | Shared profiles or richer recommendations with explained matches |
+| W03 | Open a bounded assignment in an appropriate authoring route with the requirement already attached | Implemented for the web pencil: launch from the linked brief | External-tool instructions and import return path using the same assignment context |
+| W04 | Save or import an attributed proposed variant revision against the assignment | Implemented for the web pencil: save attributed proposals and embedded GPH in the manifest | Repository-backed submissions or shared artifact storage |
+| W05 | Review an exact submission against the requirement and retain the decision and evidence | Planned: exact-revision review with reviewer, scope and provisional conditions | Collaborative review UI; permission enforcement when shared accounts are implemented |
+| W06 | Select compatible exact variant revisions for a build and identify gaps or conflicts | Planned: build target and explicit requirement-to-revision bindings | Target-specific build adapters using the same selections |
+| W07 | Reopen the project and retrace a need, its work, submissions, reviews and selected uses | Partial: reopen the manifest and retrace briefs, contributors, proposals and exact tile revisions | Query/export over the same relationships |
 
 ### Find suitable work without requiring the whole game's context
 
@@ -167,28 +163,56 @@ identities and mappings where appropriate. That evidence does not establish
 W01-W07, a contributor/review service, a complete game conversion, or general
 playable Godot export. This plan does not change the DODGE specification.
 
+## Start a local tile assignment
+
+1. From a local checkout, start the viewer with `python scripts/serve-viewer.py`
+   (use `python3` if needed). Open `http://localhost:8000`. Choose
+   **Author a project tile** to open the file picker and select a version 1 JSON manifest. Use the
+   [synthetic project sample](specs/fixtures/synthetic-tile-project.json) to
+   try the workflow or as a starting shape for your own manifest.
+2. Enter a contributor ID and display name. Declare comma-separated skills
+   and tools, then choose **Apply contributor**. The sample matches
+   `diagnostic drawing` and `web pencil`. Turn off **Show suitable work only**
+   to inspect unmatched assignments and their separate readiness.
+3. Open the brief and choose **Draw a new tile**. Name the variant, pick a
+   color and draw. With the pencil focused, arrow keys move the cursor and
+   Space paints. Both enlarged and actual-size previews update as you draw.
+4. Choose **Save proposed variant and download project**. Open the downloaded
+   JSON in a fresh session, return to the brief and open a saved revision.
+   Saving from a revision adds a new revision with that revision as its base.
+   **Draw a new tile** starts an independent proposal for the same assignment.
+
+### Local manifest and artwork
+
+The sample defines the version 1 fields. IDs are scoped to the project, and
+work items refer to exact asset requirement IDs and revisions. Each asset
+requirement links to its project requirement. Each variant retains the work
+item, requirement revision and route. Each revision retains the contributor
+snapshot, creation time, tool, proposed status, source/output roles and the
+embedded artwork. The contributor profile is self-declared.
+
+Use lowercase skill/tool tags in manifests. `web-pencil` identifies the
+implemented route. Other route IDs can be recorded with unverified web support.
+Use `ready`, `missing`, or `unverified` for readiness. Save and reopen keep
+extra project data such as source notes. The editor operates on the downloaded
+manifest, so simultaneous edits to separate copies require manual reconciliation.
+
+The [standalone GPH format](specs/gph.md) serves as both the editable source and
+Toolkit-format tile output for this slice. Version 1 embeds the full GPH as text
+inside the manifest. It uses mode 1, raw opaque COLORREF pixels and column-major
+order. The existing decoder reads it on reopen. A broken assignment or missing
+embedded artwork is reported when opening a project. The workspace keeps archive
+inspection independent.
+
 ## Next implementation handoff
 
-The next increment should be **request-bound tile authoring**: establish the
-minimal durable request-to-variant contract and carry it through C01's
-create/open/save flow. C01 remains the first drawing capability on the
-documented A01 production path. W03/W04 supply its assignment and submission
-context; a minimal W01/W02 work list and W07 save/reopen path make that context
-usable across sessions. W05/W06 remain planned follow-on capabilities; this
-increment need not implement shared review, accounts or a build service.
-
-An initial local manifest and explicit skill/tool tags are sufficient options.
-An existing external-art route can also be represented, with its actual
-support marked honestly. Implementing every route is unnecessary. Original
-archive inspection must remain available independently of project authoring.
-
-The proposed C01 editor scope is one 32x32 opaque square tile, color selection,
-pencil drawing, enlarged/actual-size preview and save/reopen. A standalone
-uncompressed true-color GPH is a candidate editable output because its
-[documented format](specs/gph.md) and decoder already exist; PNG or a separate
-source representation remain implementation choices requiring a justified
-round-trip check. C13 import, C15 indexed assembly, C16 TST export and
-conditional C17 transparency retain their separate capability boundaries.
+Verify the local C01 round trip with the check below. The next gap on the
+initial A01 draw route is C15, assembling usable tiles into numbered slots.
+A bounded follow-on can evaluate choosing exact saved tile revisions for a
+draft tileset while retaining their slot mappings and partial-contribution
+links. C16 export, C13 import, C14 open-for-editing, C17 transparency, W05
+review and W06 build selection remain planned. Owner creative decisions stay
+in the intake.
 
 ### End-to-end acceptance for the first increment
 
@@ -212,7 +236,11 @@ or build acceptance on the owner's behalf.
 6. Confirm a second variant can coexist; a partial tile submission does not
    mark A01 complete or mutate the imported archive or a build selection.
 
-Document implemented starting actions and support evidence after delivery.
+The Pages workflow runs `node scripts/check-tile-authoring-browser.mjs site`
+after staging the viewer and generating the synthetic Toolkit 2 archive. The
+check exercises the steps above through the home-page entry point, downloads
+the actual manifest, and tests invalid artwork recovery.
+
 W05 later proves review/revision/provisional semantics; W06 later proves exact
 target-compatible selection and explicit missing/provisional dependencies.
 Neither should be reported as delivered by the first increment's tests.

@@ -1,3 +1,4 @@
+import { mountTileAuthoring } from "./tile-authoring.mjs";
 import { assetIdentity, referenceExplanation } from "./asset-presentation.mjs";
 import { indexTilesets, matchEmbeddedTile } from "./tile-matches.mjs";
 import { formatSummary, formatSpecTarget, isTileFormat, mainSourceFormat, tileMode } from "./asset-format.mjs";
@@ -2884,3 +2885,5 @@ byId("investigate-board").addEventListener("click", () => {
   if (artifacts.get(selected)?.type === "brd") dependencyView.start(selected, references, artifacts);
 });
 byId("dependency-jump").addEventListener("click", () => dependencyView.reveal());
+
+mountTileAuthoring();

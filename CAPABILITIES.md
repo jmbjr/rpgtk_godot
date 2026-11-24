@@ -13,15 +13,14 @@ they do not commit the website to a particular navigation design.
 
 The [authoring capability graph](docs/AUTHORING_CAPABILITIES.md) tracks the
 prerequisites for creating new Toolkit assets, starting with tiles and tilesets.
-The planned [project authoring workflow](docs/AUTHORING_WORKFLOW.md) connects
-requirements, skill-filtered work, attributed asset variants, review and exact
-build selections. It includes the next implementation handoff; these authoring
-features are not yet available in the Explorer.
+The [project authoring workflow](docs/AUTHORING_WORKFLOW.md) records the
+local tile workflow and planned review and build selection.
 
 ## Start with something you want to accomplish
 
 | I want to… | Start here | A useful result looks like… |
 | --- | --- | --- |
+| Draw or revise one tile for a project requirement | Choose **Author a project tile**, open a local manifest, apply a contributor and open a tile brief | A proposed 32 × 32 opaque tile with its assignment, attribution and exact revisions in the downloaded project |
 | Rediscover an old game's art and sound | Open its ZIP, then choose **Browse artwork** or **Listen to audio** | Recognizable boards, sprites, animations and playable music/sounds |
 | Find where a picture, sound or program is used | Select the file, then inspect **Connections → Used by** | A linked consumer, with a source line, field or placement where available |
 | Understand why something is missing or unsupported | Inspect its references and decoding status | The recorded filename, resolution result and available source evidence |

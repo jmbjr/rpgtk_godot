@@ -441,3 +441,19 @@ body.has-archive .intro-copy { margin-block: .75rem .4rem; }
   .selection-toolbar button { padding: .35rem .45rem; }
   footer { flex-direction: column; }
 }
+
+#tile-authoring fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .75rem;
+  margin-bottom: .75rem;
+}
+#tile-authoring label { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+#tile-authoring li { margin-block: .65rem; }
+#tile-authoring :is(input, button) { max-width: 100%; }
+.tile-previews { display: flex; flex-wrap: wrap; align-items: start; gap: 1rem; margin-top: .75rem; }
+.tile-previews figure { margin: 0; }
+.tile-previews canvas { image-rendering: pixelated; outline: 1px solid var(--line); }
+#tile-pencil { width: min(256px, 100%); aspect-ratio: 1; touch-action: none; cursor: crosshair; }
+#tile-pencil:focus-visible { outline: 2px solid currentColor; }

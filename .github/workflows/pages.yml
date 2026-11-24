@@ -129,6 +129,7 @@ jobs:
           cp native-board-tail.mjs script-trace.mjs save-state.mjs pe-inspect.mjs plugin-audit.mjs playability-audit.mjs playable-scene.mjs placed-sprites.mjs vector-collision.mjs tk3-language.mjs tk3-canvas-services.mjs tk3-player-services.mjs tk3-script-slice.mjs tk3-board-transfer.mjs tk3-board-programs.mjs tk3-gam-startup.mjs tk3-runtime-keys.mjs tk3-fight-bridge.mjs site/
           cp asset-presentation.mjs site/
           cp dependency-investigation.mjs dependency-view.mjs site/
+          cp authoring-project.mjs tile-authoring.mjs site/
           cp tk3-board-entry.mjs tk3-tasks.mjs tk3-behavior-bindings.mjs tk3-entities.mjs site/
           mkdir -p site/experiments/movement-sandbox
           cp experiments/movement-sandbox/{engine,playtest-guidance,authored-play}.mjs experiments/movement-sandbox/sandbox.css site/experiments/movement-sandbox/
@@ -155,6 +156,8 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           node scripts/check-tk3-browser.mjs site
+          node scripts/check-tile-authoring-browser.mjs site
+          node scripts/check-tile-authoring-browser.mjs site --source
       - name: Check first-use journeys and capture matched screenshots
         env:
           REVIEW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}

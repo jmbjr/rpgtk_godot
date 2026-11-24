@@ -5,11 +5,8 @@ This graph starts with A01, the cave terrain tileset from the
 It describes what an author must be able to do. Tool selection and web features
 are tracked separately from prerequisites.
 
-The [project authoring workflow](AUTHORING_WORKFLOW.md) adds planned W01-W07
-capabilities for connecting requirements to work, contributor skills, proposed
-asset variants, reviews and build selections. These are planned authoring
-tasks, separate from the shipped Explorer inventory. Start there for the next
-implementation handoff: request-bound tile authoring with C01.
+The [project authoring workflow](AUTHORING_WORKFLOW.md) tracks W01–W07, including
+the local requirement-bound C01 workflow and planned review and build selection.
 
 ## A01 tile and tileset dependencies
 
@@ -56,9 +53,9 @@ W03/W04 assignment and proposed-variant persistence. An individual tile can
 contribute to A01 without fulfilling its entire tileset requirement. Review
 and exact build selection are separate W05/W06 outcomes.
 
-| Capability | Current web Toolkit authoring support at main `75d6a76` | Other evidence and limits |
+| Capability | Current web Toolkit authoring support | Other evidence and limits |
 | --- | --- | --- |
-| C01 | Missing drawing/edit/save/reopen workflow | External pixel-art and native Toolkit editors are candidate production tools; no selected A01 round trip is recorded |
+| C01 | Local requirement-bound pencil editor for one opaque 32 × 32 tile, with color selection, previews and GPH save/reopen | The synthetic round trip covers the editor workflow. Owner artwork, Toolkit execution and A01 fulfillment have separate acceptance. |
 | C13 | Missing artwork-to-editable-tile import | The viewer previews images from archives; this does not convert artwork into a tile for authoring |
 | C14 | Missing editable-TST opening | Existing TST inspection exposes numbered previews; it does not provide an editable tileset |
 | C15 | Missing indexed tileset authoring | Repository fixture builders generate predetermined sets; they are not a general author-facing assembly workflow |
