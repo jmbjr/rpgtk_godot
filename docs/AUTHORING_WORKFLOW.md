@@ -73,10 +73,25 @@ Keep these filters independent and explain why work is shown or hidden:
 - Project need: no candidate, proposed candidates, changes requested,
   provisional fulfillment, or a selected fulfillment for the chosen build.
 
-The work brief should show the immediate deliverable, format/dimensions,
-constraints, references and acceptance criteria. Board, level and game context
-stays linked and can be expanded when useful. Do not require an artist to
-understand the entire game's story or dependency graph to draw a floor tile.
+#### W02 and W03 discoverability requirements (planned)
+
+The [discoverability follow-up](https://github.com/jmbjr/rpgtk_godot/issues/147)
+tracks implementation and acceptance.
+
+- **W02 — Discover project vocabulary.** Let contributors browse and select
+  recognized skills and tools using readable labels backed by stable IDs.
+  Preserve existing free-text declarations when reopening saved projects.
+- **W02 — Explain the match.** For included and excluded work, show the
+  relevant production routes, their capability IDs, required skill and tool
+  declarations, and any undeclared requirements. One viable matching route
+  is sufficient. Show tool support and input readiness independently of fit.
+  Unchecked inputs stay unverified.
+- **W03 — Understand the assignment before launching.** Describe the
+  immediate deliverable, format and dimensions where relevant, constraints,
+  required references and their availability, and acceptance checks. Identify
+  creative choices explicitly left open. Keep board, level and game context
+  linked and expandable so the contributor can work from the brief.
+
 
 ### Save, review and build behavior
 
