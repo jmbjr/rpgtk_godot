@@ -351,3 +351,12 @@ entity diagnostics retain source owner/slot and current position; task source an
 owner buttons return to Explorer. See [authored board lifecycle](docs/specs/tk3-board-lifecycle.md)
 for pinned native evidence and browser approximations. These are synthetic checks;
 the private diagnostic ZIP and its wandering program have not been validated.
+
+## Small-studio planning baseline
+
+The [Bruce demo project/studio baseline](projects/bstw-demo/README.md) captures
+the confirmed route, incomplete asset scope, a separate studio definition and
+five hypothetical resource/input scenarios. Its standalone director view shows
+start eligibility and route blockers; it is a planning draft, not a shipped
+Explorer feature or a committed sprint. Original intake gaps remain explicit.
+

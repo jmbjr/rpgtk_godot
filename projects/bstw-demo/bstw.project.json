@@ -1,0 +1,1790 @@
+{
+  "version": 1,
+  "id": "bstw-owner-demo",
+  "title": "Bruce demo — project and progression plan",
+  "planningFormat": "rpgtk-studio-planning-draft/0.1",
+  "planningRevision": 1,
+  "checkpoint": {
+    "date": "2026-11-24",
+    "main": "2c7128746f748bb0aa0459c36675a2e190a26f16",
+    "tileAuthoringPr": 146,
+    "tileAuthoringPrHead": "7fb36fe71cdbec87558204b36065b6927f7c243c",
+    "tileAuthoringMerged": false
+  },
+  "studioRef": {
+    "id": "bstw-owner-studio",
+    "revision": 1,
+    "path": "bstw.studio.json"
+  },
+  "scope": {
+    "teamSize": "1–5 people",
+    "game": "A small owner-authored Bruce demo with a beginning, exploration/clues and an ending.",
+    "confirmedRoute": [
+      "Start on an island",
+      "Walk up a cliff",
+      "Find the bridge out",
+      "Go into town and explore",
+      "Investigate clues and mysteries"
+    ],
+    "physicalBoardCount": null,
+    "tileCount": null,
+    "characterCount": null,
+    "playtimeMinutes": null,
+    "ending": "open",
+    "notes": [
+      "Route regions are not a count of separate board files.",
+      "The original detailed intake is not available in this conversation or located in current main; this is a partial reconstruction, not a replacement of its decisions.",
+      "A01 is retained as cave terrain; whether a cave remains in the current route is unresolved.",
+      "A02/A05 identities are preserved with incomplete scope; no unavailable A03/A04 definitions are invented."
+    ],
+    "sourceIds": [
+      "owner-2026-11-24",
+      "repo-authoring",
+      "intake-142"
+    ]
+  },
+  "projectRequirements": [
+    {
+      "id": "BSTW-P01",
+      "title": "Begin on an island and climb the cliff",
+      "state": "confirmed",
+      "source": "owner-2026-11-24"
+    },
+    {
+      "id": "BSTW-P02",
+      "title": "Encounter an impassable bridge and discover the town route",
+      "state": "confirmed",
+      "source": "owner-2026-11-24"
+    },
+    {
+      "id": "BSTW-P03",
+      "title": "Explore town and investigate clues/mysteries",
+      "state": "confirmed",
+      "source": "owner-2026-11-24"
+    },
+    {
+      "id": "BSTW-P04",
+      "title": "Reach a chosen demo ending",
+      "state": "outcome-required; details open",
+      "source": "intake-142"
+    },
+    {
+      "id": "BSTW-P-CAVE",
+      "title": "Reconcile the earlier cave asset need",
+      "state": "scope-open",
+      "source": "repo-authoring"
+    },
+    {
+      "id": "BSTW-P-STUDIO",
+      "title": "Enable this small studio to produce the demo",
+      "state": "supporting-work",
+      "source": "owner-2026-11-24"
+    }
+  ],
+  "assetRequirements": [
+    {
+      "id": "A01",
+      "revision": 1,
+      "projectRequirementId": "BSTW-P-CAVE",
+      "title": "Cave terrain tileset",
+      "group": "terrain",
+      "constraints": "32×32 floor, wall and exit-edge artwork. Retain original cave meaning; current route usage unresolved.",
+      "acceptance": "Reconcile scope first; if retained, verify compatible numbered TST and appearance.",
+      "status": "scope-open",
+      "sourceIds": [
+        "repo-authoring"
+      ],
+      "fulfillment": "none-recorded",
+      "workItemIds": [],
+      "dependencyInputsByRoute": []
+    },
+    {
+      "id": "A02",
+      "revision": 1,
+      "projectRequirementId": "BSTW-P01",
+      "title": "Bruce artwork — inherited ID, full scope unverified",
+      "group": "character",
+      "constraints": "Confirm original A02 definition before expanding it. Appearance, frame count and transparency remain open.",
+      "acceptance": "Owner chooses art brief; verify exact saved graphics and intended use.",
+      "status": "scope-open",
+      "sourceIds": [
+        "repo-authoring"
+      ],
+      "fulfillment": "none-recorded",
+      "workItemIds": [
+        "BSTW-W-BRUCE-BRIEF",
+        "BSTW-W-BRUCE-ART"
+      ],
+      "dependencyInputsByRoute": [
+        {
+          "workItemId": "BSTW-W-BRUCE-BRIEF",
+          "routeId": "direction",
+          "inputIds": []
+        },
+        {
+          "workItemId": "BSTW-W-BRUCE-ART",
+          "routeId": "external-character",
+          "inputIds": [
+            "bruce-art-brief"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A05",
+      "revision": 1,
+      "projectRequirementId": "BSTW-P01",
+      "title": "Board need — inherited ID, full scope unverified",
+      "group": "boards",
+      "constraints": "Confirm original A05 definition and whether island/town share or split boards. This plan contains partial layout contributions, not an invented board count.",
+      "acceptance": "Walk the agreed route using compatible tile references; preserve slots and placement.",
+      "status": "scope-open",
+      "sourceIds": [
+        "repo-authoring"
+      ],
+      "fulfillment": "none-recorded",
+      "workItemIds": [
+        "BSTW-W-BOARD-ISLAND",
+        "BSTW-W-BOARD-TOWN"
+      ],
+      "dependencyInputsByRoute": [
+        {
+          "workItemId": "BSTW-W-BOARD-ISLAND",
+          "routeId": "web-board",
+          "inputIds": [
+            "island-tileset",
+            "island-layout"
+          ]
+        },
+        {
+          "workItemId": "BSTW-W-BOARD-ISLAND",
+          "routeId": "native-board",
+          "inputIds": [
+            "island-tileset",
+            "island-layout"
+          ]
+        },
+        {
+          "workItemId": "BSTW-W-BOARD-TOWN",
+          "routeId": "web-board",
+          "inputIds": [
+            "town-tileset",
+            "town-layout"
+          ]
+        },
+        {
+          "workItemId": "BSTW-W-BOARD-TOWN",
+          "routeId": "native-board",
+          "inputIds": [
+            "town-tileset",
+            "town-layout"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BSTW-ART-ISLAND",
+      "revision": 1,
+      "projectRequirementId": "BSTW-P02",
+      "title": "Island, cliff and broken-bridge terrain",
+      "group": "terrain",
+      "constraints": "Candidate asset grouping. Exact tile count, bridge representation and style are open. Initial tile route uses 32×32 opaque artwork.",
+      "acceptance": "Recognizable terrain and blocked crossing in the agreed route; compatible numbered output.",
+      "status": "needed",
+      "sourceIds": [
+        "owner-2026-11-24"
+      ],
+      "fulfillment": "none-recorded",
+      "workItemIds": [
+        "BSTW-W-DIRECTION",
+        "BSTW-W-TILE-ISLAND",
+        "BSTW-W-SET-ISLAND"
+      ],
+      "dependencyInputsByRoute": [
+        {
+          "workItemId": "BSTW-W-DIRECTION",
+          "routeId": "direction",
+          "inputIds": []
+        },
+        {
+          "workItemId": "BSTW-W-TILE-ISLAND",
+          "routeId": "web-pencil",
+          "inputIds": [
+            "island-art-brief"
+          ]
+        },
+        {
+          "workItemId": "BSTW-W-TILE-ISLAND",
+          "routeId": "native-drawing",
+          "inputIds": [
+            "island-art-brief"
+          ]
+        },
+        {
+          "workItemId": "BSTW-W-SET-ISLAND",
+          "routeId": "web-tileset",
+          "inputIds": [
+            "island-tile-revisions"
+          ]
+        },
+        {
+          "workItemId": "BSTW-W-SET-ISLAND",
+          "routeId": "native-tileset",
+          "inputIds": [
+            "island-tile-revisions"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BSTW-ART-TOWN",
+      "revision": 1,
+      "projectRequirementId": "BSTW-P03",
+      "title": "Town environment artwork",
+      "group": "terrain",
+      "constraints": "Candidate asset grouping; buildings, props and tile count are unchosen.",
+      "acceptance": "Owner-reviewed artwork supports the agreed town exploration.",
+      "status": "needed",
+      "sourceIds": [
+        "owner-2026-11-24"
+      ],
+      "fulfillment": "none-recorded",
+      "workItemIds": [
+        "BSTW-W-TILE-TOWN",
+        "BSTW-W-SET-TOWN"
+      ],
+      "dependencyInputsByRoute": [
+        {
+          "workItemId": "BSTW-W-TILE-TOWN",
+          "routeId": "web-pencil",
+          "inputIds": [
+            "town-art-brief"
+          ]
+        },
+        {
+          "workItemId": "BSTW-W-SET-TOWN",
+          "routeId": "web-tileset",
+          "inputIds": [
+            "town-tile-revisions"
+          ]
+        },
+        {
+          "workItemId": "BSTW-W-SET-TOWN",
+          "routeId": "native-tileset",
+          "inputIds": [
+            "town-tile-revisions"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BSTW-CHAR-BRUCE",
+      "revision": 1,
+      "projectRequirementId": "BSTW-P01",
+      "title": "Configured Bruce character",
+      "group": "character",
+      "constraints": "Reference exact chosen artwork; choose required motion frames before authoring.",
+      "acceptance": "Normal Play loads Bruce and exercises intended movement.",
+      "status": "needed",
+      "sourceIds": [
+        "owner-2026-11-24"
+      ],
+      "fulfillment": "none-recorded",
+      "workItemIds": [
+        "BSTW-W-BRUCE-DEF"
+      ],
+      "dependencyInputsByRoute": [
+        {
+          "workItemId": "BSTW-W-BRUCE-DEF",
+          "routeId": "native-character",
+          "inputIds": [
+            "bruce-art"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BSTW-STORY",
+      "revision": 1,
+      "projectRequirementId": "BSTW-P03",
+      "title": "Clue and ending briefs",
+      "group": "story",
+      "constraints": "Owner chooses clue structure, dialogue and ending; no invented names or lore.",
+      "acceptance": "Trace each selected clue to a response/state change and a chosen ending.",
+      "status": "needed",
+      "sourceIds": [
+        "owner-2026-11-24"
+      ],
+      "fulfillment": "none-recorded",
+      "workItemIds": [
+        "BSTW-W-STORY"
+      ],
+      "dependencyInputsByRoute": [
+        {
+          "workItemId": "BSTW-W-STORY",
+          "routeId": "direction",
+          "inputIds": []
+        }
+      ]
+    },
+    {
+      "id": "BSTW-PRG-START",
+      "revision": 1,
+      "projectRequirementId": "BSTW-P01",
+      "title": "Startup program",
+      "group": "programs",
+      "constraints": "Ordinary procedural RPGCode; startup title is optional until chosen.",
+      "acceptance": "Normal Play follows the configured startup into the initial board.",
+      "status": "needed",
+      "sourceIds": [
+        "owner-2026-11-24"
+      ],
+      "fulfillment": "none-recorded",
+      "workItemIds": [
+        "BSTW-W-START"
+      ],
+      "dependencyInputsByRoute": [
+        {
+          "workItemId": "BSTW-W-START",
+          "routeId": "source",
+          "inputIds": []
+        }
+      ]
+    },
+    {
+      "id": "BSTW-PRG-ROUTE",
+      "revision": 1,
+      "projectRequirementId": "BSTW-P03",
+      "title": "Bridge, town and clue interactions",
+      "group": "programs",
+      "constraints": "Bridge blocks the crossing and town route remains accessible; clue logic follows owner brief.",
+      "acceptance": "Exercise discovery order, repeat interactions and return paths without game-specific engine dispatch.",
+      "status": "needed",
+      "sourceIds": [
+        "owner-2026-11-24"
+      ],
+      "fulfillment": "none-recorded",
+      "workItemIds": [
+        "BSTW-W-CLUES"
+      ],
+      "dependencyInputsByRoute": [
+        {
+          "workItemId": "BSTW-W-CLUES",
+          "routeId": "source",
+          "inputIds": [
+            "clue-design"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BSTW-PRG-END",
+      "revision": 1,
+      "projectRequirementId": "BSTW-P04",
+      "title": "Ending program",
+      "group": "programs",
+      "constraints": "Ending behavior remains open pending owner choice.",
+      "acceptance": "Normal Play reaches the chosen ending and can reset/replay.",
+      "status": "needed",
+      "sourceIds": [
+        "owner-2026-11-24"
+      ],
+      "fulfillment": "none-recorded",
+      "workItemIds": [
+        "BSTW-W-END"
+      ],
+      "dependencyInputsByRoute": [
+        {
+          "workItemId": "BSTW-W-END",
+          "routeId": "source",
+          "inputIds": [
+            "ending-design"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BSTW-CONFIG",
+      "revision": 1,
+      "projectRequirementId": "BSTW-P04",
+      "title": "Main File and integrated demo bundle",
+      "group": "integration",
+      "constraints": "Pin exact asset/program revisions; no silent build selection.",
+      "acceptance": "Normal Play → agreed route → ending → reset on recorded build; native parity separately scoped.",
+      "status": "needed",
+      "sourceIds": [
+        "owner-2026-11-24"
+      ],
+      "fulfillment": "none-recorded",
+      "workItemIds": [
+        "BSTW-W-INTEGRATE",
+        "BSTW-W-VERIFY"
+      ],
+      "dependencyInputsByRoute": [
+        {
+          "workItemId": "BSTW-W-INTEGRATE",
+          "routeId": "native-config",
+          "inputIds": [
+            "island-board",
+            "town-board",
+            "bruce-definition",
+            "startup-program",
+            "route-programs",
+            "ending-program"
+          ]
+        },
+        {
+          "workItemId": "BSTW-W-VERIFY",
+          "routeId": "playtest",
+          "inputIds": [
+            "launch-bundle"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BSTW-AUDIO",
+      "revision": 1,
+      "projectRequirementId": "BSTW-P01",
+      "title": "Optional music and sound needs",
+      "group": "optional",
+      "constraints": "Need, scope, sources and rights undecided.",
+      "acceptance": "Define only if the owner includes audio in the demo.",
+      "status": "optional-open",
+      "sourceIds": [
+        "owner-2026-11-24"
+      ],
+      "fulfillment": "none-recorded",
+      "workItemIds": [],
+      "dependencyInputsByRoute": []
+    },
+    {
+      "id": "STUDIO-BOARD-TOOL",
+      "revision": 1,
+      "projectRequirementId": "BSTW-P-STUDIO",
+      "title": "Board authoring capability improvement",
+      "group": "studio-enablement",
+      "constraints": "Bounded prototype may use synthetic tiles independently of game artwork. Tool completion must be verified separately.",
+      "acceptance": "Create/save/reopen a small board preserving numbered tile references; scope a compatible writer before claiming game production support.",
+      "status": "needed",
+      "sourceIds": [
+        "owner-2026-11-24"
+      ],
+      "fulfillment": "none-recorded",
+      "workItemIds": [
+        "STUDIO-W-BOARD-TOOL"
+      ],
+      "dependencyInputsByRoute": [
+        {
+          "workItemId": "STUDIO-W-BOARD-TOOL",
+          "routeId": "develop",
+          "inputIds": [
+            "synthetic-tool-fixtures"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "STUDIO-TILESET-TOOL",
+      "revision": 1,
+      "projectRequirementId": "BSTW-P-STUDIO",
+      "title": "Indexed tileset authoring capability improvement",
+      "group": "studio-enablement",
+      "constraints": "Use diagnostic tile inputs to develop C15/C16 without selecting game artwork.",
+      "acceptance": "Preserve numbered slots through save/reopen and export/decoder verification.",
+      "status": "needed",
+      "sourceIds": [
+        "owner-2026-11-24"
+      ],
+      "fulfillment": "none-recorded",
+      "workItemIds": [
+        "STUDIO-W-TILESET-TOOL"
+      ],
+      "dependencyInputsByRoute": [
+        {
+          "workItemId": "STUDIO-W-TILESET-TOOL",
+          "routeId": "develop",
+          "inputIds": [
+            "synthetic-tool-fixtures"
+          ]
+        }
+      ]
+    }
+  ],
+  "workItems": [
+    {
+      "id": "BSTW-W-DIRECTION",
+      "title": "Define the route and initial terrain brief",
+      "requirement": {
+        "id": "BSTW-ART-ISLAND",
+        "revision": 1
+      },
+      "brief": "Director records the first tile role, constraints, reference availability and open creative choices; reconcile board/region scope.",
+      "acceptance": "Save a usable brief and its decisions; retain unknowns.",
+      "readiness": "unverified",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "direction",
+          "label": "Human creative direction",
+          "skills": [
+            "creative-direction"
+          ],
+          "tools": [],
+          "personCapabilities": [
+            "creative-direction"
+          ],
+          "toolCapabilities": [],
+          "inputIds": [],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": []
+        }
+      ],
+      "producesInputIds": [
+        "island-art-brief",
+        "island-layout",
+        "town-layout",
+        "town-art-brief"
+      ],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "BSTW-W-STORY",
+      "title": "Define clues and a bounded ending",
+      "requirement": {
+        "id": "BSTW-STORY",
+        "revision": 1
+      },
+      "brief": "Choose what the player discovers and how the demo ends. Keep text and lore with the owner.",
+      "acceptance": "Save clue/ending briefs including state changes and repeat behavior.",
+      "readiness": "unverified",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "direction",
+          "label": "Human creative direction",
+          "skills": [
+            "creative-direction"
+          ],
+          "tools": [],
+          "personCapabilities": [
+            "creative-direction"
+          ],
+          "toolCapabilities": [],
+          "inputIds": [],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": []
+        }
+      ],
+      "producesInputIds": [
+        "clue-design",
+        "ending-design"
+      ],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "BSTW-W-TILE-ISLAND",
+      "title": "Draw an initial island terrain tile",
+      "requirement": {
+        "id": "BSTW-ART-ISLAND",
+        "revision": 1
+      },
+      "brief": "Partial contribution: one 32×32 opaque tile for a role chosen in the initial brief. Palette and visual design await that brief.",
+      "acceptance": "Save/reopen exact pixels, attribute the proposed revision, and retain the requirement link. This does not complete a tileset.",
+      "readiness": "missing",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "web-pencil",
+          "label": "Rpgtk tile pencil",
+          "skills": [
+            "terrain-art"
+          ],
+          "tools": [
+            "rpgtk-pencil"
+          ],
+          "personCapabilities": [
+            "terrain-art"
+          ],
+          "toolCapabilities": [
+            "C01"
+          ],
+          "inputIds": [
+            "island-art-brief"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "C01"
+          ]
+        },
+        {
+          "id": "native-drawing",
+          "label": "Native Toolkit drawing",
+          "skills": [
+            "terrain-art"
+          ],
+          "tools": [
+            "native-toolkit"
+          ],
+          "personCapabilities": [
+            "terrain-art"
+          ],
+          "toolCapabilities": [
+            "C01"
+          ],
+          "inputIds": [
+            "island-art-brief"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "C01"
+          ]
+        }
+      ],
+      "producesInputIds": [
+        "island-tile-revisions"
+      ],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "BSTW-W-TILE-TOWN",
+      "title": "Draw initial town terrain artwork",
+      "requirement": {
+        "id": "BSTW-ART-TOWN",
+        "revision": 1
+      },
+      "brief": "Produce a bounded town contribution once its brief is chosen. Exact amount remains open.",
+      "acceptance": "Save proposed artwork and check it against the chosen brief.",
+      "readiness": "missing",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "web-pencil",
+          "label": "Rpgtk tile pencil",
+          "skills": [
+            "terrain-art"
+          ],
+          "tools": [
+            "rpgtk-pencil"
+          ],
+          "personCapabilities": [
+            "terrain-art"
+          ],
+          "toolCapabilities": [
+            "C01"
+          ],
+          "inputIds": [
+            "town-art-brief"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "C01"
+          ]
+        }
+      ],
+      "producesInputIds": [
+        "town-tile-revisions"
+      ],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "BSTW-W-SET-ISLAND",
+      "title": "Assemble island tileset",
+      "requirement": {
+        "id": "BSTW-ART-ISLAND",
+        "revision": 1
+      },
+      "brief": "Assemble exact usable tile revisions into numbered slots; do not renumber existing referenced slots.",
+      "acceptance": "Reopen/export a compatible TST and compare count, slot numbers and appearance.",
+      "readiness": "missing",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "web-tileset",
+          "label": "Rpgtk indexed assembly",
+          "skills": [
+            "tileset-layout"
+          ],
+          "tools": [
+            "rpgtk-tileset-editor"
+          ],
+          "personCapabilities": [
+            "tileset-layout"
+          ],
+          "toolCapabilities": [
+            "C15",
+            "C16"
+          ],
+          "inputIds": [
+            "island-tile-revisions"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "C15",
+            "C16"
+          ]
+        },
+        {
+          "id": "native-tileset",
+          "label": "Native indexed assembly",
+          "skills": [
+            "tileset-layout"
+          ],
+          "tools": [
+            "native-toolkit"
+          ],
+          "personCapabilities": [
+            "tileset-layout"
+          ],
+          "toolCapabilities": [
+            "C15",
+            "C16"
+          ],
+          "inputIds": [
+            "island-tile-revisions"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "C15",
+            "C16"
+          ]
+        }
+      ],
+      "producesInputIds": [
+        "island-tileset"
+      ],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "BSTW-W-BOARD-ISLAND",
+      "title": "Lay out the island area",
+      "requirement": {
+        "id": "A05",
+        "revision": 1
+      },
+      "brief": "Partial A05 contribution using an approved area layout and usable tileset. Area is not a promise of a separate board file.",
+      "acceptance": "Save/reopen placement and tile identities; compare layout with the brief.",
+      "readiness": "missing",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "web-board",
+          "label": "Rpgtk board editor",
+          "skills": [
+            "board-layout"
+          ],
+          "tools": [
+            "rpgtk-board-editor"
+          ],
+          "personCapabilities": [
+            "board-layout"
+          ],
+          "toolCapabilities": [
+            "plan:board-authoring"
+          ],
+          "inputIds": [
+            "island-tileset",
+            "island-layout"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "plan:board-authoring"
+          ]
+        },
+        {
+          "id": "native-board",
+          "label": "Native board editor",
+          "skills": [
+            "board-layout"
+          ],
+          "tools": [
+            "native-toolkit"
+          ],
+          "personCapabilities": [
+            "board-layout"
+          ],
+          "toolCapabilities": [
+            "plan:board-authoring"
+          ],
+          "inputIds": [
+            "island-tileset",
+            "island-layout"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "plan:board-authoring"
+          ]
+        }
+      ],
+      "producesInputIds": [
+        "island-board"
+      ],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "BSTW-W-SET-TOWN",
+      "title": "Assemble town tileset",
+      "requirement": {
+        "id": "BSTW-ART-TOWN",
+        "revision": 1
+      },
+      "brief": "Assemble exact usable tile revisions into numbered slots; do not renumber existing referenced slots.",
+      "acceptance": "Reopen/export a compatible TST and compare count, slot numbers and appearance.",
+      "readiness": "missing",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "web-tileset",
+          "label": "Rpgtk indexed assembly",
+          "skills": [
+            "tileset-layout"
+          ],
+          "tools": [
+            "rpgtk-tileset-editor"
+          ],
+          "personCapabilities": [
+            "tileset-layout"
+          ],
+          "toolCapabilities": [
+            "C15",
+            "C16"
+          ],
+          "inputIds": [
+            "town-tile-revisions"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "C15",
+            "C16"
+          ]
+        },
+        {
+          "id": "native-tileset",
+          "label": "Native indexed assembly",
+          "skills": [
+            "tileset-layout"
+          ],
+          "tools": [
+            "native-toolkit"
+          ],
+          "personCapabilities": [
+            "tileset-layout"
+          ],
+          "toolCapabilities": [
+            "C15",
+            "C16"
+          ],
+          "inputIds": [
+            "town-tile-revisions"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "C15",
+            "C16"
+          ]
+        }
+      ],
+      "producesInputIds": [
+        "town-tileset"
+      ],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "BSTW-W-BOARD-TOWN",
+      "title": "Lay out the town area",
+      "requirement": {
+        "id": "A05",
+        "revision": 1
+      },
+      "brief": "Partial A05 contribution using an approved area layout and usable tileset. Area is not a promise of a separate board file.",
+      "acceptance": "Save/reopen placement and tile identities; compare layout with the brief.",
+      "readiness": "missing",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "web-board",
+          "label": "Rpgtk board editor",
+          "skills": [
+            "board-layout"
+          ],
+          "tools": [
+            "rpgtk-board-editor"
+          ],
+          "personCapabilities": [
+            "board-layout"
+          ],
+          "toolCapabilities": [
+            "plan:board-authoring"
+          ],
+          "inputIds": [
+            "town-tileset",
+            "town-layout"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "plan:board-authoring"
+          ]
+        },
+        {
+          "id": "native-board",
+          "label": "Native board editor",
+          "skills": [
+            "board-layout"
+          ],
+          "tools": [
+            "native-toolkit"
+          ],
+          "personCapabilities": [
+            "board-layout"
+          ],
+          "toolCapabilities": [
+            "plan:board-authoring"
+          ],
+          "inputIds": [
+            "town-tileset",
+            "town-layout"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "plan:board-authoring"
+          ]
+        }
+      ],
+      "producesInputIds": [
+        "town-board"
+      ],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "BSTW-W-BRUCE-BRIEF",
+      "title": "Define Bruce artwork requirements",
+      "requirement": {
+        "id": "A02",
+        "revision": 1
+      },
+      "brief": "Reconcile A02, then choose appearance, frames and transparency needs.",
+      "acceptance": "A bounded graphics brief with explicit open choices.",
+      "readiness": "unverified",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "direction",
+          "label": "Human creative direction",
+          "skills": [
+            "creative-direction"
+          ],
+          "tools": [],
+          "personCapabilities": [
+            "creative-direction"
+          ],
+          "toolCapabilities": [],
+          "inputIds": [],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": []
+        }
+      ],
+      "producesInputIds": [
+        "bruce-art-brief"
+      ],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "BSTW-W-BRUCE-ART",
+      "title": "Create Bruce artwork",
+      "requirement": {
+        "id": "A02",
+        "revision": 1
+      },
+      "brief": "Human-authored graphics based on the chosen brief; dimensions and frames must be chosen first.",
+      "acceptance": "Review usable exact graphics; transparency and import require separate verification.",
+      "readiness": "missing",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "external-character",
+          "label": "External art editor",
+          "skills": [
+            "character-art"
+          ],
+          "tools": [
+            "external-art-editor"
+          ],
+          "personCapabilities": [
+            "character-art"
+          ],
+          "toolCapabilities": [
+            "C01"
+          ],
+          "inputIds": [
+            "bruce-art-brief"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "C01"
+          ]
+        }
+      ],
+      "producesInputIds": [
+        "bruce-art"
+      ],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "BSTW-W-BRUCE-DEF",
+      "title": "Configure Bruce character",
+      "requirement": {
+        "id": "BSTW-CHAR-BRUCE",
+        "revision": 1
+      },
+      "brief": "Create the character definition referencing chosen graphics.",
+      "acceptance": "Reopen and preview the configured character, then verify movement.",
+      "readiness": "missing",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "native-character",
+          "label": "Native character editor",
+          "skills": [
+            "game-configuration"
+          ],
+          "tools": [
+            "native-toolkit"
+          ],
+          "personCapabilities": [
+            "game-configuration"
+          ],
+          "toolCapabilities": [
+            "plan:character-authoring"
+          ],
+          "inputIds": [
+            "bruce-art"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "plan:character-authoring"
+          ]
+        }
+      ],
+      "producesInputIds": [
+        "bruce-definition"
+      ],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "BSTW-W-START",
+      "title": "Write the startup program",
+      "requirement": {
+        "id": "BSTW-PRG-START",
+        "revision": 1
+      },
+      "brief": "Draft minimal procedural startup. Final loading is checked during integration. No title/story content is invented.",
+      "acceptance": "Source retained and compiled; normal launch acceptance remains separate.",
+      "readiness": "unverified",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "source",
+          "label": "Source editing",
+          "skills": [
+            "rpgcode-authoring"
+          ],
+          "tools": [
+            "source-editor"
+          ],
+          "personCapabilities": [
+            "rpgcode-authoring"
+          ],
+          "toolCapabilities": [
+            "plan:text-edit"
+          ],
+          "inputIds": [],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "plan:text-edit"
+          ]
+        }
+      ],
+      "producesInputIds": [
+        "startup-program"
+      ],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "BSTW-W-CLUES",
+      "title": "Implement bridge and clue interactions",
+      "requirement": {
+        "id": "BSTW-PRG-ROUTE",
+        "revision": 1
+      },
+      "brief": "Write content-driven procedural programs from the chosen clue brief. Synthetic regression can precede final game art.",
+      "acceptance": "Verify blocked bridge, town access, clue states, repeated interactions and source evidence.",
+      "readiness": "missing",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "source",
+          "label": "Source editing",
+          "skills": [
+            "rpgcode-authoring"
+          ],
+          "tools": [
+            "source-editor"
+          ],
+          "personCapabilities": [
+            "rpgcode-authoring"
+          ],
+          "toolCapabilities": [
+            "plan:text-edit"
+          ],
+          "inputIds": [
+            "clue-design"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "plan:text-edit"
+          ]
+        }
+      ],
+      "producesInputIds": [
+        "route-programs"
+      ],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "BSTW-W-END",
+      "title": "Implement the chosen ending",
+      "requirement": {
+        "id": "BSTW-PRG-END",
+        "revision": 1
+      },
+      "brief": "Implement the agreed ending in game content.",
+      "acceptance": "Exercise the chosen ending and reset/replay behavior.",
+      "readiness": "missing",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "source",
+          "label": "Source editing",
+          "skills": [
+            "rpgcode-authoring"
+          ],
+          "tools": [
+            "source-editor"
+          ],
+          "personCapabilities": [
+            "rpgcode-authoring"
+          ],
+          "toolCapabilities": [
+            "plan:text-edit"
+          ],
+          "inputIds": [
+            "ending-design"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "plan:text-edit"
+          ]
+        }
+      ],
+      "producesInputIds": [
+        "ending-program"
+      ],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "BSTW-W-INTEGRATE",
+      "title": "Configure the playable demo bundle",
+      "requirement": {
+        "id": "BSTW-CONFIG",
+        "revision": 1
+      },
+      "brief": "Select exact compatible revisions explicitly and configure the embedded Main File.",
+      "acceptance": "Normal Play loads selected startup, boards and Bruce without a diagnostic bypass.",
+      "readiness": "missing",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "native-config",
+          "label": "Native Main File configuration",
+          "skills": [
+            "game-configuration"
+          ],
+          "tools": [
+            "native-toolkit"
+          ],
+          "personCapabilities": [
+            "game-configuration"
+          ],
+          "toolCapabilities": [
+            "plan:gam-authoring"
+          ],
+          "inputIds": [
+            "island-board",
+            "town-board",
+            "bruce-definition",
+            "startup-program",
+            "route-programs",
+            "ending-program"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "plan:gam-authoring"
+          ],
+          "processIds": [
+            "brief-submit-review-select"
+          ]
+        }
+      ],
+      "producesInputIds": [
+        "launch-bundle"
+      ],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "BSTW-W-VERIFY",
+      "title": "Exercise the complete demo route",
+      "requirement": {
+        "id": "BSTW-CONFIG",
+        "revision": 1
+      },
+      "brief": "Use the chosen build and test its supported normal Play path through ending/reset. Record runtime gaps.",
+      "acceptance": "Record build/input identities and visible results; owner acceptance remains explicit.",
+      "readiness": "missing",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "playtest",
+          "label": "Rpgtk normal Play",
+          "skills": [
+            "playtest"
+          ],
+          "tools": [
+            "rpgtk-explorer"
+          ],
+          "personCapabilities": [
+            "playtest"
+          ],
+          "toolCapabilities": [
+            "plan:play"
+          ],
+          "inputIds": [
+            "launch-bundle"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "plan:play"
+          ]
+        }
+      ],
+      "producesInputIds": [],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "STUDIO-W-BOARD-TOOL",
+      "title": "Develop a bounded board editor prototype",
+      "requirement": {
+        "id": "STUDIO-BOARD-TOOL",
+        "revision": 1
+      },
+      "brief": "Develop create/save/reopen placement using synthetic tiles and existing format/resolver evidence. Game tile artwork is not a prerequisite.",
+      "acceptance": "Demonstrate exact tile-reference persistence on synthetic inputs; do not claim complete production support until compatible output is verified.",
+      "readiness": "unverified",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "develop",
+          "label": "Tool development",
+          "skills": [
+            "software-development"
+          ],
+          "tools": [
+            "source-editor"
+          ],
+          "personCapabilities": [
+            "software-development"
+          ],
+          "toolCapabilities": [
+            "plan:text-edit"
+          ],
+          "inputIds": [
+            "synthetic-tool-fixtures"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "plan:text-edit"
+          ]
+        }
+      ],
+      "producesInputIds": [],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    },
+    {
+      "id": "STUDIO-W-TILESET-TOOL",
+      "title": "Develop indexed tileset assembly/export",
+      "requirement": {
+        "id": "STUDIO-TILESET-TOOL",
+        "revision": 1
+      },
+      "brief": "Develop C15/C16 using reproducible diagnostic tiles independently of owner game artwork.",
+      "acceptance": "Preserve slot identities and compare compatible exported TST with the decoder.",
+      "readiness": "unverified",
+      "status": "proposed",
+      "routes": [
+        {
+          "id": "develop",
+          "label": "Tool development",
+          "skills": [
+            "software-development"
+          ],
+          "tools": [
+            "source-editor"
+          ],
+          "personCapabilities": [
+            "software-development"
+          ],
+          "toolCapabilities": [
+            "plan:text-edit"
+          ],
+          "inputIds": [
+            "synthetic-tool-fixtures"
+          ],
+          "support": "see studio tool evidence; scenario changes are assumptions",
+          "capabilityIds": [
+            "plan:text-edit"
+          ]
+        }
+      ],
+      "producesInputIds": [],
+      "effortHours": null,
+      "priority": null,
+      "assignedTo": null,
+      "notes": "Start eligibility is evaluated from scenario inputs, people and tools; it is not a sprint commitment."
+    }
+  ],
+  "variants": [],
+  "reviews": [],
+  "buildSelections": [],
+  "capabilityVocabulary": [
+    {
+      "id": "creative-direction",
+      "label": "Set creative briefs and acceptance",
+      "provider": "person",
+      "namespace": "planning-local"
+    },
+    {
+      "id": "terrain-art",
+      "label": "Create terrain artwork",
+      "provider": "person",
+      "namespace": "planning-local"
+    },
+    {
+      "id": "character-art",
+      "label": "Create character artwork",
+      "provider": "person",
+      "namespace": "planning-local"
+    },
+    {
+      "id": "tileset-layout",
+      "label": "Organize numbered tiles",
+      "provider": "person",
+      "namespace": "planning-local"
+    },
+    {
+      "id": "board-layout",
+      "label": "Lay out a game board",
+      "provider": "person",
+      "namespace": "planning-local"
+    },
+    {
+      "id": "rpgcode-authoring",
+      "label": "Write procedural RPGCode",
+      "provider": "person",
+      "namespace": "planning-local"
+    },
+    {
+      "id": "game-configuration",
+      "label": "Configure a Toolkit game",
+      "provider": "person",
+      "namespace": "planning-local"
+    },
+    {
+      "id": "software-development",
+      "label": "Develop and verify authoring tools",
+      "provider": "person",
+      "namespace": "planning-local"
+    },
+    {
+      "id": "playtest",
+      "label": "Run a game acceptance path",
+      "provider": "person",
+      "namespace": "planning-local"
+    },
+    {
+      "id": "C01",
+      "label": "Create/edit a tile",
+      "provider": "tool",
+      "namespace": "repository"
+    },
+    {
+      "id": "C13",
+      "label": "Import artwork as a tile",
+      "provider": "tool",
+      "namespace": "repository"
+    },
+    {
+      "id": "C14",
+      "label": "Open a TST for editing",
+      "provider": "tool",
+      "namespace": "repository"
+    },
+    {
+      "id": "C15",
+      "label": "Assemble indexed tilesets",
+      "provider": "tool",
+      "namespace": "repository"
+    },
+    {
+      "id": "C16",
+      "label": "Export compatible TST",
+      "provider": "tool",
+      "namespace": "repository"
+    },
+    {
+      "id": "C17",
+      "label": "Preserve transparency",
+      "provider": "tool",
+      "namespace": "repository"
+    },
+    {
+      "id": "plan:board-authoring",
+      "label": "Create/edit/save a board",
+      "provider": "tool",
+      "namespace": "planning-local"
+    },
+    {
+      "id": "plan:character-authoring",
+      "label": "Create/edit a character definition",
+      "provider": "tool",
+      "namespace": "planning-local"
+    },
+    {
+      "id": "plan:text-edit",
+      "label": "Edit source text",
+      "provider": "tool",
+      "namespace": "planning-local"
+    },
+    {
+      "id": "plan:gam-authoring",
+      "label": "Create/edit Main File configuration",
+      "provider": "tool",
+      "namespace": "planning-local"
+    },
+    {
+      "id": "plan:inspect",
+      "label": "Inspect assets and references",
+      "provider": "tool",
+      "namespace": "planning-local"
+    },
+    {
+      "id": "plan:play",
+      "label": "Exercise supported Toolkit behavior",
+      "provider": "tool",
+      "namespace": "planning-local"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D-ROUTE",
+      "title": "Confirm overall route, area boundaries and board count",
+      "state": "open"
+    },
+    {
+      "id": "D-ART",
+      "title": "Choose an initial island tile brief, palette and reference policy",
+      "state": "open"
+    },
+    {
+      "id": "D-BRUCE",
+      "title": "Choose Bruce appearance, dimensions and animation scope",
+      "state": "open"
+    },
+    {
+      "id": "D-CLUES",
+      "title": "Choose the clues, discovery order and responses",
+      "state": "open"
+    },
+    {
+      "id": "D-ENDING",
+      "title": "Choose the demo ending and success criteria",
+      "state": "open"
+    },
+    {
+      "id": "D-CAVE",
+      "title": "Reconcile A01 cave terrain with the confirmed island/town route",
+      "state": "open"
+    },
+    {
+      "id": "D-SYSTEMS",
+      "title": "Confirm combat exclusion and menu/inventory/save/audio needs",
+      "state": "open"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "island-art-brief",
+      "label": "Approved initial island tile brief",
+      "available": false,
+      "decisionId": "D-ART"
+    },
+    {
+      "id": "island-tile-revisions",
+      "label": "Usable exact island tile revisions",
+      "available": false
+    },
+    {
+      "id": "town-art-brief",
+      "label": "Approved town terrain brief",
+      "available": false
+    },
+    {
+      "id": "town-tile-revisions",
+      "label": "Usable exact town tile revisions",
+      "available": false
+    },
+    {
+      "id": "island-tileset",
+      "label": "Compatible numbered island tileset",
+      "available": false
+    },
+    {
+      "id": "town-tileset",
+      "label": "Compatible numbered town tileset",
+      "available": false
+    },
+    {
+      "id": "island-layout",
+      "label": "Approved first island board layout",
+      "available": false,
+      "decisionId": "D-ROUTE"
+    },
+    {
+      "id": "town-layout",
+      "label": "Approved town board layout",
+      "available": false,
+      "decisionId": "D-ROUTE"
+    },
+    {
+      "id": "bruce-art-brief",
+      "label": "Approved Bruce art brief",
+      "available": false,
+      "decisionId": "D-BRUCE"
+    },
+    {
+      "id": "bruce-art",
+      "label": "Usable Bruce graphics",
+      "available": false
+    },
+    {
+      "id": "bruce-definition",
+      "label": "Usable Bruce character definition",
+      "available": false
+    },
+    {
+      "id": "island-board",
+      "label": "Usable island board",
+      "available": false
+    },
+    {
+      "id": "town-board",
+      "label": "Usable town board",
+      "available": false
+    },
+    {
+      "id": "clue-design",
+      "label": "Chosen clue sequence and dialogue brief",
+      "available": false,
+      "decisionId": "D-CLUES"
+    },
+    {
+      "id": "ending-design",
+      "label": "Chosen ending brief",
+      "available": false,
+      "decisionId": "D-ENDING"
+    },
+    {
+      "id": "startup-program",
+      "label": "Usable startup program",
+      "available": false
+    },
+    {
+      "id": "route-programs",
+      "label": "Usable bridge/town/clue programs",
+      "available": false
+    },
+    {
+      "id": "ending-program",
+      "label": "Usable ending program",
+      "available": false
+    },
+    {
+      "id": "launch-bundle",
+      "label": "Configured launch bundle",
+      "available": false
+    },
+    {
+      "id": "synthetic-tool-fixtures",
+      "label": "Reproducible diagnostic inputs for tool development",
+      "available": true,
+      "evidence": "Repository fixture patterns; may generate synthetic placeholders, not owner game art."
+    }
+  ],
+  "scenariosRef": "bstw.scenarios.json",
+  "viewPolicy": {
+    "default": "director",
+    "levels": [
+      "player outcome",
+      "asset group",
+      "bounded work",
+      "route blockers"
+    ],
+    "expandWhen": [
+      "A person needs a concrete assignment",
+      "A distinct input or capability blocks work",
+      "The result needs separate acceptance"
+    ],
+    "keepStableIds": true,
+    "progressRule": "Count meaningful outcomes and acceptance states; task counts are inventory, not percent complete."
+  },
+  "sources": [
+    {
+      "id": "owner-2026-11-24",
+      "kind": "owner_statement",
+      "location": "This conversation, November 24, 2026",
+      "summary": "One to five people; island start, climb cliff, broken bridge redirects into town, exploration/clues/mysteries; project and studio plans yield assumption-dependent execution options."
+    },
+    {
+      "id": "repo-authoring",
+      "kind": "repository_document",
+      "url": "https://github.com/jmbjr/rpgtk_godot/blob/2c7128746f748bb0aa0459c36675a2e190a26f16/docs/AUTHORING_CAPABILITIES.md",
+      "summary": "A01 cave terrain floor/wall/exit edge, 32×32; C01/C13/C14 alternative tile supply, C15 assembly, C16 export; conditional C17. A02 and A05 are mentioned but not fully defined here."
+    },
+    {
+      "id": "repo-workflow",
+      "kind": "repository_document",
+      "url": "https://github.com/jmbjr/rpgtk_godot/blob/2c7128746f748bb0aa0459c36675a2e190a26f16/docs/AUTHORING_WORKFLOW.md",
+      "summary": "W01–W07 requirement/work/variant/review/build relationships; exact revisions; production-route alternatives."
+    },
+    {
+      "id": "repo-capabilities",
+      "kind": "repository_document",
+      "url": "https://github.com/jmbjr/rpgtk_godot/blob/2c7128746f748bb0aa0459c36675a2e190a26f16/CAPABILITIES.md",
+      "summary": "Shipped inspection and limited TK3 execution; these do not establish asset authoring."
+    },
+    {
+      "id": "intake-142",
+      "kind": "issue",
+      "url": "https://github.com/jmbjr/rpgtk_godot/issues/142",
+      "summary": "Owner-led intake contract, procedural/core Toolkit direction, combat provisionally excluded. Issue body still awaits detailed intake; no comments at this checkpoint."
+    },
+    {
+      "id": "tile-pr-146",
+      "kind": "unmerged_implementation",
+      "url": "https://github.com/jmbjr/rpgtk_godot/pull/146",
+      "ref": "7fb36fe71cdbec87558204b36065b6927f7c243c",
+      "summary": "Open PR at checkpoint. Version 1 local tile manifest and proposed GPH revisions. Neither main nor deployment support is claimed."
+    },
+    {
+      "id": "discovery-147",
+      "kind": "planned_requirement",
+      "url": "https://github.com/jmbjr/rpgtk_godot/issues/147",
+      "summary": "Readable vocabulary, explainable matches, independent readiness and complete briefs; documentation merged through #148."
+    }
+  ],
+  "coverageGaps": [
+    {
+      "id": "G-ORIGINAL",
+      "description": "Recover/reconcile the original detailed intake and its full stable asset ID ledger."
+    },
+    {
+      "id": "G-COUNTS",
+      "description": "Board/tile/character counts, effort and playtime are not defined."
+    },
+    {
+      "id": "G-CAVE",
+      "description": "No cave production assignment is released until A01 scope is reconciled."
+    },
+    {
+      "id": "G-AUDIO",
+      "description": "Audio has no production work until its need is chosen."
+    },
+    {
+      "id": "G-RUNTIME",
+      "description": "Shared runtime support is partial; exercise the exact authored route before claiming support."
+    },
+    {
+      "id": "G-ORGANIZATION",
+      "description": "Only the director role is recorded; roster, willingness and capacity are unknown."
+    }
+  ],
+  "planningRules": {
+    "routeLogic": "OR between routes; AND across requirements within one route",
+    "unknownHandling": "Unknown inputs, capabilities, willingness, capacity and tool access remain unverified.",
+    "eligibility": "A fully satisfied route with at least one capable, willing person with positive known capacity can start.",
+    "scheduling": "Eligible does not mean scheduled or finishable. Estimates, dependencies, resource allocation and explicit commitments are needed.",
+    "sameSprintOutputs": "Newly produced inputs do not become available until their exact revisions and checks are recorded. Do not bootstrap a dependency cycle.",
+    "reviews": "Review references exact requirement and variant revisions; this plan creates no accepted variants or build selections.",
+    "scale": "One to five unique people; shared people/capacity must not be counted twice.",
+    "scenarioIsolation": "Each scenario is an immutable planning snapshot plus explicit overrides; assumptions do not overwrite baseline evidence."
+  }
+}

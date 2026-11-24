@@ -1,0 +1,204 @@
+{
+  "format": "rpgtk-studio-planning-draft",
+  "version": 1,
+  "id": "bstw-owner-studio",
+  "revision": 1,
+  "title": "BSTW small studio — initial organizational plan",
+  "scale": {
+    "minimumPeople": 1,
+    "maximumPeople": 5,
+    "activePeopleCount": null,
+    "policy": "At most five distinct participating people per scenario; a person with several capabilities still counts once."
+  },
+  "people": [
+    {
+      "id": "owner-director",
+      "name": "Owner / game director",
+      "capabilities": [
+        "creative-direction"
+      ],
+      "availabilityHours": null,
+      "willing": null,
+      "evidence": "owner-2026-11-24",
+      "notes": "Creative direction is declared. No art/programming capability, willingness for a particular assignment, or sprint capacity is inferred."
+    }
+  ],
+  "tools": [
+    {
+      "id": "rpgtk-explorer",
+      "label": "Current Rpgtk Explorer",
+      "available": true,
+      "capabilities": [
+        "plan:inspect",
+        "plan:play"
+      ],
+      "support": "inspection implemented; runtime partial",
+      "revision": "2c7128746f748bb0aa0459c36675a2e190a26f16",
+      "evidence": "repo-capabilities",
+      "notes": "Inspect and play supported content. Demo-specific execution is unverified; no editor is implied."
+    },
+    {
+      "id": "rpgtk-pencil",
+      "label": "Rpgtk tile pencil (#146)",
+      "available": false,
+      "capabilities": [
+        "C01"
+      ],
+      "support": "open PR; absent from main",
+      "revision": "7fb36fe71cdbec87558204b36065b6927f7c243c",
+      "evidence": "tile-pr-146"
+    },
+    {
+      "id": "rpgtk-tileset-editor",
+      "label": "Rpgtk tileset assembly/export",
+      "available": false,
+      "capabilities": [
+        "C15",
+        "C16"
+      ],
+      "support": "planned",
+      "evidence": "repo-authoring"
+    },
+    {
+      "id": "rpgtk-board-editor",
+      "label": "Rpgtk board editor",
+      "available": false,
+      "capabilities": [
+        "plan:board-authoring"
+      ],
+      "support": "planned",
+      "evidence": "repo-workflow"
+    },
+    {
+      "id": "native-toolkit",
+      "label": "Original Toolkit editor — candidate external route",
+      "available": null,
+      "capabilities": [
+        "C01",
+        "C15",
+        "C16",
+        "plan:board-authoring",
+        "plan:character-authoring",
+        "plan:gam-authoring"
+      ],
+      "support": "candidate external route; local access and round trip unverified",
+      "evidence": "repo-authoring"
+    },
+    {
+      "id": "source-editor",
+      "label": "Source editing environment",
+      "available": null,
+      "capabilities": [
+        "plan:text-edit"
+      ],
+      "support": "studio access unverified; repository can hold source"
+    },
+    {
+      "id": "external-art-editor",
+      "label": "External art editor — unselected",
+      "available": null,
+      "capabilities": [
+        "C01",
+        "C17"
+      ],
+      "support": "candidate; choose exact tool and verify output/import route"
+    }
+  ],
+  "processes": [
+    {
+      "id": "brief-submit-review-select",
+      "label": "Brief → contribution → review → exact build selection",
+      "available": null,
+      "status": "partly specified; #146 proposes local submission; shared review/build selection planned",
+      "capabilities": [
+        "W01",
+        "W02",
+        "W03",
+        "W04",
+        "W05",
+        "W06",
+        "W07"
+      ],
+      "evidence": "repo-workflow"
+    },
+    {
+      "id": "lightweight-human-review",
+      "label": "Director records review of an exact revision",
+      "available": true,
+      "status": "proposed manual process supported by this planning contract; no permission service claimed",
+      "evidence": "owner-2026-11-24"
+    }
+  ],
+  "values": [
+    {
+      "id": "human-creative-control",
+      "rule": "People own creative decisions and game artwork; AI may propose decomposition, sequencing, implementation and checks. AI-created game art requires an explicit decision.",
+      "basis": "owner direction"
+    },
+    {
+      "id": "small-team",
+      "rule": "Keep planning practical for one to five people; expand a work item only when needed for assignment, a meaningful blocker or acceptance.",
+      "basis": "owner direction"
+    },
+    {
+      "id": "willingness",
+      "rule": "A resource must be both capable and willing/available. Unknown is not a commitment.",
+      "basis": "owner direction"
+    },
+    {
+      "id": "honest-evidence",
+      "rule": "Separate claimed capability, tool implementation, available inputs, completion, review and build selection.",
+      "basis": "repository contract"
+    },
+    {
+      "id": "private-originals",
+      "rule": "Keep original private archives, assets, dialogue, source and DLLs local. This plan contains summaries only.",
+      "basis": "intake-142"
+    }
+  ],
+  "sources": [
+    {
+      "id": "owner-2026-11-24",
+      "kind": "owner_statement",
+      "location": "This conversation, November 24, 2026",
+      "summary": "One to five people; island start, climb cliff, broken bridge redirects into town, exploration/clues/mysteries; project and studio plans yield assumption-dependent execution options."
+    },
+    {
+      "id": "repo-authoring",
+      "kind": "repository_document",
+      "url": "https://github.com/jmbjr/rpgtk_godot/blob/2c7128746f748bb0aa0459c36675a2e190a26f16/docs/AUTHORING_CAPABILITIES.md",
+      "summary": "A01 cave terrain floor/wall/exit edge, 32×32; C01/C13/C14 alternative tile supply, C15 assembly, C16 export; conditional C17. A02 and A05 are mentioned but not fully defined here."
+    },
+    {
+      "id": "repo-workflow",
+      "kind": "repository_document",
+      "url": "https://github.com/jmbjr/rpgtk_godot/blob/2c7128746f748bb0aa0459c36675a2e190a26f16/docs/AUTHORING_WORKFLOW.md",
+      "summary": "W01–W07 requirement/work/variant/review/build relationships; exact revisions; production-route alternatives."
+    },
+    {
+      "id": "repo-capabilities",
+      "kind": "repository_document",
+      "url": "https://github.com/jmbjr/rpgtk_godot/blob/2c7128746f748bb0aa0459c36675a2e190a26f16/CAPABILITIES.md",
+      "summary": "Shipped inspection and limited TK3 execution; these do not establish asset authoring."
+    },
+    {
+      "id": "intake-142",
+      "kind": "issue",
+      "url": "https://github.com/jmbjr/rpgtk_godot/issues/142",
+      "summary": "Owner-led intake contract, procedural/core Toolkit direction, combat provisionally excluded. Issue body still awaits detailed intake; no comments at this checkpoint."
+    },
+    {
+      "id": "tile-pr-146",
+      "kind": "unmerged_implementation",
+      "url": "https://github.com/jmbjr/rpgtk_godot/pull/146",
+      "ref": "7fb36fe71cdbec87558204b36065b6927f7c243c",
+      "summary": "Open PR at checkpoint. Version 1 local tile manifest and proposed GPH revisions. Neither main nor deployment support is claimed."
+    },
+    {
+      "id": "discovery-147",
+      "kind": "planned_requirement",
+      "url": "https://github.com/jmbjr/rpgtk_godot/issues/147",
+      "summary": "Readable vocabulary, explainable matches, independent readiness and complete briefs; documentation merged through #148."
+    }
+  ]
+}

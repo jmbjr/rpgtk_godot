@@ -1,0 +1,220 @@
+{
+  "format": "rpgtk-studio-scenarios-draft",
+  "version": 1,
+  "viewedScenarioId": null,
+  "adoptedScenarioId": null,
+  "scenarios": [
+    {
+      "id": "S0",
+      "revision": 1,
+      "title": "Recorded baseline",
+      "description": "Only currently recorded resources and inputs. Capacity and most production support remain unknown.",
+      "projectRef": {
+        "id": "bstw-owner-demo",
+        "revision": 1
+      },
+      "studioRef": {
+        "id": "bstw-owner-studio",
+        "revision": 1
+      },
+      "timebox": {
+        "label": "Next planning sprint",
+        "start": null,
+        "durationDays": null
+      },
+      "status": "evidence-baseline",
+      "addPeople": [],
+      "peopleOverrides": {},
+      "toolAvailability": {},
+      "inputAvailability": {},
+      "scheduledWork": [],
+      "assumptionNote": "All overrides are what-if assumptions, not verified studio capability, resource availability or completed work. Shared capacity is not allocated automatically."
+    },
+    {
+      "id": "S1",
+      "revision": 1,
+      "title": "Artist available",
+      "description": "Assume one willing terrain artist has 4 hours, the pencil is verified available, and the initial island tile brief is approved.",
+      "projectRef": {
+        "id": "bstw-owner-demo",
+        "revision": 1
+      },
+      "studioRef": {
+        "id": "bstw-owner-studio",
+        "revision": 1
+      },
+      "timebox": {
+        "label": "Next planning sprint",
+        "start": null,
+        "durationDays": null
+      },
+      "status": "hypothetical-not-a-commitment",
+      "addPeople": [
+        {
+          "id": "assumed-artist",
+          "name": "Hypothetical terrain artist",
+          "capabilities": [
+            "terrain-art"
+          ],
+          "availabilityHours": 4,
+          "willing": true,
+          "evidence": "hypothetical scenario only"
+        }
+      ],
+      "peopleOverrides": {},
+      "toolAvailability": {
+        "rpgtk-pencil": true
+      },
+      "inputAvailability": {
+        "island-art-brief": true
+      },
+      "scheduledWork": [],
+      "assumptionNote": "All overrides are what-if assumptions, not verified studio capability, resource availability or completed work. Shared capacity is not allocated automatically."
+    },
+    {
+      "id": "S2",
+      "revision": 1,
+      "title": "Artist unavailable; develop tools",
+      "description": "Assume an artist declines this sprint. A willing developer has 6 hours and a source editor. Board and tileset tool work can start with synthetic inputs.",
+      "projectRef": {
+        "id": "bstw-owner-demo",
+        "revision": 1
+      },
+      "studioRef": {
+        "id": "bstw-owner-studio",
+        "revision": 1
+      },
+      "timebox": {
+        "label": "Next planning sprint",
+        "start": null,
+        "durationDays": null
+      },
+      "status": "hypothetical-not-a-commitment",
+      "addPeople": [
+        {
+          "id": "assumed-artist",
+          "name": "Hypothetical terrain artist",
+          "capabilities": [
+            "terrain-art"
+          ],
+          "availabilityHours": 0,
+          "willing": false,
+          "evidence": "hypothetical scenario only"
+        },
+        {
+          "id": "assumed-developer",
+          "name": "Hypothetical developer",
+          "capabilities": [
+            "software-development"
+          ],
+          "availabilityHours": 6,
+          "willing": true,
+          "evidence": "hypothetical scenario only"
+        }
+      ],
+      "peopleOverrides": {},
+      "toolAvailability": {
+        "source-editor": true
+      },
+      "inputAvailability": {
+        "island-art-brief": true
+      },
+      "scheduledWork": [],
+      "assumptionNote": "All overrides are what-if assumptions, not verified studio capability, resource availability or completed work. Shared capacity is not allocated automatically."
+    },
+    {
+      "id": "S3",
+      "revision": 1,
+      "title": "Artist and developer in parallel",
+      "description": "Assume both hypothetical resources and source/pencil tools. Art and tool work can start independently; developer tasks compete for the same 6 hours.",
+      "projectRef": {
+        "id": "bstw-owner-demo",
+        "revision": 1
+      },
+      "studioRef": {
+        "id": "bstw-owner-studio",
+        "revision": 1
+      },
+      "timebox": {
+        "label": "Next planning sprint",
+        "start": null,
+        "durationDays": null
+      },
+      "status": "hypothetical-not-a-commitment",
+      "addPeople": [
+        {
+          "id": "assumed-artist",
+          "name": "Hypothetical terrain artist",
+          "capabilities": [
+            "terrain-art"
+          ],
+          "availabilityHours": 4,
+          "willing": true,
+          "evidence": "hypothetical scenario only"
+        },
+        {
+          "id": "assumed-developer",
+          "name": "Hypothetical developer",
+          "capabilities": [
+            "software-development"
+          ],
+          "availabilityHours": 6,
+          "willing": true,
+          "evidence": "hypothetical scenario only"
+        }
+      ],
+      "peopleOverrides": {},
+      "toolAvailability": {
+        "source-editor": true,
+        "rpgtk-pencil": true
+      },
+      "inputAvailability": {
+        "island-art-brief": true
+      },
+      "scheduledWork": [],
+      "assumptionNote": "All overrides are what-if assumptions, not verified studio capability, resource availability or completed work. Shared capacity is not allocated automatically."
+    },
+    {
+      "id": "S4",
+      "revision": 1,
+      "title": "Use an external board route",
+      "description": "Assume one willing native Toolkit board contributor has 4 hours, a verified usable native setup, and an island layout/tileset already available. No internal board editor is needed for this route.",
+      "projectRef": {
+        "id": "bstw-owner-demo",
+        "revision": 1
+      },
+      "studioRef": {
+        "id": "bstw-owner-studio",
+        "revision": 1
+      },
+      "timebox": {
+        "label": "Next planning sprint",
+        "start": null,
+        "durationDays": null
+      },
+      "status": "hypothetical-not-a-commitment",
+      "addPeople": [
+        {
+          "id": "assumed-board-contributor",
+          "name": "Hypothetical external board contributor",
+          "capabilities": [
+            "board-layout"
+          ],
+          "availabilityHours": 4,
+          "willing": true,
+          "evidence": "hypothetical scenario only"
+        }
+      ],
+      "peopleOverrides": {},
+      "toolAvailability": {
+        "native-toolkit": true
+      },
+      "inputAvailability": {
+        "island-tileset": true,
+        "island-layout": true
+      },
+      "scheduledWork": [],
+      "assumptionNote": "All overrides are what-if assumptions, not verified studio capability, resource availability or completed work. Shared capacity is not allocated automatically."
+    }
+  ]
+}
