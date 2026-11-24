@@ -2,6 +2,26 @@
 
 ## Current owner direction — November 22, 2026
 
+### Authoring workflow clarification — November 23, 2026
+
+The owner clarified that authoring starts from a project's unmet asset needs.
+A contributor filters work by their skills, tool familiarity and subject
+knowledge, opens the relevant brief, and saves an attributed proposed variant
+against the requirement. Review can provisionally accept or accept an exact
+revision; a build independently selects compatible exact revisions. Keep
+contributor skills, authoring capabilities and implemented tool support distinct.
+
+The [project authoring workflow](AUTHORING_WORKFLOW.md) owns planned W01-W07,
+the minimal durable relationships and acceptance/handoff checks. The
+[authoring graph](AUTHORING_CAPABILITIES.md) retains C01/C13-C17 prerequisites
+and the draw/import/open alternatives for tile supply. The next authoring
+increment is request-bound tile creation/editing: carry requirement/work context
+through C01 and save/reopen a proposed variant. Shared review/accounts and build
+services remain later work. This clarification does not settle open creative
+intake choices, authorize game asset creation or claim these features exist.
+
+### Owner-led game intake
+
 The next game-definition step is [intake #142](https://github.com/jmbjr/rpgtk_godot/issues/142):
 a completely new, simpler game authored by the owner with AI assistance, built
 one selected asset/capability increment at a time. The working reference is the
@@ -68,7 +88,7 @@ semantics. Game identity and rules belong in imported data and source.
 
 The [capability inventory](../CAPABILITIES.md) describes today's user tasks.
 The following tracks explain why different kinds of work are in the backlog.
-They are not six separate website modes that a visitor should have to learn.
+They are not separate website modes that a visitor should have to learn.
 
 ## Active and future tracks
 
@@ -78,6 +98,7 @@ They are not six separate website modes that a visitor should have to learn.
 | **Format accuracy and evidence** | Trust what the viewer says and see where knowledge is incomplete | #27 specifications; #41 Toolkit 2 converter parity; #63 historical matrix/specimens; #79 native Toolkit 3. Initial GAM work #80 is closed | Historical layouts, projection, schema/conformance completeness and original editor/save/runtime comparisons; the 57-row TK2 ledger includes 3 partial and 2 evidence-blocked rows |
 | **Generic Toolkit 3 execution** | Try supported authored behavior and diagnose a failure at its source | #123. Startup/language/title/canvas/audio in #128–#131; entry/tasks/live moving entities in #133–#135 are merged and deployed | Owner acceptance of authored boards; inline tasks, pathfinding and verified foreground handoff, broader language/objects, native combat/plugins and save/load remain separate work |
 | **Toolkit 2 execution** | Eventually try older games using verified shared systems | Next runtime phase in #2/#123, after the current generic TK3 sequence; #41/#63 provide format evidence | Define a source-backed playable slice; decoder coverage does not establish runtime compatibility |
+| **Project authoring and asset fulfillment** | Find suitable asset work, submit attributed variants, review fulfillment and select content for a build | Owner direction from #142 and #144's C graph; planned [W01-W07 workflow](AUTHORING_WORKFLOW.md) and next handoff | Request-bound C01 round trip first; review and build selection later; all are planned, with creative intake decisions retained separately |
 | **DODGE print-and-play / TTS** | Turn selected content into physical or tabletop experiments | #33. Tile identity pilot #31 closed; selected-tileset PDF exists; generated fixture PDF/TTS checks are experimental | Owner-selected conversion scope and verified rules; a tileset PDF does not establish whole-game conversion |
 | **DODGE video-game profile / Godot** | Reuse verified game structure/behavior in a future toolkit | #1, downstream of generic TK3 then TK2 compatibility in #2 | Multiple verified games, stable source identities and a usable target mapping; no general playable Godot export exists today |
 
