@@ -269,26 +269,6 @@ in [board-dependencies.md](usability/board-dependencies.md). Editing/rewriting,
 subset selection/export, merging archives and playable Godot export remain future
 work. Automated evidence and owner usability acceptance remain separate.
 
-## Small-studio planning — November 24, 2026
+## Reconciled intake and studio planning
 
-The [studio planning contract](STUDIO_PLANNING.md) and
-[initial Bruce demo baseline](../projects/bstw-demo/README.md) separate game
-scope/dependencies from studio resources, processes and values. They add five
-assumption-dependent planning options for a one-to-five-person team, including
-artist-unavailable/tool-development and external board-authoring routes.
-This is draft project data and a standalone planning aid, not a new integrated
-Explorer feature, accepted game scope or committed sprint.
-
-The owner-confirmed route is island → cliff → broken bridge → town exploration
-and clues. The ending and detailed intake remain open. Existing A01/A02/A05
-identities retain their known boundaries; reconcile the original intake.
-People, willingness, capacity, tool access and input readiness remain explicit
-unknowns until evidenced. Work may be startable without being schedulable or
-finishable in one sprint. Review/build choices still bind exact revisions.
-
-At this checkpoint main `2c712874` includes #148's discoverability documentation;
-#146 remains open at `7fb36fe7`. The older “all planned” status describes main's
-integrated authoring support; #146's separate candidate implementation does not
-establish merge, deployment or owner acceptance. The next authoring choice
-should read this planning baseline and #147 alongside the existing handoff.
-
+The original intake has been recovered from both shared transcripts, including A01–A06, the ordered additions and authoring C02–C12. [The project manifest](../projects/bstw-demo/project.manifest.json) is the durable entry point; [the intake](../projects/bstw-demo/INTAKE.md) retains source authority and open choices. #142’s earlier waiting status is historical. [Studio director](../planning/index.html) derives milestones and route readiness from the linked project, studio, capability and scenario records. Actual roster/hours, creative briefs, production verification, asset acceptance and deployment remain separate. #149 carries this planning integration; #146 remains the independent local tile editor proposal.

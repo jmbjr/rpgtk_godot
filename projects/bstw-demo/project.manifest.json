@@ -1,0 +1,39 @@
+{
+  "format": "rpgtk-planning-project",
+  "version": 1,
+  "id": "bstw-owner-demo",
+  "revision": 2,
+  "title": "Bruce demo studio plan",
+  "records": {
+    "project": {
+      "path": "bstw.project.json",
+      "id": "bstw-owner-demo",
+      "revision": 2,
+      "sha256": "f168afff76e22dc6a8d3087534c75a6c246fe274dd774e9f381d35ad22487484"
+    },
+    "studio": {
+      "path": "bstw.studio.json",
+      "id": "bstw-owner-studio",
+      "revision": 2,
+      "sha256": "5762f1ae3ee81ecaf0674e1b36f5c2b26764e845cbddc5cd1b7bc8f40e2aa5b6"
+    },
+    "scenarios": {
+      "path": "bstw.scenarios.json",
+      "id": "bstw-scenarios",
+      "revision": 2,
+      "sha256": "fa82ad2f02e1d65397db7279d8406a4df6f8233702df999c8af178559ac1dd85"
+    },
+    "capabilities": {
+      "path": "capabilities.json",
+      "id": "rpgtk-authoring-ledger",
+      "revision": 2,
+      "sha256": "807b365d5b530d42d5c601009c4594ac59267e4408722edf7490408217f6f08b"
+    },
+    "intake": {
+      "path": "intake.json",
+      "id": "bstw-intake",
+      "revision": 1,
+      "sha256": "c3a8b2b3f299f57d49b8d5aebd0ba6c9c129ae337321332de7137af7d2e7e4ed"
+    }
+  }
+}

@@ -11,11 +11,11 @@
       "description": "Only currently recorded resources and inputs. Capacity and most production support remain unknown.",
       "projectRef": {
         "id": "bstw-owner-demo",
-        "revision": 1
+        "revision": 2
       },
       "studioRef": {
         "id": "bstw-owner-studio",
-        "revision": 1
+        "revision": 2
       },
       "timebox": {
         "label": "Next planning sprint",
@@ -28,20 +28,26 @@
       "toolAvailability": {},
       "inputAvailability": {},
       "scheduledWork": [],
-      "assumptionNote": "All overrides are what-if assumptions, not verified studio capability, resource availability or completed work. Shared capacity is not allocated automatically."
+      "assumptionNote": "All overrides are what-if assumptions, not verified studio capability, resource availability or completed work. Shared capacity is not allocated automatically.",
+      "capabilitiesRef": {
+        "id": "rpgtk-authoring-ledger",
+        "revision": 2
+      },
+      "toolSupportOverrides": {},
+      "processAvailability": {}
     },
     {
       "id": "S1",
       "revision": 1,
       "title": "Artist available",
-      "description": "Assume one willing terrain artist has 4 hours, the pencil is verified available, and the initial island tile brief is approved.",
+      "description": "Assume a willing terrain artist, 4 hours, a chosen cave brief, and usable pencil support/access.",
       "projectRef": {
         "id": "bstw-owner-demo",
-        "revision": 1
+        "revision": 2
       },
       "studioRef": {
         "id": "bstw-owner-studio",
-        "revision": 1
+        "revision": 2
       },
       "timebox": {
         "label": "Next planning sprint",
@@ -54,7 +60,7 @@
           "id": "assumed-artist",
           "name": "Hypothetical terrain artist",
           "capabilities": [
-            "terrain-art"
+            "person:terrain-art"
           ],
           "availabilityHours": 4,
           "willing": true,
@@ -66,10 +72,20 @@
         "rpgtk-pencil": true
       },
       "inputAvailability": {
-        "island-art-brief": true
+        "cave-art-brief": true
       },
       "scheduledWork": [],
-      "assumptionNote": "All overrides are what-if assumptions, not verified studio capability, resource availability or completed work. Shared capacity is not allocated automatically."
+      "assumptionNote": "All overrides are what-if assumptions, not verified studio capability, resource availability or completed work. Shared capacity is not allocated automatically.",
+      "capabilitiesRef": {
+        "id": "rpgtk-authoring-ledger",
+        "revision": 2
+      },
+      "toolSupportOverrides": {
+        "rpgtk-pencil": {
+          "authoring:C01": "verified"
+        }
+      },
+      "processAvailability": {}
     },
     {
       "id": "S2",
@@ -78,11 +94,11 @@
       "description": "Assume an artist declines this sprint. A willing developer has 6 hours and a source editor. Board and tileset tool work can start with synthetic inputs.",
       "projectRef": {
         "id": "bstw-owner-demo",
-        "revision": 1
+        "revision": 2
       },
       "studioRef": {
         "id": "bstw-owner-studio",
-        "revision": 1
+        "revision": 2
       },
       "timebox": {
         "label": "Next planning sprint",
@@ -95,7 +111,7 @@
           "id": "assumed-artist",
           "name": "Hypothetical terrain artist",
           "capabilities": [
-            "terrain-art"
+            "person:terrain-art"
           ],
           "availabilityHours": 0,
           "willing": false,
@@ -105,7 +121,7 @@
           "id": "assumed-developer",
           "name": "Hypothetical developer",
           "capabilities": [
-            "software-development"
+            "person:software-development"
           ],
           "availabilityHours": 6,
           "willing": true,
@@ -116,24 +132,28 @@
       "toolAvailability": {
         "source-editor": true
       },
-      "inputAvailability": {
-        "island-art-brief": true
-      },
+      "inputAvailability": {},
       "scheduledWork": [],
-      "assumptionNote": "All overrides are what-if assumptions, not verified studio capability, resource availability or completed work. Shared capacity is not allocated automatically."
+      "assumptionNote": "All overrides are what-if assumptions, not verified studio capability, resource availability or completed work. Shared capacity is not allocated automatically.",
+      "capabilitiesRef": {
+        "id": "rpgtk-authoring-ledger",
+        "revision": 2
+      },
+      "toolSupportOverrides": {},
+      "processAvailability": {}
     },
     {
       "id": "S3",
       "revision": 1,
       "title": "Artist and developer in parallel",
-      "description": "Assume both hypothetical resources and source/pencil tools. Art and tool work can start independently; developer tasks compete for the same 6 hours.",
+      "description": "Assume artist (4 hours) and developer (6 hours); cave art and synthetic tool work can begin. Development tasks share capacity.",
       "projectRef": {
         "id": "bstw-owner-demo",
-        "revision": 1
+        "revision": 2
       },
       "studioRef": {
         "id": "bstw-owner-studio",
-        "revision": 1
+        "revision": 2
       },
       "timebox": {
         "label": "Next planning sprint",
@@ -146,7 +166,7 @@
           "id": "assumed-artist",
           "name": "Hypothetical terrain artist",
           "capabilities": [
-            "terrain-art"
+            "person:terrain-art"
           ],
           "availabilityHours": 4,
           "willing": true,
@@ -156,7 +176,7 @@
           "id": "assumed-developer",
           "name": "Hypothetical developer",
           "capabilities": [
-            "software-development"
+            "person:software-development"
           ],
           "availabilityHours": 6,
           "willing": true,
@@ -169,23 +189,33 @@
         "rpgtk-pencil": true
       },
       "inputAvailability": {
-        "island-art-brief": true
+        "cave-art-brief": true
       },
       "scheduledWork": [],
-      "assumptionNote": "All overrides are what-if assumptions, not verified studio capability, resource availability or completed work. Shared capacity is not allocated automatically."
+      "assumptionNote": "All overrides are what-if assumptions, not verified studio capability, resource availability or completed work. Shared capacity is not allocated automatically.",
+      "capabilitiesRef": {
+        "id": "rpgtk-authoring-ledger",
+        "revision": 2
+      },
+      "toolSupportOverrides": {
+        "rpgtk-pencil": {
+          "authoring:C01": "verified"
+        }
+      },
+      "processAvailability": {}
     },
     {
       "id": "S4",
       "revision": 1,
       "title": "Use an external board route",
-      "description": "Assume one willing native Toolkit board contributor has 4 hours, a verified usable native setup, and an island layout/tileset already available. No internal board editor is needed for this route.",
+      "description": "Assume a willing board contributor (4 hours), usable native board tooling, cave tileset and layout. Only A05 is enabled; no artwork or launch completion is inferred.",
       "projectRef": {
         "id": "bstw-owner-demo",
-        "revision": 1
+        "revision": 2
       },
       "studioRef": {
         "id": "bstw-owner-studio",
-        "revision": 1
+        "revision": 2
       },
       "timebox": {
         "label": "Next planning sprint",
@@ -198,7 +228,7 @@
           "id": "assumed-board-contributor",
           "name": "Hypothetical external board contributor",
           "capabilities": [
-            "board-layout"
+            "person:board-layout"
           ],
           "availabilityHours": 4,
           "willing": true,
@@ -210,11 +240,23 @@
         "native-toolkit": true
       },
       "inputAvailability": {
-        "island-tileset": true,
-        "island-layout": true
+        "cave-tileset": true,
+        "cave-layout": true
       },
       "scheduledWork": [],
-      "assumptionNote": "All overrides are what-if assumptions, not verified studio capability, resource availability or completed work. Shared capacity is not allocated automatically."
+      "assumptionNote": "All overrides are what-if assumptions, not verified studio capability, resource availability or completed work. Shared capacity is not allocated automatically.",
+      "capabilitiesRef": {
+        "id": "rpgtk-authoring-ledger",
+        "revision": 2
+      },
+      "toolSupportOverrides": {
+        "native-toolkit": {
+          "authoring:C04": "verified"
+        }
+      },
+      "processAvailability": {}
     }
-  ]
+  ],
+  "revision": 2,
+  "id": "bstw-scenarios"
 }

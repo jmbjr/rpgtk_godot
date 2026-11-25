@@ -1,0 +1,454 @@
+{
+  "format": "rpgtk-capability-ledger",
+  "version": 1,
+  "id": "rpgtk-authoring-ledger",
+  "revision": 2,
+  "records": [
+    {
+      "id": "person:creative-direction",
+      "label": "Set creative briefs and acceptance",
+      "provider": "person",
+      "namespace": "planning-local",
+      "sourceId": "creative-direction",
+      "kind": "contributor"
+    },
+    {
+      "id": "person:terrain-art",
+      "label": "Create terrain artwork",
+      "provider": "person",
+      "namespace": "planning-local",
+      "sourceId": "terrain-art",
+      "kind": "contributor"
+    },
+    {
+      "id": "person:character-art",
+      "label": "Create character artwork",
+      "provider": "person",
+      "namespace": "planning-local",
+      "sourceId": "character-art",
+      "kind": "contributor"
+    },
+    {
+      "id": "person:tileset-layout",
+      "label": "Organize numbered tiles",
+      "provider": "person",
+      "namespace": "planning-local",
+      "sourceId": "tileset-layout",
+      "kind": "contributor"
+    },
+    {
+      "id": "person:board-layout",
+      "label": "Lay out a game board",
+      "provider": "person",
+      "namespace": "planning-local",
+      "sourceId": "board-layout",
+      "kind": "contributor"
+    },
+    {
+      "id": "person:rpgcode-authoring",
+      "label": "Write procedural RPGCode",
+      "provider": "person",
+      "namespace": "planning-local",
+      "sourceId": "rpgcode-authoring",
+      "kind": "contributor"
+    },
+    {
+      "id": "person:game-configuration",
+      "label": "Configure a Toolkit game",
+      "provider": "person",
+      "namespace": "planning-local",
+      "sourceId": "game-configuration",
+      "kind": "contributor"
+    },
+    {
+      "id": "person:software-development",
+      "label": "Develop and verify authoring tools",
+      "provider": "person",
+      "namespace": "planning-local",
+      "sourceId": "software-development",
+      "kind": "contributor"
+    },
+    {
+      "id": "person:playtest",
+      "label": "Run a game acceptance path",
+      "provider": "person",
+      "namespace": "planning-local",
+      "sourceId": "playtest",
+      "kind": "contributor"
+    },
+    {
+      "id": "authoring:C01",
+      "label": "Create/edit a tile",
+      "provider": "tool",
+      "namespace": "repository",
+      "sourceId": "C01",
+      "kind": "authoring"
+    },
+    {
+      "id": "authoring:C13",
+      "label": "Import artwork as a tile",
+      "provider": "tool",
+      "namespace": "repository",
+      "sourceId": "C13",
+      "kind": "authoring"
+    },
+    {
+      "id": "authoring:C14",
+      "label": "Open a TST for editing",
+      "provider": "tool",
+      "namespace": "repository",
+      "sourceId": "C14",
+      "kind": "authoring"
+    },
+    {
+      "id": "authoring:C15",
+      "label": "Assemble indexed tilesets",
+      "provider": "tool",
+      "namespace": "repository",
+      "sourceId": "C15",
+      "kind": "authoring"
+    },
+    {
+      "id": "authoring:C16",
+      "label": "Export compatible TST",
+      "provider": "tool",
+      "namespace": "repository",
+      "sourceId": "C16",
+      "kind": "authoring"
+    },
+    {
+      "id": "authoring:C17",
+      "label": "Preserve transparency",
+      "provider": "tool",
+      "namespace": "repository",
+      "sourceId": "C17",
+      "kind": "authoring"
+    },
+    {
+      "id": "authoring:C02",
+      "sourceId": "C02",
+      "label": "Define animation frames",
+      "kind": "authoring",
+      "provider": "tool",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "id": "authoring:C03",
+      "sourceId": "C03",
+      "label": "Define a playable character",
+      "kind": "authoring",
+      "provider": "tool",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "id": "authoring:C04",
+      "sourceId": "C04",
+      "label": "Build a walkable board",
+      "kind": "authoring",
+      "provider": "tool",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "id": "authoring:C05",
+      "sourceId": "C05",
+      "label": "Configure a launchable project",
+      "kind": "authoring",
+      "provider": "tool",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "id": "authoring:C06",
+      "sourceId": "C06",
+      "label": "Package a resolved project",
+      "kind": "authoring",
+      "provider": "tool",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "id": "authoring:C07",
+      "sourceId": "C07",
+      "label": "Connect boards",
+      "kind": "authoring",
+      "provider": "tool",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "id": "authoring:C08",
+      "sourceId": "C08",
+      "label": "Define a board object",
+      "kind": "authoring",
+      "provider": "tool",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "id": "authoring:C09",
+      "sourceId": "C09",
+      "label": "Author procedural dialogue and logic",
+      "kind": "authoring",
+      "provider": "tool",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "id": "authoring:C10",
+      "sourceId": "C10",
+      "label": "Place and bind an interaction",
+      "kind": "authoring",
+      "provider": "tool",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "id": "authoring:C11",
+      "sourceId": "C11",
+      "label": "Author stateful interactions",
+      "kind": "authoring",
+      "provider": "tool",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "id": "authoring:C12",
+      "sourceId": "C12",
+      "label": "Author progress and completion",
+      "kind": "authoring",
+      "provider": "tool",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "id": "infrastructure:text-edit",
+      "sourceId": "infrastructure:text-edit",
+      "label": "Edit source files and run development checks",
+      "provider": "tool",
+      "kind": "infrastructure"
+    },
+    {
+      "id": "inspection:assets",
+      "sourceId": "inspection:assets",
+      "label": "Inspect decoded assets and references",
+      "provider": "tool",
+      "kind": "infrastructure"
+    },
+    {
+      "id": "execution:play",
+      "sourceId": "execution:play",
+      "label": "Exercise supported content through normal Play",
+      "provider": "tool",
+      "kind": "infrastructure"
+    },
+    {
+      "id": "player:C01",
+      "sourceId": "C01",
+      "label": "Start and walk in opening area",
+      "kind": "player-outcome",
+      "provider": "player",
+      "sourceIds": [
+        "intake-source-1"
+      ]
+    },
+    {
+      "id": "player:C02",
+      "sourceId": "C02",
+      "label": "Learn why Bruce is here",
+      "kind": "player-outcome",
+      "provider": "player",
+      "sourceIds": [
+        "intake-source-1"
+      ]
+    },
+    {
+      "id": "player:C03",
+      "sourceId": "C03",
+      "label": "Talk or inspect meaningfully",
+      "kind": "player-outcome",
+      "provider": "player",
+      "sourceIds": [
+        "intake-source-1"
+      ]
+    },
+    {
+      "id": "player:C04",
+      "sourceId": "C04",
+      "label": "Discover progress with repeat behavior",
+      "kind": "player-outcome",
+      "provider": "player",
+      "sourceIds": [
+        "intake-source-1"
+      ]
+    },
+    {
+      "id": "player:C05",
+      "sourceId": "C05",
+      "label": "Reach an ending and replay",
+      "kind": "player-outcome",
+      "provider": "player",
+      "sourceIds": [
+        "intake-source-1"
+      ]
+    },
+    {
+      "id": "player:C06",
+      "sourceId": "C06",
+      "label": "Optional menus, items or save/resume",
+      "kind": "player-outcome",
+      "provider": "player",
+      "sourceIds": [
+        "intake-source-1"
+      ]
+    },
+    {
+      "id": "person:animation-authoring",
+      "sourceId": "animation-authoring",
+      "label": "Define animation timing and frame references",
+      "provider": "person",
+      "kind": "contributor"
+    }
+  ],
+  "historicalEdges": [
+    {
+      "from": "authoring:C01",
+      "to": "authoring:C02",
+      "status": "recovered-proposal",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "from": "authoring:C01",
+      "to": "authoring:C04",
+      "status": "recovered-proposal",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "from": "authoring:C02",
+      "to": "authoring:C03",
+      "status": "recovered-proposal",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "from": "authoring:C02",
+      "to": "authoring:C08",
+      "status": "recovered-proposal",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "from": "authoring:C03",
+      "to": "authoring:C05",
+      "status": "recovered-proposal",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "from": "authoring:C04",
+      "to": "authoring:C05",
+      "status": "recovered-proposal",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "from": "authoring:C05",
+      "to": "authoring:C06",
+      "status": "recovered-proposal",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "from": "authoring:C04",
+      "to": "authoring:C07",
+      "status": "recovered-proposal",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "from": "authoring:C08",
+      "to": "authoring:C10",
+      "status": "recovered-proposal",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "from": "authoring:C04",
+      "to": "authoring:C10",
+      "status": "recovered-proposal",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "from": "authoring:C09",
+      "to": "authoring:C10",
+      "status": "recovered-proposal",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "from": "authoring:C10",
+      "to": "authoring:C11",
+      "status": "recovered-proposal",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    },
+    {
+      "from": "authoring:C11",
+      "to": "authoring:C12",
+      "status": "recovered-proposal",
+      "sourceIds": [
+        "intake-source-2"
+      ]
+    }
+  ],
+  "productionRules": [
+    {
+      "id": "tile-supply",
+      "anyOf": [
+        "authoring:C01",
+        "authoring:C13",
+        "authoring:C14"
+      ],
+      "thenAllOf": [
+        "authoring:C15",
+        "authoring:C16"
+      ],
+      "conditional": [
+        "authoring:C17"
+      ],
+      "note": "Historical broad C01 art edges are refined by these alternate routes; a static object need not require animation."
+    }
+  ],
+  "identityNotes": [
+    "player:C01 and authoring:C01 preserve separate original ledgers. Bare C IDs must not be used to join records.",
+    "Authoring C01 was refined from broad reusable art to individual tile editing; C15/C16 supply indexed assembly/export."
+  ]
+}

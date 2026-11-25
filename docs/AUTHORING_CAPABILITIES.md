@@ -88,3 +88,10 @@ The [pinned authoring references](TK3_AUTHORING_REFERENCES.md) document Toolkit
 behavior. For A01, a path through C13 → C15 → C16 could unblock production if
 tile artwork already exists. C01 remains a reusable authoring capability for
 later terrain and sprite assets.
+
+
+## Recovered complete authoring graph
+
+The original intake graph is now preserved in [the capability ledger](../projects/bstw-demo/capabilities.json) and [source recovery](../projects/bstw-demo/INTAKE.md). It defines C02 animation frames, C03 playable character, C04 walkable board, C05 launch configuration, C06 resolved packaging, C07 board connections, C08 board object, C09 procedural dialogue/logic, C10 placement/activation, C11 stateful interaction and C12 progress/completion. These are documented requirements and mappings, not shipped authoring support claims.
+
+Keep the current C01/C13–C17 tile-supply refinement above. The old broad C01 artwork node was decomposed; imported artwork need not pass through a web pencil. Use qualified `authoring:C01` and `player:C01` identities when joining project data because the initial player-outcome ledger used the same bare C numbers. A05 is Merlin’s Cave, A02 is four-direction sprite artwork, A03 is four ANMs, A04 is the TEM and A06 is the GAM/launch package. [Project records](../projects/bstw-demo/README.md) own that recovered asset ledger.

@@ -234,38 +234,7 @@ Neither should be reported as delivered by the first increment's tests.
   private archives, assets, source and DLLs require separate publication
   authorization; this workflow grants none.
 
-## Studio-aware planning direction — November 24, 2026
 
-The owner now requires a director view of the whole game alongside a separate,
-reusable studio organizational plan. A project records outcomes, asset needs
-and technical dependencies; the studio records people/tools as resources,
-processes and shared values. Scope is initially one to five people. Contributor
-capabilities replace “skills” in new planning vocabulary; legacy manifest
-fields remain compatible. No universal tool-proficiency gate is introduced.
+## Studio records and director projection
 
-[STUDIO_PLANNING.md](STUDIO_PLANNING.md) owns the initial planning contract and
-links the [Bruce demo records](../projects/bstw-demo/README.md). Scenarios pin
-project/studio revisions and record assumptions about inputs, tool support,
-person capability, willingness and capacity. Derive candidate next work from
-at least one complete production route; expose all blockers on the others.
-Missing game tiles must not block independent editor development with synthetic
-fixtures. Start eligibility is separate from capacity allocation, completion,
-review and exact build selection.
-
-The first baseline is partial: the full original intake could not be located
-in current main, while the owner's confirmed island/cliff/broken-bridge/town/
-clue route is recorded. Preserve A01's cave meaning and incomplete A02/A05
-scope; reconcile the intake before inventing its remaining IDs or story.
-New planning-local IDs are explicitly distinguished from existing C/W IDs.
-
-Current main at this checkpoint is `2c712874`; #146 is still open at
-`7fb36fe7`. Its local tile manifest is an integration candidate, not shipped
-support. The planning data passes its proposed version 1 structural validator.
-The separate director aid does not implement W05/W06 or a shared studio service.
-
-Before choosing the next authoring increment, inspect this studio/project
-baseline alongside the existing C01 handoff and #147 discovery requirements.
-Update actual roster/tool/input evidence, then choose a bounded useful action.
-Future integrated UI work should show the director overview, capability gaps,
-route explanations and scenario comparison using the same saved records.
-
+[Studio director](../planning/index.html) opens revision-pinned project/studio/scenario records and derives readiness without embedding a second dataset. [STUDIO_PLANNING.md](STUDIO_PLANNING.md) owns that contract; [the reconciled project](../projects/bstw-demo/README.md) owns its manifest and source intake. The recovered A01–A06 launch bundle and authoring C02–C12 are preserved alongside the later tile refinement. Local planning, assumption export/import and evidence counts do not implement shared W05/W06 review/build services or establish actual game fulfillment.

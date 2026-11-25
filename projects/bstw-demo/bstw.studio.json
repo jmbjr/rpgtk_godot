@@ -2,8 +2,8 @@
   "format": "rpgtk-studio-planning-draft",
   "version": 1,
   "id": "bstw-owner-studio",
-  "revision": 1,
-  "title": "BSTW small studio — initial organizational plan",
+  "revision": 2,
+  "title": "Small studio: resources, processes and values",
   "scale": {
     "minimumPeople": 1,
     "maximumPeople": 5,
@@ -15,7 +15,7 @@
       "id": "owner-director",
       "name": "Owner / game director",
       "capabilities": [
-        "creative-direction"
+        "person:creative-direction"
       ],
       "availabilityHours": null,
       "willing": null,
@@ -29,79 +29,128 @@
       "label": "Current Rpgtk Explorer",
       "available": true,
       "capabilities": [
-        "plan:inspect",
-        "plan:play"
+        "inspection:assets",
+        "execution:play"
       ],
       "support": "inspection implemented; runtime partial",
       "revision": "2c7128746f748bb0aa0459c36675a2e190a26f16",
       "evidence": "repo-capabilities",
-      "notes": "Inspect and play supported content. Demo-specific execution is unverified; no editor is implied."
+      "notes": "Inspect and play supported content. Demo-specific execution is unverified; no editor is implied.",
+      "capabilitySupport": {
+        "inspection:assets": "verified",
+        "execution:play": "partial"
+      }
     },
     {
       "id": "rpgtk-pencil",
       "label": "Rpgtk tile pencil (#146)",
       "available": false,
       "capabilities": [
-        "C01"
+        "authoring:C01"
       ],
       "support": "open PR; absent from main",
       "revision": "7fb36fe71cdbec87558204b36065b6927f7c243c",
-      "evidence": "tile-pr-146"
+      "evidence": "tile-pr-146",
+      "capabilitySupport": {
+        "authoring:C01": "missing"
+      }
     },
     {
       "id": "rpgtk-tileset-editor",
       "label": "Rpgtk tileset assembly/export",
       "available": false,
       "capabilities": [
-        "C15",
-        "C16"
+        "authoring:C15",
+        "authoring:C16"
       ],
       "support": "planned",
-      "evidence": "repo-authoring"
+      "evidence": "repo-authoring",
+      "capabilitySupport": {
+        "authoring:C15": "missing",
+        "authoring:C16": "missing"
+      }
     },
     {
       "id": "rpgtk-board-editor",
       "label": "Rpgtk board editor",
       "available": false,
       "capabilities": [
-        "plan:board-authoring"
+        "authoring:C04"
       ],
       "support": "planned",
-      "evidence": "repo-workflow"
+      "evidence": "repo-workflow",
+      "capabilitySupport": {
+        "authoring:C04": "missing"
+      }
     },
     {
       "id": "native-toolkit",
       "label": "Original Toolkit editor — candidate external route",
       "available": null,
       "capabilities": [
-        "C01",
-        "C15",
-        "C16",
-        "plan:board-authoring",
-        "plan:character-authoring",
-        "plan:gam-authoring"
+        "authoring:C01",
+        "authoring:C15",
+        "authoring:C16",
+        "authoring:C04",
+        "authoring:C03",
+        "authoring:C05",
+        "authoring:C02",
+        "authoring:C06",
+        "authoring:C07",
+        "authoring:C08",
+        "authoring:C09",
+        "authoring:C10",
+        "authoring:C11",
+        "authoring:C12"
       ],
       "support": "candidate external route; local access and round trip unverified",
-      "evidence": "repo-authoring"
+      "evidence": "repo-authoring",
+      "capabilitySupport": {
+        "authoring:C01": "unverified",
+        "authoring:C15": "unverified",
+        "authoring:C16": "unverified",
+        "authoring:C04": "unverified",
+        "authoring:C03": "unverified",
+        "authoring:C05": "unverified",
+        "authoring:C02": "unverified",
+        "authoring:C06": "unverified",
+        "authoring:C07": "unverified",
+        "authoring:C08": "unverified",
+        "authoring:C09": "unverified",
+        "authoring:C10": "unverified",
+        "authoring:C11": "unverified",
+        "authoring:C12": "unverified"
+      }
     },
     {
       "id": "source-editor",
       "label": "Source editing environment",
       "available": null,
       "capabilities": [
-        "plan:text-edit"
+        "infrastructure:text-edit",
+        "authoring:C09",
+        "authoring:C06"
       ],
-      "support": "studio access unverified; repository can hold source"
+      "support": "studio access unverified; repository can hold source",
+      "capabilitySupport": {
+        "infrastructure:text-edit": "verified",
+        "authoring:C09": "unverified",
+        "authoring:C06": "unverified"
+      }
     },
     {
       "id": "external-art-editor",
       "label": "External art editor — unselected",
       "available": null,
       "capabilities": [
-        "C01",
-        "C17"
+        "authoring:C01",
+        "authoring:C17"
       ],
-      "support": "candidate; choose exact tool and verify output/import route"
+      "support": "candidate; choose exact tool and verify output/import route",
+      "capabilitySupport": {
+        "authoring:C01": "unverified",
+        "authoring:C17": "unverified"
+      }
     }
   ],
   "processes": [
@@ -124,15 +173,15 @@
     {
       "id": "lightweight-human-review",
       "label": "Director records review of an exact revision",
-      "available": true,
-      "status": "proposed manual process supported by this planning contract; no permission service claimed",
+      "available": null,
+      "status": "Proposed manual process; no recorded review session or accepted game revision.",
       "evidence": "owner-2026-11-24"
     }
   ],
   "values": [
     {
       "id": "human-creative-control",
-      "rule": "People own creative decisions and game artwork; AI may propose decomposition, sequencing, implementation and checks. AI-created game art requires an explicit decision.",
+      "rule": "The owner chooses creative direction and game artwork. AI assists with decomposition, coordination, generic implementation and verification; proposed creative choices require owner selection.",
       "basis": "owner direction"
     },
     {
@@ -167,7 +216,7 @@
       "id": "repo-authoring",
       "kind": "repository_document",
       "url": "https://github.com/jmbjr/rpgtk_godot/blob/2c7128746f748bb0aa0459c36675a2e190a26f16/docs/AUTHORING_CAPABILITIES.md",
-      "summary": "A01 cave terrain floor/wall/exit edge, 32×32; C01/C13/C14 alternative tile supply, C15 assembly, C16 export; conditional C17. A02 and A05 are mentioned but not fully defined here."
+      "summary": "Tile authoring refinement C01/C13–C17; current main preserves only the A01 slice."
     },
     {
       "id": "repo-workflow",
@@ -185,7 +234,7 @@
       "id": "intake-142",
       "kind": "issue",
       "url": "https://github.com/jmbjr/rpgtk_godot/issues/142",
-      "summary": "Owner-led intake contract, procedural/core Toolkit direction, combat provisionally excluded. Issue body still awaits detailed intake; no comments at this checkpoint."
+      "summary": "Intake contract; its stale waiting status is superseded by the recovered source report, not by new archive execution."
     },
     {
       "id": "tile-pr-146",
@@ -199,6 +248,18 @@
       "kind": "planned_requirement",
       "url": "https://github.com/jmbjr/rpgtk_godot/issues/147",
       "summary": "Readable vocabulary, explainable matches, independent readiness and complete briefs; documentation merged through #148."
+    },
+    {
+      "id": "intake-source-1",
+      "kind": "shared_transcript",
+      "url": "https://chatgpt.com/share/6b066b7e-7f84-83e8-9254-2234e4563741",
+      "summary": "Owner decisions, reviewed A01–A06 bundle and ordered additions; one graph reply is hidden in this capture."
+    },
+    {
+      "id": "intake-source-2",
+      "kind": "shared_transcript",
+      "url": "https://chatgpt.com/share/6b066c3d-be20-83e8-91af-4c71af255910?ogimg=plain",
+      "summary": "Exposes original authoring C01–C12 graph and mappings directly; resolves the hidden-reply gap."
     }
   ]
 }

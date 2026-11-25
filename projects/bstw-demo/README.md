@@ -1,72 +1,46 @@
-# Bruce demo: project and studio planning baseline
+# Bruce demo: project and studio plan
 
-Open **director-view.html** in a browser to inspect the whole plan, compare five scenarios, expand route blockers, and change assumptions about people, tools and inputs. It is self-contained and works offline. Save scenario edits with **Download planning scenarios**; reopening the HTML starts from the bundled baseline, and **Load scenarios JSON** restores an exported scenario file.
+Open [Studio director](../../planning/index.html) from the repository or the Explorer footer. The viewer reads [project.manifest.json](project.manifest.json) and derives its results from the linked project, studio, scenario, capability and intake records. No project data or readiness conclusions are embedded in the HTML. Serve the repository over HTTP (for example `python3 -m http.server 8000`); opening an HTML file directly cannot read linked records.
 
-This is the first portable planning baseline for a one-to-five-person studio. It is a draft planning aid, separate from the shipped Explorer. It contains no game artwork, private archive content, dialogue, source or DLLs.
+The [recovered intake](INTAKE.md) and [structured intake](intake.json) preserve the original decisions and source messages. Tintagel is the selected reference. Bruce starts in Merlin’s Cave, climbs to the island road, and can turn left to the broken bridge or right to town. The bridge stays broken throughout the Demo. The owner reviewed the initial asset draft as “ok to start with.” Exact creative details remain open; this is not another intake.
 
-## The game we can currently describe
-
-The owner confirmed: **start on an island → climb a cliff → discover the bridge is out → go into town → explore clues and mysteries**. The demo needs a chosen ending, which remains open. Board count, tile count, character count, playtime, workload and sprint duration are unknown. A route region is not necessarily its own board file.
-
-The full original intake was not available in this conversation or found in current main. This baseline must be reconciled with that intake when available. It retains **A01** as cave terrain, with the cave's place in this route unresolved. It preserves the mentioned **A02** and **A05** identities with their incomplete definitions. New candidate needs have `BSTW-` IDs; unavailable A03/A04 definitions are not invented. Cave, optional audio and other open systems remain visible even when production work is not released.
-
-## Files and ownership
+## Canonical records
 
 | File | Owns |
 | --- | --- |
-| bstw.project.json | Game outcomes, candidate asset scope, capability vocabulary, work briefs, dependency inputs, open decisions and source evidence |
-| bstw.studio.json | Reusable organizational plan: people and tools as resources, processes and values; declared capabilities and unknown capacity |
-| bstw.scenarios.json | Five revision-pinned what-if plans with resource/input overrides; no adopted scenario or sprint commitments |
-| director-view.html | Standalone view of the bundled baseline; editable scenario assumptions and side-by-side comparison |
-| planner.mjs | The small, deterministic route-readiness evaluator used by the view |
-| verify-plan.mjs | Reproducible data and scenario checks; run with Node 22 or later |
+| project.manifest.json | Entry point; exact record IDs, revisions, relative paths and SHA-256 identities |
+| bstw.project.json | Game outcomes, A01–A06 launch bundle, later needs, bounded work, input dependencies, milestones and open decisions |
+| bstw.studio.json | Independent reusable studio resources, processes, values, contributor declarations, local access and per-capability support evidence |
+| bstw.scenarios.json | Revision-pinned planning assumptions; viewed scenario, adoption and scheduled work remain separate |
+| capabilities.json | Qualified player/contributor/authoring identities, recovered graph and later tile-supply refinement |
+| intake.json / INTAKE.md | Reviewed starting draft, direct decisions, proposals, source locations and explicit deferrals |
 
-The project points to a studio by stable ID, revision and relative path. A studio can support multiple projects. A scenario pins exact project and studio revisions and is valid only for those records and assumptions. To consider another studio, retain its distinct identity/revision rather than overwriting the current studio's evidence. This first viewer edits assumptions on the bundled studio; cross-studio loading is future work.
+A01 terrain and A02 four-direction sprite tiles supply A05 cave and A03 four walking animations respectively. A03 supplies A04 playable character. A04 AND A05 supply A06 Main File; package the resolved files and verify normal Play/Reset. The village, exact ending and optional startup title are not prerequisites for the first playable cave scene.
 
-Contributor **capabilities** describe meaningful contributions such as terrain artwork, board layout and software development. Tool capabilities describe production tasks such as C01 drawing or C15 tileset assembly. Existing C/W IDs keep their meanings; new vocabulary is explicitly local to this draft. No capability for “knowing how to use every tool” is introduced. Legacy `skills` fields mirror capability IDs only for compatibility with the proposed #146 version 1 manifest.
+The seven ordered additions remain cliff approach, broken crossing, scrolling town, individual residents, quest, key/access and discoveries/ending. They originally had order numbers rather than further A IDs. Later planning-local identities remain distinct. A05 always identifies Merlin’s Cave; prior approach/town work now links to separate requirements. `identityReconciliation` records the corrections and the old character-definition alias to A04.
 
-## Five options to compare
+## Use and save
 
-| Scenario | Explicit assumptions | Work that could begin |
-| --- | --- | --- |
-| S0 — Recorded baseline | Only the recorded director role; capacity unknown; main's existing tools | None confirmed; the director's willingness/capacity still need recording |
-| S1 — Artist available | Hypothetical artist, 4 hours; pencil usable; initial island brief available | An initial island tile contribution |
-| S2 — Artist unavailable | Hypothetical artist declines; developer, 6 hours; source editing available | A board editor prototype **or** tileset assembly/export development; these compete for the same hours |
-| S3 — Parallel work | Both hypothetical people; source editor/pencil usable; island brief available | Island artwork and tool development, with developer capacity contention disclosed |
-| S4 — External route | Hypothetical native Toolkit board contributor, 4 hours; usable native setup; island layout and tileset available | Island board layout through the external route |
+1. Open Studio director and inspect milestones and all needs.
+2. Compare recorded baseline with explicit hypothetical studio scenarios.
+3. Select a scenario, change willingness/hours, declared capabilities, tool access, tool support or input assumptions. Expand a need to see all route blockers and producer-work links.
+4. Download scenario records to retain edits. Reopen the project and load that JSON to resume. Exports preserve viewed scenario independently of adoption and schedule.
+5. Download the derived snapshot for exact input fingerprints, assumptions and evaluator version. This is an output, not another source of project facts.
 
-All invented people, hours and ready-tool/input claims in S1–S4 are **scenario assumptions**, not actual team assignments, completed work, verified tool support or promises. No scenario is ranked as best without estimates, priorities and confirmed willingness. `viewedScenarioId` records interface focus; `adoptedScenarioId` and all `scheduledWork` lists remain empty.
+Baseline actual roster/capacity is incomplete. Hypothetical people/hours, selected tool support and available inputs in S1–S4 are assumptions. One complete OR route makes work startable; every condition inside a route is required. Access alone does not verify support. Startable work does not establish finishability, assignment, produced inputs, accepted artwork or build fulfillment. Shared capacity is flagged, not allocated. Estimates remain unknown.
 
-## How readiness works
+Five scenarios exercise: recorded baseline; an artist with cave brief/pencil support; artist unavailable with a developer doing synthetic tool work; both in parallel; and native cave-board work with assumed usable inputs. No output is automatically chained into the same scenario. Optional startup, deferred companion and open audio remain visible without blocking the minimum launch milestone.
 
-Routes are alternatives (**OR**); the inputs, tool capabilities, process requirements and capable willing person within one route are jointly required (**AND**). Expose every blocker on every route. Missing game tiles must not block development of an editor that can use synthetic inputs.
+## Revisions and evidence
 
-A route is **startable** when its required inputs and tools are available and at least one appropriately capable person is willing and has positive known hours. It is **blocked** when a required condition is known to be missing/unavailable. It is **unverified** when relevant facts are unknown without a known blocker on that route. An unknown alternate route is not silently accepted.
+Revision 2 explicitly reconciles draft revision 1. Old exported revision-1 scenarios are rejected with a mismatch; do not silently overwrite their references. To intentionally rebase one, review every assumption against the new requirement identities and record a new scenario revision. Updating canonical inputs requires their revisions, dependent references and manifest digests to agree.
 
-Human capability, tool support, input readiness, effort, review and selection are separate facts. Completing one tile does not satisfy the island tileset. Startable work does not imply that it fits or finishes in a sprint. Eligible tasks sharing a person are flagged; the evaluator does not allocate that person's hours or produce a committed schedule. Source-editor access and external editor access are unverified in the baseline. Tool development outputs must be exercised before they count as new studio capability.
+`player:C01` and `authoring:C01` are separate original ledgers. Source C IDs remain visible. The broad original authoring C01 was refined to individual tile editing, with C15/C16 providing indexed assembly/export. The historical graph is retained as a sourced proposal; it does not make the web pencil mandatory when imported/native art can supply tiles.
 
-Dependencies are recorded as stable input IDs per route, with producer work links in `producesInputIds`. They represent necessary inputs for the bounded assignment, not exhaustive runtime reachability. Outputs are never made available automatically. This prevents optimistic same-sprint chaining or circular assumptions. Manual records may later bind an available input to exact variant revisions and acceptance evidence.
+Main support checkpoint remains `2c7128746f748bb0aa0459c36675a2e190a26f16`. #146 is open/draft at `7fb36fe71cdbec87558204b36065b6927f7c243c`; its pencil is not shipped main/deployment evidence. Native/external routes are candidates until their access and relevant round trips are verified. Inspector previews do not establish authoring or execution. No owner game assets, reviews, selections, private originals or DLLs are supplied.
 
-## Scale, processes and creative control
+## Verification and continuation
 
-The default director view groups the route and asset/support needs. Expand to bounded work only for assignment, a distinct blocker, or separate acceptance. Keep the same underlying IDs as detail changes. The present inventory of 14 candidate asset/support records and 18 work items is neither an approved scope count nor a completion percentage; optional/open needs and studio enablement are included.
+Run `node projects/bstw-demo/verify-plan.mjs` and `node scripts/check-studio-browser.mjs` from repository root. CI runs the same checks, stages only browser runtime plus inert records/docs, and checks every staged first-party module. The generic production-code boundary remains in force; only validated planning JSON formats may contain project names.
 
-The studio's initial values are human creative control, human artwork, willingness, honest unknowns, small-team simplicity and keeping originals private. Its production process is brief → contribution → exact-revision review → explicit build selection → normal Play verification. Review/build services are still planned. The plan creates no accepted artwork, build selections or authenticated identities.
-
-## Current implementation and compatibility
-
-Checked November 24, 2026 against main `2c7128746f748bb0aa0459c36675a2e190a26f16`. #148's discovery requirements are merged. #146 is **open**, head `7fb36fe71cdbec87558204b36065b6927f7c243c`. Main has inspection/limited Play; tile drawing is not claimed shipped. Tool access overrides in scenarios do not change this evidence.
-
-`bstw.project.json` passes the exact proposed #146 `readProject` structural checks with no artwork/variants supplied. It can serve as that tile workspace's project input when that implementation is available. The tile workspace reads its narrower version 1 fields and ignores the richer studio/scenario data. It does not become a director dashboard by loading this file. The standalone view supports the planning fields.
-
-Validation passed for identity links, expected outcomes of all five scenarios, multiple blockers, alternative routes, declined/unknown resources, shared capacity, scenario isolation, revision mismatch and five-person limit. The actual inline view script passed a DOM-harness check of scenario switching, withdrawal/restoration, JSON export/import, copying and text escaping. A rendered browser walkthrough/layout check was unavailable because the execution sandbox blocks Chromium sockets. No CI/deployment, owner demo execution or original Toolkit parity is claimed.
-
-## Next useful edits
-
-1. Reconcile the original intake, especially A02/A05 and A01's role.
-2. Record actual people, declared capabilities, willingness and available hours.
-3. Confirm one initial art/layout brief and its input evidence.
-4. Verify an actual production route; keep #146 and external tools' status accurate.
-5. Estimate and explicitly choose a bounded set of eligible work for one timebox.
-
-There is no need to settle every creative choice before improving the studio's tools. There is also no need to decompose the whole game to pixel-level tasks before seeing its major capability and resource gaps.
+Next, record actual people’s declarations/availability and choose one bounded cave art/layout brief. That can happen without settling every story choice. Use the derived blockers to select meaningful work; use [AUTHORING_WORKFLOW.md](../../docs/AUTHORING_WORKFLOW.md) for exact variant/review/build semantics. Studio logic and verification contracts are documented in [STUDIO_PLANNING.md](../../docs/STUDIO_PLANNING.md).
