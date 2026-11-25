@@ -49,6 +49,7 @@ try {
  await page.setViewportSize({width:1440,height:1000});
  const wrong=structuredClone(saved);wrong.scenarios[0].projectRef.revision=1;
  await page.setInputFiles('#load',{name:'wrong.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(wrong))});
+ await page.waitForFunction(()=>document.querySelector('#error').textContent.includes('baseline revisions do not match'));
  assert.match(await page.locator('#error').textContent(),/baseline revisions do not match/);assert.match(await page.locator('#identity').textContent(),/Scenario S3/);
  const manifestURL=await page.locator('#project-picker').inputValue();
  const manifest=await (await page.request.get(manifestURL)).json();
