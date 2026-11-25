@@ -22,12 +22,12 @@ intake choices, authorize game asset creation or claim these features exist.
 
 ### Owner-led game intake
 
-The next game-definition step is [intake #142](https://github.com/jmbjr/rpgtk_godot/issues/142):
+The owner-led discussion from [intake #142](https://github.com/jmbjr/rpgtk_godot/issues/142) has been recovered in [the canonical project records](../projects/bstw-demo/README.md):
 a completely new, simpler game authored by the owner with AI assistance, built
 one selected asset/capability increment at a time. The working reference is the
 owner's old BSTW demo, decomposed locally into candidate requirements rather than
-adopting its plugin/class-library implementation. The intake determines which
-story, dialogue, interactions and ending to retain or change. The existing TK3
+adopting its plugin/class-library implementation. The recovered intake records
+owner decisions and leaves detailed creative briefs explicitly open. The existing TK3
 test game and generated regression labs do not define the new creative scope.
 
 Use core Toolkit editor features and ordinary procedural RPGCode first. Combat

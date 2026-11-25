@@ -160,6 +160,13 @@ jobs:
           npx playwright install --with-deps chromium
           node scripts/check-tk3-browser.mjs site
           node scripts/check-studio-browser.mjs site
+      - name: Upload studio planning browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio-planning-review
+          path: dist/studio-planning-review
+          if-no-files-found: warn
       - name: Check first-use journeys and capture matched screenshots
         env:
           REVIEW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}

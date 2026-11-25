@@ -38,6 +38,7 @@ export function validatePlan({project, studio, scenarios, capabilities, intake})
   sameRef(project.capabilitiesRef, capabilities.id, capabilities.revision, 'Capabilities');
   sameRef(project.intakeRef, intake.id, intake.revision, 'Intake');
   const caps = index(capabilities.records, 'capability');
+  for (const capability of caps.values()) if (!/^(?:authoring:C\d{2}|player:C\d{2}|person:[a-z-]+|(?:infrastructure|inspection|execution):[a-z-]+)$/.test(capability.id)) fail(`Unqualified capability identity: ${capability.id}`);
   const assets = index(project.assetRequirements, 'asset');
   const goals = index(project.projectRequirements, 'project requirement');
   const inputs = index(project.inputs, 'input');
@@ -52,7 +53,7 @@ export function validatePlan({project, studio, scenarios, capabilities, intake})
   }
   for (const input of inputs.values()) {
     tri(input.available, 'input availability');
-    if (input.available === true && !input.evidence && !input.binding) fail(`Available baseline input lacks evidence: ${input.id}`);
+    if (input.available === true && !(typeof input.evidence === 'string' && input.evidence.trim()) && !input.binding) fail(`Available baseline input lacks evidence: ${input.id}`);
   }
   for (const tool of tools.values()) {
     tri(tool.available, 'tool access');
@@ -118,6 +119,10 @@ export function validatePlan({project, studio, scenarios, capabilities, intake})
     if (variants.has(key)) fail('Duplicate variant revision.');
     if (variant.requirement.revision > asset.revision) fail('Variant references a future requirement.');
     variants.set(key, variant);
+  }
+  for (const input of inputs.values()) if (input.binding) {
+    const bound = ref(variants, `${input.binding.variantRef?.id}@${input.binding.variantRef?.revision}`, 'bound input variant');
+    if (bound.contentHash !== input.binding.variantRef.contentHash) fail('Input binding content identity mismatch.');
   }
   for (const review of list(project.reviews, 'Reviews')) {
     const variant = ref(variants, `${review.variantRef?.id}@${review.variantRef?.revision}`, 'review variant');

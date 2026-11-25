@@ -51,6 +51,8 @@ for(const mutate of [
  p=>p.project.inputs[0].available=true,
  p=>p.project.assetDependencies.push({assetId:'A02',requiresAll:['A04']}),
  p=>p.capabilities.records.push(clone(p.capabilities.records[0])),
+ p=>p.capabilities.records.push({id:'C01',label:'Ambiguous identity'}),
+ p=>p.project.inputs[0].binding={},
  p=>p.scenarios.scenarios=[],
  p=>p.scenarios.adoptedScenarioId='absent',
  p=>p.scenarios.scenarios[0].addPeople=Array.from({length:5},(_,i)=>({id:'p'+i,name:'Assumed',capabilities:[],willing:true,availabilityHours:1})),
