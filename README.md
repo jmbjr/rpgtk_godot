@@ -8,7 +8,7 @@ For planned Toolkit authoring, read the
 [project workflow and next implementation handoff](docs/AUTHORING_WORKFLOW.md)
 alongside the [authoring capability graph](docs/AUTHORING_CAPABILITIES.md).
 They connect project requirements and contributor work to proposed asset
-variants, review and build selections. These workflows are not implemented yet.
+variants, review and build selections. Shared review/build workflows remain planned.
 
 Open Toolkit 2/3 archives to preview artwork, listen to audio, follow source
 connections and try supported Toolkit 3 play. Start with **Open a game archive**
@@ -351,3 +351,7 @@ entity diagnostics retain source owner/slot and current position; task source an
 owner buttons return to Explorer. See [authored board lifecycle](docs/specs/tk3-board-lifecycle.md)
 for pinned native evidence and browser approximations. These are synthetic checks;
 the private diagnostic ZIP and its wandering program have not been validated.
+
+## Studio planning
+
+Open [Studio director](planning/index.html) to derive a project’s milestones, asset needs, route blockers and scenario comparisons from linked records. Start with [the reconciled Bruce demo plan](projects/bstw-demo/README.md), whose original intake, A01–A06 launch bundle and capability graph are preserved. [Studio record ownership and derivation](docs/STUDIO_PLANNING.md) explains persistence and evidence boundaries. No game artwork or accepted build is supplied.

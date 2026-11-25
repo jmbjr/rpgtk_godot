@@ -233,3 +233,8 @@ Neither should be reported as delivered by the first increment's tests.
   infrastructure can proceed while creative scope remains open. Original
   private archives, assets, source and DLLs require separate publication
   authorization; this workflow grants none.
+
+
+## Studio records and director projection
+
+[Studio director](../planning/index.html) opens revision-pinned project/studio/scenario records and derives readiness without embedding a second dataset. [STUDIO_PLANNING.md](STUDIO_PLANNING.md) owns that contract; [the reconciled project](../projects/bstw-demo/README.md) owns its manifest and source intake. The recovered A01–A06 launch bundle and authoring C02–C12 are preserved alongside the later tile refinement. Local planning, assumption export/import and evidence counts do not implement shared W05/W06 review/build services or establish actual game fulfillment.

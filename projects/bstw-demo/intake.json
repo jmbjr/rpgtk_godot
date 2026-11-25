@@ -1,0 +1,163 @@
+{
+  "format": "rpgtk-owner-intake",
+  "version": 1,
+  "id": "bstw-intake",
+  "revision": 1,
+  "status": "recovered-reviewed-starting-draft",
+  "sources": [
+    {
+      "id": "intake-source-1",
+      "kind": "shared_transcript",
+      "url": "https://chatgpt.com/share/6b066b7e-7f84-83e8-9254-2234e4563741",
+      "summary": "Owner decisions, reviewed A01–A06 bundle and ordered additions; one graph reply is hidden in this capture."
+    },
+    {
+      "id": "intake-source-2",
+      "kind": "shared_transcript",
+      "url": "https://chatgpt.com/share/6b066c3d-be20-83e8-91af-4c71af255910?ogimg=plain",
+      "summary": "Exposes original authoring C01–C12 graph and mappings directly; resolves the hidden-reply gap."
+    }
+  ],
+  "review": {
+    "sourceId": "intake-source-1",
+    "messageId": "bbb21d91-fc74-4dee-afd7-2d01d1027879",
+    "ownerStatement": "Sure seems ok to start with.",
+    "scope": "Starting asset draft; not completed artwork or final resolution of every creative choice."
+  },
+  "decisions": [
+    {
+      "id": "D-ROUTE",
+      "title": "Tintagel; cave → island road; left bridge / right town",
+      "state": "owner-decided",
+      "sourceIds": [
+        "intake-source-1"
+      ]
+    },
+    {
+      "id": "D-CAVE",
+      "title": "A05 is the opening Merlin’s Cave board",
+      "state": "reviewed-starting-draft",
+      "sourceIds": [
+        "intake-source-1"
+      ]
+    },
+    {
+      "id": "D-ART",
+      "title": "Choose art style, palette and initial bounded briefs",
+      "state": "open"
+    },
+    {
+      "id": "D-BRUCE",
+      "title": "Choose frames/style; four facings and four ANMs established",
+      "state": "open-details"
+    },
+    {
+      "id": "D-CLUES",
+      "title": "Choose discoveries and countdown target",
+      "state": "open"
+    },
+    {
+      "id": "D-ENDING",
+      "title": "Choose exact comic ending",
+      "state": "open"
+    },
+    {
+      "id": "D-SYSTEMS",
+      "title": "Finalize menu/inventory/save/audio/native acceptance scope",
+      "state": "open"
+    },
+    {
+      "id": "D-COMPANION",
+      "title": "Temporary companion details",
+      "state": "deferred-by-owner"
+    }
+  ],
+  "originalAssetIds": [
+    "A01",
+    "A02",
+    "A03",
+    "A04",
+    "A05",
+    "A06"
+  ],
+  "originalAuthoringIds": [
+    "C01",
+    "C02",
+    "C03",
+    "C04",
+    "C05",
+    "C06",
+    "C07",
+    "C08",
+    "C09",
+    "C10",
+    "C11",
+    "C12"
+  ],
+  "orderedAdditions": [
+    {
+      "order": 1,
+      "label": "Cliff/coast approach and one-way cave exit",
+      "sourceIds": [
+        "intake-source-1"
+      ]
+    },
+    {
+      "order": 2,
+      "label": "Broken bridge artwork and placement",
+      "sourceIds": [
+        "intake-source-1"
+      ]
+    },
+    {
+      "order": 3,
+      "label": "Scrolling town and road connections",
+      "sourceIds": [
+        "intake-source-1"
+      ]
+    },
+    {
+      "order": 4,
+      "label": "Residents individually",
+      "sourceIds": [
+        "intake-source-1"
+      ]
+    },
+    {
+      "order": 5,
+      "label": "Quest item and quest programs",
+      "sourceIds": [
+        "intake-source-1"
+      ]
+    },
+    {
+      "order": 6,
+      "label": "Key and controlled access",
+      "sourceIds": [
+        "intake-source-1"
+      ]
+    },
+    {
+      "order": 7,
+      "label": "Discoveries and ending",
+      "sourceIds": [
+        "intake-source-1"
+      ]
+    }
+  ],
+  "constraints": [
+    "Core Toolkit data and procedural RPGCode first.",
+    "Combat/custom plugins/advanced classes provisionally excluded.",
+    "Private original bytes remain local.",
+    "Bridge remains broken; no repair progress required.",
+    "Companion requested then deferred."
+  ],
+  "archiveReport": {
+    "fileName": "BSTW_EXPO_DEMO(1).zip",
+    "sha256": "77d6d4180948196106e3d4dad7e2ee62144b30fac8c7ac5491048740e9864300",
+    "fileCount": 285,
+    "entryCount": 300,
+    "evidenceClass": "Historical source report read during recovery; bytes not rehashed here."
+  },
+  "narrativePath": "INTAKE.md"
+}

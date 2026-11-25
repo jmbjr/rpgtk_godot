@@ -120,6 +120,8 @@ jobs:
           node scripts/check-connection-map.mjs
           node scripts/check-dependency-investigation.mjs
           node scripts/check-asset-presentation.mjs
+      - name: Check studio records and deterministic derivation
+        run: node projects/bstw-demo/verify-plan.mjs
       - name: Check tileset PDF export
         run: node scripts/check-tileset-pdf.mjs
       - name: Stage public viewer files
@@ -135,6 +137,8 @@ jobs:
           cp vendor/jszip.min.js vendor/JSZip-LICENSE.md vendor/webaudio-tinysynth.js vendor/TinySynth-LICENSE.txt site/vendor/
           cp -R vendor/soundfont vendor/generaluser-gs vendor/piano-roll vendor/jspdf site/vendor/
           cp --parents experiments/dodge-tiles/{project,card-scene}.mjs site/
+      - name: Stage linked studio project records
+        run: node scripts/stage-studio-plan.mjs site
       - name: Build portable TK3 RPGCode interaction labs
         run: node scripts/build-tk3-script-fixtures.mjs site
       - name: Build and verify Toolkit 2 test games
@@ -155,6 +159,14 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           node scripts/check-tk3-browser.mjs site
+          node scripts/check-studio-browser.mjs site
+      - name: Upload studio planning browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio-planning-review
+          path: dist/studio-planning-review
+          if-no-files-found: warn
       - name: Check first-use journeys and capture matched screenshots
         env:
           REVIEW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -289,3 +301,4 @@ jobs:
       - uses: actions/deploy-pages@v4
         id: deployment
         if: steps.current.outputs.deploy == 'true'
+

@@ -1,0 +1,10 @@
+{
+  "format": "rpgtk-project-index",
+  "version": 1,
+  "projects": [
+    {
+      "title": "Bruce demo",
+      "path": "../../projects/bstw-demo/project.manifest.json"
+    }
+  ]
+}

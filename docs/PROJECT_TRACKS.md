@@ -22,12 +22,12 @@ intake choices, authorize game asset creation or claim these features exist.
 
 ### Owner-led game intake
 
-The next game-definition step is [intake #142](https://github.com/jmbjr/rpgtk_godot/issues/142):
+The owner-led discussion from [intake #142](https://github.com/jmbjr/rpgtk_godot/issues/142) has been recovered in [the canonical project records](../projects/bstw-demo/README.md):
 a completely new, simpler game authored by the owner with AI assistance, built
 one selected asset/capability increment at a time. The working reference is the
 owner's old BSTW demo, decomposed locally into candidate requirements rather than
-adopting its plugin/class-library implementation. The intake determines which
-story, dialogue, interactions and ending to retain or change. The existing TK3
+adopting its plugin/class-library implementation. The recovered intake records
+owner decisions and leaves detailed creative briefs explicitly open. The existing TK3
 test game and generated regression labs do not define the new creative scope.
 
 Use core Toolkit editor features and ordinary procedural RPGCode first. Combat
@@ -268,3 +268,7 @@ Material decisions, limits, synthetic verification and one owner checklist are
 in [board-dependencies.md](usability/board-dependencies.md). Editing/rewriting,
 subset selection/export, merging archives and playable Godot export remain future
 work. Automated evidence and owner usability acceptance remain separate.
+
+## Reconciled intake and studio planning
+
+The original intake has been recovered from both shared transcripts, including A01–A06, the ordered additions and authoring C02–C12. [The project manifest](../projects/bstw-demo/project.manifest.json) is the durable entry point; [the intake](../projects/bstw-demo/INTAKE.md) retains source authority and open choices. #142’s earlier waiting status is historical. [Studio director](../planning/index.html) derives milestones and route readiness from the linked project, studio, capability and scenario records. Actual roster/hours, creative briefs, production verification, asset acceptance and deployment remain separate. #149 carries this planning integration; #146 remains the independent local tile editor proposal.
