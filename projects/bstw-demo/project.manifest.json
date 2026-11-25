@@ -2,14 +2,14 @@
   "format": "rpgtk-planning-project",
   "version": 1,
   "id": "bstw-owner-demo",
-  "revision": 2,
+  "revision": 3,
   "title": "Bruce demo studio plan",
   "records": {
     "project": {
       "path": "bstw.project.json",
       "id": "bstw-owner-demo",
-      "revision": 2,
-      "sha256": "f168afff76e22dc6a8d3087534c75a6c246fe274dd774e9f381d35ad22487484"
+      "revision": 3,
+      "sha256": "f96d6090b654681cce8c565a6a3326021592708324ab877d0aa6249e476565fd"
     },
     "studio": {
       "path": "bstw.studio.json",
@@ -20,8 +20,8 @@
     "scenarios": {
       "path": "bstw.scenarios.json",
       "id": "bstw-scenarios",
-      "revision": 2,
-      "sha256": "fa82ad2f02e1d65397db7279d8406a4df6f8233702df999c8af178559ac1dd85"
+      "revision": 3,
+      "sha256": "e8d913530023c7b728cc064c7bd391b086dc9542cc8b79224e0f30bdc3cef207"
     },
     "capabilities": {
       "path": "capabilities.json",

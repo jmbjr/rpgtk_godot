@@ -3,7 +3,7 @@
   "id": "bstw-owner-demo",
   "title": "Bruce demo — project and progression plan",
   "planningFormat": "rpgtk-studio-planning/0.2",
-  "planningRevision": 2,
+  "planningRevision": 3,
   "checkpoint": {
     "date": "2026-11-25",
     "main": "2c7128746f748bb0aa0459c36675a2e190a26f16",
@@ -1203,7 +1203,7 @@
         "id": "BSTW-CONFIG",
         "revision": 2
       },
-      "brief": "Select exact compatible revisions explicitly and configure the embedded Main File.",
+      "brief": "Select exact compatible revisions and configure the full Demo. A startup title remains optional; it is not a mandatory input.",
       "acceptance": "Normal Play loads selected startup, boards and Bruce without a diagnostic bypass.",
       "readiness": "missing",
       "status": "proposed",
@@ -1227,7 +1227,6 @@
             "island-board",
             "town-board",
             "bruce-definition",
-            "startup-program",
             "route-programs",
             "ending-program"
           ],

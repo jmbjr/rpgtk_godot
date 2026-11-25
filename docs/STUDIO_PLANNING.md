@@ -44,7 +44,7 @@ Changing a requirement prevents its old reviews being counted for the new revisi
 
 ## Persistence and validation
 
-Scenario edits are in memory until downloaded. Export includes exact baseline refs, scenario revisions and separate viewed/adopted/scheduled state. Reopen/load restores the same assumptions. Invalid imports are rejected before replacing current state. Revision-1 exports require explicit reconciliation with revision 2; the UI does not rebase them automatically.
+Scenario edits are in memory until downloaded. Export includes exact baseline refs, scenario revisions and separate viewed/adopted/scheduled state. Reopen/load restores the same assumptions. Invalid imports are rejected before replacing current state. Revision-1/2 exports require explicit reconciliation with revision 3; the UI does not rebase them automatically.
 
 Validation rejects unknown references, duplicate identities, mismatched revisions/hashes, invalid hours/support values, ambiguous capability namespaces, mandatory asset dependency cycles and the studio size limit. There is no fallback that renders stale embedded data after a failed load. Source project data remains inert JSON, while the viewer/evaluator are generic browser modules.
 

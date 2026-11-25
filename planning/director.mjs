@@ -36,7 +36,7 @@ function renderResults() {
   const filter = $('filter').value;
   const groups = [...new Set(state.assets.map(a => a.group))];
   $('asset-list').innerHTML = groups.map(group => {
-    const assets = state.assets.filter(a => a.group === group && (filter === 'all' || a.work.some(w => w.state === filter)));
+    const assets = state.assets.filter(a => a.group === group && (filter === 'all' || a.work.some(w => w.state === filter))).sort((a,b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
     if (!assets.length) return '';
     return `<h3>${esc(group)} · ${assets.length} needs</h3>${assets.map(asset => {
       const dependency = plan.project.assetDependencies.find(e => e.assetId === asset.id);

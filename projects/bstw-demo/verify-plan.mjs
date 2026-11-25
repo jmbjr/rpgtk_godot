@@ -17,6 +17,7 @@ assert.equal(project.assetRequirements.find(a=>a.id==='A05').title,'Merlin’s C
 assert.deepEqual(project.milestones[0].assetIds,['A01','A02','A03','A04','A05','A06']);
 assert.deepEqual(project.workItems.find(w=>w.id==='BSTW-W-MAIN').routes[0].inputIds,['bruce-definition','cave-board']);
 assert(!project.workItems.find(w=>w.id==='BSTW-W-MAIN').routes[0].inputIds.includes('ending-program'));
+assert(!project.workItems.find(w=>w.id==='BSTW-W-INTEGRATE').routes[0].inputIds.includes('startup-program')); 
 for(let i=1;i<=12;i++)assert(capabilities.records.some(c=>c.id===`authoring:C${String(i).padStart(2,'0')}`));
 assert.notEqual(capabilities.records.find(c=>c.id==='player:C01').label,capabilities.records.find(c=>c.id==='authoring:C01').label);
 const allBefore=JSON.stringify(plan), a=compute(scenarios.scenarios[3]), b=compute(scenarios.scenarios[3]);

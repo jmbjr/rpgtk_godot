@@ -11,7 +11,7 @@
       "description": "Only currently recorded resources and inputs. Capacity and most production support remain unknown.",
       "projectRef": {
         "id": "bstw-owner-demo",
-        "revision": 2
+        "revision": 3
       },
       "studioRef": {
         "id": "bstw-owner-studio",
@@ -43,7 +43,7 @@
       "description": "Assume a willing terrain artist, 4 hours, a chosen cave brief, and usable pencil support/access.",
       "projectRef": {
         "id": "bstw-owner-demo",
-        "revision": 2
+        "revision": 3
       },
       "studioRef": {
         "id": "bstw-owner-studio",
@@ -94,7 +94,7 @@
       "description": "Assume an artist declines this sprint. A willing developer has 6 hours and a source editor. Board and tileset tool work can start with synthetic inputs.",
       "projectRef": {
         "id": "bstw-owner-demo",
-        "revision": 2
+        "revision": 3
       },
       "studioRef": {
         "id": "bstw-owner-studio",
@@ -149,7 +149,7 @@
       "description": "Assume artist (4 hours) and developer (6 hours); cave art and synthetic tool work can begin. Development tasks share capacity.",
       "projectRef": {
         "id": "bstw-owner-demo",
-        "revision": 2
+        "revision": 3
       },
       "studioRef": {
         "id": "bstw-owner-studio",
@@ -211,7 +211,7 @@
       "description": "Assume a willing board contributor (4 hours), usable native board tooling, cave tileset and layout. Only A05 is enabled; no artwork or launch completion is inferred.",
       "projectRef": {
         "id": "bstw-owner-demo",
-        "revision": 2
+        "revision": 3
       },
       "studioRef": {
         "id": "bstw-owner-studio",
@@ -257,6 +257,6 @@
       "processAvailability": {}
     }
   ],
-  "revision": 2,
+  "revision": 3,
   "id": "bstw-scenarios"
 }

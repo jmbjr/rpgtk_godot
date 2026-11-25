@@ -63,7 +63,7 @@ try {
  await page.route(scenarioURL,route=>route.fulfill({contentType:'application/json',body:scenarioBytes}));
  await page.route(manifestURL,route=>route.fulfill({contentType:'application/json',body:JSON.stringify(manifest)}));
  await page.reload();await page.waitForFunction(()=>document.querySelector('#title').textContent==='Changed through source records');
- assert.equal(await page.locator('#error').textContent(),'');assert.match(await page.locator('#identity').textContent(),/@3/);
+ assert.equal(await page.locator('#error').textContent(),'');assert((await page.locator('#identity').textContent()).includes(project.id+'@'+project.planningRevision));
  manifest.records.project.sha256='0'.repeat(64);
  await page.reload();await page.waitForFunction(()=>document.querySelector('#error').textContent.includes('fingerprint mismatch'));
  console.log('PASS: Explorer entry; recovered needs/blockers; scenario edits; shared capacity; export/reopen/import; escaping; snapshot; 390px layout; invalid imports; source refresh and stale-hash failure.');

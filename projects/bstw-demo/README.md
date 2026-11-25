@@ -33,7 +33,7 @@ Five scenarios exercise: recorded baseline; an artist with cave brief/pencil sup
 
 ## Revisions and evidence
 
-Revision 2 explicitly reconciles draft revision 1. Old exported revision-1 scenarios are rejected with a mismatch; do not silently overwrite their references. To intentionally rebase one, review every assumption against the new requirement identities and record a new scenario revision. Updating canonical inputs requires their revisions, dependent references and manifest digests to agree.
+Revision 3 includes the revision-2 intake reconciliation and keeps the optional startup title out of the full Demo’s mandatory inputs. Old revision-1/2 scenarios are rejected with a mismatch; do not silently overwrite their references. To intentionally rebase one, review every assumption against the new requirement identities and record a new scenario revision. Updating canonical inputs requires their revisions, dependent references and manifest digests to agree.
 
 `player:C01` and `authoring:C01` are separate original ledgers. Source C IDs remain visible. The broad original authoring C01 was refined to individual tile editing, with C15/C16 providing indexed assembly/export. The historical graph is retained as a sourced proposal; it does not make the web pencil mandatory when imported/native art can supply tiles.
 
