@@ -20,8 +20,8 @@
     "scenarios": {
       "path": "bstw.scenarios.json",
       "id": "bstw-scenarios",
-      "revision": 3,
-      "sha256": "e8d913530023c7b728cc064c7bd391b086dc9542cc8b79224e0f30bdc3cef207"
+      "revision": 4,
+      "sha256": "dc68d800ea43b046c4820627db7d58401c912f00550167598c8c1fd041756812"
     },
     "capabilities": {
       "path": "capabilities.json",
@@ -34,6 +34,12 @@
       "id": "bstw-intake",
       "revision": 1,
       "sha256": "c3a8b2b3f299f57d49b8d5aebd0ba6c9c129ae337321332de7137af7d2e7e4ed"
+    },
+    "feasibility": {
+      "path": "feasibility.json",
+      "id": "bstw-feasibility",
+      "revision": 1,
+      "sha256": "6a4d2ac7c68452c5bbdb281379a209b8d6f7575822ab953bf0c482af86626e90"
     }
   }
 }

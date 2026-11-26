@@ -1,7 +1,7 @@
 import {readFile, writeFile, mkdir, copyFile} from 'node:fs/promises';
 import {resolve, relative, dirname, join} from 'node:path';
 import {createHash} from 'node:crypto';
-import {validatePlan} from '../planning/planner.mjs';
+import {validateFeasibility} from '../planning/feasibility.mjs';
 const root=resolve('.'), site=resolve(process.argv[2] || 'site');
 const registry=JSON.parse(await readFile('docs/planning/index.json','utf8'));
 const sourcePath=(base,path) => {
@@ -22,11 +22,11 @@ for(const entry of registry.projects) {
     plan[key]=record;await copy(recordPath);
     if(key==='intake'&&record.narrativePath)await copy(sourcePath(dirname(recordPath),record.narrativePath));
   }
-  validatePlan(plan);await copy(path);
+  validateFeasibility(plan);await copy(path);
   entry.path='./records/'+relative(root,path).replaceAll('\\','/');
 }
 await mkdir(join(site,'docs/planning'),{recursive:true});
 await writeFile(join(site,'docs/planning/index.json'),JSON.stringify(registry,null,2)+'\n');
 await mkdir(join(site,'planning'),{recursive:true});
-for(const name of ['index.html','director.css','director.mjs','load-plan.mjs','planner.mjs'])await copyFile(join(root,'planning',name),join(site,'planning',name));
+for(const name of ['index.html','director.css','director.mjs','load-plan.mjs','planner.mjs','feasibility.mjs'])await copyFile(join(root,'planning',name),join(site,'planning',name));
 console.log('Staged generic director runtime and validated inert planning records; source topology and exact bytes preserved.');

@@ -121,7 +121,9 @@ jobs:
           node scripts/check-dependency-investigation.mjs
           node scripts/check-asset-presentation.mjs
       - name: Check studio records and deterministic derivation
-        run: node projects/bstw-demo/verify-plan.mjs
+        run: |
+          node projects/bstw-demo/verify-plan.mjs
+          node scripts/check-feasibility.mjs
       - name: Check tileset PDF export
         run: node scripts/check-tileset-pdf.mjs
       - name: Stage public viewer files

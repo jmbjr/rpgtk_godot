@@ -1,13 +1,13 @@
 import {readPlan} from './load-plan.mjs';
-import {snapshot, validatePlan, EVALUATOR_VERSION} from './planner.mjs';
+import {derivePlan, validateFeasibility, EVALUATOR_VERSION} from './feasibility.mjs';
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const labelState = state => ({startable:'Can start', blocked:'Blocked', unverified:'Unverified'}[state] || state);
+const labelState = state => ({startable:'Can start', blocked:'Blocked', unverified:'Unverified', 'not-applicable':'Not applicable'}[state] || state);
 const badge = state => `<span class="badge ${esc(state)}">${esc(labelState(state))}</span>`;
 let plan, original, selected, scenarios, loadedURL, generation = 0;
 const capName = id => plan.capabilities.records.find(c => c.id === id)?.label || id;
 const current = () => scenarios.scenarios.find(s => s.id === selected);
-const evaluate = s => snapshot(plan.project, plan.studio, s, plan.capabilities);
+const evaluate = s => derivePlan(plan, s);
 const select = (kind, id, value, options, cap = '') => `<select aria-label="${esc(kind+' '+id+(cap?' '+cap:''))}" data-kind="${esc(kind)}" data-id="${esc(id)}" data-cap="${esc(cap)}">${options.map(([v,l]) => `<option value="${esc(v)}" ${String(value)===String(v)?'selected':''}>${esc(l)}</option>`).join('')}</select>`;
 const triOptions = [['unknown','Unverified'],['true','Available'],['false','Unavailable']];
 const triValue = v => v === true ? 'true' : v === false ? 'false' : 'unknown';
@@ -24,24 +24,24 @@ function safeLink(value, label) {
 }
 function renderComparison() {
   const rows = scenarios.scenarios.map(s => ({scenario:s,state:evaluate(s)}));
-  $('compare').innerHTML = `<thead><tr><th>Planning option</th>${rows.map(({scenario:s}) => `<th>${esc(s.title)}</th>`).join('')}</tr></thead><tbody><tr><th>Assumptions</th>${rows.map(({scenario:s}) => `<td>${esc(s.description)}</td>`).join('')}</tr>${['startable','blocked','unverified'].map(key => `<tr><th>${esc(labelState(key))}</th>${rows.map(({state:s}) => `<td>${s.counts[key]}</td>`).join('')}</tr>`).join('')}<tr><th>Shared capacity</th>${rows.map(({state:s}) => `<td>${s.contention.map(p => esc(p.name)+' · '+p.hours+' hours shared across '+p.workIds.length+' tasks').join('<br>') || 'No confirmed contention'}</td>`).join('')}</tr></tbody>`;
+  $('compare').innerHTML = `<thead><tr><th>Planning option</th>${rows.map(({scenario:s}) => `<th>${esc(s.title)}</th>`).join('')}</tr></thead><tbody><tr><th>Assumptions</th>${rows.map(({scenario:s}) => `<td>${esc(s.description)}</td>`).join('')}</tr>${['startable','blocked','unverified','not-applicable'].map(key => `<tr><th>${esc(labelState(key))}</th>${rows.map(({state:s}) => `<td>${s.counts[key]}</td>`).join('')}</tr>`).join('')}<tr><th>Shared capacity</th>${rows.map(({state:s}) => `<td>${s.contention.map(p => esc(p.name)+' · '+p.hours+' hours shared across '+p.workIds.length+' tasks').join('<br>') || 'No confirmed contention'}</td>`).join('')}</tr></tbody>`;
 }
 function renderResults() {
-  const state = evaluate(current()); renderComparison();
+  const state = evaluate(current()); renderComparison(); renderFeasibility(state);
   $('identity').textContent = `Project ${plan.project.id}@${plan.project.planningRevision} · Studio ${plan.studio.id}@${plan.studio.revision} · ${EVALUATOR_VERSION} · Scenario ${current().id}@${current().revision}`;
-  $('milestone-cards').innerHTML = state.milestones.map(m => `<article class="card"><p class="eyebrow">${esc(m.id)}</p><h3>${esc(m.title)}</h3><p class="metric">${m.acceptanceRecorded} / ${m.assetIds.length}</p><p>Needs with whole-requirement acceptance recorded</p><p class="note">${m.assetIds.map(esc).join(' · ')}</p></article>`).join('');
+  $('milestone-cards').innerHTML = state.milestones.map(m => `<article class="card"><p class="eyebrow">${esc(m.id)}</p><h3>${esc(m.title)}</h3><p class="metric">${m.notApplicable?'Not applicable':m.acceptanceRecorded+' / '+(m.applicableAssetIds||m.assetIds).length}</p><p>Needs with whole-requirement acceptance recorded</p><p class="note">${m.assetIds.map(esc).join(' · ')}</p></article>`).join('');
   const ready = state.results.filter(w => w.state === 'startable');
   $('startable').innerHTML = ready.length ? ready.map(w => `<div class="record"><strong>${esc(w.title)}</strong> ${badge(w.state)}<p>${esc(w.brief)}</p>${w.enablesCapabilities?.length ? `<p class="note">Enables: ${w.enablesCapabilities.map(esc).join(', ')} · support must be verified after delivery.</p>` : ''}<p class="note">${esc(w.id)} → ${esc(w.requirement.id)}@${w.requirement.revision} · Effort: ${w.effortHours === null ? 'unknown' : w.effortHours+' hours'}</p><p class="note">Eligible people: ${[...new Set(w.routes.filter(r => r.state === 'startable').flatMap(r => r.providers))].map(id => esc(state.people.find(p => p.id === id).name)).join(', ')}</p></div>`).join('') : '<p>No work has a fully confirmed route under these assumptions. Expand a need to inspect all blockers and unknowns.</p>';
   $('contention').innerHTML = state.contention.map(p => `<p class="warning">Shared capacity: ${esc(p.name)} has ${p.hours} hours across ${p.workIds.length} eligible tasks. Hours are not multiplied by capability or task; no allocation is implied.</p>`).join('');
   const filter = $('filter').value;
   const groups = [...new Set(state.assets.map(a => a.group))];
   $('asset-list').innerHTML = groups.map(group => {
-    const assets = state.assets.filter(a => a.group === group && (filter === 'all' || a.work.some(w => w.state === filter))).sort((a,b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    const assets = state.assets.filter(a => a.group === group && ($('show-excluded').checked || a.applicability?.value!==false) && (filter === 'all' || a.work.some(w => w.state === filter))).sort((a,b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
     if (!assets.length) return '';
     return `<h3>${esc(group)} · ${assets.length} needs</h3>${assets.map(asset => {
       const dependency = plan.project.assetDependencies.find(e => e.assetId === asset.id);
       const mapping = plan.project.authoringMappings.find(m => m.assetId === asset.id);
-      return `<details data-asset="${esc(asset.id)}"><summary>${esc(asset.id)} · ${esc(asset.title)} <span class="badge">${esc(asset.fulfillment)}</span></summary><p>${esc(asset.constraints)}</p><p><strong>Acceptance:</strong> ${esc(asset.acceptance)}</p><p class="note">Requirement revision ${asset.revision} · ${esc(asset.status)} · Proposed revisions: ${asset.proposedRevisionCount} · Accepted: ${asset.acceptedRevisionCount} · Selected uses: ${asset.selectedRevisionCount}</p><p class="dependency">Requires: ${(dependency?.requiresAll || []).map(esc).join(' AND ') || 'See production-route inputs'}<br>Authoring capabilities: ${(mapping?.capabilityIds || []).map(esc).join(', ') || 'No separate mapping recorded'}</p>${asset.work.map(w => `<details data-work="${esc(w.id)}"><summary>${esc(w.title)} ${badge(w.state)}</summary><p>${esc(w.brief)}</p>${w.enablesCapabilities?.length ? `<p class="note">Enables: ${w.enablesCapabilities.map(esc).join(', ')} · support must be verified after delivery.</p>` : ''}<p class="note">${esc(w.id)} · ${esc(w.acceptance)} · Effort: ${w.effortHours === null ? 'unknown' : w.effortHours+' hours'}</p>${w.routes.map(r => `<div class="panel"><h3>${esc(r.label)} ${badge(r.state)}</h3><p class="note">Contributor: ${r.personCapabilities.map(capName).map(esc).join(', ')}<br>Tool capabilities: ${r.toolCapabilities.map(esc).join(', ') || 'None required'}</p>${r.missing.length+r.unknown.length ? `<ul>${[...r.missing,...r.unknown].map(reason => `<li>${esc(reason)}</li>`).join('')}</ul>` : '<p>All route prerequisites are satisfied under this scenario.</p>'}${r.inputIds.length ? `<p class="note">Inputs and producer work: ${r.inputIds.map(id => `${esc(id)} ← ${plan.project.workItems.filter(x => x.producesInputIds.includes(id)).map(x => esc(x.id)).join(', ') || 'no producer recorded'}`).join('<br>')}</p>` : ''}</div>`).join('')}</details>`).join('') || '<p class="note">No bounded production work released. Review the recorded scope before assigning it.</p>'}</details>`;
+      return `<details data-asset="${esc(asset.id)}"><summary>${esc(asset.id)} · ${esc(asset.title)} ${asset.applicability?.value===null?badge('unverified'):asset.applicability?.value===false?badge('not-applicable'):''} <span class="badge">${esc(asset.fulfillment)}</span></summary><p>${esc(asset.constraints)}</p><p><strong>Acceptance:</strong> ${esc(asset.acceptance)}</p><p class="note">Requirement revision ${asset.revision} · ${esc(asset.status)} · Proposed revisions: ${asset.proposedRevisionCount} · Accepted: ${asset.acceptedRevisionCount} · Selected uses: ${asset.selectedRevisionCount}</p><p class="dependency">Requires: ${(dependency?.requiresAll || []).map(esc).join(' AND ') || 'See production-route inputs'}<br>Authoring capabilities: ${(mapping?.capabilityIds || []).map(esc).join(', ') || 'No separate mapping recorded'}</p>${asset.work.map(w => `<details data-work="${esc(w.id)}"><summary>${esc(w.title)} ${badge(w.state)}</summary><p>${esc(w.brief)}</p>${w.enablesCapabilities?.length ? `<p class="note">Enables: ${w.enablesCapabilities.map(esc).join(', ')} · support must be verified after delivery.</p>` : ''}<p class="note">${esc(w.id)} · ${esc(w.acceptance)} · Effort: ${w.effortHours === null ? 'unknown' : w.effortHours+' hours'}</p>${w.routes.map(r => `<div class="panel"><h3>${esc(r.label)} ${badge(r.state)}</h3>${routeEvidence(r)}<p class="note">Contributor: ${r.personCapabilities.map(capName).map(esc).join(', ')}<br>Tool capabilities: ${r.toolCapabilities.map(esc).join(', ') || 'None required'}</p>${r.missing.length+r.unknown.length ? `<ul>${[...r.missing,...r.unknown].map(reason => `<li>${esc(reason)}</li>`).join('')}</ul>` : '<p>All route prerequisites are satisfied under this scenario.</p>'}${r.inputIds.length ? `<p class="note">Inputs and producer work: ${r.inputIds.map(id => `${esc(id)} ← ${plan.project.workItems.filter(x => x.producesInputIds.includes(id)).map(x => esc(x.id)).join(', ') || 'no producer recorded'}`).join('<br>')}</p>` : ''}</div>`).join('')}</details>`).join('') || '<p class="note">No bounded production work released. Review the recorded scope before assigning it.</p>'}</details>`;
     }).join('')}`;
   }).join('') || '<p>No needs match this readiness filter.</p>';
 }
@@ -49,13 +49,29 @@ function renderControls() {
   const s = current(), state = evaluate(s);
   $('scenario').innerHTML = scenarios.scenarios.map(x => `<option value="${esc(x.id)}" ${x.id===selected?'selected':''}>${esc(x.title)}</option>`).join('');
   $('scenario-note').textContent = `${s.description} ${s.assumptionNote} Adopted scenario: ${scenarios.adoptedScenarioId || 'none'}. Scheduled work: ${s.scheduledWork.length}.`;
-  $('people').innerHTML = state.people.map(p => `<div class="record"><input class="person-name" aria-label="Name ${esc(p.id)}" data-kind="name" data-id="${esc(p.id)}" value="${esc(p.name)}"><div class="controls"><label>Hours <input aria-label="Hours ${esc(p.id)}" type="number" min="0" step="0.5" data-kind="hours" data-id="${esc(p.id)}" value="${p.availabilityHours ?? ''}" placeholder="Unknown"></label><label>Willingness ${select('willing',p.id,triValue(p.willing),[['unknown','Unverified'],['true','Willing'],['false','Declined']])}</label></div><div class="checks">${plan.capabilities.records.filter(c => c.provider === 'person').map(c => `<label><input type="checkbox" data-kind="cap" data-id="${esc(p.id)}" data-cap="${esc(c.id)}" ${p.capabilities.includes(c.id)?'checked':''}>${esc(c.label)}</label>`).join('')}</div></div>`).join('');
-  $('tools').innerHTML = state.tools.map(t => `<details><summary>${esc(t.label)}</summary><p class="note">${esc(t.support)} · Evidence: ${esc(t.evidence || 'unverified')}</p><label>Access ${triSelect('tool',t.id,t.available)}</label>${t.capabilities.map(id => `<div class="record"><label>${esc(capName(id))} ${select('tool-support',t.id,t.capabilitySupport[id],[['verified','Verified'],['partial','Partial'],['missing','Missing'],['unverified','Unverified']],id)}</label></div>`).join('')}</details>`).join('');
+  $('people').innerHTML = state.people.map(p => `<div class="record"><input class="person-name" aria-label="Name ${esc(p.id)}" data-kind="name" data-id="${esc(p.id)}" value="${esc(p.name)}"><div class="controls"><label>Capacity offer (hours) <input aria-label="Hours ${esc(p.id)}" type="number" min="0" step="0.5" data-kind="hours" data-id="${esc(p.id)}" value="${p.availabilityHours ?? ''}" placeholder="Unknown"></label>${plan.feasibility?'<label>Offer window '+select('window',p.id,p.availabilityWindow||'unknown',[['unknown','Unverified'],...plan.feasibility.horizons.map(h=>[h.id,h.label])])+'</label>':''}<label>Willingness ${select('willing',p.id,triValue(p.willing),[['unknown','Unverified'],['true','Willing'],['false','Declined']])}</label></div><div class="checks">${plan.capabilities.records.filter(c => c.provider === 'person').map(c => `<label><input type="checkbox" data-kind="cap" data-id="${esc(p.id)}" data-cap="${esc(c.id)}" ${p.capabilities.includes(c.id)?'checked':''}>${esc(c.label)}</label>`).join('')}</div></div>`).join('');
+  $('tools').innerHTML = state.tools.map(t => `<details><summary>${esc(t.label)}</summary><p class="note">${esc(t.support)} · Evidence: ${esc(t.evidence || 'unverified')}</p><label>Access ${triSelect('tool',t.id,t.available)}</label>${t.capabilities.map(id => `<div class="record"><label>${esc(capName(id))} ${select('tool-support',t.id,t.capabilitySupport[id],[['verified','Verified'],['partial','Partial'],['missing','Missing'],['unverified','Unverified']],id)}</label></div>`).join('')}${plan.feasibility?plan.feasibility.qualities.map(q=>`<div class="record"><label>${esc(q.label)} ${select('tool-quality',t.id,s.toolQualityOverrides[t.id]?.[q.id]||plan.feasibility.toolQualities[t.id]?.[q.id]?.state||'unverified',[['verified','Verified'],['partial','Partial'],['missing','Missing'],['unverified','Unverified']],q.id)}</label><p class="note">${esc(q.acceptance)} · ${esc(s.toolQualityOverrides[t.id]?.[q.id]?'Scenario assumption only':plan.feasibility.toolQualities[t.id]?.[q.id]?.evidence||'No quality evidence')}</p></div>`).join(''):''}</details>`).join('');
   $('inputs').innerHTML = state.inputs.map(i => `<div class="record"><label>${esc(i.label)} ${triSelect('input',i.id,i.available)}</label></div>`).join('');
   $('processes').innerHTML = state.processes.map(p => `<div class="record"><label>${esc(p.label)} ${triSelect('process',p.id,p.available)}</label><p class="note">${esc(p.status)}</p></div>`).join('');
   $('add-person').disabled = state.people.length >= plan.studio.scale.maximumPeople;
-  renderResults();
+  renderAssumptionControls(); renderResults();
 }
+
+function renderAssumptionControls() {
+  const m=plan.feasibility,s=current();
+  $('assumption-controls').innerHTML=m?`${m.assumptions.map(a=>`<label>${esc(a.label)} ${select('assumption',a.id,Object.hasOwn(s.projectAssumptions,a.id)?s.projectAssumptions[a.id]??'__unknown':a.baseline??'__unknown',[['__unknown','Unverified'],...(a.type==='boolean'?[['true','Required'],['false','Excluded']]:a.values.map(v=>[v,m.profiles.find(p=>p.id===v)?.label||v]))])}</label>`).join('')}<label>Viewing horizon ${select('horizon','selected',s.viewingHorizon,m.horizons.map(h=>[h.id,h.label]))}</label><p class="note">${esc(m.windowBasis)} These controls edit hypotheses; recorded owner decisions remain in the source.</p>`:'<p>No feasibility record is linked. Target, quality and availability windows remain unmodeled.</p>';
+}
+function routeEvidence(r) {
+  if(!r.applicability)return '';
+  if(r.state==='not-applicable')return `<p class="note">Excluded: ${r.applicability.trace.map(esc).join('; ')}</p>`;
+  return `<p class="note">Technical support: ${esc(labelState(r.technical.state))} · Provider support: ${esc(r.staff.state)}${r.staff.laterProviders.length?' · Later: '+r.staff.laterProviders.map(esc).join(', '):''}</p>${r.profile?`<p class="note">Profile ${esc(r.profile.id||'unselected')}${r.profile.revision?'@'+r.profile.revision:''}</p>`:''}${r.edges?.some(e=>e.value!==true)?`<p class="note">Conditional inputs: ${r.edges.filter(e=>e.value!==true).map(e=>`${esc(e.id)} · ${e.value===false?'excluded':'unverified'} · ${e.trace.map(esc).join('; ')}`).join('<br>')}</p>`:''}`;
+}
+function renderFeasibility(state) {
+  if(!plan.feasibility){$('feasibility-results').textContent=state.modelGap;return;}
+  const excluded=state.results.filter(w=>w.state==='not-applicable');
+  $('feasibility-results').innerHTML=`<p class="note">${esc(state.horizon.label)}. Technical support and provider support are independent. Later offers are not start dates.</p>${state.questions.map(q=>`<article class="panel"><h3>${esc(q.label)} <span class="badge">Needs refinement</span></h3><p>${esc(q.gap)}</p><p class="note">Output dependencies: ${q.dependencies.map(g=>esc(g.label)+' · '+(g.value===true?'inputs available':g.value===false?'missing input':'needs definition or verification')).join('; ')}</p><p class="note">${esc(q.capabilityId)} · General capability question, not a released game assignment. Route checks below are bounded probes.</p>${q.routes.map(r=>`<details data-probe="${esc(r.id)}"><summary>${esc(r.label)} ${badge(r.state)}</summary>${routeEvidence(r)}<ul>${[...r.missing,...r.unknown].map(x=>`<li>${esc(x)}</li>`).join('')}</ul></details>`).join('')}</article>`).join('')}<details><summary>Target-dependent requirements</summary>${state.dependencyGates.map(g=>`<h3>${esc(g.label)} · ${g.value===true?'Inputs available':g.value===false?'Missing inputs':'Unverified'}</h3><p>${esc(g.operator)} · ${esc(g.reason)}</p><ul>${g.members.map(e=>`<li>${esc(e.id)} · ${e.applicability.value===false?'Excluded':e.applicability.value===null?'Applicability unverified':e.value===true?'Input available':e.value===false?'Input missing':'Needs definition'}: ${esc(e.reason)} ${esc(e.gap||'')}<br><span class="note">${e.applicability.trace.map(esc).join('; ')}</span></li>`).join('')}</ul>`).join('')}</details><details id="excluded-results"><summary>Excluded work · ${excluded.length}</summary>${excluded.map(w=>`<p><strong>${esc(w.id)} · ${esc(w.title)}</strong><br>${esc(w.applicability.reason)}<br>${w.applicability.trace.map(esc).join('; ')}</p>`).join('')||'<p>None excluded.</p>'}</details><details><summary>Assumption sources and modeling gaps</summary>${state.assumptionTrace.map(a=>`<p><strong>${esc(a.id)} = ${esc(JSON.stringify(a.value))}</strong> · ${esc(a.basis)}<br>${esc(a.evidence)}</p>`).join('')}<ul>${state.definitionGaps.map(g=>`<li>${esc(g)}</li>`).join('')}</ul><p class="note">Unknown applicability stays visible. No viable recorded route is not a claim that every undiscovered route is impossible.</p></details>`;
+}
+
 function renderFixed() {
   const p = plan.project;
   $('title').textContent = p.title; document.title = p.title+' · Studio director';
@@ -81,6 +97,7 @@ async function openProject(url) {
 }
 $('scenario').onchange = e => { selected=e.target.value; renderControls(); };
 $('filter').onchange = renderResults;
+$('show-excluded').onchange = renderResults;
 $('copy').onclick = () => {
   const s = clone(current()); let n=1; while(scenarios.scenarios.some(x => x.id === 'scenario-'+n)) n++;
   s.id='scenario-'+n; s.revision=1; s.title='Planning option '+n; s.status='hypothetical-not-a-commitment'; s.scheduledWork=[];
@@ -90,7 +107,7 @@ $('restore').onclick = () => { const saved=original.scenarios.find(s => s.id===s
 $('save').onclick = () => download('planning.scenarios.json',{...scenarios,viewedScenarioId:selected});
 $('export-snapshot').onclick = () => download('director.snapshot.json',{format:'rpgtk-derived-director-snapshot',version:1,manifest:plan.manifest,fingerprints:plan.fingerprints,assumptions:clone(current()),snapshot:evaluate(current())});
 $('load').onchange = async e => {
-  try { const file=e.target.files[0]; if (!file) return; if (file.size>2_000_000) throw Error('Scenario file exceeds 2 MB.'); const candidate=JSON.parse(await file.text()); validatePlan({...plan,scenarios:candidate}); scenarios=candidate; selected=candidate.viewedScenarioId || candidate.scenarios[0].id; $('error').textContent=''; renderControls(); }
+  try { const file=e.target.files[0]; if (!file) return; if (file.size>2_000_000) throw Error('Scenario file exceeds 2 MB.'); const candidate=JSON.parse(await file.text()); validateFeasibility({...plan,scenarios:candidate}); scenarios=candidate; selected=candidate.viewedScenarioId || candidate.scenarios[0].id; $('error').textContent=''; renderControls(); }
   catch(error) { $('error').textContent='Could not load scenarios: '+error.message; }
 };
 $('add-person').onclick = () => {
@@ -103,14 +120,18 @@ document.addEventListener('change', e => {
   const {kind,id,cap}=e.target.dataset; if (!kind || !plan) return;
   const before=clone(current()), s=current(), value=e.target.value, tri=value==='true'?true:value==='false'?false:null;
   try {
-    if (['name','hours','willing','cap'].includes(kind)) {
+    if (['name','hours','willing','cap','window'].includes(kind)) {
       let person=s.addPeople.find(p => p.id===id);
       if (!person) { s.peopleOverrides[id] ||= {}; person=s.peopleOverrides[id]; }
       if (kind==='name') person.name=value;
       if (kind==='hours') person.availabilityHours=value===''?null:Number(value);
+      if (kind==='window') person.availabilityWindow=value==='unknown'?null:value;
       if (kind==='willing') person.willing=tri;
       if (kind==='cap') { const all=evaluate(before).people.find(p => p.id===id).capabilities; person.capabilities=e.target.checked?[...new Set([...all,cap])]:all.filter(c => c!==cap); }
     }
+    if (kind==='assumption') s.projectAssumptions[id]=value==='__unknown'?null:plan.feasibility.assumptions.find(a=>a.id===id).type==='boolean'?value==='true':value;
+    if (kind==='horizon') s.viewingHorizon=value;
+    if (kind==='tool-quality') {s.toolQualityOverrides[id] ||= {};s.toolQualityOverrides[id][cap]=value;}
     if (kind==='tool') s.toolAvailability[id]=tri;
     if (kind==='tool-support') { s.toolSupportOverrides[id] ||= {}; s.toolSupportOverrides[id][cap]=value; }
     if (kind==='input') s.inputAvailability[id]=tri;

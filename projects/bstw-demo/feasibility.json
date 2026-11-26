@@ -1,0 +1,851 @@
+{
+  "format": "rpgtk-capability-feasibility",
+  "version": 1,
+  "id": "bstw-feasibility",
+  "revision": 1,
+  "projectRef": {
+    "id": "bstw-owner-demo",
+    "revision": 3
+  },
+  "studioRef": {
+    "id": "bstw-owner-studio",
+    "revision": 2,
+    "path": "bstw.studio.json"
+  },
+  "capabilitiesRef": {
+    "id": "rpgtk-authoring-ledger",
+    "revision": 2,
+    "path": "capabilities.json"
+  },
+  "assumptions": [
+    {
+      "id": "project.target",
+      "label": "Target",
+      "type": "enum",
+      "values": [
+        "digital-tk3",
+        "physical-only"
+      ],
+      "baseline": "digital-tk3",
+      "owner": "project",
+      "evidence": "Recovered intake: owner-authored TK3 game. Physical-only is a hypothetical adaptation, not approved scope."
+    },
+    {
+      "id": "project.artProfile",
+      "label": "Artwork profile",
+      "type": "enum",
+      "values": [
+        "basic-pixel",
+        "production-art"
+      ],
+      "baseline": null,
+      "owner": "project",
+      "evidence": "Owner feedback requests undo, quick color switching and layers. Exact per-asset production profiles remain to be refined."
+    },
+    {
+      "id": "project.requireVideoExecution",
+      "label": "Require video execution (consistency check)",
+      "type": "boolean",
+      "baseline": null,
+      "owner": "project",
+      "evidence": "Scenario consistency constraint; unknown by default, derived target scope still applies."
+    }
+  ],
+  "profileAssumption": "project.artProfile",
+  "horizons": [
+    {
+      "id": "current",
+      "label": "Current window · relative days 0–14",
+      "startDay": 0,
+      "endDay": 14
+    },
+    {
+      "id": "later",
+      "label": "Later window · relative days 14–60",
+      "startDay": 14,
+      "endDay": 60
+    }
+  ],
+  "defaultHorizon": "current",
+  "windowBasis": "Hypothetical relative windows [start, end), with no calendar origin or staffing commitment. Hours are one shared capacity offer per person, not allocated or prorated.",
+  "qualities": [
+    {
+      "id": "save-reopen",
+      "label": "Save and reopen editable content",
+      "acceptance": "Save edited pixels, close, reopen the same revision and compare content."
+    },
+    {
+      "id": "undo",
+      "label": "Undo an edit",
+      "acceptance": "Make an edit, undo it and verify the previous pixel content is restored."
+    },
+    {
+      "id": "quick-colors",
+      "label": "Switch working colors quickly",
+      "acceptance": "Alternate two retained working colors repeatedly without re-entering their values."
+    },
+    {
+      "id": "editable-layers",
+      "label": "Preserve editable layers",
+      "acceptance": "Edit separate layers, save/reopen, and verify independently editable content remains."
+    }
+  ],
+  "profiles": [
+    {
+      "id": "basic-pixel",
+      "revision": 1,
+      "label": "Basic pixel diagnostic",
+      "qualityIds": [
+        "save-reopen"
+      ],
+      "scope": "A bounded C01 round trip; does not establish production artwork readiness."
+    },
+    {
+      "id": "production-art",
+      "revision": 1,
+      "label": "Production artwork · candidate profile",
+      "qualityIds": [
+        "save-reopen",
+        "undo",
+        "quick-colors",
+        "editable-layers"
+      ],
+      "scope": "Candidate owner-requested editing qualities; not an approved universal asset specification.",
+      "gap": "History depth, palette workflow, layer operations and source format need per-use acceptance detail."
+    }
+  ],
+  "applicability": {
+    "assets": {
+      "A01": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "A02": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "A05": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-ART-ISLAND": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-ART-TOWN": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-STORY": null,
+      "BSTW-PRG-START": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-PRG-ROUTE": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-PRG-END": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-CONFIG": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-AUDIO": null,
+      "STUDIO-BOARD-TOOL": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "STUDIO-TILESET-TOOL": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "A03": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "A04": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "A06": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-BOARD-ISLAND": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-BOARD-TOWN": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-RESIDENTS": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-QUEST": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-ACCESS": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-COMPANION": false
+    },
+    "work": {
+      "BSTW-W-DIRECTION": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-STORY": null,
+      "BSTW-W-TILE-ISLAND": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-TILE-TOWN": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-SET-ISLAND": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-BOARD-ISLAND": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-SET-TOWN": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-BOARD-TOWN": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-BRUCE-BRIEF": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-BRUCE-ART": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-BRUCE-DEF": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-START": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-CLUES": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-END": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-INTEGRATE": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-VERIFY": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "STUDIO-W-BOARD-TOOL": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "STUDIO-W-TILESET-TOOL": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-CAVE-BRIEF": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-TILE-CAVE": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-SET-CAVE": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-BRUCE-ANIM": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-BOARD-CAVE": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-MAIN": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-PACKAGE": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-RESIDENT": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-QUEST": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-ACCESS": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "BSTW-W-CONNECT": {
+        "equals": {
+          "assumption": "project.target",
+          "value": "digital-tk3"
+        }
+      }
+    }
+  },
+  "routeRules": [
+    {
+      "workId": "BSTW-W-DIRECTION",
+      "routeId": "direction",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-STORY",
+      "routeId": "direction",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-TILE-ISLAND",
+      "routeId": "web-pencil",
+      "when": true,
+      "useArtProfile": true,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-TILE-ISLAND",
+      "routeId": "native-drawing",
+      "when": true,
+      "useArtProfile": true,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-TILE-TOWN",
+      "routeId": "web-pencil",
+      "when": true,
+      "useArtProfile": true,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-SET-ISLAND",
+      "routeId": "web-tileset",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-SET-ISLAND",
+      "routeId": "native-tileset",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-BOARD-ISLAND",
+      "routeId": "web-board",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-BOARD-ISLAND",
+      "routeId": "native-board",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-SET-TOWN",
+      "routeId": "web-tileset",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-SET-TOWN",
+      "routeId": "native-tileset",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-BOARD-TOWN",
+      "routeId": "web-board",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-BOARD-TOWN",
+      "routeId": "native-board",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-BRUCE-BRIEF",
+      "routeId": "direction",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-BRUCE-ART",
+      "routeId": "external-character",
+      "when": true,
+      "useArtProfile": true,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-BRUCE-DEF",
+      "routeId": "native-character",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-START",
+      "routeId": "source",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-CLUES",
+      "routeId": "source",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-END",
+      "routeId": "source",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-INTEGRATE",
+      "routeId": "native-config",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-VERIFY",
+      "routeId": "playtest",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "STUDIO-W-BOARD-TOOL",
+      "routeId": "develop",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "STUDIO-W-TILESET-TOOL",
+      "routeId": "develop",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-CAVE-BRIEF",
+      "routeId": "direction",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-TILE-CAVE",
+      "routeId": "pencil",
+      "when": true,
+      "useArtProfile": true,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-TILE-CAVE",
+      "routeId": "external",
+      "when": true,
+      "useArtProfile": true,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-SET-CAVE",
+      "routeId": "web-set",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-SET-CAVE",
+      "routeId": "native-set",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-BRUCE-ANIM",
+      "routeId": "native-animation",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-BOARD-CAVE",
+      "routeId": "web-board",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-BOARD-CAVE",
+      "routeId": "native-board",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-MAIN",
+      "routeId": "native-config",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-PACKAGE",
+      "routeId": "native-package",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-RESIDENT",
+      "routeId": "native-procedure",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-QUEST",
+      "routeId": "native-procedure",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-ACCESS",
+      "routeId": "native-procedure",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    },
+    {
+      "workId": "BSTW-W-CONNECT",
+      "routeId": "native-procedure",
+      "when": true,
+      "useArtProfile": false,
+      "inputConditions": {}
+    }
+  ],
+  "toolQualities": {
+    "rpgtk-pencil": {
+      "save-reopen": {
+        "state": "unverified",
+        "evidence": "Paused #146 prototype: save/reopen reported by draft PR; owner reports missing undo, quick color workflow and layers. No main/deployed support claim."
+      },
+      "undo": {
+        "state": "missing",
+        "evidence": "Paused #146 prototype: save/reopen reported by draft PR; owner reports missing undo, quick color workflow and layers. No main/deployed support claim."
+      },
+      "quick-colors": {
+        "state": "missing",
+        "evidence": "Paused #146 prototype: save/reopen reported by draft PR; owner reports missing undo, quick color workflow and layers. No main/deployed support claim."
+      },
+      "editable-layers": {
+        "state": "missing",
+        "evidence": "Paused #146 prototype: save/reopen reported by draft PR; owner reports missing undo, quick color workflow and layers. No main/deployed support claim."
+      }
+    }
+  },
+  "questions": [
+    {
+      "id": "shared-editable-artwork",
+      "capabilityId": "artwork:create-compatible",
+      "label": "Create compatible editable artwork",
+      "when": true,
+      "useArtProfile": true,
+      "gap": "Proposed general artwork capability, distinct from C01. Physical dimensions, resolution and output format are undefined; no physical game asset or work assignment is created. Digital source/editing constraints also need per-asset refinement.",
+      "routes": [
+        {
+          "id": "pencil-probe",
+          "label": "Bounded tile-pencil evidence",
+          "when": true,
+          "tools": [
+            "rpgtk-pencil"
+          ],
+          "toolCapabilities": [
+            "authoring:C01"
+          ],
+          "personCapabilities": [
+            "person:terrain-art"
+          ],
+          "inputIds": [],
+          "processIds": []
+        },
+        {
+          "id": "external-probe",
+          "label": "External artwork route candidate",
+          "when": true,
+          "tools": [
+            "external-art-editor"
+          ],
+          "toolCapabilities": [
+            "authoring:C01"
+          ],
+          "personCapabilities": [
+            "person:terrain-art"
+          ],
+          "inputIds": [],
+          "processIds": []
+        }
+      ],
+      "dependencyGateIds": [
+        "target-output"
+      ]
+    }
+  ],
+  "dependencyGates": [
+    {
+      "id": "target-output",
+      "label": "Compatible output for the selected target",
+      "when": true,
+      "operator": "allOf",
+      "reason": "Select target-specific output constraints before claiming a complete artwork delivery. Inactive branches do not block the active target.",
+      "members": [
+        {
+          "id": "tk3-output",
+          "when": {
+            "equals": {
+              "assumption": "project.target",
+              "value": "digital-tk3"
+            }
+          },
+          "inputId": "cave-tileset",
+          "reason": "The recorded digital cave output is a compatible indexed TST."
+        },
+        {
+          "id": "physical-output",
+          "when": {
+            "equals": {
+              "assumption": "project.target",
+              "value": "physical-only"
+            }
+          },
+          "gap": "Physical representation, print dimensions, resolution and export/acceptance route are not defined.",
+          "reason": "TK3 tiles do not establish a physical-game output contract."
+        }
+      ]
+    }
+  ],
+  "contradictions": [
+    {
+      "when": {
+        "allOf": [
+          {
+            "equals": {
+              "assumption": "project.target",
+              "value": "physical-only"
+            }
+          },
+          {
+            "equals": {
+              "assumption": "project.requireVideoExecution",
+              "value": true
+            }
+          }
+        ]
+      },
+      "message": "A physical-only target cannot require video execution."
+    },
+    {
+      "when": {
+        "allOf": [
+          {
+            "equals": {
+              "assumption": "project.target",
+              "value": "digital-tk3"
+            }
+          },
+          {
+            "equals": {
+              "assumption": "project.requireVideoExecution",
+              "value": false
+            }
+          }
+        ]
+      },
+      "message": "The recorded digital TK3 target requires video execution."
+    }
+  ],
+  "definitionGaps": [
+    "Only tile drawing routes currently map to the artwork profile. Animation, programming, board authoring and gameplay capabilities require further quality/prerequisite refinement.",
+    "The general artwork question probes existing bounded tile evidence; it does not prove compatibility with an undefined physical output.",
+    "No duration-to-feasibility rule exists: a short-game intention or a couple of months cannot establish capacity, effort or a finish date.",
+    "One capacity offer per person is supported. Multiple offers, dated origins and cross-project resource sharing need a later record extension.",
+    "No enabling outputs are automatically available. Tool development remains candidate prerequisite work; #146 stays paused."
+  ],
+  "proposedCapabilities": [
+    {
+      "id": "artwork:create-compatible",
+      "label": "Create compatible editable artwork",
+      "status": "proposed-needs-refinement",
+      "scope": "General production capability separate from Toolkit tile operation C01. Target-specific output constraints and production acceptance remain incomplete."
+    }
+  ],
+  "applicabilityReasons": {
+    "assets": {
+      "A01": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "A02": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "A05": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "BSTW-ART-ISLAND": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "BSTW-ART-TOWN": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "BSTW-STORY": "Applicability outside the recovered digital scope has not been decided.",
+      "BSTW-PRG-START": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "BSTW-PRG-ROUTE": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "BSTW-PRG-END": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "BSTW-CONFIG": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "BSTW-AUDIO": "Applicability outside the recovered digital scope has not been decided.",
+      "STUDIO-BOARD-TOOL": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "STUDIO-TILESET-TOOL": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "A03": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "A04": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "A06": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "BSTW-BOARD-ISLAND": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "BSTW-BOARD-TOWN": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "BSTW-RESIDENTS": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "BSTW-QUEST": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "BSTW-ACCESS": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
+      "BSTW-COMPANION": "Owner deferred the companion; no work is released."
+    }
+  }
+}

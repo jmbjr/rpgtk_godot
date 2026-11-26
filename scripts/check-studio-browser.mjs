@@ -19,7 +19,7 @@ try {
  browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.PLANNING_CHROMIUM ? {executablePath:process.env.PLANNING_CHROMIUM} : {})});
  const page=await browser.newPage({viewport:{width:1440,height:1000}}), base=`http://127.0.0.1:${server.address().port}`;
  await page.goto(base+'/');await page.getByRole('link',{name:'Studio director',exact:true}).click();
- await page.waitForFunction(()=>document.querySelector('#identity').textContent.includes('rpgtk-director/0.2.0'));
+ await page.waitForFunction(()=>document.querySelector('#identity').textContent.includes('rpgtk-director/0.3.0'));
  assert.equal(await page.locator('#error').textContent(),'');
  assert.match(await page.locator('#route').textContent(),/Merlin/);
  assert.match(await page.locator('#asset-list').textContent(),/A03.*walking animations/s);
@@ -28,6 +28,32 @@ try {
  assert.match(await page.locator('[data-asset="A05"]').textContent(),/Input:.*Tool access:.*No declared contributor/s);
  await page.selectOption('#scenario','S3');assert.match(await page.locator('#startable').textContent(),/Draw one cave floor tile/);
  assert.match(await page.locator('#contention').textContent(),/6 hours across 2 eligible tasks/);
+ // The same linked project is re-derived as assumptions change; no hand-authored second dashboard.
+ await page.selectOption('select[data-kind="assumption"][data-id="project.artProfile"]','production-art');
+ assert.doesNotMatch(await page.locator('#startable').textContent(),/Draw one cave floor tile/);
+ assert.match(await page.locator('#feasibility-results').textContent(),/Profile quality missing: undo/);
+ assert.match(await page.locator('#feasibility-results').textContent(),/Profile needs refinement/);
+ await page.selectOption('select[data-kind="assumption"][data-id="project.artProfile"]','basic-pixel');
+ await page.selectOption('select[data-kind="window"][data-id="assumed-artist"]','later');
+ assert.doesNotMatch(await page.locator('#startable').textContent(),/Draw one cave floor tile/);
+ assert.match(await page.locator('#feasibility-results').textContent(),/Provider support: later/);
+ await page.selectOption('select[data-kind="horizon"]','later');
+ assert.match(await page.locator('#startable').textContent(),/Draw one cave floor tile/);
+ await page.selectOption('select[data-kind="horizon"]','current');
+ await page.selectOption('select[data-kind="window"][data-id="assumed-artist"]','current');
+ await page.selectOption('select[data-kind="assumption"][data-id="project.target"]','physical-only');
+ assert.equal(await page.locator('[data-asset="A05"]').count(),0);
+ assert.match(await page.locator('#excluded-results').textContent(),/BSTW-W-MAIN/);
+ assert.match(await page.locator('#feasibility-results').textContent(),/Create compatible editable artwork/);
+ assert.match(await page.locator('#feasibility-results').textContent(),/Physical representation, print dimensions/);
+ assert.match(await page.locator('#milestone-cards').textContent(),/Not applicable/);
+ await page.locator('#excluded-results').evaluate(el=>el.open=true);
+ await page.screenshot({path:resolve(out,'physical-scenario.png'),fullPage:true});
+ await page.selectOption('select[data-kind="assumption"][data-id="project.target"]','digital-tk3');
+ await page.selectOption('select[data-kind="assumption"][data-id="project.requireVideoExecution"]','false');
+ assert.match(await page.locator('#error').textContent(),/Contradictory scenario/);
+ assert.match(await page.locator('#startable').textContent(),/Draw one cave floor tile/);
+ await page.selectOption('select[data-kind="assumption"][data-id="project.requireVideoExecution"]','__unknown');
  await page.selectOption('select[data-kind="willing"][data-id="assumed-artist"]','false');
  assert.doesNotMatch(await page.locator('#startable').textContent(),/Draw one cave floor tile/);
  const downloadEvent=page.waitForEvent('download');await page.click('#save');const downloaded=await downloadEvent;
@@ -42,7 +68,7 @@ try {
  assert.equal(await page.locator('#startable img').count(),0);assert.match(await page.locator('#startable').textContent(),/<img src=x/);
  assert.equal(await page.evaluate(()=>window.injected),undefined);
  const snapshotEvent=page.waitForEvent('download');await page.click('#export-snapshot');const snapshot=JSON.parse(await readFile(await (await snapshotEvent).path(),'utf8'));
- assert.equal(snapshot.snapshot.evaluatorVersion,'rpgtk-director/0.2.0');assert.equal(snapshot.assumptions.id,'S3');assert.match(snapshot.fingerprints.project,/^[a-f0-9]{64}$/);
+ assert.equal(snapshot.snapshot.evaluatorVersion,'rpgtk-director/0.3.0');assert.equal(snapshot.assumptions.id,'S3');assert.match(snapshot.fingerprints.project,/^[a-f0-9]{64}$/);
  await page.screenshot({path:resolve(out,'director-desktop.png'),fullPage:true});
  await page.setViewportSize({width:390,height:844});await page.screenshot({path:resolve(out,'director-phone.png'),fullPage:true});
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'No page-wide horizontal overflow at 390px');
@@ -57,7 +83,14 @@ try {
  const project=await (await page.request.get(projectURL)).json(), scenarioRecords=await (await page.request.get(scenarioURL)).json();
  project.title='Changed through source records';project.planningRevision++;
  scenarioRecords.revision++;for(const s of scenarioRecords.scenarios)s.projectRef.revision=project.planningRevision;
+ const feasibilityURL=new URL(manifest.records.feasibility.path,manifestURL).href;
+ const feasibility=await (await page.request.get(feasibilityURL)).json();
+ feasibility.revision++;feasibility.projectRef.revision=project.planningRevision;
+ for(const s of scenarioRecords.scenarios)s.feasibilityRef.revision=feasibility.revision;
+ const feasibilityBytes=JSON.stringify(feasibility);
  const projectBytes=JSON.stringify(project), scenarioBytes=JSON.stringify(scenarioRecords), hash=s=>createHash('sha256').update(s).digest('hex');
+ manifest.records.feasibility.revision=feasibility.revision;manifest.records.feasibility.sha256=hash(feasibilityBytes);
+ await page.route(feasibilityURL,route=>route.fulfill({contentType:'application/json',body:feasibilityBytes}));
  manifest.revision=project.planningRevision;manifest.records.project.revision=project.planningRevision;manifest.records.project.sha256=hash(projectBytes);
  manifest.records.scenarios.revision=scenarioRecords.revision;manifest.records.scenarios.sha256=hash(scenarioBytes);
  await page.route(projectURL,route=>route.fulfill({contentType:'application/json',body:projectBytes}));
@@ -67,5 +100,5 @@ try {
  assert.equal(await page.locator('#error').textContent(),'');assert((await page.locator('#identity').textContent()).includes(project.id+'@'+project.planningRevision));
  manifest.records.project.sha256='0'.repeat(64);
  await page.reload();await page.waitForFunction(()=>document.querySelector('#error').textContent.includes('fingerprint mismatch'));
- console.log('PASS: Explorer entry; recovered needs/blockers; scenario edits; shared capacity; export/reopen/import; escaping; snapshot; 390px layout; invalid imports; source refresh and stale-hash failure.');
+ console.log('PASS: assumption target/profile/window changes; excluded inspection; contradictions retain valid state; Explorer entry; recovered needs/blockers; scenario edits; shared capacity; export/reopen/import; escaping; snapshot; 390px layout; invalid imports; source refresh and stale-hash failure.');
 } finally {if(browser)await browser.close();await new Promise(yes=>server.close(yes));}

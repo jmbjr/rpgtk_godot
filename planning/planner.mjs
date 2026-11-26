@@ -168,15 +168,8 @@ export function validateScenario(project, studio, capabilities, scenario) {
   for (const id of list(scenario.scheduledWork, 'Scheduled work')) ref(work, id, 'scheduled work');
   return people;
 }
-export function snapshot(project, studio, scenario, capabilities) {
-  const people = validateScenario(project, studio, capabilities, scenario);
-  const apply = (records, overrides) => records.map(record => ({...record, available: Object.hasOwn(overrides, record.id) ? overrides[record.id] : record.available}));
-  const tools = apply(studio.tools, scenario.toolAvailability).map(t => ({...t, capabilitySupport: {...t.capabilitySupport, ...scenario.toolSupportOverrides[t.id]}}));
-  const inputs = apply(project.inputs, scenario.inputAvailability);
-  const processes = apply(studio.processes, scenario.processAvailability);
+export function technicalSupport(route, tools, inputs, processes) {
   const toolIndex = index(tools, 'tool'), inputIndex = index(inputs, 'input'), processIndex = index(processes, 'process');
-  const results = project.workItems.map(work => {
-    const routes = work.routes.map(route => {
       const missing = [], unknown = [];
       for (const id of route.inputIds) {
         const input = ref(inputIndex, id, 'input');
@@ -198,6 +191,17 @@ export function snapshot(project, studio, scenario, capabilities) {
         if (process.available === false) missing.push(`Process: ${process.label}`);
         else if (process.available !== true) unknown.push(`Process unverified: ${process.label}`);
       }
+  return {missing, unknown};
+}
+export function snapshot(project, studio, scenario, capabilities) {
+  const people = validateScenario(project, studio, capabilities, scenario);
+  const apply = (records, overrides) => records.map(record => ({...record, available: Object.hasOwn(overrides, record.id) ? overrides[record.id] : record.available}));
+  const tools = apply(studio.tools, scenario.toolAvailability).map(t => ({...t, capabilitySupport: {...t.capabilitySupport, ...scenario.toolSupportOverrides[t.id]}}));
+  const inputs = apply(project.inputs, scenario.inputAvailability);
+  const processes = apply(studio.processes, scenario.processAvailability);
+  const results = project.workItems.map(work => {
+    const routes = work.routes.map(route => {
+      const {missing, unknown} = technicalSupport(route, tools, inputs, processes);
       const capable = people.filter(p => route.personCapabilities.every(c => p.capabilities.includes(c)));
       const providers = capable.filter(p => p.willing === true && p.availabilityHours > 0);
       if (!capable.length) (studio.rosterComplete === true ? missing : unknown).push(`No declared contributor: ${route.personCapabilities.join(', ') || 'roster incomplete'}`);

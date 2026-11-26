@@ -1,4 +1,4 @@
-import {validatePlan} from './planner.mjs';
+import {validateFeasibility} from './feasibility.mjs';
 const formats = {project:null, studio:'rpgtk-studio-planning-draft', scenarios:'rpgtk-studio-scenarios-draft', capabilities:'rpgtk-capability-ledger', intake:'rpgtk-owner-intake'};
 export async function readPlan(manifestURL, fetcher = fetch) {
   const manifestAddress = new URL(manifestURL, globalThis.location?.href);
@@ -15,7 +15,8 @@ export async function readPlan(manifestURL, fetcher = fetch) {
   const loadedManifest = await read(manifestAddress), manifest = loadedManifest.data;
   if (manifest.format !== 'rpgtk-planning-project' || manifest.version !== 1) throw Error('Unsupported project manifest.');
   const result = {manifest, manifestURL:manifestAddress.href, fingerprints:{manifest:loadedManifest.digest}, recordURLs:{}};
-  for (const key of Object.keys(formats)) {
+  const keys=[...Object.keys(formats),...(manifest.records?.feasibility?['feasibility']:[])];
+  for (const key of keys) {
     const reference = manifest.records?.[key];
     if (!reference || typeof reference.path !== 'string') throw Error(`Missing ${key} reference.`);
     const url = new URL(reference.path, manifestAddress);
@@ -27,6 +28,6 @@ export async function readPlan(manifestURL, fetcher = fetch) {
     result[key] = record.data; result.fingerprints[key] = record.digest; result.recordURLs[key] = record.url;
   }
   if (manifest.id !== result.project.id || manifest.revision !== result.project.planningRevision) throw Error('Manifest/project identity mismatch.');
-  validatePlan(result);
+  validateFeasibility(result);
   return result;
 }
