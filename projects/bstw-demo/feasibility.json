@@ -146,7 +146,17 @@
           "value": "digital-tk3"
         }
       },
-      "BSTW-STORY": null,
+      "BSTW-STORY": {
+        "anyOf": [
+          {
+            "equals": {
+              "assumption": "project.target",
+              "value": "digital-tk3"
+            }
+          },
+          null
+        ]
+      },
       "BSTW-PRG-START": {
         "equals": {
           "assumption": "project.target",
@@ -241,7 +251,17 @@
           "value": "digital-tk3"
         }
       },
-      "BSTW-W-STORY": null,
+      "BSTW-W-STORY": {
+        "anyOf": [
+          {
+            "equals": {
+              "assumption": "project.target",
+              "value": "digital-tk3"
+            }
+          },
+          null
+        ]
+      },
       "BSTW-W-TILE-ISLAND": {
         "equals": {
           "assumption": "project.target",
@@ -829,7 +849,7 @@
       "A05": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
       "BSTW-ART-ISLAND": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
       "BSTW-ART-TOWN": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
-      "BSTW-STORY": "Applicability outside the recovered digital scope has not been decided.",
+      "BSTW-STORY": "The recovered digital game requires story/clue/ending briefs; their applicability to a physical adaptation is not decided.",
       "BSTW-PRG-START": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
       "BSTW-PRG-ROUTE": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
       "BSTW-PRG-END": "This recorded deliverable or authoring tool serves the digital TK3 target; a physical-only adaptation does not require this TK3 output.",
