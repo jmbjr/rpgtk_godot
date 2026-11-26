@@ -1,6 +1,12 @@
 # Project tracks and proposed usability work
 
-## Current owner direction — November 22, 2026
+## Current owner direction
+
+### Capability foundations first — November 25, 2026
+
+Production work in #146 is on hold. The next milestone is [assumption-driven capability feasibility](CAPABILITY_PROGRESSION.md). Keep the capability progression model (outcomes, profiles, dependencies and alternative routes), studio support model (people/tools/processes, willingness and availability), and scenario assumptions separate. The director view derives applicability, technical/input/quality blockers and current/later provider support. Neither the technical model nor its viewing windows form a schedule or execution plan.
+
+#149 recovered and persisted the intake and implemented an initial readiness viewer. It does not yet implement conditional applicability, artwork-quality profiles or availability-window evaluation. A hypothetical physical-only target must remove irrelevant video execution from the active view while preserving justified shared art needs and exposing unresolved adaptation requirements. Undo, quick color switching and layers are owner-raised quality needs to model; a basic pencil proof does not establish production suitability. [The logical example](planning/feasibility-example.json) supplies acceptance cases without changing the approved game or actual studio facts.
 
 ### Authoring workflow clarification — November 23, 2026
 
@@ -14,9 +20,10 @@ contributor skills, authoring capabilities and implemented tool support distinct
 The [project authoring workflow](AUTHORING_WORKFLOW.md) owns planned W01-W07,
 the minimal durable relationships and acceptance/handoff checks. The
 [authoring graph](AUTHORING_CAPABILITIES.md) retains C01/C13-C17 prerequisites
-and the draw/import/open alternatives for tile supply. The next authoring
+and the draw/import/open alternatives for tile supply. The retained production
 increment is request-bound tile creation/editing: carry requirement/work context
-through C01 and save/reopen a proposed variant. Shared review/accounts and build
+through C01 and save/reopen a proposed variant. It is paused behind the November 25
+capability-foundation milestone above. Shared review/accounts and build
 services remain later work. This clarification does not settle open creative
 intake choices, authorize game asset creation or claim these features exist.
 
@@ -98,7 +105,7 @@ They are not separate website modes that a visitor should have to learn.
 | **Format accuracy and evidence** | Trust what the viewer says and see where knowledge is incomplete | #27 specifications; #41 Toolkit 2 converter parity; #63 historical matrix/specimens; #79 native Toolkit 3. Initial GAM work #80 is closed | Historical layouts, projection, schema/conformance completeness and original editor/save/runtime comparisons; the 57-row TK2 ledger includes 3 partial and 2 evidence-blocked rows |
 | **Generic Toolkit 3 execution** | Try supported authored behavior and diagnose a failure at its source | #123. Startup/language/title/canvas/audio in #128–#131; entry/tasks/live moving entities in #133–#135 are merged and deployed | Owner acceptance of authored boards; inline tasks, pathfinding and verified foreground handoff, broader language/objects, native combat/plugins and save/load remain separate work |
 | **Toolkit 2 execution** | Eventually try older games using verified shared systems | Next runtime phase in #2/#123, after the current generic TK3 sequence; #41/#63 provide format evidence | Define a source-backed playable slice; decoder coverage does not establish runtime compatibility |
-| **Project authoring and asset fulfillment** | Find suitable asset work, submit attributed variants, review fulfillment and select content for a build | Owner direction from #142 and #144's C graph; planned [W01-W07 workflow](AUTHORING_WORKFLOW.md) and next handoff | Request-bound C01 round trip first; review and build selection later; all are planned, with creative intake decisions retained separately |
+| **Project authoring and asset fulfillment** | Find suitable asset work, submit attributed variants, review fulfillment and select content for a build | Owner direction from #142 and #144's C graph; planned [W01-W07 workflow](AUTHORING_WORKFLOW.md) and next handoff | Assumption-driven capability feasibility first; #146 production work paused; review/build services remain planned and creative intake decisions are preserved |
 | **DODGE print-and-play / TTS** | Turn selected content into physical or tabletop experiments | #33. Tile identity pilot #31 closed; selected-tileset PDF exists; generated fixture PDF/TTS checks are experimental | Owner-selected conversion scope and verified rules; a tileset PDF does not establish whole-game conversion |
 | **DODGE video-game profile / Godot** | Reuse verified game structure/behavior in a future toolkit | #1, downstream of generic TK3 then TK2 compatibility in #2 | Multiple verified games, stable source identities and a usable target mapping; no general playable Godot export exists today |
 
@@ -272,3 +279,4 @@ work. Automated evidence and owner usability acceptance remain separate.
 ## Reconciled intake and studio planning
 
 The original intake has been recovered from both shared transcripts, including A01–A06, the ordered additions and authoring C02–C12. [The project manifest](../projects/bstw-demo/project.manifest.json) is the durable entry point; [the intake](../projects/bstw-demo/INTAKE.md) retains source authority and open choices. #142’s earlier waiting status is historical. [Studio director](../planning/index.html) derives milestones and route readiness from the linked project, studio, capability and scenario records. Actual roster/hours, creative briefs, production verification, asset acceptance and deployment remain separate. #149 carries this planning integration; #146 remains the independent local tile editor proposal.
+

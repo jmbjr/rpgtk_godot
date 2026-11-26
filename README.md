@@ -355,3 +355,6 @@ the private diagnostic ZIP and its wandering program have not been validated.
 ## Studio planning
 
 Open [Studio director](planning/index.html) to derive a project’s milestones, asset needs, route blockers and scenario comparisons from linked records. Start with [the reconciled Bruce demo plan](projects/bstw-demo/README.md), whose original intake, A01–A06 launch bundle and capability graph are preserved. [Studio record ownership and derivation](docs/STUDIO_PLANNING.md) explains persistence and evidence boundaries. No game artwork or accepted build is supplied.
+
+The current next milestone is [capability progression and assumption-driven feasibility](docs/CAPABILITY_PROGRESSION.md): technical dependencies and alternative production routes, independent studio support/availability, and explicit scenario assumptions that determine what applies. This foundation is not a schedule. #146 production/editor integration is on hold; the current director is the initial readiness implementation, with conditional applicability and quality/time-window evaluation still planned.
+

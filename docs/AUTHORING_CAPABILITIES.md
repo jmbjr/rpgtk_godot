@@ -8,8 +8,8 @@ are tracked separately from prerequisites.
 The [project authoring workflow](AUTHORING_WORKFLOW.md) adds planned W01-W07
 capabilities for connecting requirements to work, contributor skills, proposed
 asset variants, reviews and build selections. These are planned authoring
-tasks, separate from the shipped Explorer inventory. Start there for the next
-implementation handoff: request-bound tile authoring with C01.
+tasks, separate from the shipped Explorer inventory. The request-bound C01 production handoff is retained but paused. Start with the
+[capability progression foundation](CAPABILITY_PROGRESSION.md) for the current next milestone.
 
 ## A01 tile and tileset dependencies
 
@@ -95,3 +95,8 @@ later terrain and sprite assets.
 The original intake graph is now preserved in [the capability ledger](../projects/bstw-demo/capabilities.json) and [source recovery](../projects/bstw-demo/INTAKE.md). It defines C02 animation frames, C03 playable character, C04 walkable board, C05 launch configuration, C06 resolved packaging, C07 board connections, C08 board object, C09 procedural dialogue/logic, C10 placement/activation, C11 stateful interaction and C12 progress/completion. These are documented requirements and mappings, not shipped authoring support claims.
 
 Keep the current C01/C13–C17 tile-supply refinement above. The old broad C01 artwork node was decomposed; imported artwork need not pass through a web pencil. Use qualified `authoring:C01` and `player:C01` identities when joining project data because the initial player-outcome ledger used the same bare C numbers. A05 is Merlin’s Cave, A02 is four-direction sprite artwork, A03 is four ANMs, A04 is the TEM and A06 is the GAM/launch package. [Project records](../projects/bstw-demo/README.md) own that recovered asset ledger.
+
+## Production profiles and applicability — proposed foundation
+
+The owner has paused #146 and identified undo, quick color switching and layers as missing production-workflow needs. A successful basic C01 pencil/save/reopen check does not establish every required quality of a selected artwork profile. [CAPABILITY_PROGRESSION.md](CAPABILITY_PROGRESSION.md) owns the proposed separation of capabilities, profiles, conditional dependencies and actual tool/process evidence. It does not silently redefine C01 or require every quality on every route; imported/external art remains an alternative when its relevant constraints are satisfied. The active target can make a video execution/export route irrelevant while leaving digital artwork relevant. Current #149 readiness flags do not yet perform this conditional/profile evaluation.
+

@@ -167,9 +167,13 @@ identities and mappings where appropriate. That evidence does not establish
 W01-W07, a contributor/review service, a complete game conversion, or general
 playable Godot export. This plan does not change the DODGE specification.
 
-## Next implementation handoff
+## Current foundational handoff — November 25, 2026
 
-The next increment should be **request-bound tile authoring**: establish the
+The owner has paused production implementation in #146. The next milestone is [assumption-driven capability feasibility](CAPABILITY_PROGRESSION.md): separate the capability progression model from studio support, add explicit applicability/quality/availability assumptions, and derive explainable current/later opportunities. This is not a schedule or an execution plan. Preserve the recovered intake and reuse #149’s durable loading/identity/persistence machinery. The contract’s target/profile/availability acceptance cases come before automatically resuming tile-editor integration.
+
+## Paused request-bound tile handoff
+
+The retained production increment is **request-bound tile authoring**: establish the
 minimal durable request-to-variant contract and carry it through C01's
 create/open/save flow. C01 remains the first drawing capability on the
 documented A01 production path. W03/W04 supply its assignment and submission
@@ -238,3 +242,4 @@ Neither should be reported as delivered by the first increment's tests.
 ## Studio records and director projection
 
 [Studio director](../planning/index.html) opens revision-pinned project/studio/scenario records and derives readiness without embedding a second dataset. [STUDIO_PLANNING.md](STUDIO_PLANNING.md) owns that contract; [the reconciled project](../projects/bstw-demo/README.md) owns its manifest and source intake. The recovered A01–A06 launch bundle and authoring C02–C12 are preserved alongside the later tile refinement. Local planning, assumption export/import and evidence counts do not implement shared W05/W06 review/build services or establish actual game fulfillment.
+
