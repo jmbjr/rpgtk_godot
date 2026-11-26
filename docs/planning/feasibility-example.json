@@ -120,9 +120,8 @@
     },
     {
       "id": "example:video-launch",
-      "outcome": "Configure video-game launch/execution",
+      "outcome": "Run video-game behavior from an authored launch bundle",
       "capabilityRefs": [
-        "authoring:C05",
         "execution:play"
       ],
       "appliesWhen": {
@@ -192,7 +191,8 @@
       "toolId": "example:pencil-tool",
       "contributorCapability": "example:art-creation",
       "qualityRequirementsFromSelectedProfile": true,
-      "inputs": []
+      "inputs": [],
+      "capabilitySupportFromSelectedProfile": true
     },
     {
       "id": "example:external-art",
@@ -203,7 +203,8 @@
       "toolId": "example:external-editor",
       "contributorCapability": "example:art-creation",
       "qualityRequirementsFromSelectedProfile": true,
-      "inputs": []
+      "inputs": [],
+      "capabilitySupportFromSelectedProfile": true
     },
     {
       "id": "example:video-route",
@@ -268,6 +269,10 @@
           "undo": "unverified",
           "quick-color-switch": "unverified",
           "editable-layers": "unverified"
+        },
+        "capabilitySupport": {
+          "authoring:C01": "unverified",
+          "example:create-compatible-artwork": "unverified"
         }
       },
       {
@@ -278,12 +283,19 @@
           "undo": "unverified",
           "quick-color-switch": "unverified",
           "editable-layers": "unverified"
+        },
+        "capabilitySupport": {
+          "authoring:C01": "unverified",
+          "example:create-compatible-artwork": "unverified"
         }
       },
       {
         "id": "example:video-runtime",
         "access": null,
-        "support": "unverified"
+        "support": "unverified",
+        "capabilitySupport": {
+          "execution:play": "unverified"
+        }
       },
       {
         "id": "example:physical-exporter",
@@ -318,7 +330,11 @@
             "quick-color-switch": "missing",
             "editable-layers": "missing"
           },
-          "provenance": "Hypothetical support assumptions, not shipped #146/main evidence."
+          "provenance": "Hypothetical support assumptions, not shipped #146/main evidence.",
+          "capabilitySupport": {
+            "authoring:C01": "verified",
+            "example:create-compatible-artwork": "verified"
+          }
         }
       },
       "viewingHorizon": "current",
@@ -379,7 +395,11 @@
             "quick-color-switch": "verified",
             "editable-layers": "verified"
           },
-          "provenance": "Hypothetical complete quality support; no actual editor was verified."
+          "provenance": "Hypothetical complete quality support; no actual editor was verified.",
+          "capabilitySupport": {
+            "authoring:C01": "verified",
+            "example:create-compatible-artwork": "verified"
+          }
         }
       },
       "viewingHorizon": "current",
@@ -420,6 +440,33 @@
       "acceptance": "Implement and verify each selected quality against the exact production profile before recording new support. External routes remain alternatives.",
       "note": "This is a technical enabling path, not permission to resume #146. Completing or assuming work does not automatically verify its tool outputs."
     }
+  ],
+  "capabilityDefinitions": [
+    {
+      "id": "example:create-compatible-artwork",
+      "kind": "production",
+      "label": "Create compatible editable artwork",
+      "status": "Proposed general capability; does not rename authoring:C01."
+    },
+    {
+      "id": "example:art-creation",
+      "kind": "contributor",
+      "label": "Create the selected artwork"
+    },
+    {
+      "id": "example:software-development",
+      "kind": "contributor",
+      "label": "Develop and verify a selected tool quality"
+    },
+    {
+      "id": "example:game-configuration",
+      "kind": "contributor",
+      "label": "Configure and exercise a digital game"
+    },
+    {
+      "id": "example:component-production",
+      "kind": "contributor",
+      "label": "Produce physical game components"
+    }
   ]
 }
-
