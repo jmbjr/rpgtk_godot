@@ -134,7 +134,7 @@ function staffing(route, people, studio, horizon, horizons) {
     else if(w.endDay>horizon.startDay)unknown.push(`${p.name}: partial overlap does not establish capacity in this horizon`);
   }
   const state=providers.length?'supported':unknown.length?'unverified':laterProviders.length?'later':capable.length||studio.rosterComplete?'unavailable':'unverified';
-  return {state,providers,laterProviders,unknown,capableIds:capable.map(p=>p.id),reason:!capable.length?'No declared contributor; roster completeness is separate evidence':state==='later'?'Known offer is later than the selected horizon':state==='unavailable'?'No positive willing capacity offer in this horizon':null};
+  return {state,providers,laterProviders,offers:capable.filter(p=>providers.includes(p.id)||laterProviders.includes(p.id)).map(p=>({personId:p.id,name:p.name,hours:p.availabilityHours,window:p.availabilityWindow})),unknown,capableIds:capable.map(p=>p.id),reason:!capable.length?'No declared contributor; roster completeness is separate evidence':state==='later'?'Known offer is later than the selected horizon':state==='unavailable'?'No positive willing capacity offer in this horizon':null};
 }
 function profileCheck(route,m,s,tools,values) {
   const id=values[m.profileAssumption],missing=[],unknown=[];
@@ -181,10 +181,10 @@ export function derivePlan(plan,s) {
     applicability.reason=m.applicabilityReasons.assets[w.requirement.id]||'No applicability rationale recorded';
     const routes=w.routes.map(r=>routeResult(r,m.routeRules.find(x=>x.workId===w.id&&x.routeId===r.id),needCondition));
     const active=routes.filter(r=>r.state!=='not-applicable');
-    return {...w,applicability,routes,state:applicability.value===false?'not-applicable':anyState(active),definitionGap:!Object.hasOwn(m.applicability.work,w.id)?'Work applicability has no explicit refinement; inherits asset condition':null};
+    return {...w,applicability,routes,missing:!active.length&&applicability.value!==false?['Applicable need has no applicable recorded route']:[],state:applicability.value===false?'not-applicable':anyState(active),definitionGap:!Object.hasOwn(m.applicability.work,w.id)?'Work applicability has no explicit refinement; inherits asset condition':null};
   });
   const assets=base.assets.map(a=>({...a,applicability:applies(m.applicability.assets[a.id]??null),work:results.filter(w=>w.requirement.id===a.id)}));
-  const milestones=base.milestones.map(m=>({...m,applicableAssetIds:m.assetIds.filter(id=>assets.find(a=>a.id===id).applicability.value!==false),notApplicable:m.assetIds.every(id=>assets.find(a=>a.id===id).applicability.value===false)}));
+  const milestones=base.milestones.map(m=>({...m,assets:assets.filter(a=>m.assetIds.includes(a.id)),acceptanceRecorded:m.assetIds.filter(id=>assets.find(a=>a.id===id).applicability.value!==false&&assets.find(a=>a.id===id).acceptedRevisionCount>0).length,applicableAssetIds:m.assetIds.filter(id=>assets.find(a=>a.id===id).applicability.value!==false),notApplicable:m.assetIds.every(id=>assets.find(a=>a.id===id).applicability.value===false)}));
   const contention=base.people.map(p=>({personId:p.id,name:p.name,hours:p.availabilityHours,window:p.availabilityWindow,workIds:results.filter(w=>w.routes.some(r=>r.state==='startable'&&r.providers.includes(p.id))).map(w=>w.id)})).filter(p=>p.workIds.length>1);
   const dependencyGates=m.dependencyGates.map(g=>{
     const applicability=applies(g.when),members=g.members.map(e=>{const a=applies(e.when),input=base.inputs.find(i=>i.id===e.inputId);return {...e,applicability:a,value:a.value===false?null:a.value===null?null:input?input.available:null};});
@@ -192,7 +192,7 @@ export function derivePlan(plan,s) {
     return {...g,applicability,members,value};
   });
   const questions=m.questions.map(q=>({...q,applicability:applies(q.when),dependencies:q.dependencyGateIds.map(id=>dependencyGates.find(g=>g.id===id)),routes:q.routes.map(r=>routeResult(r,{when:r.when,useArtProfile:q.useArtProfile,inputConditions:{}},q.when))}));
-  return {...base,evaluatorVersion:EVALUATOR_VERSION,feasibilityRef:s.feasibilityRef,values,horizon,results,assets,milestones,contention,questions,dependencyGates,
+  return {...base,evaluatorVersion:EVALUATOR_VERSION,readinessEvaluatorVersion:base.evaluatorVersion,feasibilityRef:s.feasibilityRef,values,horizon,results,assets,milestones,contention,questions,dependencyGates,
     assumptionTrace:m.assumptions.map(d=>({...d,value:values[d.id],basis:Object.hasOwn(s.projectAssumptions,d.id)?'scenario hypothesis':'recorded baseline'})),
     counts:Object.fromEntries(['startable','blocked','unverified','not-applicable'].map(k=>[k,results.filter(w=>w.state===k).length])),
     definitionGaps:m.definitionGaps};

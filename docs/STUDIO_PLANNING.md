@@ -53,7 +53,7 @@ Validation rejects unknown references, duplicate identities, mismatched revision
 
 `projects/bstw-demo/verify-plan.mjs` checks recovered identity and launch boundaries, five scenarios, OR/AND behavior, multiple blockers, willingness/capacity, access versus support, contention, no output chaining, partial/stale reviews, invalid data, file digests and deterministic reload. `scripts/check-studio-browser.mjs` exercises normal entry, assumptions, export/import, text escaping, record reloading and narrow layout. CI stages linked records and reruns checks on the staged site. Deployment and actual owner game acceptance remain separate.
 
-Next: implement the bounded [assumption-driven feasibility milestone](CAPABILITY_PROGRESSION.md#next-milestone-assumption-driven-feasibility) before automatically resuming production work. Detailed briefs and actual studio declarations/availability remain explicit inputs, not reasons to repeat the intake. Keep the manifest, supporting docs and capability mappings aligned whenever scope/support changes.
+Next: iterate the capability/profile/output gaps exposed by the [first feasibility implementation](CAPABILITY_PROGRESSION.md#first-implementation-assumption-driven-feasibility). #146 remains paused. Detailed briefs and actual studio declarations/availability remain explicit inputs, not reasons to repeat the intake. Keep the manifest, supporting docs and capability mappings aligned whenever scope/support changes.
 
 
 ## Feasibility record and limits

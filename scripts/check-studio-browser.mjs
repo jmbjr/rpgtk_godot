@@ -33,6 +33,8 @@ try {
  assert.doesNotMatch(await page.locator('#startable').textContent(),/Draw one cave floor tile/);
  assert.match(await page.locator('#feasibility-results').textContent(),/Profile quality missing: undo/);
  assert.match(await page.locator('#feasibility-results').textContent(),/Profile needs refinement/);
+ await page.locator('[data-probe="pencil-probe"]').evaluate(el=>el.open=true);
+ await page.locator('#feasibility').screenshot({path:resolve(out,'production-profile.png')});
  await page.selectOption('select[data-kind="assumption"][data-id="project.artProfile"]','basic-pixel');
  await page.selectOption('select[data-kind="window"][data-id="assumed-artist"]','later');
  assert.doesNotMatch(await page.locator('#startable').textContent(),/Draw one cave floor tile/);
@@ -49,6 +51,18 @@ try {
  assert.match(await page.locator('#milestone-cards').textContent(),/Not applicable/);
  await page.locator('#excluded-results').evaluate(el=>el.open=true);
  await page.screenshot({path:resolve(out,'physical-scenario.png'),fullPage:true});
+ await page.selectOption('select[data-kind="assumption"][data-id="project.artProfile"]','production-art');
+ await page.selectOption('select[data-kind="window"][data-id="assumed-artist"]','later');
+ await page.selectOption('select[data-kind="horizon"]','later');
+ const hypotheticalDownload=page.waitForEvent('download');await page.click('#save');const hypotheticalPath=await (await hypotheticalDownload).path();
+ await page.reload();await page.waitForFunction(()=>document.querySelector('#identity').textContent.includes('Scenario S0'));
+ await page.setInputFiles('#load',hypotheticalPath);await page.waitForFunction(()=>document.querySelector('#identity').textContent.includes('Scenario S3'));
+ assert.equal(await page.locator('select[data-kind="assumption"][data-id="project.target"]').inputValue(),'physical-only');
+ assert.equal(await page.locator('select[data-kind="assumption"][data-id="project.artProfile"]').inputValue(),'production-art');
+ assert.equal(await page.locator('select[data-kind="horizon"]').inputValue(),'later');
+ assert.equal(await page.locator('select[data-kind="window"][data-id="assumed-artist"]').inputValue(),'later');
+ assert.equal(await page.locator('[data-asset="A05"]').count(),0);
+ await page.click('#restore');
  await page.selectOption('select[data-kind="assumption"][data-id="project.target"]','digital-tk3');
  await page.selectOption('select[data-kind="assumption"][data-id="project.requireVideoExecution"]','false');
  assert.match(await page.locator('#error').textContent(),/Contradictory scenario/);

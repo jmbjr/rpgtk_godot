@@ -2,7 +2,7 @@
 
 Owner direction: November 25, 2026. This is the next foundation milestone. Production implementation in #146 is on hold. The goal is to help a small studio director understand what can be pursued under explicit assumptions without manually reconnecting every requirement.
 
-This document defines a proposed model and acceptance contract. The merged #149 viewer provides a useful first readiness evaluator; it does not yet implement the applicability, quality-profile and time-window model specified here. The [illustrative records](planning/feasibility-example.json) are a design/acceptance example, not another game definition or an input accepted by the current viewer.
+This document defines the model and acceptance contract. The first feasibility increment extends #149 with applicability, quality-profile and relative time-window evaluation; [STUDIO_PLANNING.md](STUDIO_PLANNING.md) records the implemented boundary and remaining refinement. The [illustrative records](planning/feasibility-example.json) are a design/acceptance example, not another game definition or an input accepted by the current viewer.
 
 ## Three connected models
 

@@ -21,6 +21,8 @@ const prod=s();prod.projectAssumptions['project.artProfile']='production-art';r=
 assert.equal(work(r).routes[0].technical.state,'blocked');assert(work(r).routes[0].missing.some(x=>x.includes('undo')));
 assert.equal(work(r).routes[1].technical.state,'unverified');assert.equal(work(r).state,'unverified','Unknown external OR route prevents universal blocked claim');
 assert(work(r).routes[0].unknown.some(x=>x.includes('needs refinement')));
+const external=s();external.toolAvailability['rpgtk-pencil']=false;external.toolAvailability['external-art-editor']=true;external.toolSupportOverrides['external-art-editor']={'authoring:C01':'verified'};external.toolQualityOverrides['external-art-editor']={'save-reopen':'verified'};assert.equal(work(compute(external)).state,'startable','A viable external route does not require pencil integration');
+const exactProduction=clone(plan);delete exactProduction.feasibility.profiles.find(p=>p.id==='production-art').gap;external.projectAssumptions['project.artProfile']='production-art';external.toolQualityOverrides['external-art-editor']=Object.fromEntries(exactProduction.feasibility.qualities.map(q=>[q.id,'verified']));assert.equal(work(compute(external,exactProduction)).state,'startable','Synthetic refined profile can be met by one verified external tool');
 const later=s();later.addPeople.find(p=>p.id==='assumed-artist').availabilityWindow='later';r=compute(later);
 assert.equal(work(r).routes[0].technical.state,'startable');assert.equal(work(r).routes[0].staff.state,'later');assert.equal(work(r).routes[0].staff.laterProviders[0],'assumed-artist');assert.notEqual(work(r).state,'startable');
 later.viewingHorizon='later';assert.equal(work(compute(later)).state,'startable');
@@ -34,8 +36,11 @@ const conditional=clone(plan),rule=conditional.feasibility.routeRules.find(r=>r.
 rule.inputConditions['cave-art-brief']={equals:{assumption:'project.target',value:'physical-only'}};
 const cs=s();cs.inputAvailability['cave-art-brief']=false;r=compute(cs,conditional);assert.equal(work(r).routes[0].state,'startable');assert.equal(work(r).routes[0].edges[0].value,false);
 cs.projectAssumptions['project.target']=null;r=compute(cs,conditional);assert.equal(work(r).routes[0].state,'unverified');assert(work(r).routes[0].unknown.some(x=>x.includes('Dependency applicability')));
+const noRoute=clone(plan);for(const rule of noRoute.feasibility.routeRules.filter(x=>x.workId==='BSTW-W-TILE-CAVE'))rule.when=false;
+assert.equal(work(compute(s(),noRoute)).state,'blocked');assert.match(work(compute(s(),noRoute)).missing[0],/no applicable recorded route/);
 // AND and OR gates retain inactive/unknown members and do not count an empty branch as success.
 const gate=clone(plan);gate.feasibility.dependencyGates[0].operator='anyOf';assert.equal(compute(s(),gate).dependencyGates[0].value,false);
+gate.feasibility.dependencyGates[0].members.push({id:'known-fixture',when:true,inputId:'synthetic-tool-fixtures',reason:'Synthetic OR witness only'});assert.equal(compute(s(),gate).dependencyGates[0].value,true);gate.feasibility.dependencyGates[0].operator='allOf';assert.equal(compute(s(),gate).dependencyGates[0].value,false);gate.feasibility.dependencyGates[0].members.pop();
 gate.feasibility.dependencyGates[0].members[0].when=false;assert.equal(compute(s(),gate).dependencyGates[0].value,null);
 for(const mutate of [
  p=>delete p.scenarios.scenarios[0].feasibilityRef,
@@ -53,6 +58,7 @@ for(const mutate of [
  p=>p.feasibility.assumptions[0].baseline='invalid',
 ]){const p=clone(plan);mutate(p);assert.throws(()=>validateFeasibility(p));}
 assert(r.assets.every(a=>a.acceptedRevisionCount===0));assert.equal(normal.inputs.find(i=>i.id==='cave-tileset').available,false);
+const persisted=clone(physical);persisted.projectAssumptions['project.artProfile']='production-art';persisted.addPeople[0].availabilityWindow='later';persisted.viewingHorizon='later';assert.deepEqual(compute(JSON.parse(JSON.stringify(persisted))),compute(persisted));
 assert.deepEqual(compute(JSON.parse(JSON.stringify(s()))),normal,'Exact scenario JSON reopen reproduces explanations');
 const legacy=clone(plan);delete legacy.feasibility;assert.match(compute(s(),legacy).modelGap,/No feasibility record/);
 console.log('PASS: tri-state predicates; target exclusions; conditional AND/OR edges; shared art/refinement gaps; quality/tool alternatives; independent staffing; later/overlap/unknown capacity; contradictory/stale/malformed records; deterministic persistence; no acceptance or output chaining.');
