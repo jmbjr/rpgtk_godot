@@ -1,0 +1,472 @@
+{
+  "format": "rpgtk-capability-feasibility-example",
+  "version": 1,
+  "status": "proposed-contract-not-readable-by-current-director",
+  "id": "example:assumption-driven-feasibility",
+  "revision": 1,
+  "scope": "Synthetic acceptance example. This is not a new game, an approved physical adaptation, an actual studio roster or a schedule.",
+  "baselineRefs": {
+    "project": {
+      "id": "bstw-owner-demo",
+      "revision": 3
+    },
+    "studio": {
+      "id": "bstw-owner-studio",
+      "revision": 2
+    },
+    "capabilities": {
+      "id": "rpgtk-authoring-ledger",
+      "revision": 2
+    }
+  },
+  "assumptionDefinitions": [
+    {
+      "id": "project.target",
+      "owner": "project",
+      "valueType": "enum",
+      "allowedValues": [
+        "digital-tk3",
+        "physical-only"
+      ],
+      "baseline": "digital-tk3",
+      "source": "Recovered intake; physical-only is a hypothetical override."
+    },
+    {
+      "id": "project.artProfile",
+      "owner": "project",
+      "valueType": "enum",
+      "allowedValues": [
+        "example:basic-pixel",
+        "example:production-art"
+      ],
+      "baseline": null,
+      "source": "Owner requested undo, quick color changes and layers; exact profile acceptance is still to be bounded."
+    },
+    {
+      "id": "project.durationIntentDays",
+      "owner": "project",
+      "valueType": "nonnegative-number",
+      "baseline": null,
+      "source": "Context/constraint only. No automatic scope pruning or finishability claim."
+    }
+  ],
+  "horizons": [
+    {
+      "id": "current",
+      "fromOffsetDays": 0,
+      "toOffsetDaysExclusive": 14
+    },
+    {
+      "id": "later",
+      "fromOffsetDays": 14,
+      "toOffsetDaysExclusive": 60
+    }
+  ],
+  "timeBasis": {
+    "kind": "relative-viewing-windows",
+    "calendarOrigin": null,
+    "meaning": "Hypothetical windows for comparing support. Capacity is not spread uniformly or allocated to tasks."
+  },
+  "profiles": [
+    {
+      "id": "example:basic-pixel",
+      "revision": 1,
+      "capabilityRef": "authoring:C01",
+      "requiredQualities": [
+        "save-reopen"
+      ],
+      "purpose": "A bounded diagnostic pixel editing proof; no claim of production usability."
+    },
+    {
+      "id": "example:production-art",
+      "revision": 1,
+      "capabilityRef": "example:create-compatible-artwork",
+      "requiredQualities": [
+        "save-reopen",
+        "undo",
+        "quick-color-switch",
+        "editable-layers"
+      ],
+      "purpose": "Owner-feedback production profile; exact operations and acceptance need definition."
+    }
+  ],
+  "qualities": [
+    {
+      "id": "save-reopen",
+      "acceptance": "Recover the exact editable content after saving and reopening."
+    },
+    {
+      "id": "undo",
+      "acceptance": "Undo a content edit and verify restoration; history depth and redo scope remain to be bounded."
+    },
+    {
+      "id": "quick-color-switch",
+      "acceptance": "Switch repeatedly among intended colors during editing without cumbersome re-entry; interaction acceptance remains to be bounded."
+    },
+    {
+      "id": "editable-layers",
+      "acceptance": "Preserve independently editable layers through save/reopen; exact layer operations and source format remain to be bounded."
+    }
+  ],
+  "needs": [
+    {
+      "id": "example:source-art",
+      "outcome": "Produce compatible editable artwork",
+      "appliesWhen": {
+        "constant": true
+      },
+      "profileFromAssumption": "project.artProfile",
+      "note": "Shared source capability. Target-specific dimensions/format still require an explicit profile or adaptation."
+    },
+    {
+      "id": "example:video-launch",
+      "outcome": "Run video-game behavior from an authored launch bundle",
+      "capabilityRefs": [
+        "execution:play"
+      ],
+      "appliesWhen": {
+        "equals": {
+          "assumptionId": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "note": "An illustrative implementation need. Original A06 remains the TK3 GAM requirement."
+    },
+    {
+      "id": "example:physical-output",
+      "outcome": "Produce compatible physical playing components",
+      "appliesWhen": {
+        "equals": {
+          "assumptionId": "project.target",
+          "value": "physical-only"
+        }
+      },
+      "definitionState": "unverified-adaptation",
+      "note": "No dimensions, print constraints, physical rules or approved whole-game adaptation are supplied."
+    }
+  ],
+  "dependencyGates": [
+    {
+      "id": "example:source-gate",
+      "forNeed": "example:video-launch",
+      "logic": "all-of",
+      "members": [
+        {
+          "needId": "example:source-art",
+          "appliesWhen": {
+            "equals": {
+              "assumptionId": "project.target",
+              "value": "digital-tk3"
+            }
+          },
+          "reason": "Required artwork must exist for this selected route; no game assets are supplied."
+        }
+      ]
+    },
+    {
+      "id": "example:physical-source-gate",
+      "forNeed": "example:physical-output",
+      "logic": "all-of",
+      "members": [
+        {
+          "needId": "example:source-art",
+          "appliesWhen": {
+            "equals": {
+              "assumptionId": "project.target",
+              "value": "physical-only"
+            }
+          },
+          "reason": "Artwork may be shared, while physical output constraints remain unverified."
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "example:pencil",
+      "fulfillsNeed": "example:source-art",
+      "appliesWhen": {
+        "constant": true
+      },
+      "toolId": "example:pencil-tool",
+      "contributorCapability": "example:art-creation",
+      "qualityRequirementsFromSelectedProfile": true,
+      "inputs": [],
+      "capabilitySupportFromSelectedProfile": true
+    },
+    {
+      "id": "example:external-art",
+      "fulfillsNeed": "example:source-art",
+      "appliesWhen": {
+        "constant": true
+      },
+      "toolId": "example:external-editor",
+      "contributorCapability": "example:art-creation",
+      "qualityRequirementsFromSelectedProfile": true,
+      "inputs": [],
+      "capabilitySupportFromSelectedProfile": true
+    },
+    {
+      "id": "example:video-route",
+      "fulfillsNeed": "example:video-launch",
+      "appliesWhen": {
+        "equals": {
+          "assumptionId": "project.target",
+          "value": "digital-tk3"
+        }
+      },
+      "inputs": [
+        "example:authored-launch-bundle"
+      ],
+      "toolId": "example:video-runtime",
+      "contributorCapability": "example:game-configuration"
+    },
+    {
+      "id": "example:print-route",
+      "fulfillsNeed": "example:physical-output",
+      "appliesWhen": {
+        "equals": {
+          "assumptionId": "project.target",
+          "value": "physical-only"
+        }
+      },
+      "inputs": [
+        "example:physical-representation-brief"
+      ],
+      "toolId": "example:physical-exporter",
+      "contributorCapability": "example:component-production"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "example:authored-launch-bundle",
+      "available": false
+    },
+    {
+      "id": "example:physical-representation-brief",
+      "available": null
+    }
+  ],
+  "studioSupport": {
+    "rosterComplete": false,
+    "people": [
+      {
+        "id": "example:illustrator",
+        "capabilities": [
+          "example:art-creation"
+        ],
+        "willing": null,
+        "availability": [],
+        "provenance": "Fictional role for acceptance; not an actual contributor."
+      }
+    ],
+    "tools": [
+      {
+        "id": "example:pencil-tool",
+        "access": null,
+        "qualitySupport": {
+          "save-reopen": "unverified",
+          "undo": "unverified",
+          "quick-color-switch": "unverified",
+          "editable-layers": "unverified"
+        },
+        "capabilitySupport": {
+          "authoring:C01": "unverified",
+          "example:create-compatible-artwork": "unverified"
+        }
+      },
+      {
+        "id": "example:external-editor",
+        "access": null,
+        "qualitySupport": {
+          "save-reopen": "unverified",
+          "undo": "unverified",
+          "quick-color-switch": "unverified",
+          "editable-layers": "unverified"
+        },
+        "capabilitySupport": {
+          "authoring:C01": "unverified",
+          "example:create-compatible-artwork": "unverified"
+        }
+      },
+      {
+        "id": "example:video-runtime",
+        "access": null,
+        "support": "unverified",
+        "capabilitySupport": {
+          "execution:play": "unverified"
+        }
+      },
+      {
+        "id": "example:physical-exporter",
+        "access": null,
+        "support": "unverified"
+      }
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "example:digital-diagnostic",
+      "projectOverrides": {
+        "project.target": "digital-tk3",
+        "project.artProfile": "example:basic-pixel"
+      },
+      "studioOverrides": {
+        "example:illustrator": {
+          "willing": true,
+          "availability": [
+            {
+              "horizonId": "current",
+              "capacityHours": 4,
+              "capacityMeaning": "Total assumed hours within this complete window; not allocated."
+            }
+          ]
+        },
+        "example:pencil-tool": {
+          "access": true,
+          "qualitySupport": {
+            "save-reopen": "verified",
+            "undo": "missing",
+            "quick-color-switch": "missing",
+            "editable-layers": "missing"
+          },
+          "provenance": "Hypothetical support assumptions, not shipped #146/main evidence.",
+          "capabilitySupport": {
+            "authoring:C01": "verified",
+            "example:create-compatible-artwork": "verified"
+          }
+        }
+      },
+      "viewingHorizon": "current",
+      "expectedExplanations": [
+        "The diagnostic pencil route satisfies the selected basic profile with an assumed current provider.",
+        "The video-launch need applies but its authored bundle is missing; no playable game is inferred.",
+        "Physical output is not applicable and remains inspectable with its target condition."
+      ]
+    },
+    {
+      "id": "example:physical-diagnostic",
+      "basedOn": "example:digital-diagnostic",
+      "projectOverrides": {
+        "project.target": "physical-only"
+      },
+      "studioOverrides": {},
+      "viewingHorizon": "current",
+      "expectedExplanations": [
+        "Video launch/execution is not applicable, not a blocker.",
+        "Digital artwork remains applicable under the selected basic profile.",
+        "Physical representation, export and rules remain unverified; retaining artwork does not prove a complete physical game."
+      ]
+    },
+    {
+      "id": "example:production-quality",
+      "basedOn": "example:digital-diagnostic",
+      "projectOverrides": {
+        "project.artProfile": "example:production-art"
+      },
+      "studioOverrides": {},
+      "viewingHorizon": "current",
+      "expectedExplanations": [
+        "Artwork remains applicable.",
+        "The pencil route fails the production profile because undo, quick color switching and editable layers are missing.",
+        "The external route remains unverified. Do not claim universal impossibility or silently downgrade the profile."
+      ]
+    },
+    {
+      "id": "example:provider-later",
+      "basedOn": "example:production-quality",
+      "projectOverrides": {},
+      "studioOverrides": {
+        "example:illustrator": {
+          "willing": true,
+          "availability": [
+            {
+              "horizonId": "later",
+              "capacityHours": 4,
+              "capacityMeaning": "Assumed total within the later window; not daily or per task."
+            }
+          ]
+        },
+        "example:external-editor": {
+          "access": true,
+          "qualitySupport": {
+            "save-reopen": "verified",
+            "undo": "verified",
+            "quick-color-switch": "verified",
+            "editable-layers": "verified"
+          },
+          "provenance": "Hypothetical complete quality support; no actual editor was verified.",
+          "capabilitySupport": {
+            "authoring:C01": "verified",
+            "example:create-compatible-artwork": "verified"
+          }
+        }
+      },
+      "viewingHorizon": "current",
+      "expectedExplanations": [
+        "A technically sufficient external route has an assumed provider in the later window.",
+        "No current-window provider is established. The art need remains relevant.",
+        "Selecting the entire later window reveals the assumed four hours, with no assignment or finish-date promise."
+      ]
+    }
+  ],
+  "validationCases": [
+    "Unknown target remains unknown applicability; it is not treated as physical-only or hidden.",
+    "Every referenced assumption, need, profile, quality, tool, horizon and scenario must resolve.",
+    "An impossible or contradictory selected value combination is a validation error.",
+    "An applicable need with all routes excluded is reported with no applicable route.",
+    "A partly overlapping availability interval does not imply a prorated capacity.",
+    "Inherited scenario values must be fully expanded, cycle-checked and revision-pinned for an exported reproducible snapshot."
+  ],
+  "nextImplementation": "Implement this contract with a bounded evaluator and existing director persistence/loading. These expected explanations are acceptance cases, not results computed by the current evaluator.",
+  "enablingWork": [
+    {
+      "id": "example:improve-pencil",
+      "supportsNeed": "example:source-art",
+      "candidateSupportChanges": [
+        {
+          "toolId": "example:pencil-tool",
+          "qualityIds": [
+            "undo",
+            "quick-color-switch",
+            "editable-layers"
+          ]
+        }
+      ],
+      "requiredContributorCapability": "example:software-development",
+      "effort": null,
+      "assignment": null,
+      "status": "illustrative-candidate-not-assigned",
+      "acceptance": "Implement and verify each selected quality against the exact production profile before recording new support. External routes remain alternatives.",
+      "note": "This is a technical enabling path, not permission to resume #146. Completing or assuming work does not automatically verify its tool outputs."
+    }
+  ],
+  "capabilityDefinitions": [
+    {
+      "id": "example:create-compatible-artwork",
+      "kind": "production",
+      "label": "Create compatible editable artwork",
+      "status": "Proposed general capability; does not rename authoring:C01."
+    },
+    {
+      "id": "example:art-creation",
+      "kind": "contributor",
+      "label": "Create the selected artwork"
+    },
+    {
+      "id": "example:software-development",
+      "kind": "contributor",
+      "label": "Develop and verify a selected tool quality"
+    },
+    {
+      "id": "example:game-configuration",
+      "kind": "contributor",
+      "label": "Configure and exercise a digital game"
+    },
+    {
+      "id": "example:component-production",
+      "kind": "contributor",
+      "label": "Produce physical game components"
+    }
+  ]
+}

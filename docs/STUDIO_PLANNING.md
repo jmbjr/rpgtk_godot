@@ -1,5 +1,7 @@
 # Studio records and derived director view
 
+Current priority, November 25, 2026: [capability progression and assumption-driven feasibility](CAPABILITY_PROGRESSION.md). #146 is paused. This page describes #149’s implemented initial contract; it does not establish the proposed applicability, quality-profile or availability-window evaluator. The next foundation keeps the technical model, studio support model and assumptions distinct, with no schedule or execution plan implied.
+
 The director view is a deterministic projection of saved records. Open [Studio director](../planning/index.html), choose a project, and inspect its needs under the selected studio scenario. The [project index](planning/index.json) locates the manifest. No prior chat or manually composed dashboard is needed to recover project scope.
 
 The first project is the [Bruce demo](../projects/bstw-demo/README.md), now reconciled with the recovered original intake. Its launch bundle is A01–A06; the original authoring graph C02–C12 is restored. The [source narrative](../projects/bstw-demo/INTAKE.md) distinguishes direct owner decisions, a reviewed starting draft, assistant proposals and deferred details. This feature creates no game artwork or creative decisions.
@@ -50,4 +52,5 @@ Validation rejects unknown references, duplicate identities, mismatched revision
 
 `projects/bstw-demo/verify-plan.mjs` checks recovered identity and launch boundaries, five scenarios, OR/AND behavior, multiple blockers, willingness/capacity, access versus support, contention, no output chaining, partial/stale reviews, invalid data, file digests and deterministic reload. `scripts/check-studio-browser.mjs` exercises normal entry, assumptions, export/import, text escaping, record reloading and narrow layout. CI stages linked records and reruns checks on the staged site. Deployment and actual owner game acceptance remain separate.
 
-Next: the owner chooses one bounded cave brief and records actual studio declarations/availability; no new intake is needed. Keep the manifest, supporting docs and capability mappings aligned whenever scope/support changes.
+Next: implement the bounded [assumption-driven feasibility milestone](CAPABILITY_PROGRESSION.md#next-milestone-assumption-driven-feasibility) before automatically resuming production work. Detailed briefs and actual studio declarations/availability remain explicit inputs, not reasons to repeat the intake. Keep the manifest, supporting docs and capability mappings aligned whenever scope/support changes.
+
