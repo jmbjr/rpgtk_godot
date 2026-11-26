@@ -169,7 +169,7 @@ playable Godot export. This plan does not change the DODGE specification.
 
 ## Current foundational handoff — November 25, 2026
 
-The owner has paused production implementation in #146. The next milestone is [assumption-driven capability feasibility](CAPABILITY_PROGRESSION.md): separate the capability progression model from studio support, add explicit applicability/quality/availability assumptions, and derive explainable current/later opportunities. This is not a schedule or an execution plan. Preserve the recovered intake and reuse #149’s durable loading/identity/persistence machinery. The contract’s target/profile/availability acceptance cases come before automatically resuming tile-editor integration.
+The owner has paused production implementation in #146. The first [assumption-driven capability feasibility](CAPABILITY_PROGRESSION.md) slice separates technical and provider support and derives target/profile/window effects in the same director. Continue by refining the capability/output/quality gaps it exposes; see [the implemented contract](STUDIO_PLANNING.md). This is not a schedule or an execution plan. Preserve the recovered intake and reuse #149’s durable loading/identity/persistence machinery. Target/profile/window checks do not authorize automatically resuming tile-editor integration; #146 stays paused.
 
 ## Paused request-bound tile handoff
 

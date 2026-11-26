@@ -13,6 +13,7 @@ The [recovered intake](INTAKE.md) and [structured intake](intake.json) preserve 
 | bstw.studio.json | Independent reusable studio resources, processes, values, contributor declarations, local access and per-capability support evidence |
 | bstw.scenarios.json | Revision-pinned planning assumptions; viewed scenario, adoption and scheduled work remain separate |
 | capabilities.json | Qualified player/contributor/authoring identities, recovered graph and later tile-supply refinement |
+| feasibility.json | Typed project assumptions, authored applicability, quality profiles/evidence, dependency gates, availability windows and explicit refinement gaps |
 | intake.json / INTAKE.md | Reviewed starting draft, direct decisions, proposals, source locations and explicit deferrals |
 
 A01 terrain and A02 four-direction sprite tiles supply A05 cave and A03 four walking animations respectively. A03 supplies A04 playable character. A04 AND A05 supply A06 Main File; package the resolved files and verify normal Play/Reset. The village, exact ending and optional startup title are not prerequisites for the first playable cave scene.
@@ -23,7 +24,7 @@ The seven ordered additions remain cliff approach, broken crossing, scrolling to
 
 1. Open Studio director and inspect milestones and all needs.
 2. Compare recorded baseline with explicit hypothetical studio scenarios.
-3. Select a scenario, change willingness/hours, declared capabilities, tool access, tool support or input assumptions. Expand a need to see all route blockers and producer-work links.
+3. Select a scenario; try target, artwork profile and viewing horizon, then willingness/capacity window, declared capabilities, tool/quality support or input assumptions. Expand a need to see all route blockers and producer-work links.
 4. Download scenario records to retain edits. Reopen the project and load that JSON to resume. Exports preserve viewed scenario independently of adoption and schedule.
 5. Download the derived snapshot for exact input fingerprints, assumptions and evaluator version. This is an output, not another source of project facts.
 
@@ -43,5 +44,9 @@ Main support checkpoint remains `2c7128746f748bb0aa0459c36675a2e190a26f16`. #146
 
 Run `node projects/bstw-demo/verify-plan.mjs` and `node scripts/check-studio-browser.mjs` from repository root. CI runs the same checks, stages only browser runtime plus inert records/docs, and checks every staged first-party module. The generic production-code boundary remains in force; only validated planning JSON formats may contain project names.
 
-Current next milestone: [assumption-driven capability feasibility](../../docs/CAPABILITY_PROGRESSION.md). The owner has paused #146 production work while the technical capability/dependency model, studio support/availability and assumption-driven applicability/profile rules are clarified and implemented. Actual declarations, bounded briefs and unresolved story choices remain explicit inputs; do not repeat the recovered intake or automatically resume tile work. Use the derived blockers to select meaningful work; use [AUTHORING_WORKFLOW.md](../../docs/AUTHORING_WORKFLOW.md) for exact variant/review/build semantics. Studio logic and verification contracts are documented in [STUDIO_PLANNING.md](../../docs/STUDIO_PLANNING.md).
+Current iteration: [assumption-driven capability feasibility](../../docs/CAPABILITY_PROGRESSION.md). The owner has paused #146 production work while the technical capability/dependency model, studio support/availability and assumption-driven applicability/profile rules are clarified and implemented. Actual declarations, bounded briefs and unresolved story choices remain explicit inputs; do not repeat the recovered intake or automatically resume tile work. Use the derived blockers to select meaningful work; use [AUTHORING_WORKFLOW.md](../../docs/AUTHORING_WORKFLOW.md) for exact variant/review/build semantics. Studio logic and verification contracts are documented in [STUDIO_PLANNING.md](../../docs/STUDIO_PLANNING.md).
 
+
+The scenario record is now revision 4, explicitly migrated with a pinned feasibility record and relative window assumptions. Positive hypothetical S1–S4 offers are assigned to the current relative window; no actual availability is inferred. Earlier exports require explicit reconciliation. The project remains revision 3, studio/capability records revision 2.
+
+Try S3 → production artwork to see missing undo/color/layer support and acceptance gaps; move the artist’s offer to the later window; change the viewing horizon. Try physical-only to remove TK3 work while keeping the shared artwork question and unresolved physical output visible. Excluded needs can be inspected without deleting them. Unknown applicability remains visible. `node scripts/check-feasibility.mjs` covers these derivations independently of the browser.

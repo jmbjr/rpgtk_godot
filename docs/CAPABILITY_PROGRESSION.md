@@ -2,7 +2,7 @@
 
 Owner direction: November 25, 2026. This is the next foundation milestone. Production implementation in #146 is on hold. The goal is to help a small studio director understand what can be pursued under explicit assumptions without manually reconnecting every requirement.
 
-This document defines a proposed model and acceptance contract. The merged #149 viewer provides a useful first readiness evaluator; it does not yet implement the applicability, quality-profile and time-window model specified here. The [illustrative records](planning/feasibility-example.json) are a design/acceptance example, not another game definition or an input accepted by the current viewer.
+This document defines the model and acceptance contract. The first feasibility increment extends #149 with applicability, quality-profile and relative time-window evaluation; [STUDIO_PLANNING.md](STUDIO_PLANNING.md) records the implemented boundary and remaining refinement. The [illustrative records](planning/feasibility-example.json) are a design/acceptance example, not another game definition or an input accepted by the current viewer.
 
 ## Three connected models
 
@@ -103,9 +103,9 @@ The field names in the example are proposed; preserve these relationships during
 
 Scenario assumptions, accepted facts and produced artifacts must not be blended into the same boolean. Preserve unknowns and validate stable references. Existing project schemas and saved scenarios require explicit versioned migration before adopting new fields.
 
-## Next milestone: assumption-driven feasibility
+## First implementation: assumption-driven feasibility
 
-The next implementation handoff is a bounded evaluator and director interaction over this contract, not #146 integration and not a new hand-authored dashboard.
+The first bounded implementation is `planning/feasibility.mjs`, linked through the same manifest and director. Its record contract, migration and limits are in [STUDIO_PLANNING.md](STUDIO_PLANNING.md). The acceptance cases below now have evaluator/browser checks; they are not a claim that every capability has been decomposed. #146 remains paused.
 
 1. Open the existing project/studio records and expose the applicable project/studio assumptions without changing the recovered owner baseline.
 2. Change a hypothetical target from digital TK3 to physical-only. Explain why video execution/GAM routes leave the active graph, retain shared artwork capability where justified, and identify the missing physical adaptation/output requirements.
@@ -117,9 +117,9 @@ The next implementation handoff is a bounded evaluator and director interaction 
 
 Use synthetic fixtures for conditional evaluation tests and the recovered intake for continuity. Do not invent physical rules, game artwork, family staffing, deadlines or commitments. Reuse #149’s loading, identity, route and persistence machinery; document migration and actual support before reporting these new capabilities as implemented.
 
-## Current gap and ownership
+## Remaining refinement and ownership
 
-Main `54fcd770` (#149) stores the intake, project/studio/scenario records, route-readiness checks, explicit uncertainty and snapshot fingerprints. It has no typed project-target assumptions, condition-dependent active graph, quality-profile matching or time-window support evaluation. Its current single startable/blocked/unverified result must not be described as this complete feasibility model.
+The implemented slice preserves #149’s intake/review identities and adds typed target/profile conditions, independent technical/provider support, inspectable exclusions, conditional inputs/gates and one relative capacity offer per person. Quality refinement is currently mapped to C01 drawing routes. Other authoring/gameplay capabilities remain coarse; physical adaptation/output remains undefined; production-profile acceptance remains incomplete. The general artwork question explicitly retains these gaps. Multiple availability offers, dated origins, effort/allocation and cross-project resource accounting remain future work. No duration or deadline rule is inferred.
 
 This document owns the next logical model and acceptance. [STUDIO_PLANNING.md](STUDIO_PLANNING.md) owns the currently implemented record/evaluator contract. [AUTHORING_CAPABILITIES.md](AUTHORING_CAPABILITIES.md) owns C capabilities and production alternatives. [AUTHORING_WORKFLOW.md](AUTHORING_WORKFLOW.md) owns W workflow, variants/reviews/build relationships and the paused production handoff. [PROJECT_TRACKS.md](PROJECT_TRACKS.md) records priority.
 
